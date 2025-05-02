@@ -8,8 +8,8 @@ import React from "react";
 
 export default function WideHeaderMiddle() {
   return (
-    <div className="bg-[#F9F9F9] w-full">
-      <section className="flex justify-between h-[80px] items-center w-[90%] gap-2 m-auto">
+    <section className="bg-[#F9F9F9] w-full">
+      <div className="flex justify-between h-[80px] items-center w-[90%] gap-2 m-auto">
         <div className="flex w-[50%] gap-4 items-center">
           <div>
             <p className="font-semibold text-2xl">ZIBOLAND</p>
@@ -51,7 +51,7 @@ export default function WideHeaderMiddle() {
             خرید عمده
           </Link>
         </div>
-      </section>
-    </div>
+      </div>
+    </section>
   );
 }
