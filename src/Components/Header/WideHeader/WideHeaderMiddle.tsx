@@ -8,48 +8,44 @@ import React from "react";
 
 export default function WideHeaderMiddle() {
   return (
-    <section className="bg-[#F9F9F9] w-full">
-      <div className="flex justify-between h-[80px] items-center w-[90%] gap-2 m-auto">
-        <div className="flex w-[50%] gap-4 items-center">
-          <div>
-            <p className="font-semibold text-2xl">ZIBOLAND</p>
+    <section className="bg-[#F9F9F9] w-full py-2">
+      <div className="flex justify-between h-auto items-center w-[90%] gap-2 m-auto">
+        <div className="flex w-[33%] gap-3 items-center">
+          <div className="flex items-center">
+            <span className="font-semibold neiriz text-xl ml-1">ز</span>
+            <span className="font-semibold neiriz text-xl">یبولند</span>
           </div>
           <form
             action=""
-            className="flex  overflow-hidden w-full items-center border border-[#d9d6d6] rounded-lg"
+            className="flex w-1/2 items-center border border-[#d9d6d6] rounded-lg overflow-hidden"
           >
             <input
-              className="w-full  outline-0 p-3"
+              className="w-full outline-0 px-2 text-base"
               type="text"
               placeholder="جستجو"
             />
-            <button className="bg-[#EDEDED] p-4">
-              <SearchOutlined fontSize="large" />
+            <button className="bg-[#EDEDED] p-2">
+              <SearchOutlined fontSize="medium" />
             </button>
           </form>
         </div>
-        <div className="w-[50%] flex justify-end gap-4">
+        <div className="flex w-[33%] text-center justify-center gap-3 items-center">
+          <p className="font-semibold newyork text-xl">ZIBOLAND</p>
+        </div>
+        <div className="w-[33%] flex justify-end gap-2">
           <Link
             href={"/login"}
-            className="gap-4  hover:bg-[#FFC700]  p-5 rounded-lg border border-[#d9d6d6]"
+            className="flex items-center gap-2 hover:bg-[#EBEBEB] hover:text-[black] p-2 rounded-lg border border-[#d9d6d6] text-base hover:border-[#C7C7C7]"
           >
-            <LoginOutlined className="ml-2" />
+            <LoginOutlined fontSize="small" />
             ورود | عضویت
           </Link>
-
-          <button className="cart-btn-wide-header gap-4 relative p-5 hover:bg-[#FFC700] rounded-lg border border-[#d9d6d6]">
-            <ShoppingCartOutlined />
-            <span className="bg-[#FFC700]  absolute top-0 right-0 w-[25px] flex justify-center items-center pt-[3px] h-[25px] rounded-3xl">
+          <button className="relative flex items-center gap-2 p-2 hover:bg-[#EBEBEB] hover:text-[black] rounded-lg border border-[#d9d6d6] hover:border-[#C7C7C7]">
+            <ShoppingCartOutlined fontSize="small" />
+            <span className="bg-[black] pt-1 text-[#EBEBEB] absolute top-0 right-0 w-5 h-5 flex justify-center items-center text-[12px] rounded-full">
               2
             </span>
           </button>
-
-          <Link
-            href={"/buy"}
-            className="gap-4 flex justify-center items-center yekanh bg-[#FFC700]   p-4 rounded-2xl border border-[#d9d6d6]"
-          >
-            خرید عمده
-          </Link>
         </div>
       </div>
     </section>

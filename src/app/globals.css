@@ -1,6 +1,10 @@
 @import "tailwindcss";
-
-
+@font-face {
+    font-family: 'neiriz';
+    src: url('/Fonts/Neirizi.ttf') format('truetype'); 
+    font-weight: normal;
+    font-style: normal;
+  }
 
 @font-face {
     font-family: 'vazir';
@@ -17,7 +21,7 @@
   }
   
   @font-face {
-    font-family: 'yekan';
+    font-family: 'yekannew';
     src: url('/Fonts/yekan.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
@@ -34,6 +38,16 @@
     font-weight: 900;
   
   }
+
+  @font-face {
+    font-family: 'newyork';
+    src: url('/Fonts/newyork.ttf') format('truetype');
+    font-weight: 900;
+  
+  }
+  .newyork{
+    font-family: "newyork"!important;
+  }
   .yekanh{
     font-family: "yekanh";
   }
@@ -44,12 +58,14 @@
     font-family: "iransansweb";
   }
   
-  
+  .neiriz{
+    font-family: "neiriz"!important;
+  }
   .vazir{
     font-family: 'vazir'!important;
   }
   .yekan{
-    font-family: 'yekan'!important;
+    font-family: 'yekannew'!important;
 
   }
 

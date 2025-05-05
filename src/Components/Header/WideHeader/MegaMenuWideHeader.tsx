@@ -6,6 +6,7 @@ import {
   CategoryOutlined,
   ArrowForward,
 } from "@mui/icons-material";
+import Link from "next/link";
 
 export default function MegaMenuWideHeader() {
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
@@ -50,15 +51,15 @@ export default function MegaMenuWideHeader() {
           <li key={category.id} className="relative">
             <button
               onClick={() => handleMenuClick(category.id)}
-              className={`text-sm font-semibold flex items-center gap-2 transition-colors duration-300 ${
+              className={`text-base font-semibold flex items-center gap-2 transition-colors duration-300 ${
                 activeMenu === category.id
-                  ? "text-yellow-400"
-                  : "text-white hover:text-yellow-400"
+                  ? "text-[#EBEBEB]"
+                  : "text-white hover:text-[#EBEBEB]"
               }`}
             >
               <span>{category.name}</span>
               <ArrowDropDown
-                className={`text-lg transition-transform duration-200 ${
+                className={`text-base transition-transform duration-200 ${
                   activeMenu === category.id ? "rotate-180" : ""
                 }`}
               />
@@ -77,33 +78,48 @@ export default function MegaMenuWideHeader() {
       >
         <div className="w-[90%] mx-auto">
           {activeMenu !== null && !isClosing && megamenu.find((category) => category.id === activeMenu)?.subcat ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-10">
-              {megamenu
-                .find((category) => category.id === activeMenu)
-                ?.subcat.map((sub) => (
-                  <div key={sub.id} className="mb-8">
-                    <h3 className="font-bold text-2xl mb-4 pb-3 border-b-2 border-yellow-100 flex items-center gap-2">
-                      <CategoryOutlined className="text-yellow-600" />
-                      {sub.name}
-                    </h3>
-                    <ul className="space-y-3">
-                      {sub.items.map((item) => (
-                        <li key={item.id}>
-                          <a
-                            href={`/${
-                              megamenu.find((cat) => cat.id === activeMenu)?.link
-                            }/${item.id}`}
-                            className="text-gray-600 hover:text-yellow-600 hover:translate-x-2 flex items-center gap-2 transition-all duration-300"
-                          >
-                            <ArrowForward className="text-sm text-gray-400" />
-                            {item.name}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-            </div>
+            <>
+              {/* All Category Header */}
+              <div className="mb-8">
+                <Link
+                  href={`/${megamenu.find((category) => category.id === activeMenu)?.link}`}
+                  className="group inline-flex items-center gap-3 bg-gradient-to-r from-[#C7C7C7] to-[#EBEBEB] text-black font-bold text-lg py-3 px-4 rounded-lg shadow-md hover:shadow-lg hover:scale-[1.02] transition-all duration-300 ease-in-out"
+                >
+                  <CategoryOutlined className="text-base text-[#1A1A1A] group-hover:text-[#005B99] transition-colors duration-300" />
+                  <span className="group-hover:text-[#005B99]">
+                    همه {megamenu.find((category) => category.id === activeMenu)?.name}
+                  </span>
+                </Link>
+              </div>
+              {/* Subcategories */}
+              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-10">
+                {megamenu
+                  .find((category) => category.id === activeMenu)
+                  ?.subcat.map((sub) => (
+                    <div key={sub.id} className="mb-8">
+                      <h3 className="font-bold text-lg mb-4 pb-3 border-b-2 border-[#C7C7C7]  flex items-center gap-2">
+                        <CategoryOutlined className="text-base text-[#005B99]" />
+                        {sub.name}
+                      </h3>
+                      <ul className="space-y-3">
+                        {sub.items.map((item) => (
+                          <li key={item.id}>
+                            <a
+                              href={`/${
+                                megamenu.find((cat) => cat.id === activeMenu)?.link
+                              }/${item.id}`}
+                              className="text-base text-black hover:text-[#c7c7c7] hover:translate-x-2 flex items-center gap-2 transition-all duration-300"
+                            >
+                              <ArrowForward className="text-base text-gray-400" />
+                              {item.name}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+              </div>
+            </>
           ) : null}
         </div>
       </section>

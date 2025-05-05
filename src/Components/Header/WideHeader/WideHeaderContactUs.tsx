@@ -5,46 +5,76 @@ import {
   PhoneInTalkOutlined,
   Telegram,
   WhatsApp,
+  LocalOffer,
 } from "@mui/icons-material";
+import Link from "next/link";
+
+
+
 export default function WideHeaderContactUs() {
   return (
-    <section className="bg-black w-full h-auto py-4">
-      <div className="w-[95%] flex justify-between m-auto items-center flex-row-reverse">
-        <div className="flex justify-end items-center gap-4">
-          <p className=" yekan text-[#FFC700]">تماس با کارشناسان:</p>
-          <a
-            href="tell:02196520"
-            className="text-white text-xl flex items-center gap-2 yekanh"
-          >
-            021-96520{" "}
-            <PhoneInTalkOutlined
-              fontSize="medium"
-              className="text-[#FFC700] phoneicon"
-            />
-          </a>
-        </div>
+    <>
+      {/* تزریق استایل‌های CSS */}
+  
+      <section className="bg-[#EBEBEB] w-full h-auto py-2 relative overflow-hidden">
+        <div className="w-[95%] flex justify-between m-auto items-center flex-row-reverse relative z-10">
+          {/* تماس با کارشناسان */}
+          <div className="flex w-[33%] justify-end items-center gap-4">
+            <p className="yekan text-black font-medium">تماس با کارشناسان:</p>
+            <a
+              href="tel:02196520"
+              className="text-black text-xl flex items-center gap-2 yekan"
+            >
+              021-96520
+              <PhoneInTalkOutlined
+                fontSize="medium"
+                className="text-black phoneicon"
+              />
+            </a>
+          </div>
 
-        <div className="text-white flex items-center gap-2">
-          <a
-            href=""
-            className="border-2 hover:bg-[#FFC700] hover:text-black p-2 rounded-full flex justify-center items-center"
+          {/* جشنواره تخفیفات ویژه */}
+          <div className="w-[33%] text-center">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-[#005B99] to-[#805B99] rounded-lg shadow-xl festival-container"
           >
-            <Telegram className="!text-[18px]" />
-          </a>
-          <a
-            href=""
-            className="border-2 hover:bg-[#FFC700] hover:text-black p-2 rounded-full flex justify-center items-center"
-          >
-            <WhatsApp className="!text-[18px]" />
-          </a>
-          <a
-            href=""
-            className="border-2 hover:bg-[#FFC700] hover:text-black p-2 rounded-full flex justify-center items-center"
-          >
-            <Instagram className="!text-[18px]" />
-          </a>
+            <LocalOffer className="text-white animate-pulse-glow" fontSize="large" />
+            <div className="flex flex-col">
+              <span className="yekan text-white font-bold text-xl transition-colors duration-300">
+                جشنواره تخفیفات ویژه
+              </span>
+              <span className="yekan text-sm text-white/80">
+                تا 50% تخفیف محصولات
+              </span>
+            </div>
+          </Link>
+          </div>
+   
+
+          {/* شبکه‌های اجتماعی */}
+          <div className="text-white  w-[33%]  flex items-center gap-3">
+            <a
+              href=""
+              className="border-2 hover:border-[#C7C7C7] bg-black hover:bg-[#005B99] p-2 rounded-full flex justify-center items-center transition-all duration-300"
+            >
+              <Telegram className="!text-[20px]" />
+            </a>
+            <a
+              href=""
+              className="border-2 hover:border-[#C7C7C7] bg-black hover:bg-[#005B99] p-2 rounded-full flex justify-center items-center transition-all duration-300"
+            >
+              <WhatsApp className="!text-[20px]" />
+            </a>
+            <a
+              href=""
+              className="border-2 hover:border-[#C7C7C7] bg-black hover:bg-[#005B99] p-2 rounded-full flex justify-center items-center transition-all duration-300"
+            >
+              <Instagram className="!text-[20px]" />
+            </a>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
