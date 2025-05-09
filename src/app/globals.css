@@ -70,5 +70,8 @@
   }
 
   body{
-    font-family: "iransans";
+    font-family: "iransansweb";
+    max-width: 1750px;
+    margin: auto;
+    overflow: hidden;
   }
