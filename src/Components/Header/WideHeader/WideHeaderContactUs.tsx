@@ -37,14 +37,14 @@ export default function WideHeaderContactUs() {
           <div className="w-[33%] text-center">
           <Link
             href="/"
-            className="inline-flex items-center gap-3 px-5 py-3 bg-gradient-to-r from-[#005B99] to-[#805B99] rounded-lg shadow-xl festival-container"
+            className="inline-flex items-center gap-3 px-5 py-3 bg-[#805B99] rounded-lg shadow-xl festival-container"
           >
             <LocalOffer className="text-white animate-pulse-glow" fontSize="large" />
             <div className="flex flex-col">
               <span className="yekan text-white font-bold text-xl transition-colors duration-300">
                 جشنواره تخفیفات ویژه
               </span>
-              <span className="yekan text-sm text-white/80">
+              <span className="yekan text-sm text-white">
                 تا 50% تخفیف محصولات
               </span>
             </div>

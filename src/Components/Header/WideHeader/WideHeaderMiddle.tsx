@@ -1,7 +1,11 @@
 import {
+
+  FavoriteBorderOutlined,
+  FavoriteOutlined,
   LoginOutlined,
   SearchOutlined,
-  ShoppingCartOutlined,
+  ShoppingBagOutlined,
+
 } from "@mui/icons-material";
 import Link from "next/link";
 import React from "react";
@@ -41,8 +45,14 @@ export default function WideHeaderMiddle() {
             ورود | عضویت
           </Link>
           <button className="relative flex items-center gap-2 p-2 hover:bg-[#EBEBEB] hover:text-[black] rounded-lg border border-[#d9d6d6] hover:border-[#C7C7C7]">
-            <ShoppingCartOutlined fontSize="small" />
-            <span className="bg-[black] pt-1 text-[#EBEBEB] absolute top-0 right-0 w-5 h-5 flex justify-center items-center text-[12px] rounded-full">
+            <FavoriteBorderOutlined fontSize="medium" />
+            <span className="bg-[#805B99] pt-1 text-[#EBEBEB] absolute bottom-0 -right-1 w-4 h-4 flex justify-center items-center text-[10px] rounded-full">
+              2
+            </span>
+          </button>
+          <button className="relative flex items-center gap-2 p-2 hover:bg-[#EBEBEB] hover:text-[black] rounded-lg border border-[#d9d6d6] hover:border-[#C7C7C7]">
+            <ShoppingBagOutlined fontSize="medium" />
+            <span className="bg-[#805B99] pt-1 text-[#EBEBEB] absolute bottom-0 -right-1 w-4 h-4 flex justify-center items-center text-[10px] rounded-full">
               2
             </span>
           </button>

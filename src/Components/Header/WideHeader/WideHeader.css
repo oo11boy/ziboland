@@ -1,3 +1,18 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* برای مرورگرهای مدرن */
+}
+
+/* Fallback برای مرورگرهای قدیمی */
+@supports not (display: grid) {
+  .grid {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .grid > div {
+    flex: 1 0 25%; /* معادل 4 ستون */
+  }
+}
 .phoneicon {
   animation: vibrate 1s infinite;
 }
@@ -45,4 +60,13 @@
 .festival-container {
   animation: glow 2s infinite ease-in-out;
   
+}
+
+
+.subcategory {
+  border-left: 3px solid #1111111c;
+}
+
+.subcategory:last-child {
+  border-left: none;
 }
