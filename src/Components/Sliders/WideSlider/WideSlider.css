@@ -1,0 +1,70 @@
+/* Navigation buttons */
+.sliderbtns .swiper-button-prev::after,
+.sliderbtns .swiper-button-next::after {
+  background-color: white;
+  padding: 10px 15px;
+  border-radius: 50%;
+  font-size: 20px !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: black;
+}
+
+.swiper-button-prev {
+  left: auto !important;
+  right: 50px !important;
+}
+
+.swiper-button-next {
+  right: auto !important;
+  left: 55px !important;
+}
+
+
+
+/* CircularProgressbar styling */
+.progress-circle {
+  width: 40px; /* Matches the size of navigation buttons */
+  height: 40px;
+  cursor: pointer; /* Indicate clickability */
+  border-radius: 100%;
+  background-color: white;
+}
+
+.progress-circle .CircularProgressbar {
+  width: 100%;
+  height: 100%;
+}
+
+.progress-circle .CircularProgressbar .CircularProgressbar-text {
+  font-size: 40px; /* Slightly larger for icons */
+  fill: black!important; /* Match text/icon color with buttons */
+  dominant-baseline: middle;
+  text-anchor: middle;
+}
+
+.progress-circle .CircularProgressbar .CircularProgressbar-path {
+  stroke: black; /* Match progress bar color with button theme */
+}
+
+.progress-circle .CircularProgressbar .CircularProgressbar-trail {
+  stroke: #d6d6d6; /* Light gray trail for contrast */
+}
+
+.progress-circle .CircularProgressbar .CircularProgressbar-background {
+  fill: white; /* White background to match buttons */
+
+}
+
+
+/* Pagination styling */
+.swiper-pagination-bullet {
+    background: white !important; /* White for inactive bullets */
+    opacity: 0.5 !important; /* Slightly transparent for inactive bullets */
+  }
+  
+  .swiper-pagination-bullet-active {
+    background: white !important; /* White for active bullet */
+    opacity: 1 !important; /* Fully opaque for active bullet */
+  }

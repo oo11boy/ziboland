@@ -1,7 +1,6 @@
 import {
 
   FavoriteBorderOutlined,
-  FavoriteOutlined,
   LoginOutlined,
   SearchOutlined,
   ShoppingBagOutlined,

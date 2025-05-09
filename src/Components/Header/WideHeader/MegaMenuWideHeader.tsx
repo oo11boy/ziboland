@@ -3,7 +3,6 @@ import { megamenu } from "@/lib/staticDb";
 import React, { useState, useEffect, useRef } from "react";
 import {
   ArrowDropDown,
-
   ArrowLeft,
   Close,
 } from "@mui/icons-material";
@@ -12,6 +11,7 @@ import Link from "next/link";
 export default function MegaMenuWideHeader() {
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMenuClick = (id: number) => {
     if (activeMenu === id) {
@@ -21,27 +21,43 @@ export default function MegaMenuWideHeader() {
     }
   };
 
+  const handleMouseEnter = (id: number) => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current); // لغو تأخیر بسته شدن
+    }
+    setActiveMenu(id); // باز کردن منو
+  };
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setActiveMenu(null); // بستن منو پس از تأخیر
+    }, 200);
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setActiveMenu(null); // مستقیماً منو را ببند
+        setActiveMenu(null); // بستن منو هنگام کلیک خارج
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current); // پاکسازی تأخیر در cleanup
+      }
     };
   }, []);
 
   return (
-    <section ref={menuRef} className="bg-black w-full shadow-lg">
+    <section ref={menuRef} className="bg-black w-full shadow-lg relative">
       <ul className="flex justify-start items-center text-white h-[35px] gap-10 w-[90%] mx-auto">
         {megamenu.map((category) => (
           <li key={category.id} className="relative">
             <button
               onClick={() => handleMenuClick(category.id)}
-              onMouseEnter={() => handleMenuClick(category.id)}
+              onMouseEnter={() => handleMouseEnter(category.id)}
               className={`text-base font-semibold flex items-center gap-2 ${
                 activeMenu === category.id
                   ? "text-[#EBEBEB]"
@@ -60,12 +76,25 @@ export default function MegaMenuWideHeader() {
       </ul>
 
       <section
-        className={`bg-white text-black w-full shadow-xl rounded-b-lg overflow-hidden ${
+        onMouseLeave={handleMouseLeave}
+        className={`bg-white text-black w-full shadow-xl rounded-b-lg overflow-hidden absolute top-[35px] left-0 z-10 ${
           activeMenu !== null ? "h-auto py-5" : "h-0 py-0"
         }`}
       >
-        <div className="w-[90%] mx-auto relative">
-            <button onClick={()=>setActiveMenu(null)} className="cursor-pointer absolute top-2 left-2 border-2 rounded-lg border-[#805B99]"><Close fontSize="medium" className="text-[#805B99]"/></button>
+        <div
+          className="w-[90%] mx-auto relative"
+          onMouseEnter={() => {
+            if (timeoutRef.current) {
+              clearTimeout(timeoutRef.current); // لغو بسته شدن هنگام ورود به منوی بازشو
+            }
+          }}
+        >
+          <button
+            onClick={() => setActiveMenu(null)}
+            className="cursor-pointer absolute top-2 left-2 border-2 rounded-lg border-[#805B99]"
+          >
+            <Close fontSize="medium" className="text-[#805B99]" />
+          </button>
           {activeMenu !== null &&
           megamenu.find((category) => category.id === activeMenu)?.subcat ? (
             <>
