@@ -58,7 +58,7 @@ export default function CategoriesContainer() {
       <div className="flex justify-between items-center text-center">
         {data.map((item) => (
           <Link href={item.link} className="w-[8%]" >
-            <img src={item.img} alt={item.text} /> <p className="text-sm mt-2">{item.text}</p>
+            <img src={item.img} alt={item.text} /> <p className="text-[14px] mt-2">{item.text}</p>
           </Link>
         ))}
       </div>

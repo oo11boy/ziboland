@@ -113,7 +113,7 @@ const WideSliderContainer: React.FC = () => {
               <img
                 src={slide.image}
                 alt={slide.alt}
-                className="w-full h-full object-cover transition-all duration-300 
+                className="w-full h-full rounded-lg object-cover transition-all duration-300 
                            swiper-slide-active:scale-110 swiper-slide-active:h-[550px]
                            swiper-slide-prev:scale-90 swiper-slide-prev:h-[450px]
                            swiper-slide-next:scale-90 swiper-slide-next:h-[450px]"
