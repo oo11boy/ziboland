@@ -73,5 +73,6 @@
     font-family: "iransansweb";
     max-width: 1750px;
     margin: auto;
-    overflow: hidden;
+    overflow-x: hidden;
+    background-color: #F9F9F9;
   }
