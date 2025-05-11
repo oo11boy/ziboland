@@ -57,7 +57,7 @@ export default function CategoriesContainer() {
       <h2 className="yekanh text-xl mb-8 mt-4">دسته بندی محصولات</h2>
       <div className="flex justify-between items-center text-center">
         {data.map((item) => (
-          <Link href={item.link} className="w-[8%]" >
+          <Link key={item.id} href={item.link} className="w-[8%]" >
             <img src={item.img} alt={item.text} /> <p className="text-[14px] mt-2">{item.text}</p>
           </Link>
         ))}
