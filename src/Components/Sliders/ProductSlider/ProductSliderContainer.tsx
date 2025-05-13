@@ -171,7 +171,7 @@ export default function ProductSliderContainer({
       {showPrev && (
         <button
           onClick={goPrev}
-          className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-[#EBEBEB] border-[#c7c7c7] border  rounded-lg h-10 w-10  text-[#805B99] z-10"
+          className="absolute top-1/2 right-[13%] transform -translate-y-1/2 bg-[#EBEBEB] border-[#c7c7c7] border  rounded-lg h-10 w-10  text-[#805B99] z-10"
         >
             <KeyboardArrowRight fontSize="large"/>
         </button>
@@ -185,19 +185,21 @@ export default function ProductSliderContainer({
           <KeyboardArrowLeft fontSize="large"/>
         </button>
       )}
-
-      <Swiper
-        slidesPerView={6}
-        spaceBetween={30}
-        ref={swiperRef}
-      >
-        {vip && (
-          <SwiperSlide>
+      <div className="flex">
+        
+     {vip && (
+          <div className="w-[25%]">
             <div className="flex  bg-[#805B99] text-white h-[250px] flex-col justify-center items-center">
               <h2 className="yekanh">% تخفیف ویژه %</h2>
             </div>
-          </SwiperSlide>
+          </div>
         )}
+      <Swiper
+        slidesPerView={5}
+        spaceBetween={30}
+        ref={swiperRef}
+      >
+   
 
         {data.map((item) => (
           <SwiperSlide key={item.id}>
@@ -230,6 +232,8 @@ export default function ProductSliderContainer({
           </SwiperSlide>
         ))}
       </Swiper>
+      
+      </div>
     </div>
   );
 }
