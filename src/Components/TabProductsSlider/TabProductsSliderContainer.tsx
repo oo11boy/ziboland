@@ -10,7 +10,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import Link from "next/link";
 import { Swiper as SwiperCore } from "swiper";
-import { AddCircleOutline, AddShoppingCart, KeyboardArrowLeft, KeyboardArrowRight, RemoveCircleOutline } from "@mui/icons-material";
+import { AddCircleOutline, AddShoppingCart, KeyboardArrowLeft, KeyboardArrowRight, RemoveCircleOutline, VisibilitySharp } from "@mui/icons-material";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -345,7 +345,12 @@ export default function TabProductsSliderContainer({title}:{title:string}) {
     <div className="w-[90%] mx-auto my-8 bg-white rounded-lg p-2 relative">
       <div className="w-full my-8 justify-between flex items-center">
         <p className="font-semibold yekanh">{title}</p>
-        <Link href="/" className="text-black">
+        <Link
+          href="/"
+          className="flex items-center gap-2 px-4 py-2 text-md text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
+          style={{ backgroundImage: "linear-gradient(to right, #f3f4f6, #e5e7eb)" }}
+        >
+          <VisibilitySharp className="w-5 h-5 text-gray-600" />
           مشاهده همه
         </Link>
       </div>

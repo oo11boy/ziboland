@@ -5,6 +5,7 @@ import ProductSliderContainer from '@/Components/Sliders/ProductSlider/ProductSl
 import WideSliderContainer from '@/Components/Sliders/WideSlider/WideSliderContainer'
 import React from 'react'
 import TabProductsSliderContainer from '@/Components/TabProductsSlider/TabProductsSliderContainer'
+import ArticlesListContainer from '@/Components/Articles/ArticlesList/ArticlesListContainer'
 
 export default function page() {
   return (
@@ -17,6 +18,7 @@ export default function page() {
   <TabProductsSliderContainer title='پرفروشترین ها'/>
   <TabProductsSliderContainer title='ارزانترین ها'/>
   <TabProductsSliderContainer title='جدیدترین ها'/>
+  <ArticlesListContainer/>
   </>
   )
 }

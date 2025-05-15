@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "css": "npx tailwindcss -i ./src/app/globals.css -o ./public/style.css"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -31,12 +32,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.1",
     "postcss": "^8.5.3",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.1.6",
     "typescript": "^5"
-  },
-  "browserslist": [
-    "last 2 versions",
-    "> 1%",
-    "not dead"
-  ]
+  }
 }
