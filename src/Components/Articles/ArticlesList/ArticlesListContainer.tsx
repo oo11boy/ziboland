@@ -1,4 +1,4 @@
-"use client";
+"use client"
 import { VisibilitySharp } from "@mui/icons-material";
 import Link from "next/link";
 import React, { useState } from "react";
@@ -32,7 +32,7 @@ export default function ArticlesListContainer() {
   return (
     <div className="w-[90%] mx-auto my-8 bg-white rounded-lg p-2">
       <div className="w-full my-8 flex justify-between items-center">
-        <h2 className="text-lg font-bold yekanh text-gray-800">مقالات</h2>
+        <h2 className="text-2xl font-bold yekanh text-gray-800">مقالات</h2>
         <Link
           href="/"
           className="flex items-center gap-2 px-4 py-2 text-md text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
@@ -51,29 +51,11 @@ export default function ArticlesListContainer() {
             onMouseEnter={() => setHoveredId(item.id)}
             onMouseLeave={() => setHoveredId(null)}
           >
-            {/* تصویر اصلی */}
             <img
-              className="w-full h-full object-cover transition-all duration-300"
+              className="w-full h-full object-cover transition-transform duration-300"
               src={item.img}
               alt={item.title}
             />
-            {/* لایه بلور و تیره در حالت هاور */}
-            <div
-              className={`absolute inset-0 transition-all duration-300 ${
-                hoveredId === item.id
-                  ? "opacity-100 bg-black/30"
-                  : "opacity-0"
-              }`}
-              style={{ filter: hoveredId === item.id ? "blur(8px)" : "none" }}
-            >
-              <img
-                className="w-full h-full object-cover"
-                src={item.img}
-                alt={item.title}
-              />
-            </div>
-
-            {/* بخش عنوان */}
             <div
               className="absolute bottom-0 w-full p-4"
               style={{ backgroundImage: "linear-gradient(to top, #000, transparent)" }}
@@ -82,12 +64,10 @@ export default function ArticlesListContainer() {
                 {item.title}
               </h2>
             </div>
-
-            {/* لایه هاور برای دکمه */}
             <div
               className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
                 hoveredId === item.id ? "opacity-100" : "opacity-0"
-              }`}
+              } bg-[#0000007c] backdrop-blur-sm`}
             >
               <Link
                 href={`/article/${item.id}`}
