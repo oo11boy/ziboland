@@ -4,8 +4,9 @@ import WideHeaderContainer from '@/Components/Header/WideHeader/WideHeaderContai
 import ProductSliderContainer from '@/Components/Sliders/ProductSlider/ProductSliderContainer'
 import WideSliderContainer from '@/Components/Sliders/WideSlider/WideSliderContainer'
 import React from 'react'
-import TabProductsSliderContainer from '@/Components/TabProductsSlider/TabProductsSliderContainer'
+import TabProductsSliderContainer from '@/Components/Sliders/TabProductsSlider/TabProductsSliderContainer'
 import ArticlesListContainer from '@/Components/Articles/ArticlesList/ArticlesListContainer'
+import BrandsContainer from '@/Components/Brands/BrandsContainer'
 
 export default function page() {
   return (
@@ -19,6 +20,7 @@ export default function page() {
   <TabProductsSliderContainer title='ارزانترین ها'/>
   <TabProductsSliderContainer title='جدیدترین ها'/>
   <ArticlesListContainer/>
+  <BrandsContainer/>
   </>
   )
 }

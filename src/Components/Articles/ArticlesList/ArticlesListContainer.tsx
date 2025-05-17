@@ -31,8 +31,8 @@ export default function ArticlesListContainer() {
 
   return (
     <div className="w-[90%] mx-auto my-8 bg-white rounded-lg p-2">
-      <div className="w-full my-8 flex justify-between items-center">
-        <h2 className="text-2xl font-bold yekanh text-gray-800">مقالات</h2>
+      <div className="w-full mb-8 mt-2 flex justify-between items-center">
+        <h2 className="text-xl font-bold yekanh text-gray-800">مقالات</h2>
         <Link
           href="/"
           className="flex items-center gap-2 px-4 py-2 text-md text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
@@ -71,7 +71,7 @@ export default function ArticlesListContainer() {
             >
               <Link
                 href={`/article/${item.id}`}
-                className="bg-white text-black px-4 py-2 rounded-lg font-vazir font-medium hover:bg-gray-200 transition-colors"
+                className="bg-white text-black px-4 py-2 rounded-lg yekan font-medium  transition-colors"
               >
                 مشاهده مقاله
               </Link>

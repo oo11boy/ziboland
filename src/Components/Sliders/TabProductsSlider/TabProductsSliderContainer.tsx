@@ -10,14 +10,20 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import Link from "next/link";
 import { Swiper as SwiperCore } from "swiper";
-import { AddCircleOutline, AddShoppingCart, KeyboardArrowLeft, KeyboardArrowRight, RemoveCircleOutline, VisibilitySharp } from "@mui/icons-material";
+import {
+  AddCircleOutline,
+  AddShoppingCart,
+  KeyboardArrowLeft,
+  KeyboardArrowRight,
+  RemoveCircleOutline,
+  VisibilitySharp,
+} from "@mui/icons-material";
 
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
   value: number;
 }
-
 
 function CustomTabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
@@ -266,13 +272,24 @@ export const productdata = [
   },
 ];
 
-
-export default function TabProductsSliderContainer({title}:{title:string}) {
+export default function TabProductsSliderContainer({
+  title,
+}: {
+  title: string;
+}) {
   const [value, setValue] = React.useState(0);
-  const [hoveredProductId, setHoveredProductId] = React.useState<number | null>(null);
-  const [cartQuantities, setCartQuantities] = React.useState<{ [key: number]: number }>({});
-  const swiperRefs = React.useRef<{ [key: number]: { swiper:SwiperCore } | null }>({});
-  const [navStates, setNavStates] = React.useState<{ [key: number]: { showPrev: boolean; showNext: boolean } }>({});
+  const [hoveredProductId, setHoveredProductId] = React.useState<number | null>(
+    null
+  );
+  const [cartQuantities, setCartQuantities] = React.useState<{
+    [key: number]: number;
+  }>({});
+  const swiperRefs = React.useRef<{
+    [key: number]: { swiper: SwiperCore } | null;
+  }>({});
+  const [navStates, setNavStates] = React.useState<{
+    [key: number]: { showPrev: boolean; showNext: boolean };
+  }>({});
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -330,25 +347,31 @@ export default function TabProductsSliderContainer({title}:{title:string}) {
     return () => {
       categories.forEach((_, index) => {
         if (swiperRefs.current[index]?.swiper) {
-          swiperRefs.current[index].swiper.off("slideChange", () => updateNavigation(index));
+          swiperRefs.current[index].swiper.off("slideChange", () =>
+            updateNavigation(index)
+          );
         }
       });
     };
   }, []);
 
-  const categories = Array.from(new Set(productdata.map((product) => product.category)));
+  const categories = Array.from(
+    new Set(productdata.map((product) => product.category))
+  );
   const productsByCategory = categories.map((category) =>
     productdata.filter((product) => product.category === category)
   );
 
   return (
     <div className="w-[90%] mx-auto my-8 bg-white rounded-lg p-2 relative">
-      <div className="w-full my-8 justify-between flex items-center">
-        <p className="font-semibold yekanh">{title}</p>
+      <div className="w-full mb-8 mt-2 justify-between flex items-center">
+        <p className="font-semibold yekanh text-xl">{title}</p>
         <Link
           href="/"
           className="flex items-center gap-2 px-4 py-2 text-md text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
-          style={{ backgroundImage: "linear-gradient(to right, #f3f4f6, #e5e7eb)" }}
+          style={{
+            backgroundImage: "linear-gradient(to right, #f3f4f6, #e5e7eb)",
+          }}
         >
           <VisibilitySharp className="w-5 h-5 text-gray-600" />
           مشاهده همه
@@ -389,8 +412,6 @@ export default function TabProductsSliderContainer({title}:{title:string}) {
               spaceBetween={10}
               slidesPerView={5}
               navigation={false}
-             
-         
               breakpoints={{
                 320: { slidesPerView: 1 },
                 640: { slidesPerView: 2 },
@@ -425,7 +446,9 @@ export default function TabProductsSliderContainer({title}:{title:string}) {
                       {item.originalPrice}
                     </p>
                     <div className="flex justify-between items-center w-full relative">
-                      <p className="font-bold pr-2">{item.discountedPrice} تومان</p>
+                      <p className="font-bold pr-2">
+                        {item.discountedPrice} تومان
+                      </p>
                       <button
                         className="bg-[#805B99] text-white rounded-tr-lg p-2"
                         onMouseEnter={() => handleMouseEnter(item.id)}
@@ -443,7 +466,9 @@ export default function TabProductsSliderContainer({title}:{title:string}) {
                             marginBottom: "10px",
                           }}
                         >
-                          <button onClick={() => handleQuantityChange(item.id, 1)}>
+                          <button
+                            onClick={() => handleQuantityChange(item.id, 1)}
+                          >
                             <AddCircleOutline />
                           </button>
                           <input
@@ -452,7 +477,9 @@ export default function TabProductsSliderContainer({title}:{title:string}) {
                             value={cartQuantities[item.id] || 0}
                             readOnly
                           />
-                          <button onClick={() => handleQuantityChange(item.id, -1)}>
+                          <button
+                            onClick={() => handleQuantityChange(item.id, -1)}
+                          >
                             <RemoveCircleOutline />
                           </button>
                         </div>
