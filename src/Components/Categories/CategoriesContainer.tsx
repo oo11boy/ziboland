@@ -1,7 +1,11 @@
+"use client";
 import Link from "next/link";
-import React from "react";
+import React, { useState } from "react";
+import "./CategoriesContainer.css";
 
 export default function CategoriesContainer() {
+  const [showAll, setShowAll] = useState(false);
+
   const data = [
     {
       id: 1,
@@ -52,15 +56,49 @@ export default function CategoriesContainer() {
       text: "ابزار باغبانی",
     },
   ];
+
   return (
-    <div className="w-[90%] bg-white rounded-lg p-4 mt-4 m-auto flex justify-center items-center flex-col">
-      <h2 className="yekanh text-xl mb-8 mt-4">دسته بندی محصولات</h2>
-      <div className="flex justify-between items-center text-center">
-        {data.map((item) => (
-          <Link key={item.id} href={item.link} className="w-[8%]" >
-            <img src={item.img} alt={item.text} /> <p className="text-[14px] mt-2">{item.text}</p>
-          </Link>
-        ))}
+    <div className="categories-container">
+      <h2 className="categories-title">دسته بندی محصولات</h2>
+      <div className="categories-wrapper">
+        <div
+          className={`categories-grid ${!showAll ? "categories-grid--limited" : ""}`}
+        >
+          {data.map((item) => (
+            <Link
+              key={item.id}
+              href={item.link}
+              className="category-item"
+            >
+              <img
+                src={item.img}
+                alt={item.text}
+                className="category-image"
+              />
+              <p className="category-text">{item.text}</p>
+            </Link>
+          ))}
+        </div>
+        <div
+          className={`gradient-overlay ${showAll ? "gradient-overlay--hidden" : ""}`}
+        >
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className="toggle-button"
+          >
+            {showAll ? "بستن" : "مشاهده بیشتر"}
+          </button>
+        </div>
+        {showAll && (
+          <div className="close-button-wrapper">
+            <button
+              onClick={() => setShowAll(false)}
+              className="close-button"
+            >
+              بستن
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

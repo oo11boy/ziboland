@@ -36,7 +36,7 @@ function CustomTabPanel(props: TabPanelProps) {
       aria-labelledby={`simple-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
     </div>
   );
 }
@@ -410,14 +410,9 @@ export default function TabProductsSliderContainer({
             <Swiper
               modules={[Navigation]}
               spaceBetween={10}
-              slidesPerView={5}
+              slidesPerView={"auto"}
               navigation={false}
-              breakpoints={{
-                320: { slidesPerView: 1 },
-                640: { slidesPerView: 2 },
-                1024: { slidesPerView: 3 },
-                1280: { slidesPerView: 6 },
-              }}
+            
               className="mySwiper"
               onSwiper={(swiper) => {
                 swiperRefs.current[index] = { swiper };
@@ -425,7 +420,7 @@ export default function TabProductsSliderContainer({
               }}
             >
               {productsByCategory[index].map((item) => (
-                <SwiperSlide key={item.id}>
+                <SwiperSlide key={item.id} style={{ width: "165px" }}>
                   <div className="flex border !border-[#EBEBEB] rounded-lg overflow-hidden relative w-full h-[250px] bg-white flex-col text-center items-center justify-between pt-2">
                     <img
                       src={item.image}
@@ -492,7 +487,6 @@ export default function TabProductsSliderContainer({
                 </SwiperSlide>
               ))}
             </Swiper>
-            {/* دکمه‌های ناوبری سفارشی */}
             {navStates[index]?.showPrev && (
               <button
                 onClick={() => goPrev(index)}

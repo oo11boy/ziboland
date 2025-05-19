@@ -12,17 +12,22 @@ import FooterContainer from '@/Components/Footer/FooterContainer'
 export default function page() {
   return (
   <>
-  <WideHeaderContainer/>
+  {/* <WideHeaderContainer/>
   <WideSliderContainer/>
-  <CategoriesContainer/>
-  <BenefitsContainer/>
-  <ProductSliderContainer vip={true}/>
-  <TabProductsSliderContainer title='پرفروشترین ها'/>
-  <TabProductsSliderContainer title='ارزانترین ها'/>
-  <TabProductsSliderContainer title='جدیدترین ها'/>
+ 
+  
+ 
   <ArticlesListContainer/>
   <BrandsContainer/>
-  <FooterContainer/>
+  <FooterContainer/> */}
+
+<WideSliderContainer/>
+<CategoriesContainer/>
+<BenefitsContainer/>
+<ProductSliderContainer vip={true}/>
+<TabProductsSliderContainer title='پرفروشترین ها'/>
+  <TabProductsSliderContainer title='ارزانترین ها'/>
+  <TabProductsSliderContainer title='جدیدترین ها'/>
   </>
   )
 }
