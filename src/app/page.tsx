@@ -7,6 +7,7 @@ import React from 'react'
 import TabProductsSliderContainer from '@/Components/Sliders/TabProductsSlider/TabProductsSliderContainer'
 import ArticlesListContainer from '@/Components/Articles/ArticlesList/ArticlesListContainer'
 import BrandsContainer from '@/Components/Brands/BrandsContainer'
+import FooterContainer from '@/Components/Footer/FooterContainer'
 
 export default function page() {
   return (
@@ -21,6 +22,7 @@ export default function page() {
   <TabProductsSliderContainer title='جدیدترین ها'/>
   <ArticlesListContainer/>
   <BrandsContainer/>
+  <FooterContainer/>
   </>
   )
 }
