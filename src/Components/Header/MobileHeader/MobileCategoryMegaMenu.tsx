@@ -35,7 +35,7 @@ export default function MobileCategoryMegaMenu() {
   }, [openSubCategory]);
 
   return (
-    <div className="relative lg:mt-4 flex h-screen flex-col bg-white">
+    <div className="relative  lg:mt-4 flex h-screen flex-col bg-white">
 
       {/* Header */}
       <div className="flex h-14 items-center yekan justify-between px-4 text-gray-900 shadow-sm bg-white">
@@ -69,14 +69,8 @@ export default function MobileCategoryMegaMenu() {
               >
                 {/* Sub-Menu Header */}
                 <div className="flex h-14 items-center justify-between px-4 text-gray-900 shadow-sm bg-white">
-                  <button
-                    onClick={() => setOpenCategory(null)}
-                    aria-label="بازگشت به دسته‌بندی‌های اصلی"
-                    className="p-1 rounded hover:bg-gray-100"
-                  >
-                    <ArrowForward className="h-6 w-6 text-gray-900" />
-                  </button>
-                  <span className="header-title">{item.name}</span>
+              
+               
                 </div>
                 {/* Sub-Menu Content */}
                 <div className="flex w-full flex-col bg-white p-3">

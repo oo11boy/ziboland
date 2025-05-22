@@ -14,6 +14,7 @@ import MobileBottomNavigation from "@/Components/Header/MobileHeader/MobileBotto
 export default function page() {
   return (
  <>
+ <WideHeaderContainer/>
    <MoblieHeaderTopTab/>
    <WideSliderContainer />
    <CategoriesContainer />
