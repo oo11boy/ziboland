@@ -8,26 +8,28 @@ import TabProductsSliderContainer from "@/Components/Sliders/TabProductsSlider/T
 import ArticlesListContainer from "@/Components/Articles/ArticlesList/ArticlesListContainer";
 import BrandsContainer from "@/Components/Brands/BrandsContainer";
 import FooterContainer from "@/Components/Footer/FooterContainer";
+import MoblieHeaderTopTab from "@/Components/Header/MobileHeader/MoblieHeaderTopTab";
+import MobileBottomNavigation from "@/Components/Header/MobileHeader/MobileBottomNavigation";
 
 export default function page() {
   return (
-    <>
-      {/*
-       <WideHeaderContainer/>
-
- 
-  */}
-
-      <WideSliderContainer />
-      <CategoriesContainer />
-      <BenefitsContainer />
-      <ProductSliderContainer vip={true} />
-      <TabProductsSliderContainer title="پرفروشترین ها" />
-      <TabProductsSliderContainer title="ارزانترین ها" />
-      <TabProductsSliderContainer title="جدیدترین ها" />
-      <ArticlesListContainer />
-      <BrandsContainer />
-      <FooterContainer />
-    </>
+ <>
+   <MoblieHeaderTopTab/>
+   <WideSliderContainer />
+   <CategoriesContainer />
+   <BenefitsContainer />
+   <ProductSliderContainer vip={true} />
+   <TabProductsSliderContainer title="پرفروشترین ها" />
+   <TabProductsSliderContainer title="ارزانترین ها" />
+   <TabProductsSliderContainer title="جدیدترین ها" />
+   <ArticlesListContainer />
+   <BrandsContainer />
+   <FooterContainer />
+   <MobileBottomNavigation/>
+   </>
+      /* 
+         <WideHeaderContainer/> 
+      */
+  
   );
 }

@@ -13,7 +13,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fa" dir="rtl">
- 
+      <head><link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/icon?family=Material+Icons"
+/></head>
      <body
       >
         
