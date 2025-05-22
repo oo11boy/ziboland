@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { VisibilitySharp } from "@mui/icons-material";
 import Link from "next/link";
 import React, { useState } from "react";
@@ -30,9 +30,9 @@ export default function ArticlesListContainer() {
   const [hoveredId, setHoveredId] = useState<number | null>(null);
 
   return (
-    <div className="w-[90%] mx-auto my-8 bg-white rounded-lg p-2">
+    <div className="w-[90%] yekan mx-auto my-8 bg-white rounded-lg p-2">
       <div className="w-full mb-8 mt-2 flex justify-between items-center">
-        <h2 className="text-xl font-bold yekanh text-gray-800">مقالات</h2>
+        <h2 className="text-md lg:text-xl font-bold yekanh text-gray-800 ">مقالات</h2>
         <Link
           href="/"
           className="flex items-center gap-2 px-4 py-2 text-md text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
@@ -43,11 +43,11 @@ export default function ArticlesListContainer() {
         </Link>
       </div>
 
-      <div className="flex justify-between w-full">
+      <div className="flex justify-between w-full max-[885px]:flex-nowrap max-[885px]:overflow-x-auto max-[885px]:overflow-y-hidden max-[885px]:space-x-4 max-[885px]:pb-4">
         {data.map((item) => (
           <div
             key={item.id}
-            className="relative rounded-xl overflow-hidden w-[23%]"
+            className="relative rounded-xl overflow-hidden w-[23%] max-[885px]:w-[200px] max-[885px]:flex-shrink-0"
             onMouseEnter={() => setHoveredId(item.id)}
             onMouseLeave={() => setHoveredId(null)}
           >
@@ -60,7 +60,7 @@ export default function ArticlesListContainer() {
               className="absolute bottom-0 w-full p-4"
               style={{ backgroundImage: "linear-gradient(to top, #000, transparent)" }}
             >
-              <h2 className="text-white text-md font-semibold font-vazir">
+              <h2 className="text-white text-sm  lg:text-lg font-semibold font-vazir">
                 {item.title}
               </h2>
             </div>
@@ -71,7 +71,7 @@ export default function ArticlesListContainer() {
             >
               <Link
                 href={`/article/${item.id}`}
-                className="bg-white text-black px-4 py-2 rounded-lg yekan font-medium  transition-colors"
+                className="bg-white text-black px-4 py-2 rounded-lg yekan font-medium transition-colors"
               >
                 مشاهده مقاله
               </Link>

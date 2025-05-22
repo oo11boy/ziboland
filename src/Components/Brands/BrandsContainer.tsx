@@ -20,10 +20,9 @@ export default function BrandsContainer() {
     { id: 6, img: "https://abzarreza.com/wp-content/uploads/2022/07/Metabo.png.webp", link: "#" },
     { id: 7, img: "https://abzarreza.com/wp-content/uploads/2021/01/crown.png.webp", link: "#" },
     { id: 8, img: "https://abzarreza.com/wp-content/uploads/2022/07/Ronix.png.webp", link: "#" },
-  
-];
+  ];
 
-   // تابع برای به‌روزرسانی وضعیت دکمه‌ها
+  // تابع برای به‌روزرسانی وضعیت دکمه‌ها
   const updateNavigation = () => {
     if (swiperRef.current) {
       const swiper = swiperRef.current;
@@ -60,60 +59,83 @@ export default function BrandsContainer() {
   }, []);
 
   return (
-    <div className="w-[90%] mx-auto my-8 bg-white rounded-lg p-2 relative">
-    <div className="w-full mb-8 mt-2 justify-between flex items-center">
-      <p className="font-semibold yekanh text-xl">برترین برندها</p>
-      <Link
+    <div className="w-[90%] yekan mx-auto my-8 bg-white rounded-lg p-4 relative sm:p-6 md:p-8">
+      <div className="w-full mb-6 mt-2 flex items-center justify-between">
+        <p className="font-semibold yekanh text-md lg:text-xl ">برترین برندها</p>
+        <Link
           href="/"
-          className="flex items-center gap-2 px-4 py-2 text-md text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
+          className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-md text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
           style={{
             backgroundImage: "linear-gradient(to right, #f3f4f6, #e5e7eb)",
           }}
         >
-          <VisibilitySharp className="w-5 h-5 text-gray-600" />
+          <VisibilitySharp className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
           مشاهده همه
         </Link>
       </div>
-    <div className="w-full m-auto relative" >
-        
+      <div className="w-full m-auto relative">
         {/* دکمه‌های ناوبری */}
         {showPrev && (
           <button
             onClick={goPrev}
-            className="absolute top-1/2 right-2 transform -translate-y-1/2 bg-[#EBEBEB] border-[#c7c7c7] border rounded-lg h-10 w-10 text-[#805B99] z-10"
+            className="absolute top-1/2 right-0 sm:right-2 transform -translate-y-1/2 bg-[#EBEBEB] border-[#c7c7c7] border rounded-lg h-8 w-8 sm:h-10 sm:w-10 text-[#805B99] z-10"
           >
-            <KeyboardArrowRight fontSize="large" />
+            <KeyboardArrowRight fontSize="medium" />
           </button>
         )}
         {showNext && (
           <button
             onClick={goNext}
-            className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-[#EBEBEB] border-[#c7c7c7] border rounded-lg h-10 w-10 text-[#805B99] z-10"
+            className="absolute top-1/2 left-0 sm:left-2 transform -translate-y-1/2 bg-[#EBEBEB] border-[#c7c7c7] border rounded-lg h-8 w-8 sm:h-10 sm:w-10 text-[#805B99] z-10"
           >
-            <KeyboardArrowLeft fontSize="large" />
+            <KeyboardArrowLeft fontSize="medium" />
           </button>
         )}
-  
+
         <Swiper
-          slidesPerView={7}
-          spaceBetween={30}
+          slidesPerView={3} // تعداد اسلایدها برای موبایل
+          spaceBetween={10} // فاصله بین اسلایدها برای موبایل
+          breakpoints={{
+            640: {
+              // sm
+              slidesPerView: 3,
+              spaceBetween: 15,
+            },
+            768: {
+              // md
+              slidesPerView: 4,
+              spaceBetween: 20,
+            },
+            1024: {
+              // lg
+              slidesPerView: 6,
+              spaceBetween: 25,
+            },
+            1280: {
+              // xl
+              slidesPerView: 7,
+              spaceBetween: 30,
+            },
+          }}
           onSwiper={(swiper) => {
             swiperRef.current = swiper;
             updateNavigation();
           }}
           dir="rtl"
-         
         >
           {data.map((item) => (
             <SwiperSlide key={item.id}>
               <a href={item.link}>
-                <img src={item.img} alt="brands" />
+                <img
+                  src={item.img}
+                  alt="brands"
+                  className="w-2/3 h-auto object-contain"
+                />
               </a>
             </SwiperSlide>
           ))}
         </Swiper>
       </div>
-  </div>
-
+    </div>
   );
 }

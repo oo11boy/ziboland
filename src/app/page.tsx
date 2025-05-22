@@ -1,33 +1,33 @@
-import BenefitsContainer from '@/Components/Benefits/BenefitsContainer'
-import CategoriesContainer from '@/Components/Categories/CategoriesContainer'
-import WideHeaderContainer from '@/Components/Header/WideHeader/WideHeaderContainer'
-import ProductSliderContainer from '@/Components/Sliders/ProductSlider/ProductSliderContainer'
-import WideSliderContainer from '@/Components/Sliders/WideSlider/WideSliderContainer'
-import React from 'react'
-import TabProductsSliderContainer from '@/Components/Sliders/TabProductsSlider/TabProductsSliderContainer'
-import ArticlesListContainer from '@/Components/Articles/ArticlesList/ArticlesListContainer'
-import BrandsContainer from '@/Components/Brands/BrandsContainer'
-import FooterContainer from '@/Components/Footer/FooterContainer'
+import BenefitsContainer from "@/Components/Benefits/BenefitsContainer";
+import CategoriesContainer from "@/Components/Categories/CategoriesContainer";
+import WideHeaderContainer from "@/Components/Header/WideHeader/WideHeaderContainer";
+import ProductSliderContainer from "@/Components/Sliders/ProductSlider/ProductSliderContainer";
+import WideSliderContainer from "@/Components/Sliders/WideSlider/WideSliderContainer";
+import React from "react";
+import TabProductsSliderContainer from "@/Components/Sliders/TabProductsSlider/TabProductsSliderContainer";
+import ArticlesListContainer from "@/Components/Articles/ArticlesList/ArticlesListContainer";
+import BrandsContainer from "@/Components/Brands/BrandsContainer";
+import FooterContainer from "@/Components/Footer/FooterContainer";
 
 export default function page() {
   return (
-  <>
-  {/* <WideHeaderContainer/>
-  <WideSliderContainer/>
- 
-  
- 
-  <ArticlesListContainer/>
-  <BrandsContainer/>
-  <FooterContainer/> */}
+    <>
+      {/*
+       <WideHeaderContainer/>
 
-<WideSliderContainer/>
-<CategoriesContainer/>
-<BenefitsContainer/>
-<ProductSliderContainer vip={true}/>
-<TabProductsSliderContainer title='پرفروشترین ها'/>
-  <TabProductsSliderContainer title='ارزانترین ها'/>
-  <TabProductsSliderContainer title='جدیدترین ها'/>
-  </>
-  )
+ 
+  */}
+
+      <WideSliderContainer />
+      <CategoriesContainer />
+      <BenefitsContainer />
+      <ProductSliderContainer vip={true} />
+      <TabProductsSliderContainer title="پرفروشترین ها" />
+      <TabProductsSliderContainer title="ارزانترین ها" />
+      <TabProductsSliderContainer title="جدیدترین ها" />
+      <ArticlesListContainer />
+      <BrandsContainer />
+      <FooterContainer />
+    </>
+  );
 }

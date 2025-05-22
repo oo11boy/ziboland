@@ -59,10 +59,10 @@ export default function CategoriesContainer() {
 
   return (
     <div className="categories-container">
-      <h2 className="categories-title">دسته بندی محصولات</h2>
+      <h2 className="categories-title yekanh max-lg:!text-[20px]">دسته بندی محصولات</h2>
       <div className="categories-wrapper">
         <div
-          className={`categories-grid ${!showAll ? "categories-grid--limited" : ""}`}
+          className={`categories-grid yekan ${!showAll ? "categories-grid--limited" : ""}`}
         >
           {data.map((item) => (
             <Link
@@ -75,7 +75,7 @@ export default function CategoriesContainer() {
                 alt={item.text}
                 className="category-image"
               />
-              <p className="category-text">{item.text}</p>
+              <p className="category-text !font-bold text-right">{item.text}</p>
             </Link>
           ))}
         </div>

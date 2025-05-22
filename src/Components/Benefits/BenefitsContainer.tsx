@@ -46,7 +46,7 @@ export default function BenefitsContainer() {
   ];
 
   return (
-    <div className="bg-white p-4 rounded-lg w-[90%] m-auto my-8 overflow-x-auto overflow-y-hidden">
+    <div className="bg-white p-4 yekan rounded-lg w-[90%] m-auto my-8 overflow-x-auto overflow-y-hidden">
       <div className="flex justify-between max-xl:flex-nowrap gap-4">
         {data.map((item) => (
           <Link

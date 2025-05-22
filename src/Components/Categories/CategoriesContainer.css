@@ -1,10 +1,8 @@
 .categories-container {
   width: 90%;
-
   margin: 16px auto;
   background-color: white;
   border-radius: 8px;
-  padding: 24px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -90,13 +88,13 @@
 }
 
 .category-text {
-  font-size: 14px;
+  font-size: 10.5px;
   font-weight: 500;
 }
 
 @media (min-width: 768px) {
   .category-text {
-    font-size: 16px;
+    font-size: 14px;
   }
 }
 
@@ -105,7 +103,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 96px;
+  height: 180px;
   background: linear-gradient(to top, white, transparent);
   display: flex;
   align-items: flex-end;
@@ -123,7 +121,7 @@
 }
 
 .toggle-button {
-  background-color: #3b82f6;
+  background-color: #805B99;
   color: white;
   padding: 8px 16px;
   border-radius: 8px;

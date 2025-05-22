@@ -363,17 +363,17 @@ export default function TabProductsSliderContainer({
   );
 
   return (
-    <div className="w-[90%] mx-auto my-8 bg-white rounded-lg p-2 relative">
+    <div className="w-[90%] yekan mx-auto my-8 bg-white rounded-lg p-2 relative">
       <div className="w-full mb-8 mt-2 justify-between flex items-center">
-        <p className="font-semibold yekanh text-xl">{title}</p>
+        <p className="font-semibold yekanh text-md lg:text-xl">{title}</p>
         <Link
           href="/"
-          className="flex items-center gap-2 px-4 py-2 text-md text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
+          className="flex items-center gap-2 px-4  py-2 text-md text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
           style={{
             backgroundImage: "linear-gradient(to right, #f3f4f6, #e5e7eb)",
           }}
         >
-          <VisibilitySharp className="w-5 h-5 text-gray-600" />
+          <VisibilitySharp className="w-5 h-5 text-gray-600 " />
           مشاهده همه
         </Link>
       </div>
@@ -428,7 +428,7 @@ export default function TabProductsSliderContainer({
                       alt={item.title}
                     />
                     <h2
-                      className="text-sm px-2 font-semibold text-right overflow-hidden text-ellipsis"
+                      className="text-[13px] px-2 font-semibold text-right overflow-hidden text-ellipsis"
                       style={{
                         display: "-webkit-box",
                         WebkitLineClamp: 2,

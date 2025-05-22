@@ -158,7 +158,7 @@ export default function ProductSliderContainer({
 
   return (
     <div
-      className={`${vip && "bg-[#805B99] p-4 rounded-lg"} w-[90%] m-auto relative my-8`}
+      className={`yekan ${vip && "bg-[#805B99] p-4 rounded-lg"} w-[90%] m-auto relative my-8`}
     >
       <div
         className={`w-full mb-2 ${
@@ -227,7 +227,7 @@ export default function ProductSliderContainer({
                     alt={item.title}
                   />
                   <h2
-                    className="text-sm font-semibold text-right overflow-hidden text-ellipsis"
+                    className="text-[13px] font-semibold text-right overflow-hidden text-ellipsis"
                     style={{
                       display: "-webkit-box",
                       WebkitLineClamp: 2,
@@ -236,7 +236,7 @@ export default function ProductSliderContainer({
                   >
                     {item.title}
                   </h2>
-                  <div className="flex justify-between items-center w-full">
+                  <div className="flex text-sm justify-between items-center w-full">
                     <p className="text-gray-500 line-through">
                       {item.originalPrice}
                     </p>
