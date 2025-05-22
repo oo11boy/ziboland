@@ -1,15 +1,15 @@
-.grid {
+.WideHeaderContactUs .grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr); /* برای مرورگرهای مدرن */
 }
 
 /* Fallback برای مرورگرهای قدیمی */
 @supports not (display: grid) {
-  .grid {
+.WideHeaderContactUs  .grid {
     display: flex;
     flex-wrap: wrap;
   }
-  .grid > div {
+ .WideHeaderContactUs .grid > div {
     flex: 1 0 25%; /* معادل 4 ستون */
   }
 }

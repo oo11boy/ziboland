@@ -35,7 +35,7 @@ export default function MobileCategoryMegaMenu() {
   }, [openSubCategory]);
 
   return (
-    <div className="relative flex h-screen flex-col bg-white">
+    <div className="relative lg:mt-4 flex h-screen flex-col bg-white">
 
       {/* Header */}
       <div className="flex h-14 items-center yekan justify-between px-4 text-gray-900 shadow-sm bg-white">
@@ -44,7 +44,7 @@ export default function MobileCategoryMegaMenu() {
       </div>
 
       {/* Category Grid */}
-      <div className="grid font-semibold grid-cols-2 gap-2 px-3 pt-6">
+      <div className="grid font-semibold grid-cols-2 lg:grid-cols-4 gap-2 px-3 pt-6">
         {megamenu.map((item: MenuItem) => (
           item.mothercat && (
             <div key={item.id} className="relative">

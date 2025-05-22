@@ -3,7 +3,7 @@ import React from "react";
 
 export default function FooterContainer() {
   return (
-    <div className="w-full bg-[#262626] text-white">
+    <div className="w-full bg-[#262626] max-lg:hidden text-white">
       <div className="w-[90%] mx-auto flex flex-col">
         <div className="flex flex-col lg:flex-row justify-between py-8 lg:py-12 gap-8">
           {/* بخش اطلاعات زیبولند */}

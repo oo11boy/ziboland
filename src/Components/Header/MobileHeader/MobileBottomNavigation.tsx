@@ -5,8 +5,8 @@ import React from 'react'
 export default function MobileBottomNavigation() {
   return (
     <>
- <div className='h-[70px]'></div>
-    <div className="flex yekan justify-between items-center fixed bottom-0 z-50 w-full h-[70px] p-4 bg-black  shadow-md  text-white text-[13px] transition-all duration-300">
+ <div className='h-[70px] min-lg:hidden'></div>
+    <div className="flex yekan min-lg:hidden justify-between items-center fixed bottom-0 z-50 w-full h-[70px] p-4 bg-black  shadow-md  text-white text-[13px] transition-all duration-300">
     
          <Link href={'/'} className='flex flex-col justify-center items-center'>
             <HomeOutlined/>
