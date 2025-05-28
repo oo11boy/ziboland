@@ -2,7 +2,7 @@
 import React, { useState, useCallback } from "react";
 import { megamenu, MenuItem } from "@/lib/staticDb";
 import { JSX } from "@emotion/react/jsx-runtime";
-import { ArrowBack, ArrowForward } from "@mui/icons-material";
+import { ArrowBack } from "@mui/icons-material";
 import './MobileHeader.css';
 // تابع برای دریافت آیکون Google Material
 const getIconComponent = (iconName: string): JSX.Element => {
@@ -89,7 +89,7 @@ export default function MobileCategoryMegaMenu() {
                       <ArrowBack />
                     </button>
                   </div>
-                  {item.subcat.map((sub, index) => (
+                  {item.subcat.map((sub) => (
                     <div
                       key={sub.id}
                       className={`sub-item ${openCategory === item.id ? "open" : ""}`}

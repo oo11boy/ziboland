@@ -1,0 +1,9 @@
+
+
+
+
+@media (width >= 48rem /* 768px */) {
+    .mdinline{
+        display: inline;
+    }
+}

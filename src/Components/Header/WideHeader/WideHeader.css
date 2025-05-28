@@ -70,3 +70,9 @@
 .subcategory:last-child {
   border-left: none;
 }
+
+@media (width < 64rem /* 1024px */) {
+.max-lg-none{
+display: none;
+}
+}

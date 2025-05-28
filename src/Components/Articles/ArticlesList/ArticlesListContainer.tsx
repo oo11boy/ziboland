@@ -32,13 +32,17 @@ export default function ArticlesListContainer() {
   return (
     <div className="w-[90%] yekan mx-auto my-8 bg-white rounded-lg p-2">
       <div className="w-full mb-8 mt-2 flex justify-between items-center">
-        <h2 className="text-md lg:text-xl font-bold yekanh text-gray-800 ">مقالات</h2>
+      <p className="font-semibold yekanh text-sm sm:text-base md:text-lg lg:text-xl">
+        مقالات
+        </p>
         <Link
           href="/"
-          className="flex items-center gap-2 px-4 py-2 text-md text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
-          style={{ backgroundImage: "linear-gradient(to right, #f3f4f6, #e5e7eb)" }}
+          className="flex items-center text-xs sm:text-sm gap-1 sm:gap-2 px-2 sm:px-3 py-1 text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
+          style={{
+            backgroundImage: "linear-gradient(to right, #f3f4f6, #e5e7eb)",
+          }}
         >
-          <VisibilitySharp className="w-5 h-5 text-gray-600" />
+          <VisibilitySharp fontSize="inherit" className="text-gray-600" />
           مشاهده همه
         </Link>
       </div>

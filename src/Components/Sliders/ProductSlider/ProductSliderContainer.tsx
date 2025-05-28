@@ -5,7 +5,7 @@ import { Swiper as SwiperCore } from "swiper";
 import "swiper/css";
 import Link from "next/link";
 import { KeyboardArrowLeft, KeyboardArrowRight } from "@mui/icons-material";
-
+import "./../Sliders.css"
 export default function ProductSliderContainer({
   vip = false,
 }: {
@@ -110,147 +110,156 @@ export default function ProductSliderContainer({
       discount: "30%",
     },
   ];
-
-  // بررسی سایز صفحه
-  useEffect(() => {
-    const handleResize = () => {
-      setIsSmallScreen(window.innerWidth < 1280); // xl breakpoint
-    };
-
-    handleResize();
-    window.addEventListener("resize", handleResize);
-
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  const goNext = () => {
-    if (swiperRef.current && swiperRef.current.swiper) {
-      swiperRef.current.swiper.slideNext();
-    }
+// Handle screen size changes
+useEffect(() => {
+  const handleResize = () => {
+    setIsSmallScreen(window.innerWidth < 1024); // lg breakpoint
   };
 
-  const goPrev = () => {
-    if (swiperRef.current && swiperRef.current.swiper) {
-      swiperRef.current.swiper.slidePrev();
+  handleResize();
+  window.addEventListener("resize", handleResize);
+
+  return () => window.removeEventListener("resize", handleResize);
+}, []);
+
+const goNext = () => {
+  if (swiperRef.current?.swiper) {
+    swiperRef.current.swiper.slideNext();
+  }
+};
+
+const goPrev = () => {
+  if (swiperRef.current?.swiper) {
+    swiperRef.current.swiper.slidePrev();
+  }
+};
+
+const updateNavigation = () => {
+  if (swiperRef.current?.swiper) {
+    const swiper = swiperRef.current.swiper;
+    setShowPrev(!swiper.isBeginning);
+    setShowNext(!swiper.isEnd);
+  }
+};
+
+useEffect(() => {
+  if (swiperRef.current?.swiper) {
+    const swiper = swiperRef.current.swiper;
+    swiper.on("slideChange", updateNavigation);
+    updateNavigation();
+  }
+  return () => {
+    if (swiperRef.current?.swiper) {
+      swiperRef.current.swiper.off("slideChange", updateNavigation);
     }
   };
+}, []);
 
-  const updateNavigation = () => {
-    if (swiperRef.current && swiperRef.current.swiper) {
-      const swiper = swiperRef.current.swiper;
-      setShowPrev(!swiper.isBeginning);
-      setShowNext(!swiper.isEnd);
-    }
-  };
-
-  useEffect(() => {
-    if (swiperRef.current && swiperRef.current.swiper) {
-      const swiper = swiperRef.current.swiper;
-      swiper.on("slideChange", updateNavigation);
-      updateNavigation();
-    }
-    return () => {
-      if (swiperRef.current && swiperRef.current.swiper) {
-        swiperRef.current.swiper.off("slideChange", updateNavigation);
-      }
-    };
-  }, []);
-
-  return (
+return (
+  <div
+    className={`yekan ${vip ? "bg-[#805B99] p-4 rounded-lg" : ""} w-full max-w-[1440px] mx-auto relative my-8 px-4`}
+  >
     <div
-      className={`yekan ${vip && "bg-[#805B99] p-4 rounded-lg"} w-[90%] m-auto relative my-8`}
+      className={`w-full mb-4 flex items-center ${
+        vip ? "justify-end" : "justify-between"
+      }`}
     >
-      <div
-        className={`w-full mb-2 ${
-          vip ? "justify-end" : "justify-between"
-        } flex items-center`}
+      {!vip && <p className="font-semibold text-lg">پرفروش‌ترین‌ها</p>}
+      <Link
+        href="/"
+        className={`text-sm ${vip ? "text-white font-semibold" : "text-black"} hover:underline`}
       >
-        {!vip && <p className="font-semibold">پرفروش‌ترین‌ها</p>}
-        <Link
-          href="/"
-          className={`${vip ? "text-white font-semibold" : "text-black"}`}
-        >
-          مشاهده همه
-        </Link>
-      </div>
+        مشاهده همه
+      </Link>
+    </div>
 
-      {showPrev && (
-        <button
-          onClick={goPrev}
-          className={`absolute top-1/2 ${
-            vip && !isSmallScreen ? "right-[13%]" : "right-2"
-          } transform -translate-y-1/2 bg-[#EBEBEB] border-[#c7c7c7] border rounded-lg h-10 w-10 text-[#805B99] z-10`}
-        >
-          <KeyboardArrowRight fontSize="large" />
-        </button>
-      )}
-      {showNext && (
-        <button
-          onClick={goNext}
-          className="absolute top-1/2 left-2 transform -translate-y-1/2 bg-[#EBEBEB] border-[#c7c7c7] border rounded-lg h-10 w-10 text-[#805B99] z-10"
-        >
-          <KeyboardArrowLeft fontSize="large" />
-        </button>
-      )}
+    {showPrev && (
+      <button
+        onClick={goPrev}
+        className={`absolute hidden lg:flex top-1/2 ${
+          vip && !isSmallScreen ? "right-[12%]" : "right-4"
+        } transform -translate-y-1/2 bg-[#EBEBEB] border-[#c7c7c7] border rounded-lg h-12 w-12 text-[#805B99] z-10 items-center justify-center`}
+      >
+        <KeyboardArrowRight fontSize="large" />
+      </button>
+    )}
+    {showNext && (
+      <button
+        onClick={goNext}
+        className="absolute hidden lg:flex top-1/2 left-4 transform -translate-y-1/2 bg-[#EBEBEB] border-[#c7c7c7] border rounded-lg h-12 w-12 text-[#805B99] z-10 items-center justify-center"
+      >
+        <KeyboardArrowLeft fontSize="large" />
+      </button>
+    )}
 
-      <div className="flex">
-        {vip && !isSmallScreen && (
-          <div className="w-[170px]">
-            <div className="flex bg-[#805B99] text-white h-[250px] flex-col justify-center items-center">
-              <h2 className="yekanh">% تخفیف ویژه %</h2>
-            </div>
+    <div className="flex w-full">
+      {vip && !isSmallScreen && (
+        <div className="w-40 lg:w-48 shrink-0">
+          <div className="flex bg-[#805B99] text-white h-64 lg:h-80 flex-col justify-center items-center rounded-lg">
+            <h2 className="yekan text-lg font-semibold">% تخفیف ویژه %</h2>
           </div>
-        )}
-        <div className="swiper-container" style={{ overflow: "hidden", flex: 1 }}>
-          <Swiper
-            slidesPerView="auto"
-            spaceBetween={10}
-            ref={swiperRef}
-            className="mySwiper"
-          >
-            {vip && isSmallScreen && (
-              <SwiperSlide style={{ width: "120px" }}>
-                <div className="flex bg-[#805B99] text-white h-[250px] flex-col justify-center items-center rounded-lg">
-                  <h2 className="yekanh">% تخفیف ویژه %</h2>
+        </div>
+      )}
+      <div className="swiper-container flex-1 overflow-hidden">
+        <Swiper
+          slidesPerView="auto"
+          spaceBetween={12}
+          ref={swiperRef}
+          className="mySwiper"
+          breakpoints={{
+            0: { slidesPerView: 2, spaceBetween: 8 },
+            640: { slidesPerView: 3, spaceBetween: 10 },
+            1024: { slidesPerView: 4, spaceBetween: 12 },
+            1280: { slidesPerView: 5, spaceBetween: 12 },
+          }}
+        >
+          {vip && isSmallScreen && (
+            <SwiperSlide className="!w-32 sm:!w-40">
+              <div className="flex bg-[#805B99] text-white h-64 flex-col justify-center items-center rounded-lg">
+                <h2 className="yekan text-base font-semibold">
+                  % تخفیف ویژه %
+                </h2>
+              </div>
+            </SwiperSlide>
+          )}
+          {data.map((item) => (
+            <SwiperSlide
+              key={item.id}
+              className="!w-36 sm:!w-44 lg:!w-48"
+            >
+              <div className="flex rounded-lg overflow-hidden relative w-full h-64 sm:h-72 lg:h-80 bg-white flex-col text-center items-center justify-between p-3">
+                <img
+                  src={item.image}
+                  className="w-28 h-28 sm:w-32 sm:h-32 object-contain"
+                  alt={item.title}
+                />
+                <h2
+                  className="text-xs sm:text-sm font-semibold text-right overflow-hidden text-ellipsis"
+                  style={{
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                  }}
+                >
+                  {item.title}
+                </h2>
+                <div className="flex text-xs sm:text-sm justify-between items-center w-full">
+                  <p className="text-gray-500 line-through">
+                    {item.originalPrice}
+                  </p>
+                  <p className="font-bold">{item.discount && item.discountedPrice}</p>
                 </div>
-              </SwiperSlide>
-            )}
-            {data.map((item) => (
-              <SwiperSlide
-                key={item.id}
-                style={{ width: "140px" }}
-              >
-                <div className="flex rounded-lg overflow-hidden relative w-full h-[250px] bg-white flex-col text-center items-center justify-between p-2">
-                  <img
-                    src={item.image}
-                    className="w-32 h-32 object-cover"
-                    alt={item.title}
-                  />
-                  <h2
-                    className="text-[13px] font-semibold text-right overflow-hidden text-ellipsis"
-                    style={{
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                    }}
-                  >
-                    {item.title}
-                  </h2>
-                  <div className="flex text-sm justify-between items-center w-full">
-                    <p className="text-gray-500 line-through">
-                      {item.originalPrice}
-                    </p>
-                    <p className="font-bold">{item.discountedPrice}</p>
-                  </div>
-                  <p className="absolute top-2 left-2 text-white p-1 rounded-lg text-sm bg-[#805B99]">
+                {item.discount && (
+                  <p className="absolute top-2 left-2 text-white p-1 rounded-lg text-xs bg-[#805B99]">
                     {item.discount}
                   </p>
-                </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
+                )}
+              </div>
+            </SwiperSlide>
+          ))}
+        </Swiper>
       </div>
     </div>
-  );
+  </div>
+);
 }

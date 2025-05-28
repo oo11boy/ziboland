@@ -67,3 +67,17 @@
     .material-icons {
       direction: ltr; /* جلوگیری از مشکلات RTL */
     }
+
+
+    .custom-placeholder {
+      color: #777777; /* رنگ مشابه placeholder اصلی */
+      font-size: 14px; /* اندازه فونت دلخواه */
+      font-family: "yekannew";
+      line-height: 2; /* تنظیم فاصله عمودی */
+    }
+
+    @media (width >= 64rem /* 1024px */) {
+      .min-lg-none{
+        display: none;
+      }
+  }

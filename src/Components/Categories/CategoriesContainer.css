@@ -128,17 +128,19 @@
   border: none;
   cursor: pointer;
   transition: background-color 0.3s;
+  margin-bottom: 10px;
 }
 
 .toggle-button:hover {
-  background-color: #2563eb;
+  background-color: #805B99;
 }
 
 .close-button {
-  background-color: #3b82f6;
+  background-color: #805B99;
   color: white;
   padding: 8px 16px;
   border-radius: 8px;
+  margin-bottom: 10px;
   border: none;
   cursor: pointer;
   transition: background-color 0.3s;

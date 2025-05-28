@@ -5,7 +5,7 @@ import WideHeaderMiddle from "./WideHeaderMiddle";
 import MegaMenuWideHeader from "./MegaMenuWideHeader";
 export default function WideHeaderContainer() {
   return (
-    <section className="max-lg:hidden WideHeaderContactUs">
+    <section className="max-lg-none WideHeaderContactUs">
          <WideHeaderContactUs />
       <WideHeaderMiddle />
       <MegaMenuWideHeader />

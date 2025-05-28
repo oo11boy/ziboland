@@ -59,7 +59,7 @@ export default function CategoriesContainer() {
 
   return (
     <div className="categories-container">
-      <h2 className="categories-title yekanh max-lg:!text-[20px]">دسته بندی محصولات</h2>
+      <h2 className="categories-title yekanh max-lg:!text-[17px]">دسته بندی محصولات</h2>
       <div className="categories-wrapper">
         <div
           className={`categories-grid yekan ${!showAll ? "categories-grid--limited" : ""}`}
@@ -84,7 +84,7 @@ export default function CategoriesContainer() {
         >
           <button
             onClick={() => setShowAll(!showAll)}
-            className="toggle-button"
+            className="toggle-button text-sm"
           >
             {showAll ? "بستن" : "مشاهده بیشتر"}
           </button>

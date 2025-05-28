@@ -61,15 +61,17 @@ export default function BrandsContainer() {
   return (
     <div className="w-[90%] yekan mx-auto my-8 bg-white rounded-lg p-4 relative sm:p-6 md:p-8">
       <div className="w-full mb-6 mt-2 flex items-center justify-between">
-        <p className="font-semibold yekanh text-md lg:text-xl ">برترین برندها</p>
+      <p className="font-semibold yekanh text-sm sm:text-base md:text-lg lg:text-xl">
+         برترین برندها
+        </p>
         <Link
           href="/"
-          className="flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 text-sm sm:text-md text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
+          className="flex items-center text-xs sm:text-sm gap-1 sm:gap-2 px-2 sm:px-3 py-1 text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
           style={{
             backgroundImage: "linear-gradient(to right, #f3f4f6, #e5e7eb)",
           }}
         >
-          <VisibilitySharp className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
+          <VisibilitySharp fontSize="inherit" className="text-gray-600" />
           مشاهده همه
         </Link>
       </div>

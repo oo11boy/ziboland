@@ -10,6 +10,7 @@ import BrandsContainer from "@/Components/Brands/BrandsContainer";
 import FooterContainer from "@/Components/Footer/FooterContainer";
 import MoblieHeaderTopTab from "@/Components/Header/MobileHeader/MoblieHeaderTopTab";
 import MobileBottomNavigation from "@/Components/Header/MobileHeader/MobileBottomNavigation";
+import Banners from "@/Components/Banners/Banners";
 
 export default function page() {
   return (
@@ -21,7 +22,9 @@ export default function page() {
    <BenefitsContainer />
    <ProductSliderContainer vip={true} />
    <TabProductsSliderContainer title="پرفروشترین ها" />
+   <Banners/>
    <TabProductsSliderContainer title="ارزانترین ها" />
+   <Banners/>
    <TabProductsSliderContainer title="جدیدترین ها" />
    <ArticlesListContainer />
    <BrandsContainer />
