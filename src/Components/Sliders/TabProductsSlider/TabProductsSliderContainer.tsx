@@ -10,6 +10,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "./../Sliders.css";
 import Link from "next/link";
+import "./TabProductsSlider..css";
 import { Swiper as SwiperCore } from "swiper";
 import {
   AddCircleOutline,
@@ -19,39 +20,6 @@ import {
   RemoveCircleOutline,
   VisibilitySharp,
 } from "@mui/icons-material";
-// Add this CSS for custom styling (place in Sliders.css or a new CSS file)
-const customStyles = `
-  .scroll-title {
-    overflow-y: auto;
-    max-height: 48px;
-    scrollbar-width: thin;
-    scrollbar-color: #805B99 #EBEBEB;
-  }
-  .scroll-title::-webkit-scrollbar {
-    width: 4px;
-  }
-  .scroll-title::-webkit-scrollbar-track {
-    background: #EBEBEB;
-  }
-  .scroll-title::-webkit-scrollbar-thumb {
-    background: #805B99;
-    border-radius: 4px;
-  }
-  .price-strikethrough {
-    text-decoration: line-through;
-    color: #999;
-  }
-  .quantity-selector {
-    transition: opacity 0.2s ease-in-out;
-  }
-`;
-
-// Append to your Sliders.css
-if (typeof document !== "undefined") {
-  const styleSheet = document.createElement("style");
-  styleSheet.innerText = customStyles;
-  document.head.appendChild(styleSheet);
-}
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -66,19 +34,21 @@ function CustomTabPanel(props: TabPanelProps) {
     <div
       role="tabpanel"
       hidden={value !== index}
-      id={`simple-tabpanel-${index}`}
-      aria-labelledby={`simple-tab-${index}`}
+      id={`tpsc-tabpanel-${index}`}
+      aria-labelledby={`tpsc-tab-${index}`}
       {...other}
     >
-      {value === index && <Box sx={{ py: { xs: 2, md: 3 } }}>{children}</Box>}
+      {value === index && (
+        <Box sx={{ paddingY: { xs: 2, md: 3 } }}>{children}</Box>
+      )}
     </div>
   );
 }
 
 function a11yProps(index: number) {
   return {
-    id: `simple-tab-${index}`,
-    "aria-controls": `simple-tabpanel-${index}`,
+    id: `tpsc-tab-${index}`,
+    "aria-controls": `tpsc-tabpanel-${index}`,
   };
 }
 
@@ -437,19 +407,11 @@ export default function TabProductsSliderContainer({
   );
 
   return (
-    <div className="w-full max-w-[95%] mx-auto my-4 md:my-6 bg-white rounded-lg p-2 sm:p-4 relative yekan">
-      <div className="w-full mb-4 sm:mb-6 mt-2 flex items-center justify-between">
-        <p className="font-semibold yekanh text-sm sm:text-base md:text-lg lg:text-xl">
-          {title}
-        </p>
-        <Link
-          href="/"
-          className="flex items-center text-xs sm:text-sm gap-1 sm:gap-2 px-2 sm:px-3 py-1 text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
-          style={{
-            backgroundImage: "linear-gradient(to right, #f3f4f6, #e5e7eb)",
-          }}
-        >
-          <VisibilitySharp fontSize="inherit" className="text-gray-600" />
+    <div className="tpsc-container">
+      <div className="tpsc-header">
+        <p className="tpsc-title">{title}</p>
+        <Link href="/" className="tpsc-view-all">
+          <VisibilitySharp fontSize="inherit" className="tpsc-view-all-icon" />
           مشاهده همه
         </Link>
       </div>
@@ -503,7 +465,7 @@ export default function TabProductsSliderContainer({
                 1280: { slidesPerView: 7, spaceBetween: 16 },
               }}
               navigation={false}
-              className="mySwiper"
+              className="tpsc-swiper"
               onSwiper={(swiper) => {
                 swiperRefs.current[index] = { swiper };
                 updateNavigation(index);
@@ -511,68 +473,69 @@ export default function TabProductsSliderContainer({
             >
               {productsByCategory[index].map((item) => (
                 <SwiperSlide key={item.id} style={{ width: "auto" }}>
-                  <div className="flex border !border-[#EBEBEB] rounded-lg overflow-hidden relative w-full h-[260px] sm:h-[280px] md:h-[300px] bg-white flex-col text-center items-center justify-between pt-2 sm:pt-3">
+                  <div className="tpsc-product-card">
                     <img
                       src={item.image}
-                      className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 object-cover"
+                      className="tpsc-product-image"
                       alt={item.title}
                     />
-                    <h2
-                      className="text-[10px] sm:text-[11px] md:text-[12px] px-2 font-bold text-right overflow-hidden text-ellipsis"
-                      style={{
-                        display: "-webkit-box",
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: "vertical",
-                      }}
-                    >
-                      {item.title}
-                    </h2>
-                    <div className="w-full flex justify-center items-center gap-2">
+                    <h2 className="tpsc-product-title">{item.title}</h2>
+                    <div className="tpsc-price-buttons">
                       <button
-                        className={`shadow-md p-2 border border-gray-200 text-[10px] sm:text-xs md:text-sm transition-all duration-200 ${
+                        className={`tpsc-price-button ${
                           priceTypes[item.id] === "wholesale"
-                            ? "bg-gray-200 text-black"
-                            : "bg-white text-black"
+                            ? "tpsc-price-button-active"
+                            : ""
                         }`}
                         onClick={() => handlePriceTypeChange(item.id, "wholesale")}
                       >
                         قیمت عمده
                       </button>
                       <button
-                        className={`shadow-md p-2 border border-gray-200 text-[10px] sm:text-xs md:text-sm transition-all duration-200 ${
+                        className={`tpsc-price-button ${
                           priceTypes[item.id] === "single"
-                            ? "bg-gray-200 text-black"
-                            : "bg-white text-black"
+                            ? "tpsc-price-button-active"
+                            : ""
                         }`}
                         onClick={() => handlePriceTypeChange(item.id, "single")}
                       >
                         قیمت تکی
                       </button>
                     </div>
-                    <div className="flex justify-between items-center w-full relative">
-                      <p className="font-bold text-sm sm:text-xs md:text-sm pr-2">
+                    <div className="tpsc-price-quantity">
+                      <p className="tpsc-price">
                         {priceTypes[item.id] === "single"
                           ? item.discountedPrice
                           : item.wholesalePrice}{" "}
                         تومان
                       </p>
+                      <div className="tpsc-quantity-selector-mobile">
+                        <button
+                          onClick={() => handleQuantityChange(item.id, 1)}
+                        >
+                          <AddCircleOutline fontSize="small" />
+                        </button>
+                        <input
+                          type="text"
+                          className="tpsc-quantity-input"
+                          value={cartQuantities[item.id] || 0}
+                          readOnly
+                        />
+                        <button
+                          onClick={() => handleQuantityChange(item.id, -1)}
+                        >
+                          <RemoveCircleOutline fontSize="small" />
+                        </button>
+                      </div>
                       <button
-                        className="bg-[#805B99] text-white rounded-tr-lg p-1.5 sm:p-2"
+                        className="tpsc-add-to-cart"
                         onMouseEnter={() => handleMouseEnter(item.id)}
                         onMouseLeave={handleMouseLeave}
                       >
                         <AddShoppingCart fontSize="small" />
                       </button>
                       {hoveredProductId === item.id && (
-                        <div
-                          className="w-10 sm:w-12 bg-[#EBEBEB] py-1.5 sm:py-2 rounded-lg text-[#805B99] flex flex-col justify-center items-center absolute z-20"
-                          style={{
-                            bottom: "80%",
-                            left: "10%",
-                            transform: "translateX(-50%)",
-                            marginBottom: "8px",
-                          }}
-                        >
+                        <div className="tpsc-quantity-selector">
                           <button
                             onClick={() => handleQuantityChange(item.id, 1)}
                           >
@@ -580,7 +543,7 @@ export default function TabProductsSliderContainer({
                           </button>
                           <input
                             type="text"
-                            className="w-full text-center text-[10px] sm:text-xs"
+                            className="tpsc-quantity-input"
                             value={cartQuantities[item.id] || 0}
                             readOnly
                           />
@@ -592,9 +555,7 @@ export default function TabProductsSliderContainer({
                         </div>
                       )}
                     </div>
-                    <p className="absolute top-1 sm:top-2 left-1 sm:left-2 text-black p-1 rounded-lg text-[10px] sm:text-xs bg-gray-200">
-                      {item.discount}
-                    </p>
+                    <p className="tpsc-discount">{item.discount}</p>
                   </div>
                 </SwiperSlide>
               ))}
@@ -602,7 +563,7 @@ export default function TabProductsSliderContainer({
             {navStates[index]?.showPrev && (
               <button
                 onClick={() => goPrev(index)}
-                className="absolute hidden md:inline top-1/2 right-0 sm:right-2 transform -translate-y-1/2 bg-[#EBEBEB] border-[#c7c7c7] border rounded-lg h-8 w-8 sm:h-10 sm:w-10 text-[#805B99] z-10"
+                className="tpsc-nav-button tpsc-prev-button"
               >
                 <KeyboardArrowRight fontSize="medium" />
               </button>
@@ -610,7 +571,7 @@ export default function TabProductsSliderContainer({
             {navStates[index]?.showNext && (
               <button
                 onClick={() => goNext(index)}
-                className="absolute top-1/2 hidden md:inline left-0 sm:left-2 transform -translate-y-1/2 bg-[#EBEBEB] border-[#c7c7c7] border rounded-lg h-8 w-8 sm:h-10 sm:w-10 text-[#805B99] z-10"
+                className="tpsc-nav-button tpsc-next-button"
               >
                 <KeyboardArrowLeft fontSize="medium" />
               </button>
