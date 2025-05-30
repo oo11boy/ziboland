@@ -5,6 +5,7 @@ import { Swiper as SwiperCore } from "swiper";
 import "swiper/css";
 import Link from "next/link";
 import "./../Sliders.css";
+import "./ProductSlider.css";
 import {
   KeyboardArrowLeft,
   KeyboardArrowRight,
@@ -12,7 +13,6 @@ import {
   RemoveCircleOutline,
   AddShoppingCart,
 } from "@mui/icons-material";
-import "./ProductSlider.css";
 
 export const productdata = [
   {
@@ -33,7 +33,7 @@ export const productdata = [
     brand: "مورینگا",
     title: "سرم ضد چروک صورت حجم 55 میلی لیتر",
     image: "https://storage.khanoumi.com/ProductImages/49631-2024619172532356.jpg?w=104",
-    originalPrice: "389,400",
+    originalPrice: "389,500",
     discountedPrice: "298,900",
     wholesalePrice: "270,000",
     discountwholesalePrice: "229,500",
@@ -277,7 +277,6 @@ export const productdata = [
   },
 ];
 
-
 export default function ProductSliderContainer({
   vip = false,
 }: {
@@ -295,10 +294,9 @@ export default function ProductSliderContainer({
     [key: number]: "single" | "wholesale";
   }>({});
 
-  // Handle screen size changes
   useEffect(() => {
     const handleResize = () => {
-      setIsSmallScreen(window.innerWidth < 1024); // lg breakpoint
+      setIsSmallScreen(window.innerWidth < 1024);
     };
 
     handleResize();
@@ -307,7 +305,6 @@ export default function ProductSliderContainer({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Initialize price types
   useEffect(() => {
     const initialPriceTypes = productdata.reduce(
       (acc, product) => ({
@@ -375,145 +372,121 @@ export default function ProductSliderContainer({
   };
 
   return (
-    <div className={`psc-container ${vip ? "psc-vip" : ""}`}>
-      <div className={`psc-header ${vip ? "psc-header-vip" : ""}`}>
-        {!vip && <p className="psc-title">پرفروش‌ترین‌ها</p>}
-        <Link
-          href="/"
-          className={`psc-view-all ${vip ? "psc-view-all-vip" : ""}`}
-        >
-          مشاهده همه
-        </Link>
-      </div>
+    <>
 
-      {showPrev && (
-        <button
-          onClick={goPrev}
-          className={`psc-nav-button psc-prev-button ${
-            vip && !isSmallScreen ? "psc-prev-button-vip" : ""
-          }`}
-        >
-          <KeyboardArrowRight fontSize="large" />
-        </button>
-      )}
-      {showNext && (
-        <button
-          onClick={goNext}
-          className="psc-nav-button psc-next-button"
-        >
-          <KeyboardArrowLeft fontSize="large" />
-        </button>
-      )}
-
-      <div className="psc-content">
-        {vip && !isSmallScreen && (
-          <div className="psc-vip-banner">
-            <div className="psc-vip-banner-content">
-              <h2 className="psc-vip-banner-title">% تخفیف ویژه %</h2>
-            </div>
-          </div>
-        )}
-        <div className="psc-swiper-container">
-          <Swiper
-            slidesPerView="auto"
-            spaceBetween={12}
-            onSwiper={(swiper) => {
-              swiperRef.current = { swiper };
-              updateNavigation();
-            }}
-            className="psc-swiper"
-            breakpoints={{
-              0: { slidesPerView: 2, spaceBetween: 8 },
-              640: { slidesPerView: 3, spaceBetween: 10 },
-              1024: { slidesPerView: 4, spaceBetween: 12 },
-              1280: { slidesPerView: 5, spaceBetween: 12 },
-            }}
+      <div className={`psc-container ${vip ? "psc-vip" : ""}`}>
+        <div className={`psc-header ${vip ? "psc-header-vip" : ""}`}>
+          {!vip && <p className="psc-title">پرفروش‌ترین‌ها</p>}
+          <Link
+            href="/"
+            className={`psc-view-all ${vip ? "psc-view-all-vip" : ""}`}
           >
-            {vip && isSmallScreen && (
-              <SwiperSlide className="psc-vip-slide">
-                <div className="psc-vip-banner-mobile">
-                  <h2 className="psc-vip-banner-title-mobile">
-                    % تخفیف ویژه %
-                  </h2>
-                </div>
-              </SwiperSlide>
-            )}
-            {productdata.map((item) => (
-              <SwiperSlide
-                key={item.id}
-                className="psc-product-slide"
-              >
-                <div className="psc-product-card">
-                  <img
-                    src={item.image}
-                    className="psc-product-image"
-                    alt={item.title}
-                  />
-                  <h2 className="psc-product-title">{item.title}</h2>
-                  <div className="psc-price-buttons">
-                    <button
-                      className={`psc-price-button ${
-                        priceTypes[item.id] === "wholesale"
-                          ? "psc-price-button-active"
-                          : ""
-                      }`}
-                      onClick={() => handlePriceTypeChange(item.id, "wholesale")}
-                    >
-                      قیمت عمده
-                    </button>
-                    <button
-                      className={`psc-price-button ${
-                        priceTypes[item.id] === "single"
-                          ? "psc-price-button-active"
-                          : ""
-                      }`}
-                      onClick={() => handlePriceTypeChange(item.id, "single")}
-                    >
-                      قیمت تکی
-                    </button>
+            مشاهده همه
+          </Link>
+        </div>
+
+        {showPrev && (
+          <button
+            onClick={goPrev}
+            className={`psc-nav-button psc-prev-button ${
+              vip && !isSmallScreen ? "psc-prev-button-vip" : ""
+            }`}
+          >
+            <KeyboardArrowRight fontSize="large" />
+          </button>
+        )}
+        {showNext && (
+          <button
+            onClick={goNext}
+            className="psc-nav-button psc-next-button"
+          >
+            <KeyboardArrowLeft fontSize="large" />
+          </button>
+        )}
+
+        <div className="psc-content">
+          {vip && !isSmallScreen && (
+            <div className="psc-vip-banner">
+              <div className="psc-vip-banner-content">
+                <h2 className="psc-vip-banner-title">% تخفیف ویژه %</h2>
+              </div>
+            </div>
+          )}
+          <div className="psc-swiper-container">
+            <Swiper
+              slidesPerView="auto"
+              spaceBetween={12}
+              onSwiper={(swiper) => {
+                swiperRef.current = { swiper };
+                updateNavigation();
+              }}
+              className="psc-swiper"
+              breakpoints={{
+                0: { slidesPerView: 2, spaceBetween: 8 },
+                640: { slidesPerView: 3, spaceBetween: 10 },
+                1024: { slidesPerView: 4, spaceBetween: 12 },
+                1280: { slidesPerView: 5, spaceBetween: 12 },
+              }}
+            >
+              {vip && isSmallScreen && (
+                <SwiperSlide className="psc-vip-slide">
+                  <div className="psc-vip-banner-mobile">
+                    <h2 className="psc-vip-banner-title-mobile">
+                      % تخفیف ویژه %
+                    </h2>
                   </div>
-
-                  <div className="flex justify-start items-center w-full px-[8px]">
-                
-                <p className="ml-4 line-through text-[13px]">
-                  {priceTypes[item.id] === "single" ? item.originalPrice : item.wholesalePrice}</p>
-                <p  className="bg-red-500 py-1 px-2 text-white rounded-md text-[11px]">{priceTypes[item.id] === "single" ? item.discount : item.discountwholesale} </p>
-                </div>
-
-                  <div className="psc-price-quantity">
-                    <p className="psc-price">
-                      {priceTypes[item.id] === "single"
-                        ? item.discountedPrice
-                        : item.discountwholesalePrice}{" "}
-                      تومان
-                    </p>
-                    <div className="psc-quantity-selector-mobile">
+                </SwiperSlide>
+              )}
+              {productdata.map((item) => (
+                <SwiperSlide
+                  key={item.id}
+                  className="psc-product-slide"
+                >
+                  <div className="psc-product-card">
+                    <img
+                      src={item.image}
+                      className="psc-product-image"
+                      alt={item.title}
+                    />
+                    <h2 className="psc-product-title">{item.title}</h2>
+                    <div className="psc-price-buttons">
                       <button
-                        onClick={() => handleQuantityChange(item.id, 1)}
+                        className={`psc-price-button ${
+                          priceTypes[item.id] === "wholesale"
+                            ? "psc-price-button-active"
+                            : ""
+                        }`}
+                        onClick={() => handlePriceTypeChange(item.id, "wholesale")}
                       >
-                        <AddCircleOutline fontSize="small" />
+                        قیمت عمده
                       </button>
-                      <input
-                        type="text"
-                        className="psc-quantity-input"
-                        value={cartQuantities[item.id] || 0}
-                        readOnly
-                      />
                       <button
-                        onClick={() => handleQuantityChange(item.id, -1)}
+                        className={`psc-price-button ${
+                          priceTypes[item.id] === "single"
+                            ? "psc-price-button-active"
+                            : ""
+                        }`}
+                        onClick={() => handlePriceTypeChange(item.id, "single")}
                       >
-                        <RemoveCircleOutline fontSize="small" />
+                        قیمت تکی
                       </button>
                     </div>
-                    <button
-                      className="psc-add-to-cart"
-                      onMouseEnter={() => handleMouseEnter(item.id)}
-                      onMouseLeave={handleMouseLeave}
-                    >
-                      <AddShoppingCart fontSize="small" />
-                    </button>
-                    {hoveredProductId === item.id && (
-                      <div className="psc-quantity-selector">
+                    <div className="psc-price-discount-container">
+                      <p className="psc-price-strikethrough-text">
+                        {priceTypes[item.id] === "single" ? item.originalPrice : item.wholesalePrice}
+                      </p>
+                      <p className="psc-discount-badge">
+                        {priceTypes[item.id] === "single" ? item.discount : item.discountwholesale}
+                      </p>
+                    </div>
+                    <div className="psc-price-quantity">
+                      <p className="psc-price">
+                        {priceTypes[item.id] === "single"
+                          ? item.discountedPrice
+                          : item.discountwholesalePrice}{" "}
+                        تومان
+                      </p>
+                      <div className="psc-quantity-selector-mobile">
                         <button
                           onClick={() => handleQuantityChange(item.id, 1)}
                         >
@@ -531,15 +504,41 @@ export default function ProductSliderContainer({
                           <RemoveCircleOutline fontSize="small" />
                         </button>
                       </div>
-                    )}
+                      <button
+                        className="psc-add-to-cart"
+                        onMouseEnter={() => handleMouseEnter(item.id)}
+                        onMouseLeave={handleMouseLeave}
+                      >
+                        <AddShoppingCart fontSize="small" />
+                      </button>
+                      {hoveredProductId === item.id && (
+                        <div className="psc-quantity-selector">
+                          <button
+                            onClick={() => handleQuantityChange(item.id, 1)}
+                          >
+                            <AddCircleOutline fontSize="small" />
+                          </button>
+                          <input
+                            type="text"
+                            className="psc-quantity-input"
+                            value={cartQuantities[item.id] || 0}
+                            readOnly
+                          />
+                          <button
+                            onClick={() => handleQuantityChange(item.id, -1)}
+                          >
+                            <RemoveCircleOutline fontSize="small" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                
-                </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

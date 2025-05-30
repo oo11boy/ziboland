@@ -10,9 +10,8 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "./../Sliders.css";
 import Link from "next/link";
-import "./TabProductsSlider..css";
+import './TabProductsSlider..css';
 import { Swiper as SwiperCore } from "swiper";
-import { motion } from "framer-motion";
 import {
   AddCircleOutline,
   AddShoppingCart,
@@ -40,7 +39,7 @@ function CustomTabPanel(props: TabPanelProps) {
       {...other}
     >
       {value === index && (
-        <Box sx={{ paddingY: { xs: 2, md: 3 } }}>{children}</Box>
+        <Box sx={{ paddingTop: { xs: '16px', md: '24px' }, paddingBottom: { xs: '16px', md: '24px' } }}>{children}</Box>
       )}
     </div>
   );
@@ -315,6 +314,7 @@ export const productdata = [
     category: "مراقبت پوست",
   },
 ];
+
 export default function TabProductsSliderContainer({
   title,
 }: {
@@ -389,7 +389,6 @@ export default function TabProductsSliderContainer({
   };
 
   React.useEffect(() => {
-    // Set default price type to single for all products
     const initialPriceTypes = productdata.reduce(
       (acc, product) => ({
         ...acc,
@@ -426,143 +425,119 @@ export default function TabProductsSliderContainer({
   );
 
   return (
-    <div className="tpsc-container">
-      <div className="tpsc-header">
-        <p className="tpsc-title">{title}</p>
-        <Link href="/" className="tpsc-view-all">
-          <VisibilitySharp fontSize="inherit" className="tpsc-view-all-icon" />
-          مشاهده همه
-        </Link>
-      </div>
-      <Box sx={{ width: "100%" }}>
-        <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
-          <Tabs
-            value={value}
-            onChange={handleChange}
-            aria-label="product categories tabs"
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              "& .MuiTabs-flexContainer": {
-                gap: { xs: "0.5rem", sm: "1rem" },
-              },
-              "& .MuiTab-root": {
-                fontSize: { xs: "0.65rem", sm: "0.75rem", md: "0.85rem" },
-                fontWeight: "bold",
-                color: "#555",
-                fontFamily: "yekannew",
-                padding: { xs: "4px 8px", sm: "6px 12px" },
-                minWidth: { xs: "60px", sm: "80px", md: "100px" },
-                minHeight: { xs: "24px", sm: "28px", md: "32px" },
-              },
-              "& .Mui-selected": {
-                color: "#000 !important",
-                borderRadius: 2,
-                backgroundColor: "#c7c7c7",
-              },
-              "& .MuiTabs-indicator": {
-                display: "none",
-              },
-            }}
-          >
-            {categories.map((category, index) => (
-              <Tab key={index} label={category} {...a11yProps(index)} />
-            ))}
-          </Tabs>
-        </Box>
-        {categories.map((category, index) => (
-          <CustomTabPanel key={index} value={value} index={index}>
-            <Swiper
-              modules={[Navigation]}
-              spaceBetween={8}
-              slidesPerView={2}
-              breakpoints={{
-                400: { slidesPerView: 2, spaceBetween: 8 },
-                500: { slidesPerView: 3, spaceBetween: 10 },
-                768: { slidesPerView: 4, spaceBetween: 12 },
-                1024: { slidesPerView: 5, spaceBetween: 14 },
-                1280: { slidesPerView: 7, spaceBetween: 16 },
-              }}
-              navigation={false}
-              className="tpsc-swiper"
-              onSwiper={(swiper) => {
-                swiperRefs.current[index] = { swiper };
-                updateNavigation(index);
+    <>
+
+      <div className="tpsc-container">
+        <div className="tpsc-header">
+          <p className="tpsc-title">{title}</p>
+          <Link href="/" className="tpsc-view-all">
+            <VisibilitySharp fontSize="inherit" className="tpsc-view-all-icon" />
+            مشاهده همه
+          </Link>
+        </div>
+        <Box sx={{ width: "100%" }}>
+          <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
+            <Tabs
+              value={value}
+              onChange={handleChange}
+              aria-label="product categories tabs"
+              variant="scrollable"
+              scrollButtons="auto"
+              sx={{
+                "& .MuiTabs-flexContainer": {
+                  gap: { xs: "0.5rem", sm: "1rem" },
+                },
+                "& .MuiTab-root": {
+                  fontSize: { xs: "0.65rem", sm: "0.75rem", md: "0.85rem" },
+                  fontWeight: "bold",
+                  color: "#555",
+                  fontFamily: "yekannew",
+                  padding: { xs: "4px 8px", sm: "6px 12px" },
+                  minWidth: { xs: "60px", sm: "80px", md: "100px" },
+                  minHeight: { xs: "24px", sm: "28px", md: "32px" },
+                },
+                "& .Mui-selected": {
+                  color: "#000 !important",
+                  borderRadius: 2,
+                  backgroundColor: "#c7c7c7",
+                },
+                "& .MuiTabs-indicator": {
+                  display: "none",
+                },
               }}
             >
-              {productsByCategory[index].map((item) => (
-                <SwiperSlide key={item.id} style={{ width: "auto" }}>
-                  <div className="tpsc-product-card">
-                    <img
-                      src={item.image}
-                      className="tpsc-product-image"
-                      alt={item.title}
-                    />
-                    <h2 className="tpsc-product-title">{item.title}</h2>
-                    <div className="tpsc-price-buttons">
-                      <button
-                        className={`tpsc-price-button ${
-                          priceTypes[item.id] === "wholesale"
-                            ? "tpsc-price-button-active"
-                            : ""
-                        }`}
-                        onClick={() => handlePriceTypeChange(item.id, "wholesale")}
-                      >
-                        قیمت عمده
-                      </button>
-                      <button
-                        className={`tpsc-price-button ${
-                          priceTypes[item.id] === "single"
-                            ? "tpsc-price-button-active"
-                            : ""
-                        }`}
-                        onClick={() => handlePriceTypeChange(item.id, "single")}
-                      >
-                        قیمت تکی
-                      </button>
-                  
-                    </div>
-                    <div className="flex justify-start items-center w-full px-[8px]">
-                
-                    <p className="ml-4 line-through text-[13px]">
-                      {priceTypes[item.id] === "single" ? item.originalPrice : item.wholesalePrice}</p>
-                    <p  className="bg-red-500 py-1 px-2 text-white rounded-md text-[11px]">{priceTypes[item.id] === "single" ? item.discount : item.discountwholesale} </p>
-                    </div>
-                  
-                    <div className="tpsc-price-quantity">
-                      <p className="tpsc-price">
-                        {priceTypes[item.id] === "single"
-                          ? item.discountedPrice
-                          : item.wholesalePrice}{" "}
-                        تومان
-                      </p>
-                      <div className="tpsc-quantity-selector-mobile">
+              {categories.map((category, index) => (
+                <Tab key={index} label={category} {...a11yProps(index)} />
+              ))}
+            </Tabs>
+          </Box>
+          {categories.map((category, index) => (
+            <CustomTabPanel key={index} value={value} index={index}>
+              <Swiper
+                modules={[Navigation]}
+                spaceBetween={8}
+                slidesPerView={2}
+                breakpoints={{
+                  400: { slidesPerView: 2, spaceBetween: 8 },
+                  500: { slidesPerView: 3, spaceBetween: 10 },
+                  768: { slidesPerView: 4, spaceBetween: 12 },
+                  1024: { slidesPerView: 5, spaceBetween: 14 },
+                  1280: { slidesPerView: 7, spaceBetween: 16 },
+                }}
+                navigation={false}
+                className="tpsc-swiper"
+                onSwiper={(swiper) => {
+                  swiperRefs.current[index] = { swiper };
+                  updateNavigation(index);
+                }}
+              >
+                {productsByCategory[index].map((item) => (
+                  <SwiperSlide key={item.id} style={{ width: "auto" }}>
+                    <div className="tpsc-product-card">
+                      <img
+                        src={item.image}
+                        className="tpsc-product-image"
+                        alt={item.title}
+                      />
+                      <h2 className="tpsc-product-title">{item.title}</h2>
+                      <div className="tpsc-price-buttons">
                         <button
-                          onClick={() => handleQuantityChange(item.id, 1)}
+                          className={`tpsc-price-button ${
+                            priceTypes[item.id] === "wholesale"
+                              ? "tpsc-price-button-active"
+                              : ""
+                          }`}
+                          onClick={() => handlePriceTypeChange(item.id, "wholesale")}
                         >
-                          <AddCircleOutline fontSize="small" />
+                          قیمت عمده
                         </button>
-                        <input
-                          type="text"
-                          className="tpsc-quantity-input"
-                          value={cartQuantities[item.id] || 0}
-                          readOnly
-                        />
                         <button
-                          onClick={() => handleQuantityChange(item.id, -1)}
+                          className={`tpsc-price-button ${
+                            priceTypes[item.id] === "single"
+                              ? "tpsc-price-button-active"
+                              : ""
+                          }`}
+                          onClick={() => handlePriceTypeChange(item.id, "single")}
                         >
-                          <RemoveCircleOutline fontSize="small" />
+                          قیمت تکی
                         </button>
                       </div>
-                      <button
-                        className="tpsc-add-to-cart"
-                        onMouseEnter={() => handleMouseEnter(item.id)}
-                        onMouseLeave={handleMouseLeave}
-                      >
-                        <AddShoppingCart fontSize="small" />
-                      </button>
-                      {hoveredProductId === item.id && (
-                        <div className="tpsc-quantity-selector">
+                      <div className="tpsc-price-discount-container">
+                        <p className="tpsc-price-strikethrough-text">
+                          {priceTypes[item.id] === "single" ? item.originalPrice : item.wholesalePrice}
+                        </p>
+                        <p className="tpsc-discount-badge">
+                          {priceTypes[item.id] === "single" ? item.discount : item.discountwholesale}
+                        </p>
+                      </div>
+                      <div className="tpsc-price-quantity">
+                        <p className="tpsc-price">
+                          {priceTypes[item.id] === "single"
+                            ? item.discountedPrice
+                            : item.discountwholesalePrice}{" "}
+                          تومان
+                        </p>
+                        <div className="tpsc-quantity-selector-mobile">
                           <button
                             onClick={() => handleQuantityChange(item.id, 1)}
                           >
@@ -580,32 +555,58 @@ export default function TabProductsSliderContainer({
                             <RemoveCircleOutline fontSize="small" />
                           </button>
                         </div>
-                      )}
+                        <button
+                          className="tpsc-add-to-cart"
+                          onMouseEnter={() => handleMouseEnter(item.id)}
+                          onMouseLeave={handleMouseLeave}
+                        >
+                          <AddShoppingCart fontSize="small" />
+                        </button>
+                        {hoveredProductId === item.id && (
+                          <div className="tpsc-quantity-selector">
+                            <button
+                              onClick={() => handleQuantityChange(item.id, 1)}
+                            >
+                              <AddCircleOutline fontSize="small" />
+                            </button>
+                            <input
+                              type="text"
+                              className="tpsc-quantity-input"
+                              value={cartQuantities[item.id] || 0}
+                              readOnly
+                            />
+                            <button
+                              onClick={() => handleQuantityChange(item.id, -1)}
+                            >
+                              <RemoveCircleOutline fontSize="small" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  
-                  </div>
-                </SwiperSlide>
-              ))}
-            </Swiper>
-            {navStates[index]?.showPrev && (
-              <button
-                onClick={() => goPrev(index)}
-                className="tpsc-nav-button tpsc-prev-button"
-              >
-                <KeyboardArrowRight fontSize="medium" />
-              </button>
-            )}
-            {navStates[index]?.showNext && (
-              <button
-                onClick={() => goNext(index)}
-                className="tpsc-nav-button tpsc-next-button"
-              >
-                <KeyboardArrowLeft fontSize="medium" />
-              </button>
-            )}
-          </CustomTabPanel>
-        ))}
-      </Box>
-    </div>
+                  </SwiperSlide>
+                ))}
+              </Swiper>
+              {navStates[index]?.showPrev && (
+                <button
+                  onClick={() => goPrev(index)}
+                  className="tpsc-nav-button tpsc-prev-button"
+                >
+                  <KeyboardArrowRight fontSize="medium" />
+                </button>
+              )}
+              {navStates[index]?.showNext && (
+                <button
+                  onClick={() => goNext(index)}
+                  className="tpsc-nav-button tpsc-next-button"
+                >
+                  <KeyboardArrowLeft fontSize="medium" />
+                </button>
+              )}
+            </CustomTabPanel>
+          ))}
+        </Box>
+      </div>
+    </>
   );
 }
