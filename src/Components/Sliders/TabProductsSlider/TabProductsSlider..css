@@ -249,10 +249,10 @@
   }
 
   .tpsc-quantity-selector {
-    width: 40px;
+    width:40px;
     background-color: #ebebeb;
     padding: 6px 0;
-    border-radius: 8px;
+  
     color: #805b99;
     display: none;
     flex-direction: column;
@@ -260,16 +260,16 @@
     align-items: center;
     position: absolute;
     z-index: 20;
-    bottom: 80%;
-    left: 10%;
-    transform: translateX(-50%);
+    bottom: 65%;
+    left: 0;
+
     margin-bottom: 8px;
     transition: opacity 0.2s ease-in-out;
   }
 
   @media (min-width: 640px) {
     .tpsc-quantity-selector {
-      width: 48px;
+      width: 40px;
       padding: 8px 0;
     }
   }
@@ -297,6 +297,8 @@
     color: #ffffff;
     border-radius: 0 8px 0 0;
     padding: 6px;
+    width: 45px;
+    z-index: 21;
     display: none;
   }
 
