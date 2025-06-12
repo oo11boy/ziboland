@@ -8,11 +8,11 @@ import React from "react";
 export default function page() {
   return (
     <div>
-        <WideHeaderContainer/>
+      <WideHeaderContainer />
       <MoblieHeaderTopTab />
-      <MobileCategoryMegaMenu/>
+      <MobileCategoryMegaMenu />
       <MobileBottomNavigation />
-      <FooterContainer/>
+      <FooterContainer />
     </div>
   );
 }

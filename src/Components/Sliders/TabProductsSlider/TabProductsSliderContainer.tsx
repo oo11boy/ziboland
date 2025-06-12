@@ -372,8 +372,8 @@ export default function TabProductsSliderContainer({ title }: { title: string })
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showQuantitySelector, setShowQuantitySelector] = useState<number | null>(null);
   const swiperRefs = useRef<{ [key: number]: { swiper: SwiperCore } | null }>({});
-  const [navStates, setNavStates] = useState<{ [key: number]: { showPrev: boolean; showNext: boolean } }>({});
-console.log(cart)
+  const [navStates, setNavStates] = useState<{ [key: number]: { showPrev: boolean; showNext: boolean; isBeginning: boolean } }>({});
+
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
   };
@@ -394,6 +394,7 @@ console.log(cart)
   };
 
   const handleAddToCart = (productId: number) => {
+    console.log(cart)
     const product = productdata.find((p) => p.id === productId);
     if (!product || !cartQuantities[productId]) return;
 
@@ -434,7 +435,11 @@ console.log(cart)
       const swiper = swiperRefs.current[index].swiper;
       setNavStates((prev) => ({
         ...prev,
-        [index]: { showPrev: !swiper.isBeginning, showNext: !swiper.isEnd },
+        [index]: { 
+          showPrev: !swiper.isBeginning, 
+          showNext: !swiper.isEnd, 
+          isBeginning: swiper.isBeginning 
+        },
       }));
     }
   };
@@ -487,7 +492,7 @@ console.log(cart)
           مشاهده همه
         </Link>
       </div>
-      <Box sx={{ width: "100%" }}>
+      <Box sx={{ width: "100%", position: "relative" }}>
         <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
           <Tabs
             value={value}
@@ -628,18 +633,25 @@ console.log(cart)
                 </SwiperSlide>
               ))}
             </Swiper>
-            {navStates[index]?.showPrev && (
-              <button onClick={() => goPrev(index)} className="tpsc-nav-button tpsc-prev-button">
-                <KeyboardArrowRight fontSize="medium" />
-              </button>
-            )}
-            {navStates[index]?.showNext && (
-              <button onClick={() => goNext(index)} className="tpsc-nav-button tpsc-next-button">
-                <KeyboardArrowLeft fontSize="medium" />
-              </button>
-            )}
           </CustomTabPanel>
         ))}
+        {/* دکمه بعدی فقط در موبایل وقتی در ابتدای اسلاید هستیم نمایش داده شود */}
+        {navStates[value]?.isBeginning && (
+          <button onClick={() => goNext(value)} className="tpsc-nav-button tpsc-next-button tpsc-next-button-mobile">
+            <KeyboardArrowLeft fontSize="medium" />
+          </button>
+        )}
+        {/* دکمه قبلی و بعدی در دسکتاپ */}
+        {navStates[value]?.showPrev && (
+          <button onClick={() => goPrev(value)} className="tpsc-nav-button tpsc-prev-button tpsc-prev-button-desktop">
+            <KeyboardArrowRight fontSize="medium" />
+          </button>
+        )}
+        {navStates[value]?.showNext && (
+          <button onClick={() => goNext(value)} className="tpsc-nav-button tpsc-next-button tpsc-next-button-desktop">
+            <KeyboardArrowLeft fontSize="medium" />
+          </button>
+        )}
       </Box>
     </div>
   );

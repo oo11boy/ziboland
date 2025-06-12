@@ -7,6 +7,12 @@ const nextConfig = {
         hostname: 'cdn.khanoumi.com',
         pathname: '/**',
       },
+    
+        {
+          protocol: 'https',
+          hostname: 'abzarreza.com',
+          pathname: '/**',
+        },
     ],
   },
 };

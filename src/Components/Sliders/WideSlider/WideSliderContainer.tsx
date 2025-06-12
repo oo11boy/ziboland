@@ -178,6 +178,20 @@ const WideSliderContainer: React.FC = () => {
           </SwiperSlide>
         ))}
       </Swiper>
+      <div  style={{ display: windowWidth <= 993 ? "flex" : "none" }} className="absolute z-[20] w-10 h-10 bg-white rounded-full top-8 right-[10%]">
+      <div className="progress-circle" onClick={toggleAutoplay}>
+          <CircularProgressbar
+            value={progress}
+            text={isPlaying ? "| |" : "▶"}
+            styles={buildStyles({
+              pathColor: progress === 0 ? "#000000" : "#000000",
+              trailColor: "#d6d6d6",
+              backgroundColor: "#ffffff",
+              textColor: "#000000",
+            })}
+          />
+        </div>
+      </div>
       <div
         className="sliderbtns absolute bottom-8 z-50 right-40 flex items-center"
         style={{ display: windowWidth >= 993 ? "flex" : "none" }}
