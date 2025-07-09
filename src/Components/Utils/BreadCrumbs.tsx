@@ -19,7 +19,7 @@ export default function BreadCrumbs() {
             </a>
             {index < 3 && (
               <span className="text-gray-400 group-hover:text-blue-400 transition-colors duration-200">
-                /
+                {">"}
               </span>
             )}
           </li>

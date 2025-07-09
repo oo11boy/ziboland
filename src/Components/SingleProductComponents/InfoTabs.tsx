@@ -84,11 +84,11 @@ export const InfoTabs: React.FC<SummaryProductProps> = ({ infoproduct }) => {
           />
         </Tabs>
       </Box>
-      <CustomTabPanel value={value} index={0}>
+      <CustomTabPanel  value={value} index={0}>
         <InformationTable infoproduct={infoproduct} />
       </CustomTabPanel>
       <CustomTabPanel value={value} index={1}>
-        <p className="sp-tabs-content-text">{infoproduct.content}</p>
+        <p className="sp-tabs-content-text p-4 text-justify">{infoproduct.content}</p>
       </CustomTabPanel>
       <CustomTabPanel value={value} index={2}>
         <CommentsSection />

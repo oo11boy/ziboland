@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import 'swiper/css';
 import 'swiper/css/thumbs';
 import 'swiper/css/zoom';
+import { Swiper as SwiperType } from 'swiper/types';
 import { Close, PlayArrow, ZoomIn } from '@mui/icons-material';
 
 interface MediaItem {
@@ -25,9 +26,8 @@ interface ProductSliderProps {
 }
 
 const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
- // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [thumbsSwiper, setThumbsSwiper] = useState<any>(null);
-  const [isClient, setIsClient] = useState(false);
+  const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null); 
+  const [isClient, setIsClient] = useState<boolean>(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const imageRefs = useRef<(HTMLImageElement | null)[]>([]);
@@ -67,8 +67,8 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
     setIsLightboxOpen((prev) => !prev);
     document.body.style.overflow = isLightboxOpen ? 'auto' : 'hidden';
   }, [isLightboxOpen]);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleSlideChange = (swiper: any) => {
+
+  const handleSlideChange = (swiper: SwiperType) => {
     setActiveIndex(swiper.realIndex);
   };
 
@@ -96,22 +96,22 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
         thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
         spaceBetween={10}
         slidesPerView={1}
-        loop={infoproduct.media.length > 1}
-      
+        loop={infoproduct.media.length > 2} // فقط برای بیش از 2 اسلاید حلقه فعال شود
+        speed={500} // کاهش سرعت انیمیشن برای نرمی بیشتر
+        loopAdditionalSlides={1} // محدود کردن اسلایدهای اضافی
         autoplay={{
           delay: 5000,
           disableOnInteraction: true,
         }}
         zoom={true}
         onSlideChange={handleSlideChange}
-        // تنظیمات جدید برای بهبود لمس
         touchRatio={1}
         touchAngle={45}
       >
         {infoproduct.media.map((item, index) => (
           <SwiperSlide key={index} className="swiper-zoom-item relative">
             <motion.div
-              className="zoom-container w-full aspect-[3/2] cursor-zoom-in" // تغییر به aspect-ratio
+              className="zoom-container w-full aspect-[3/2] cursor-zoom-in"
               onMouseMove={(e) => handleMouseMove(e, index)}
               onMouseLeave={() => handleMouseLeave(index)}
               onClick={toggleLightbox}
@@ -124,7 +124,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
                   <Image
                     src={item.src}
                     alt={item.alt}
-                    fill // تغییر به fill برای مقیاس‌پذیری
+                    fill
                     className="w-full h-full object-contain zoom-target transition-transform duration-300"
                     priority={index === 0}
                     loading={index === 0 ? 'eager' : 'lazy'}
@@ -167,7 +167,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
             </motion.div>
           </SwiperSlide>
         ))}
-        </Swiper>
+      </Swiper>
 
       {/* Thumbnail Slider */}
       {infoproduct.media.length > 1 && (
@@ -176,9 +176,9 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
           modules={[Thumbs]}
           watchSlidesProgress
           onSwiper={setThumbsSwiper}
-          spaceBetween={8} // کاهش فاصله برای موبایل
-          slidesPerView={Math.min(3, infoproduct.media.length)} // کاهش تعداد اسلایدها در موبایل
-          loop={infoproduct.media.length > 1}
+          spaceBetween={8}
+          slidesPerView={Math.min(3, infoproduct.media.length)}
+          loop={infoproduct.media.length > 2} // هماهنگی حلقه با اسلایدر اصلی
           breakpoints={{
             320: {
               slidesPerView: Math.min(2.5, infoproduct.media.length),
@@ -195,7 +195,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
           }}
         >
           {infoproduct.media.map((item, index) => (
-            <SwiperSlide className='!w-[auto]' key={index}>
+            <SwiperSlide className="!w-[auto]" key={index}>
               <motion.div
                 className={`woocommerce-product-gallery__image rounded-md overflow-hidden border-2 ${
                   activeIndex === index ? 'border-blue-500' : 'border-transparent'
@@ -226,7 +226,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
             onClick={toggleLightbox}
           >
             <motion.div
-              className="relative max-w-[95vw] w-full h-[80vh] max-h-[90vh] p-4" // محدود کردن عرض و ارتفاع برای موبایل
+              className="relative max-w-[95vw] w-full h-[80vh] max-h-[90vh] p-4"
               onClick={(e) => e.stopPropagation()}
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
@@ -250,10 +250,10 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
                 />
               )}
               <motion.button
-                className="absolute top-4 right-4 p-3 bg-white bg-opacity-80 rounded-full shadow-md" // بزرگ‌تر کردن دکمه برای لمس
+                className="absolute top-4 right-4 p-3 bg-white bg-opacity-80 rounded-full shadow-md"
                 onClick={toggleLightbox}
               >
-                <Close className="w-8 h-8 text-gray-800" /> {/* افزایش اندازه آیکون */}
+                <Close className="w-8 h-8 text-gray-800" />
               </motion.button>
             </motion.div>
           </motion.div>
@@ -262,13 +262,14 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
 
       <style jsx>{`
         .woocommerce-product-gallery {
+          direction: rtl;
           opacity: 1;
           transition: opacity 0.3s ease-in-out;
-          touch-action: pan-y; /* بهبود تعامل لمسی */
+          touch-action: pan-y;
         }
         .single-product-slider {
           width: 100%;
-          aspect-ratio: 3 / 2; /* جایگزین ارتفاع ثابت */
+          aspect-ratio: 3 / 2;
           background: linear-gradient(145deg, #f3f4f6, #ffffff);
         }
         .thumbs-slider .swiper-slide {
@@ -296,9 +297,8 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
         .swiper-button-prev,
         .swiper-button-next {
           transition: background 0.2s ease;
-          display: flex; /* اطمینان از نمایش فلش‌ها در RTL */
+          display: flex;
         }
-        /* بهبود RTL */
         [dir='rtl'] .swiper-button-prev {
           transform: rotate(180deg);
         }
@@ -307,7 +307,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
         }
         @media (max-width: 480px) {
           .woocommerce-product-gallery {
-            max-width: 100%; /* مقیاس‌پذیری کامل در موبایل */
+            max-width: 100%;
             padding: 0 0.5rem;
           }
           .swiper-button-prev,
