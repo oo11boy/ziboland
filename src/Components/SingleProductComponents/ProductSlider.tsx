@@ -26,13 +26,14 @@ interface ProductSliderProps {
 }
 
 const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
-  const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null); 
+  const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
   const [isClient, setIsClient] = useState<boolean>(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const imageRefs = useRef<(HTMLImageElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
+  const mainSwiperRef = useRef<SwiperType | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -96,15 +97,17 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
         thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
         spaceBetween={10}
         slidesPerView={1}
-        loop={infoproduct.media.length > 2} // فقط برای بیش از 2 اسلاید حلقه فعال شود
-        speed={500} // کاهش سرعت انیمیشن برای نرمی بیشتر
-        loopAdditionalSlides={1} // محدود کردن اسلایدهای اضافی
+        loop={infoproduct.media.length > 2} // حلقه فقط برای بیش از 2 اسلاید
+        rewind={infoproduct.media.length <= 2} // برای 1 یا 2 اسلاید از rewind استفاده شود
+        speed={500}
         autoplay={{
           delay: 5000,
           disableOnInteraction: true,
+          pauseOnMouseEnter: true, // توقف هنگام هاور
         }}
         zoom={true}
         onSlideChange={handleSlideChange}
+        onSwiper={(swiper) => (mainSwiperRef.current = swiper)}
         touchRatio={1}
         touchAngle={45}
       >
@@ -179,6 +182,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
           spaceBetween={8}
           slidesPerView={Math.min(3, infoproduct.media.length)}
           loop={infoproduct.media.length > 2} // هماهنگی حلقه با اسلایدر اصلی
+          rewind={infoproduct.media.length <= 2} // برای 1 یا 2 اسلاید از rewind استفاده شود
           breakpoints={{
             320: {
               slidesPerView: Math.min(2.5, infoproduct.media.length),

@@ -1,0 +1,90 @@
+/* تنظیمات باکس فیلتر */
+.sticky-filters {
+    position: sticky;
+    top: 0px; /* فاصله از بالای صفحه، با توجه به هدر تنظیم شده */
+    align-self: flex-start; /* قرارگیری در بالای container */
+    height: fit-content!important; /* ارتفاع به اندازه محتوای داخلی */
+    width: 100%; /* عرض کامل در موبایل */
+    max-width: 300px; /* عرض مناسب برای دسکتاپ */
+    background: white;
+    padding: 0.6rem;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 10; /* اطمینان از نمایش بالای سایر عناصر */
+  }
+  
+  /* تنظیمات container اصلی */
+  .main-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* حداقل ارتفاع برای پر کردن صفحه */
+  }
+  
+  /* تنظیمات برای دسکتاپ */
+  @media (min-width: 1024px) {
+    .sticky-filters {
+      position: sticky;
+      top: 10px; /* فاصله از بالای صفحه */
+      height: fit-content; /* ارتفاع به اندازه محتوا */
+    }
+  }
+  
+  /* تنظیمات برای موبایل */
+  @media (max-width: 1024px) {
+    .sticky-filters {
+      position: static; /* غیرفعال کردن sticky در موبایل */
+      max-width: none; /* عرض کامل در موبایل */
+    }
+  }
+
+
+
+  /* SearchPage.css */
+@media (max-width: 1024px) {
+    .mobile-filter-panel {
+      position: fixed;
+      top: 60px; /* تنظیم فاصله از هدر موبایل */
+      left: 0;
+      right: 0;
+      width: 100%;
+      max-width: 100%;
+      background: white;
+      z-index: 1000;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 1rem;
+      max-height: 80vh; /* محدود کردن ارتفاع برای اسکرول */
+      overflow-y: auto;
+      border-radius: 0 0 12px 12px;
+    }
+  
+    .mobile-filter-panel::-webkit-scrollbar {
+      width: 8px;
+    }
+  
+    .mobile-filter-panel::-webkit-scrollbar-thumb {
+      background: #805b99;
+      border-radius: 4px;
+    }
+  
+    .mobile-filter-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+    }
+  
+
+  
+    .mobile-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1100;
+      background: #000;
+      padding: 0.5rem;
+    }
+  }

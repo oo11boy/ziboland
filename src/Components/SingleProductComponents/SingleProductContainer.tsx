@@ -11,6 +11,11 @@ interface MediaItem {
   thumbnail: string;
   alt: string;
 }
+interface Color {
+  englishName: string;
+  persianName: string;
+  hexCode: string;
+}
 
 interface Product {
   id: number;
@@ -28,7 +33,7 @@ interface Product {
   discount: string;
   discountwholesale: string;
   media: MediaItem[];
-  colors: string[];
+  colors: Color[];
   infotable: { id: number; name: string; value: string }[];
 }
 

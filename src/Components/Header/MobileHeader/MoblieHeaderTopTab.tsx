@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import "./MobileHeader.css";
 import { Search } from "@mui/icons-material";
+import Link from "next/link";
 
 export default function MobileHeaderTopTab() {
   const [inputValue, setInputValue] = useState("");
@@ -14,8 +15,9 @@ export default function MobileHeaderTopTab() {
     <>
       <div className="flex justify-between text-white min-lg-none items-center fixed z-50 w-full h-[60px] p-4 bg-black shadow-md transition-all duration-300">
         <div className="flex justify-start w-full  items-center gap-2">
-          <form action="" className="w-6/7   relative">
+          <a href="/search" className="w-6/7   relative">
             <input
+            
               type="text"
               className="w-full outline-none text-black yekannew pl-8 p-1 rounded-lg bg-gray-200"
               value={inputValue}
@@ -34,7 +36,7 @@ export default function MobileHeaderTopTab() {
                 </div>
               </div>
             )}
-          </form>
+          </a>
         </div>
 
         <div className="flex justify-end gap-2 mr-4">

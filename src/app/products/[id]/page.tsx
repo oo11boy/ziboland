@@ -13,6 +13,12 @@ interface MediaItem {
   alt: string;
 }
 
+interface Color {
+  englishName: string;
+  persianName: string;
+  hexCode: string;
+}
+
 interface Product {
   id: number;
   title: string;
@@ -29,7 +35,7 @@ interface Product {
   discount: string;
   discountwholesale: string;
   media: MediaItem[];
-  colors: string[];
+  colors: Color[];
   infotable: { id: number; name: string; value: string }[];
 }
 
@@ -80,9 +86,13 @@ const infoproduct: Product = {
         "https://abzarreza.com/wp-content/uploads/2024/04/dec12-آنکور-100x100.webp",
       alt: "dec12 آنکور",
     },
-  
   ],
-  colors: ["yellow", "black", "white", "red"],
+  colors: [
+    { englishName: "yellow", persianName: "زرد", hexCode: "#FFFF00" },
+    { englishName: "black", persianName: "مشکی", hexCode: "#000000" },
+    { englishName: "white", persianName: "سفید", hexCode: "#FFFFFF" },
+    { englishName: "red", persianName: "قرمز", hexCode: "#FF0000" },
+  ],
   infotable: [
     { id: 1, name: "برند", value: "آنکور – پی ام | Anchor – P.M" },
     { id: 2, name: "منبع تغذیه", value: "شارژی (باتری)" },
@@ -106,7 +116,7 @@ const Page: React.FC = () => {
       <WideHeaderContainer />
       <MoblieHeaderTopTab />
       <BreadCrumbs />
-<SingleProductContainer infoproduct={infoproduct}/>
+      <SingleProductContainer infoproduct={infoproduct} />
       <FooterContainer />
       <MobileBottomNavigation />
     </div>

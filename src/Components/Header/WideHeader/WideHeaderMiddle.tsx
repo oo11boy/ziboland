@@ -14,12 +14,12 @@ export default function WideHeaderMiddle() {
     <section className="bg-[#F9F9F9] w-full py-2">
       <div className="flex justify-between h-auto items-center w-[90%] gap-2 m-auto">
         <div className="flex w-[33%] gap-3 items-center">
-          <div className="flex items-center">
+          <Link href={'../'} className="flex items-center">
             <span className="font-semibold neiriz text-xl ml-1">ز</span>
             <span className="font-semibold neiriz text-xl">یبولند</span>
-          </div>
-          <form
-            action=""
+          </Link>
+          <a
+            href="../search"
             className="flex w-1/2 items-center border border-[#d9d6d6] rounded-lg overflow-hidden"
           >
             <input
@@ -30,7 +30,7 @@ export default function WideHeaderMiddle() {
             <button className="bg-[#EDEDED] p-2">
               <SearchOutlined fontSize="medium" />
             </button>
-          </form>
+          </a>
         </div>
         <div className="flex w-[33%] text-center justify-center gap-3 items-center">
           <p className="font-semibold newyork text-xl">ZIBOLAND</p>

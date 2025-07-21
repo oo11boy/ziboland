@@ -8,12 +8,12 @@ import "./../Sliders.css";
 import "./ProductSlider.css";
 import {
   KeyboardArrowLeft,
-  KeyboardArrowRight,
   AddCircleOutline,
   RemoveCircleOutline,
   AddShoppingCart,
 } from "@mui/icons-material";
 
+// داده‌های محصولات (بدون تغییر)
 export const productdata = [
   {
     id: 1,
@@ -328,14 +328,13 @@ interface CartItem {
 
 export default function ProductSliderContainer({ vip = false }: { vip?: boolean }) {
   const swiperRef = useRef<{ swiper: SwiperCore } | null>(null);
-  const [showPrev, setShowPrev] = useState(false);
-  const [showNext, setShowNext] = useState(true);
+  const [showNext, setShowNext] = useState(true); // در ابتدا دکمه بعدی نمایش داده می‌شود
   const [isSmallScreen, setIsSmallScreen] = useState(false);
   const [cartQuantities, setCartQuantities] = useState<{ [key: number]: number }>({});
   const [showQuantitySelector, setShowQuantitySelector] = useState<number | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [priceTypes, setPriceTypes] = useState<{ [key: number]: "single" | "wholesale" }>({});
-console.log(cart)
+
   useEffect(() => {
     const handleResize = () => {
       setIsSmallScreen(window.innerWidth < 1024);
@@ -356,20 +355,14 @@ console.log(cart)
   const goNext = () => {
     if (swiperRef.current?.swiper) {
       swiperRef.current.swiper.slideNext();
-    }
-  };
-
-  const goPrev = () => {
-    if (swiperRef.current?.swiper) {
-      swiperRef.current.swiper.slidePrev();
+      setShowNext(false); // مخفی کردن دکمه بعدی پس از کلیک
     }
   };
 
   const updateNavigation = () => {
     if (swiperRef.current?.swiper) {
       const swiper = swiperRef.current.swiper;
-      setShowPrev(!swiper.isBeginning);
-      setShowNext(!swiper.isEnd);
+      setShowNext(swiper.isBeginning); // نمایش دکمه بعدی فقط در حالت ابتدایی
     }
   };
 
@@ -419,6 +412,7 @@ console.log(cart)
             : item
         );
       }
+      console.log(cart)
       return [...prev, cartItem];
     });
 
@@ -446,14 +440,6 @@ console.log(cart)
         </Link>
       </div>
 
-      {showPrev && (
-        <button
-          onClick={goPrev}
-          className={`psc-nav-button psc-prev-button ${vip && !isSmallScreen ? "psc-prev-button-vip" : ""}`}
-        >
-          <KeyboardArrowRight fontSize="large" />
-        </button>
-      )}
       {showNext && (
         <button onClick={goNext} className="psc-nav-button psc-next-button">
           <KeyboardArrowLeft fontSize="large" />
