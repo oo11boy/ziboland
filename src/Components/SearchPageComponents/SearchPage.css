@@ -1,90 +1,266 @@
-/* تنظیمات باکس فیلتر */
+/* تنظیمات باکس فیلتر در دسکتاپ */
 .sticky-filters {
+  position: sticky;
+  top: 0; /* چسبیدن به بالای صفحه */
+  align-self: flex-start;
+  max-height: 100vh; /* محدود کردن ارتفاع به 100vh */
+  overflow-y: auto; /* اسکرول داخلی */
+  width: 100%;
+  max-width: 300px; /* عرض مناسب برای دسکتاپ */
+  background: white;
+  padding: 0 0.8rem 0.8rem 0.8rem; /* پدینگ بهینه */
+
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+/* استایل اسکرول‌بار برای دسکتاپ */
+.sticky-filters::-webkit-scrollbar {
+  width: 2px;
+}
+
+.sticky-filters::-webkit-scrollbar-thumb {
+  background: #805b99;
+  border-radius: 4px;
+}
+
+.sticky-filters::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+/* تنظیمات container اصلی */
+.main-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+
+}
+
+/* تنظیمات برای دسکتاپ */
+@media (min-width: 1024px) {
+  .sticky-filters {
     position: sticky;
-    top: 0px; /* فاصله از بالای صفحه، با توجه به هدر تنظیم شده */
-    align-self: flex-start; /* قرارگیری در بالای container */
-    height: fit-content!important; /* ارتفاع به اندازه محتوای داخلی */
-    width: 100%; /* عرض کامل در موبایل */
-    max-width: 300px; /* عرض مناسب برای دسکتاپ */
-    background: white;
-    padding: 0.6rem;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    z-index: 10; /* اطمینان از نمایش بالای سایر عناصر */
+    top: 0; /* چسبیدن به بالای صفحه */
+    max-height: 100vh; /* محدود کردن ارتفاع */
+    overflow-y: auto;
   }
-  
-  /* تنظیمات container اصلی */
-  .main-container {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh; /* حداقل ارتفاع برای پر کردن صفحه */
-  }
-  
-  /* تنظیمات برای دسکتاپ */
-  @media (min-width: 1024px) {
-    .sticky-filters {
-      position: sticky;
-      top: 10px; /* فاصله از بالای صفحه */
-      height: fit-content; /* ارتفاع به اندازه محتوا */
-    }
-  }
-  
-  /* تنظیمات برای موبایل */
-  @media (max-width: 1024px) {
-    .sticky-filters {
-      position: static; /* غیرفعال کردن sticky در موبایل */
-      max-width: none; /* عرض کامل در موبایل */
-    }
-  }
+}
 
-
-
-  /* SearchPage.css */
+/* تنظیمات برای موبایل */
 @media (max-width: 1024px) {
-    .mobile-filter-panel {
-      position: fixed;
-      top: 60px; /* تنظیم فاصله از هدر موبایل */
-      left: 0;
-      right: 0;
-      width: 100%;
-      max-width: 100%;
-      background: white;
-      z-index: 1000;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      padding: 1rem;
-      max-height: 80vh; /* محدود کردن ارتفاع برای اسکرول */
-      overflow-y: auto;
-      border-radius: 0 0 12px 12px;
-    }
-  
-    .mobile-filter-panel::-webkit-scrollbar {
-      width: 8px;
-    }
-  
-    .mobile-filter-panel::-webkit-scrollbar-thumb {
-      background: #805b99;
-      border-radius: 4px;
-    }
-  
-    .mobile-filter-backdrop {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.5);
-      z-index: 999;
-    }
-  
-
-  
-    .mobile-header {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1100;
-      background: #000;
-      padding: 0.5rem;
-    }
+  .sticky-filters {
+    position: static; /* غیرفعال کردن sticky در موبایل */
+    max-width: none;
+    max-height: none; /* در موبایل نیازی به محدودیت ارتفاع نیست */
   }
+
+  .mobile-filter-panel {
+    position: fixed;
+    top: 60px; /* فاصله از هدر موبایل */
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: calc(100vh - 60px); /* محدود کردن ارتفاع به اندازه viewport منهای هدر */
+    overflow-y: auto; /* اسکرول عمودی */
+    background: white;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding:0 0.5rem 1rem 0.5rem; /* پدینگ کمتر برای فضای بیشتر */
+
+    touch-action: pan-y; /* بهبود اسکرول در موبایل */
+  }
+
+  .mobile-filter-panel::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .mobile-filter-panel::-webkit-scrollbar-thumb {
+    background: #805b99;
+    border-radius: 4px;
+  }
+
+  .mobile-filter-panel::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+
+  .mobile-filter-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+
+  .mobile-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1100;
+    background: #000;
+    padding: 0.5rem;
+  }
+}
+
+/* بهینه‌سازی فاصله‌های داخلی */
+.space-y-4 > * + * {
+  margin-top: 0.75rem; /* فاصله عمودی کمتر برای جمع‌وجور شدن */
+}
+
+/* بهینه‌سازی لیست‌های برند و دسته‌بندی */
+.max-h-32 {
+  max-height: 7rem; /* کاهش ارتفاع برای جمع‌وجور شدن */
+  overflow-y: auto;
+}
+
+.max-h-32::-webkit-scrollbar {
+  width: 6px;
+}
+
+.max-h-32::-webkit-scrollbar-thumb {
+  background: #805b99;
+  border-radius: 4px;
+}
+
+.max-h-32::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+/* تنظیمات اسلایدر قیمت */
+.bapf_sfilter {
+  margin-bottom: 1rem;
+}
+
+.bapf_head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+}
+
+.bapf_hascolarr {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: bold;
+  color: #374151;
+}
+
+.bapf_body {
+  padding: 1rem;
+}
+
+.bapf_slidr_all {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bapf_from,
+.bapf_to {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bapf_tbprice {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.bapf_taprice {
+  display: flex;
+  align-items: center;
+}
+
+.bapf_slidr_main {
+  margin-top: 0.5rem; /* کاهش فاصله برای بهینه‌سازی فضا */
+}
+
+
+.price-label {
+  font-size: 15px;
+  color: #374151;
+  font-weight: 500;
+  text-align: center;
+
+}
+.bapf_slidr_main {
+  position: relative;
+}
+.bapf_slidr_main .rc-slider {
+  margin-bottom: 20px;
+}
+
+
+/* استایل‌های موجود در SearchPage.css حفظ می‌شوند. استایل‌های جدید برای نوار مرتب‌سازی: */
+.sort-container {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e5e7eb;
+  gap: 16px;
+  position: sticky;
+  top: 80px;
+  background-color: #ffffff;
+  padding: 12px 0;
+  z-index: 10;
+}
+
+.sort-container.lg\:static {
+  position: static;
+}
+
+.sort-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sort-label svg {
+  width: 24px;
+  height: 24px;
+  fill: #374151;
+}
+
+.sort-label p {
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.sort-options {
+  display: flex;
+  gap: 16px;
+}
+
+.sort-options span {
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.sort-options span.active {
+  color: #805b99;
+  font-weight: 700;
+}
+
+.sort-options span:not(.active) {
+  color: #6b7280;
+}
+
+.sort-options span:hover {
+  color: #805b99;
+}
+
+@media (max-width: 1024px) {
+  .sort-container {
+    top: 60px;
+  }
+}

@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import "./MobileHeader.css";
 import { Search } from "@mui/icons-material";
-import Link from "next/link";
+
 
 export default function MobileHeaderTopTab() {
   const [inputValue, setInputValue] = useState("");
