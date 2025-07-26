@@ -188,7 +188,7 @@ export default function ProductSearchPage() {
   );
 
   const getSortedProducts = () => {
-    let filtered = products.filter(
+    const filtered = products.filter(
       (product) =>
         product.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
         (selectedBrands.length === 0 ||
@@ -215,7 +215,6 @@ export default function ProductSearchPage() {
         return filtered;
     }
   };
-console.log(cart)
   const filteredProducts = getSortedProducts();
 
   const cardVariants = {
@@ -241,7 +240,7 @@ console.log(cart)
   return (
     <>
    
-      <div dir="rtl" className="min-h-screen bg-[#F7F7F7] font-yekan">
+      <div dir="rtl" className="min-h-screen yekan bg-[#F7F7F7] font-yekan">
         <ToastContainer
           position="top-center"
           autoClose={3000}
@@ -255,7 +254,7 @@ console.log(cart)
           theme="colored"
           style={{ zIndex: 99999, top: 0, width: "100%", padding: "10px" }}
         />
-        <div className="md:hidden mobile-header">
+        <div className="lg:hidden mobile-header">
           <motion.div
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -309,7 +308,7 @@ console.log(cart)
                     initial="hidden"
                     animate="visible"
                     exit="exit"
-                    className="mobile-filter-panel md:hidden"
+                    className="mobile-filter-panel lg:hidden"
                   >
                     <div className="">
                       <div className="flex sticky py-4 top-0 bg-white justify-between mb-4 items-center">
@@ -329,7 +328,7 @@ console.log(cart)
                           className="block text-sm font-medium mb-1 text-[#374151]"
                           htmlFor="category-search"
                         >
-                          <Category className="ml-2 text-[#805b99]" /> دسته‌بندی
+                          <Category className="ml-2 text-[#805b99] yekanh" /> دسته‌بندی
                         </label>
                         <input
                           id="category-search"
@@ -580,10 +579,10 @@ console.log(cart)
                 </div>
                 <div>
                   <label
-                    className="block text-sm font-medium mb-1 text-[#374151]"
+                    className="block text-sm font-medium mb-1  text-[#374151]"
                     htmlFor="category-search"
                   >
-                    <Category className="ml-2 text-[#805b99]" /> دسته‌بندی
+                    <Category className="ml-2 text-[#805b99] " /> دسته‌بندی
                   </label>
                   <input
                     id="category-search"
