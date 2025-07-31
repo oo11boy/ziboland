@@ -1,6 +1,7 @@
 import { Favorite, Instagram, Telegram, WhatsApp } from "@mui/icons-material";
 import React from "react";
 import './Footer.css'
+import Link from "next/link";
 export default function FooterContainer() {
   return (
     <div className="footer-container">
@@ -8,8 +9,8 @@ export default function FooterContainer() {
         <div className="footer-content">
           {/* Ziboland info section */}
           <div className="ziboland-info">
-            <h3 className="newyork">ZIBOLAND</h3>
-            <div className="flex flex-col gap-y-2 text-justify">
+            <Link href={'../'} className="newyork text-lg">ZIBOLAND</Link>
+            <div className="flex flex-col gap-y-2 mt-4 text-justify">
               <p>
                 زیبولند یک فروشگاه برای خرید انواع وسایل مورد نیاز با قیمت و کیفیت
                 مناسب است که بسیار مقرون به صرفه است.

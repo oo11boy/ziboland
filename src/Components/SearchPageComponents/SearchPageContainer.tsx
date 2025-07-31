@@ -17,6 +17,7 @@ import {
   Store,
   Tune,
   Sort,
+  NotificationAdd,
 } from "@mui/icons-material";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -157,6 +158,19 @@ export default function ProductSearchPage() {
     setShowQuantitySelector(null);
   };
 
+  const handleNotifyMe = (productId: number) => {
+    console.log(productId)
+    toast.info("هنگامی که محصول موجود شد، به شما اطلاع خواهیم داد!", {
+      position: "top-center",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      theme: "colored",
+    });
+  };
+
   const clearFilters = () => {
     setSearchTerm("");
     setSelectedBrands([]);
@@ -204,13 +218,15 @@ export default function ProductSearchPage() {
 
     switch (sortOption) {
       case "جدیدترین":
-        return filtered.sort((a, b) => b.id - a.id); // مرتب‌سازی بر اساس id (نزولی)
+        return filtered.sort((a, b) => b.id - a.id);
       case "گران‌ترین":
-        return filtered.sort((a, b) => b.numericPrice - a.numericPrice); // مرتب‌سازی بر اساس قیمت (نزولی)
+        return filtered.sort((a, b) => b.numericPrice - a.numericPrice);
       case "ارزان‌ترین":
-        return filtered.sort((a, b) => a.numericPrice - b.numericPrice); // مرتب‌سازی بر اساس قیمت (صعودی)
+        return filtered.sort((a, b) => a.numericPrice - b.numericPrice);
       case "محبوب‌ترین":
-        return filtered.sort((a, b) => b.rating - a.rating); // مرتب‌سازی بر اساس امتیاز (نزولی)
+        return filtered.sort((a, b) => b.rating - a.rating);
+      case "پرفروش‌ترین":
+        return filtered.sort((a, b) => (b.sales || 0) - (a.sales || 0));
       default:
         return filtered;
     }
@@ -237,9 +253,10 @@ export default function ProductSearchPage() {
     exit: { y: "-100%", opacity: 0, transition: { duration: 0.2 } },
   };
 
+  console.log(cart);
+
   return (
     <>
-   
       <div dir="rtl" className="min-h-screen yekan bg-[#F7F7F7] font-yekan">
         <ToastContainer
           position="top-center"
@@ -315,6 +332,9 @@ export default function ProductSearchPage() {
                         <h2 className="text-lg font-bold text-[#374151] flex items-center">
                           <FilterAlt className="ml-2 text-[#805b99]" /> فیلترها
                         </h2>
+                             <div className="text-sm  text-[#374151]">
+                    تعداد نتایج: {filteredProducts.length}
+                  </div>
                         <button
                           onClick={clearFilters}
                           className="text-[#805b99] font-bold text-sm"
@@ -323,6 +343,7 @@ export default function ProductSearchPage() {
                           حذف فیلترها
                         </button>
                       </div>
+                     
                       <div className="my-2">
                         <label
                           className="block text-sm font-medium mb-1 text-[#374151]"
@@ -551,6 +572,7 @@ export default function ProductSearchPage() {
                 <h2 className="text-lg font-bold text-[#374151] flex items-center">
                   <FilterAlt className="ml-2 text-[#805b99]" /> فیلترها
                 </h2>
+                    
                 <button
                   onClick={clearFilters}
                   className="text-[#805b99] font-bold text-sm"
@@ -559,6 +581,7 @@ export default function ProductSearchPage() {
                   حذف فیلترها
                 </button>
               </div>
+             
               <div className="space-y-4">
                 <div>
                   <label
@@ -806,6 +829,7 @@ export default function ProductSearchPage() {
                         "گران‌ترین",
                         "ارزان‌ترین",
                         "محبوب‌ترین",
+                        "پرفروش‌ترین",
                       ].map((option) => (
                         <span
                           key={option}
@@ -822,7 +846,11 @@ export default function ProductSearchPage() {
                       ))}
                     </div>
                   </div>
+                
                 </div>
+                 <div className="text-sm my-4 text-[#374151]">
+                    تعداد نتایج: {filteredProducts.length}
+                  </div>
                 <AnimatePresence>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 mt-4">
                     {filteredProducts.length > 0 ? (
@@ -886,7 +914,11 @@ export default function ProductSearchPage() {
                               قیمت تکی
                             </button>
                           </div>
-                          <div className="tpsc-price-discount-container">
+                          {!item.inStock ?  <div className="text-center w-full">
+                            ناموجود
+                          </div>
+                          
+                          : <div className="tpsc-price-discount-container">
                             <p className="tpsc-price-strikethrough-text">
                               {priceTypes[item.id] === "single"
                                 ? item.originalPrice
@@ -897,56 +929,76 @@ export default function ProductSearchPage() {
                                 ? item.discount
                                 : item.discountwholesale}
                             </p>
-                          </div>
-                          <div className="tpsc-price-quantity">
+                          </div> }
+                       
+                            {!item.inStock ? 
+                             <div className="w-full flex justify-between items-center ">
+                            <p className="tpsc-price">
+                              موجود شد خبرم کن
+                            </p>
+                  <button
+                                  className="tpsc-add-to-nocart"
+                                onClick={() =>
+                                 handleNotifyMe(item.id)
+                                }
+                                aria-label="نمایش انتخابگر تعداد"
+                              >
+                                <NotificationAdd fontSize="small" />
+                              </button>
+                            </div>
+                            :    <div className="tpsc-price-quantity">
                             <p className="tpsc-price">
                               {priceTypes[item.id] === "single"
                                 ? item.discountedPrice
                                 : item.discountwholesalePrice}{" "}
                               تومان
                             </p>
-                            <div className="tpsc-quantity-selector-mobile relative">
-                              {cartQuantities[item.id] > 0 && (
+                          
+                              <div className="tpsc-quantity-selector-mobile relative">
+                                {cartQuantities[item.id] > 0 && (
+                                  <button
+                                    className="-top-[20px] h-[20px] left-0 bg-[#c7c7c7] text-[11px] px-2 rounded-tr-lg absolute"
+                                    onClick={() => handleAddToCart(item.id)}
+                                    aria-label="ثبت تعداد محصول"
+                                  >
+                                    ثبت
+                                  </button>
+                                )}
                                 <button
-                                  className="-top-[20px] h-[20px] left-0 bg-[#c7c7c7] text-[11px] px-2 rounded-tr-lg absolute"
-                                  onClick={() => handleAddToCart(item.id)}
-                                  aria-label="ثبت تعداد محصول"
+                                  onClick={() => handleQuantityChange(item.id, 1)}
+                                  aria-label="افزایش تعداد"
                                 >
-                                  ثبت
+                                  <AddCircleOutline fontSize="small" />
                                 </button>
-                              )}
+                                <input
+                                  type="text"
+                                  className="tpsc-quantity-input"
+                                  value={cartQuantities[item.id] || 0}
+                                  readOnly
+                                  aria-label="تعداد محصول"
+                                />
+                                <button
+                                  onClick={() =>
+                                    handleQuantityChange(item.id, -1)
+                                  }
+                                  aria-label="کاهش تعداد"
+                                >
+                                  <RemoveCircleOutline fontSize="small" />
+                                </button>
+                              </div>
+                            
+                            
                               <button
-                                onClick={() => handleQuantityChange(item.id, 1)}
-                                aria-label="افزایش تعداد"
-                              >
-                                <AddCircleOutline fontSize="small" />
-                              </button>
-                              <input
-                                type="text"
-                                className="tpsc-quantity-input"
-                                value={cartQuantities[item.id] || 0}
-                                readOnly
-                                aria-label="تعداد محصول"
-                              />
-                              <button
+                                className="tpsc-add-to-cart"
                                 onClick={() =>
-                                  handleQuantityChange(item.id, -1)
+                                  handleShowQuantitySelector(item.id)
                                 }
-                                aria-label="کاهش تعداد"
+                                aria-label="نمایش انتخابگر تعداد"
                               >
-                                <RemoveCircleOutline fontSize="small" />
+                                <AddShoppingCart fontSize="small" />
                               </button>
-                            </div>
-                            <button
-                              className="tpsc-add-to-cart"
-                              onClick={() =>
-                                handleShowQuantitySelector(item.id)
-                              }
-                              aria-label="نمایش انتخابگر تعداد"
-                            >
-                              <AddShoppingCart fontSize="small" />
-                            </button>
-                            {showQuantitySelector === item.id && (
+                            
+                            {showQuantitySelector === item.id  && (
                               <div
                                 className="tpsc-quantity-selector relative"
                                 onClick={(e) => e.stopPropagation()}
@@ -989,6 +1041,8 @@ export default function ProductSearchPage() {
                               </div>
                             )}
                           </div>
+}
+                            
                         </motion.div>
                       ))
                     ) : (

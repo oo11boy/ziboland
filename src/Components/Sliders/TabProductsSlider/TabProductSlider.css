@@ -278,7 +278,15 @@
     display: flex;
   }
 }
+.tpsc-add-to-nocart {
+  background-color: #805b99;
+  color: #ffffff;
+  border-radius: 0 8px 0 0;
+  padding: 6px;
+  width: 45px;
+  z-index: 21;
 
+}
 .tpsc-quantity-input {
   width: 100%;
   text-align: center;

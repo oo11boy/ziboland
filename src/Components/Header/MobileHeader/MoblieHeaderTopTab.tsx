@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import "./MobileHeader.css";
 import { Search } from "@mui/icons-material";
+import Link from "next/link";
 
 
 export default function MobileHeaderTopTab() {
@@ -40,7 +41,7 @@ export default function MobileHeaderTopTab() {
         </div>
 
         <div className="flex justify-end gap-2 mr-4">
-          <h3 className="newyork text-lg text-white">ZIBOLAND</h3>
+          <Link href={'../'} className="newyork text-lg text-white">ZIBOLAND</Link>
         </div>
       </div>
       <div className="h-[70px] min-lg-none w-full"></div>

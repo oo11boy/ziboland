@@ -33,7 +33,8 @@ export default function WideHeaderMiddle() {
           </a>
         </div>
         <div className="flex w-[33%] text-center justify-center gap-3 items-center">
-          <p className="font-semibold newyork text-xl">ZIBOLAND</p>
+          <Link href={'../'} className="font-semibold newyork text-xl">ZIBOLAND</Link>
+        
         </div>
         <div className="w-[33%] flex justify-end gap-2">
           <Link
