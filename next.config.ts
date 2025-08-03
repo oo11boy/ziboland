@@ -19,6 +19,12 @@ const nextConfig = {
           hostname: 'storage.khanoumi.com',
           pathname: '/**',
         },
+           {
+          protocol: 'https',
+          hostname: 'picsum.photos',
+          pathname: '/**',
+        },
+       
     ],
   },
 };
