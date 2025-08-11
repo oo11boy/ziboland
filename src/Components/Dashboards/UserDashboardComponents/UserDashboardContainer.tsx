@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Favorite, FireTruck, Home, Logout, Settings, ShoppingBag, Menu, Close, Add, ShoppingCart, Message } from '@mui/icons-material';
 import { Accordion, AccordionSummary, AccordionDetails, Typography, Modal, Box, Avatar } from '@mui/material';
 import Image from 'next/image';
-
+import './UserDashboard.css';
 // TypeScript interfaces
 interface Order {
   id: string;
@@ -315,17 +315,14 @@ export default function UserDashboardContainer() {
   };
 
   const handleCancelOrder = (id: string) => {
-    // Simulate order cancellation logic
     alert(`سفارش شماره ${id} لغو شد.`);
   };
 
   const handleAddToCart = (item: WishlistItem) => {
-    // Simulate adding to cart logic
     alert(`محصول ${item.name} به سبد خرید اضافه شد.`);
   };
 
   const handleRemoveFromWishlist = (id: number) => {
-    // Simulate removing from wishlist logic
     alert(`محصول با شناسه ${id} از لیست علاقه‌مندی‌ها حذف شد.`);
   };
 
@@ -351,7 +348,6 @@ export default function UserDashboardContainer() {
   };
 
   const handleSaveAccountInfo = () => {
-    // Simulate saving account info
     if (!accountInfo.name || !accountInfo.email) {
       alert('لطفاً نام و ایمیل را پر کنید.');
       return;
@@ -374,35 +370,33 @@ export default function UserDashboardContainer() {
   };
 
   return (
-    <div className="min-h-screen yekan bg-gradient-to-br from-teal-100 via-white to-blue-100 flex flex-col md:flex-row lg:w-[90%] lg:my-8 m-auto">
+    <div className="ud-container">
       {/* Mobile Hamburger Menu */}
-      <div className="md:hidden flex justify-between items-center p-4 bg-white/95 backdrop-blur-md shadow-lg rounded-b-lg">
-        <div className="flex items-center gap-3">
+      <div className="ud-mobile-header">
+        <div className="ud-mobile-header-user">
           <Avatar alt={accountInfo.name} />
           <div>
-            <h1 className="text-xl font-extrabold text-teal-700">{accountInfo.name}</h1>
-            <p className="text-sm text-gray-600">{accountInfo.email}</p>
+            <h1 className="ud-mobile-header-title">{accountInfo.name}</h1>
+            <p className="ud-mobile-header-email">{accountInfo.email}</p>
           </div>
         </div>
-        <button onClick={toggleSidebar} className="text-teal-700" aria-label={isSidebarOpen ? 'بستن منو' : 'باز کردن منو'}>
+        <button onClick={toggleSidebar} className="ud-mobile-header-button" aria-label={isSidebarOpen ? 'بستن منو' : 'باز کردن منو'}>
           {isSidebarOpen ? <Close className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
       {/* Sidebar */}
       <aside
-        className={`${
-          isSidebarOpen ? 'block' : 'hidden'
-        } md:block w-full md:w-72 bg-white/95 backdrop-blur-lg shadow-2xl rounded-b-2xl md:rounded-2xl p-6 flex flex-col gap-4 transition-all duration-300 md:sticky md:top-8`}
+        className={`ud-sidebar ${isSidebarOpen ? 'ud-sidebar-open' : ''}`}
       >
-        <div className="hidden md:flex items-center gap-3 mb-4">
+        <div className="ud-sidebar-user">
           <Avatar alt={accountInfo.name} />
           <div>
-            <h1 className="text-xl font-extrabold text-teal-700">{accountInfo.name}</h1>
-            <p className="text-sm text-gray-600">{accountInfo.email}</p>
+            <h1 className="ud-mobile-header-title">{accountInfo.name}</h1>
+            <p className="ud-mobile-header-email">{accountInfo.email}</p>
           </div>
         </div>
-        <nav className="mt-4 space-y-2">
+        <nav className="ud-sidebar-nav">
           {[
             { tab: 'dashboard', label: 'پیشخوان', Icon: Home },
             { tab: 'orders', label: 'سفارش‌ها', Icon: ShoppingBag },
@@ -417,169 +411,167 @@ export default function UserDashboardContainer() {
                 setActiveTab(tab);
                 setIsSidebarOpen(false);
               }}
-              className={`flex items-center w-full p-3 text-right rounded-lg transition-all duration-300 text-base md:text-lg ${
-                activeTab === tab ? 'bg-teal-500 text-white shadow-lg' : 'text-gray-700 hover:bg-teal-100'
-              }`}
+              className={`ud-sidebar-button ${activeTab === tab ? 'ud-sidebar-button-active' : ''}`}
               aria-label={`نمایش ${label}`}
             >
-              <Icon className="ml-3 h-5 w-5" />
+              <Icon className="ud-sidebar-icon" />
               {label}
             </button>
           ))}
           <Link
             href="/"
-            className="flex items-center p-3 text-gray-700 hover:bg-teal-100 rounded-lg transition-all duration-300 text-base md:text-lg"
+            className="ud-sidebar-button"
             onClick={() => setIsSidebarOpen(false)}
             aria-label="بازگشت به خانه"
           >
-            <Home className="ml-3 h-5 w-5" />
+            <Home className="ud-sidebar-icon" />
             بازگشت به خانه
           </Link>
           <button
-            className="flex items-center w-full p-3 text-gray-700 hover:bg-teal-100 rounded-lg transition-all duration-300 text-base md:text-lg"
+            className="ud-sidebar-button"
             aria-label="خروج از حساب کاربری"
           >
-            <Logout className="ml-3 h-5 w-5" />
+            <Logout className="ud-sidebar-icon" />
             خروج
           </button>
         </nav>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8">
+      <main className="ud-main">
         {activeTab === 'dashboard' && (
-          <div className="animate-slide-in-up">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-teal-900 mb-6 md:mb-8 tracking-tight text-center md:text-right">
+          <div className="ud-animate-slide-in-up">
+            <h2 className="ud-main-title">
               پیشخوان
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            <div className="ud-dashboard-grid">
               <div
-                className="relative bg-white/90 backdrop-blur-lg shadow-lg rounded-2xl p-4 md:p-6 transform hover:scale-105 hover:shadow-xl transition-all duration-300 border border-teal-100/50"
+                className="ud-card"
                 role="region"
                 aria-label="تعداد کل سفارش‌ها"
               >
-                <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-teal-400"></div>
-                <h3 className="text-base md:text-lg font-semibold text-teal-800">تعداد کل سفارش‌ها</h3>
-                <p className="text-2xl md:text-3xl font-bold text-teal-600 mt-2">{orders.length.toLocaleString('fa-IR')}</p>
-                <p className="text-xs md:text-sm text-gray-500 mt-1">آخرین سفارش: ۲ روز پیش</p>
+                <div className="ud-card-dot ud-card-dot-teal"></div>
+                <h3 className="ud-card-title">تعداد کل سفارش‌ها</h3>
+                <p className="ud-card-value">{orders.length.toLocaleString('fa-IR')}</p>
+                <p className="ud-card-info">آخرین سفارش: ۲ روز پیش</p>
               </div>
               <div
-                className="relative bg-white/90 backdrop-blur-lg shadow-lg rounded-2xl p-4 md:p-6 transform hover:scale-105 hover:shadow-xl transition-all duration-300 border border-teal-100/50"
+                className="ud-card"
                 role="region"
                 aria-label="تعداد علاقه‌مندی‌ها"
               >
-                <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-yellow-400"></div>
-                <h3 className="text-base md:text-lg font-semibold text-teal-800">تعداد علاقه‌مندی‌ها</h3>
-                <p className="text-2xl md:text-3xl font-bold text-teal-600 mt-2">{wishlist.length.toLocaleString('fa-IR')}</p>
-                <p className="text-xs md:text-sm text-gray-500 mt-1">آخرین افزودن: دیروز</p>
+                <div className="ud-card-dot ud-card-dot-yellow"></div>
+                <h3 className="ud-card-title">تعداد علاقه‌مندی‌ها</h3>
+                <p className="ud-card-value">{wishlist.length.toLocaleString('fa-IR')}</p>
+                <p className="ud-card-info">آخرین افزودن: دیروز</p>
               </div>
               <div
-                className="relative bg-white/90 backdrop-blur-lg shadow-lg rounded-2xl p-4 md:p-6 transform hover:scale-105 hover:shadow-xl transition-all duration-300 border border-teal-100/50"
+                className="ud-card"
                 role="region"
                 aria-label="وضعیت پروفایل"
               >
-                <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-green-400"></div>
-                <h3 className="text-base md:text-lg font-semibold text-teal-800">وضعیت پروفایل</h3>
-                <p className="text-sm md:text-base font-medium text-green-600 mt-2">
+                <div className="ud-card-dot ud-card-dot-green"></div>
+                <h3 className="ud-card-title">وضعیت پروفایل</h3>
+                <p className="ud-card-profile-status">
                   {accountInfo.isComplete ? 'تکمیل‌شده' : 'ناقص'}
                 </p>
-                <p className="text-xs md:text-sm text-gray-500 mt-1">ایمیل: {accountInfo.email}</p>
+                <p className="ud-card-info">ایمیل: {accountInfo.email}</p>
               </div>
               <div
-                className="relative bg-white/90 backdrop-blur-lg shadow-lg rounded-2xl p-4 md:p-6 transform hover:scale-105 hover:shadow-xl transition-all duration-300 border border-teal-100/50"
+                className="ud-card"
                 role="region"
                 aria-label="تیکت‌های پشتیبانی"
               >
-                <div className="absolute top-3 left-3 w-2 h-2 rounded-full bg-blue-400"></div>
-                <h3 className="text-base md:text-lg font-semibold text-teal-800">تیکت‌های پشتیبانی</h3>
-                <p className="text-2xl md:text-3xl font-bold text-teal-600 mt-2">
+                <div className="ud-card-dot ud-card-dot-blue"></div>
+                <h3 className="ud-card-title">تیکت‌های پشتیبانی</h3>
+                <p className="ud-card-value">
                   {supportTickets.filter(t => t.status === 'باز').length.toLocaleString('fa-IR')}
                 </p>
-                <p className="text-xs md:text-sm text-gray-500 mt-1">تیکت‌های باز</p>
+                <p className="ud-card-info">تیکت‌های باز</p>
               </div>
             </div>
-            <div className="mt-6 md:mt-8 bg-white/90 backdrop-blur-lg shadow-lg rounded-2xl p-4 md:p-6 border border-teal-100/50">
-              <h3 className="text-base md:text-lg font-semibold text-teal-800 mb-4 text-right">پیگیری وضعیت سفارش</h3>
-              <div className="flex flex-col sm:flex-row gap-4">
+            <div className="ud-tracking-container">
+              <h3 className="ud-tracking-title">پیگیری وضعیت سفارش</h3>
+              <div className="ud-tracking-form">
                 <input
                   type="text"
                   value={orderTrackingId}
                   onChange={(e) => setOrderTrackingId(e.target.value)}
                   placeholder="شماره سفارش را وارد کنید"
-                  className="flex-1 p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                  className="ud-tracking-input"
                   aria-label="وارد کردن شماره سفارش برای پیگیری"
                   required
                 />
                 <button
                   onClick={handleTrackOrder}
-                  className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-300 shadow-md text-sm font-medium"
+                  className="ud-tracking-button"
                   aria-label="پیگیری سفارش"
                 >
                   پیگیری
                 </button>
               </div>
               {trackingResult && (
-                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                  <p className="text-sm font-semibold text-teal-800">وضعیت سفارش #{trackingResult.id}</p>
-                  <p className="text-sm text-gray-600 mt-1">
+                <div className="ud-tracking-result">
+                  <p className="ud-tracking-result-title">وضعیت سفارش #{trackingResult.id}</p>
+                  <p className="ud-tracking-result-text">
                     <strong>وضعیت:</strong> {trackingResult.status}
                   </p>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="ud-tracking-result-text">
                     <strong>تاریخ تحویل تخمینی:</strong> {trackingResult.date}
                   </p>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="ud-tracking-result-text">
                     <strong>جزئیات:</strong> {trackingResult.details || 'در حال پردازش'}
                   </p>
                 </div>
               )}
               {trackingError && (
-                <p className="mt-4 text-sm text-red-600 text-right">{trackingError}</p>
+                <p className="ud-tracking-error">{trackingError}</p>
               )}
             </div>
-            <div className="mt-6 md:mt-8 bg-white/90 backdrop-blur-lg shadow-lg rounded-2xl p-4 md:p-6 border border-teal-100/50">
-              <h3 className="text-base md:text-lg font-semibold text-teal-800 mb-4 text-right">فعالیت اخیر</h3>
+            <div className="ud-activities-container">
+              <h3 className="ud-activities-title">فعالیت اخیر</h3>
               {recentActivities.length === 0 ? (
-                <p className="text-center text-gray-500 text-sm md:text-base">هیچ فعالیتی ثبت نشده است!</p>
+                <p className="ud-activities-empty">هیچ فعالیتی ثبت نشده است!</p>
               ) : (
-                <ul className="space-y-3 text-sm">
+                <ul className="ud-activities-list">
                   {recentActivities.slice(0, 5).map((activity, index) => (
                     <li
                       key={index}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                      className="ud-activities-item"
                       role="listitem"
                     >
-                      <span className="text-gray-600">{activity.description}</span>
-                      <span className="text-xs text-gray-500">{new Date(activity.date).toLocaleDateString('fa-IR')}</span>
+                      <span className="ud-activities-description">{activity.description}</span>
+                      <span className="ud-activities-date">{new Date(activity.date).toLocaleDateString('fa-IR')}</span>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
-            <div className="mt-6 md:mt-8 bg-white/90 backdrop-blur-lg shadow-lg rounded-2xl p-4 md:p-6 border border-teal-100/50">
-              <h3 className="text-base md:text-lg font-semibold text-teal-800 mb-4 text-right">میانبرهای سریع</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="ud-shortcuts-container">
+              <h3 className="ud-shortcuts-title">میانبرهای سریع</h3>
+              <div className="ud-shortcuts-grid">
                 <button
                   onClick={() => setActiveTab('orders')}
-                  className="flex items-center justify-center px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-300 text-sm font-medium"
+                  className="ud-shortcuts-button"
                   aria-label="مشاهده سفارش‌ها"
                 >
-                  <ShoppingCart className="ml-2 h-5 w-5" />
+                  <ShoppingCart className="ud-shortcuts-icon" />
                   مشاهده سفارش‌ها
                 </button>
                 <button
                   onClick={() => setActiveTab('wishlist')}
-                  className="flex items-center justify-center px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-300 text-sm font-medium"
+                  className="ud-shortcuts-button"
                   aria-label="مشاهده علاقه‌مندی‌ها"
                 >
-                  <Favorite className="ml-2 h-5 w-5" />
+                  <Favorite className="ud-shortcuts-icon" />
                   مشاهده علاقه‌مندی‌ها
                 </button>
                 <button
                   onClick={() => setActiveTab('tickets')}
-                  className="flex items-center justify-center px-4 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-300 text-sm font-medium"
+                  className="ud-shortcuts-button"
                   aria-label="ثبت تیکت جدید"
                 >
-                  <Message className="ml-2 h-5 w-5" />
+                  <Message className="ud-shortcuts-icon" />
                   ثبت تیکت جدید
                 </button>
               </div>
@@ -588,62 +580,56 @@ export default function UserDashboardContainer() {
         )}
 
         {activeTab === 'orders' && (
-          <div className="animate-slide-in-up">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-teal-900 mb-6 md:mb-8 tracking-tight text-center md:text-right">
+          <div className="ud-animate-slide-in-up">
+            <h2 className="ud-main-title">
               سفارش‌های شما
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            <div className="ud-orders-grid">
               {orders.length === 0 ? (
-                <p className="text-center text-gray-500 text-sm md:text-base col-span-full">
+                <p className="ud-orders-empty">
                   هیچ سفارشی ثبت نشده است!
                 </p>
               ) : (
                 orders.map((order) => (
                   <div
                     key={order.id}
-                    className="relative bg-white/90 backdrop-blur-lg shadow-lg rounded-2xl p-4 md:p-6 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 border border-teal-100/50"
+                    className="ud-order-card"
                     role="article"
                     aria-label={`سفارش ${order.id}`}
                   >
                     <div
-                      className={`absolute top-3 left-3 w-2 h-2 rounded-full ${
-                        order.status === 'ارسال شده' ? 'bg-green-400' : 'bg-yellow-400'
-                      }`}
+                      className={`ud-order-status-dot ${order.status === 'ارسال شده' ? 'ud-order-status-dot-green' : 'ud-order-status-dot-yellow'}`}
                     ></div>
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 md:gap-6">
+                    <div className="ud-order-content">
                       <Image
                         src={order.product.image}
                         alt={order.product.name}
                         width={64}
                         height={64}
-                        className="rounded-lg object-cover"
+                        className="ud-order-image"
                         loading="lazy"
                       />
-                      <div className="flex-1 space-y-3">
-                        <p className="text-base md:text-lg font-semibold text-teal-800 leading-tight">
+                      <div className="ud-order-details">
+                        <p className="ud-order-name">
                           {order.product.name}
                         </p>
-                        <p className="text-sm text-gray-500">شماره سفارش: {order.id}</p>
-                        <p className="text-sm text-gray-500">تاریخ: {new Date(order.date).toLocaleDateString('fa-IR')}</p>
-                        <p className="text-sm text-gray-500">مبلغ: {order.total} تومان</p>
+                        <p className="ud-order-info">شماره سفارش: {order.id}</p>
+                        <p className="ud-order-info">تاریخ: {new Date(order.date).toLocaleDateString('fa-IR')}</p>
+                        <p className="ud-order-info">مبلغ: {order.total} تومان</p>
                         <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs md:text-sm font-medium ${
-                            order.status === 'ارسال شده' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                          }`}
+                          className={`ud-order-status ${order.status === 'ارسال شده' ? 'ud-order-status-green' : 'ud-order-status-yellow'}`}
                         >
                           <span
-                            className={`w-2 h-2 rounded-full ml-2 ${
-                              order.status === 'ارسال شده' ? 'bg-green-500' : 'bg-yellow-500'
-                            }`}
+                            className={`ud-order-status-dot-status ${order.status === 'ارسال شده' ? 'ud-order-status-dot-green' : 'ud-order-status-dot-yellow'}`}
                           ></span>
                           {order.status}
                         </span>
                       </div>
                     </div>
-                    <div className="mt-4 flex justify-end gap-2">
+                    <div className="ud-order-buttons">
                       <button
                         onClick={() => handleViewOrderDetails(order)}
-                        className="px-3 py-1 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                        className="ud-order-button ud-order-button-details"
                         aria-label={`مشاهده جزئیات سفارش ${order.id}`}
                       >
                         مشاهده جزئیات
@@ -651,7 +637,7 @@ export default function UserDashboardContainer() {
                       {order.status === 'در حال پردازش' && (
                         <button
                           onClick={() => handleCancelOrder(order.id)}
-                          className="px-3 py-1 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                          className="ud-order-button ud-order-button-cancel"
                           aria-label={`لغو سفارش ${order.id}`}
                         >
                           لغو سفارش
@@ -669,21 +655,21 @@ export default function UserDashboardContainer() {
               aria-describedby="order-modal-description"
             >
               <Box sx={modalStyle}>
-                <Typography id="order-modal-title" variant="h6" component="h2" className="text-teal-800 font-semibold mb-6 text-right">
+                <Typography sx={{fontFamily:"yekannew"}} id="order-modal-title" variant="h6" component="h2" className="ud-modal-title">
                   جزئیات سفارش #{selectedOrder?.id}
                 </Typography>
                 {selectedOrder && (
-                  <div className="space-y-4 text-sm text-gray-600">
+                  <div className="ud-modal-content">
                     <p><strong>محصول:</strong> {selectedOrder.product.name}</p>
                     <p><strong>جزئیات محصول:</strong> {selectedOrder.product.details || 'جزئیات موجود نیست'}</p>
                     <p><strong>شماره سفارش:</strong> {selectedOrder.id}</p>
                     <p><strong>تاریخ:</strong> {new Date(selectedOrder.date).toLocaleDateString('fa-IR')}</p>
                     <p><strong>مبلغ:</strong> {selectedOrder.total} تومان</p>
                     <p><strong>وضعیت:</strong> {selectedOrder.status}</p>
-                    <div className="flex justify-end gap-2">
+                    <div className="ud-modal-buttons">
                       <button
                         onClick={() => setIsOrderModalOpen(false)}
-                        className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-300 text-sm font-medium"
+                        className="ud-modal-button-close"
                         aria-label="بستن جزئیات سفارش"
                       >
                         بستن
@@ -697,53 +683,53 @@ export default function UserDashboardContainer() {
         )}
 
         {activeTab === 'wishlist' && (
-          <div className="animate-slide-in-up">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-teal-900 mb-6 md:mb-8 tracking-tight text-center md:text-right">
+          <div className="ud-animate-slide-in-up">
+            <h2 className="ud-main-title">
               لیست علاقه‌مندی‌ها
             </h2>
-            <div className="bg-white/90 backdrop-blur-lg shadow-lg rounded-2xl p-4 md:p-6 border border-teal-100/50">
+            <div className="ud-wishlist-container">
               {wishlist.length === 0 ? (
-                <p className="text-center text-gray-500 text-sm md:text-base">
+                <p className="ud-wishlist-empty">
                   لیست علاقه‌مندی‌های شما خالی است!
                 </p>
               ) : (
-                <ul className="grid grid-cols-1 gap-4 md:gap-6">
+                <ul className="ud-wishlist-list">
                   {wishlist.map((item) => (
                     <li
                       key={item.id}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-teal-100/50"
+                      className="ud-wishlist-item"
                       role="listitem"
                       aria-label={`محصول ${item.name} در لیست علاقه‌مندی‌ها`}
                     >
-                      <div className="flex items-center mb-3 sm:mb-0 gap-4">
+                      <div className="ud-wishlist-item-content">
                         <Image
                           src={item.image}
                           alt={item.name}
                           width={48}
                           height={48}
-                          className="rounded-lg object-cover"
+                          className="ud-wishlist-image"
                           loading="lazy"
                         />
-                        <div className="flex flex-col">
-                          <span className="text-sm md:text-base font-semibold text-teal-800 leading-tight">
+                        <div className="ud-wishlist-details">
+                          <span className="ud-wishlist-name">
                             {item.name}
                           </span>
-                          <span className="text-sm text-gray-500 mt-1">
+                          <span className="ud-wishlist-price">
                             {item.price} تومان
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <div className="ud-wishlist-buttons">
                         <button
                           onClick={() => handleAddToCart(item)}
-                          className="flex-1 sm:flex-none px-3 py-1 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                          className="ud-wishlist-button ud-wishlist-button-add"
                           aria-label={`افزودن ${item.name} به سبد خرید`}
                         >
                           افزودن به سبد
                         </button>
                         <button
                           onClick={() => handleRemoveFromWishlist(item.id)}
-                          className="flex-1 sm:flex-none px-3 py-1 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                          className="ud-wishlist-button ud-wishlist-button-remove"
                           aria-label={`حذف ${item.name} از لیست علاقه‌مندی‌ها`}
                         >
                           حذف
@@ -758,18 +744,18 @@ export default function UserDashboardContainer() {
         )}
 
         {activeTab === 'tickets' && (
-          <div className="animate-slide-in-up">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-teal-900 mb-6 md:mb-8 tracking-tight text-center md:text-right">
+          <div className="ud-animate-slide-in-up">
+            <h2 className="ud-main-title">
               تیکت‌های پشتیبانی
             </h2>
-            <div className="bg-white/90 backdrop-blur-lg shadow-lg rounded-2xl p-4 md:p-6 border border-teal-100/50">
+            <div className="ud-tickets-container">
               <div className="mb-6 flex justify-end">
                 <button
                   onClick={() => setIsTicketModalOpen(true)}
-                  className="flex items-center px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-300 shadow-md text-sm md:text-base font-semibold"
+                  className="ud-tickets-button"
                   aria-label="افزودن تیکت جدید"
                 >
-                  <Add className="ml-2 h-5 w-5" />
+                  <Add className="ud-tickets-button-icon" />
                   افزودن تیکت جدید
                 </button>
               </div>
@@ -780,51 +766,51 @@ export default function UserDashboardContainer() {
                 aria-describedby="modal-modal-description"
               >
                 <Box sx={modalStyle}>
-                  <Typography   sx={{fontFamily:"yekannew"}} id="modal-modal-title" variant="h6" component="h2" className="text-teal-800 font-semibold mb-6 text-right">
+                  <Typography sx={{fontFamily:"yekannew"}} id="modal-modal-title" variant="h6" component="h2" className="ud-modal-title">
                     ثبت تیکت جدید
                   </Typography>
-                  <div className="space-y-6">
+                  <div className="ud-ticket-modal-content">
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">موضوع *</label>
+                      <label className="ud-ticket-modal-label">موضوع *</label>
                       <input
                         type="text"
                         value={newTicket.subject}
                         onChange={(e) => setNewTicket({ ...newTicket, subject: e.target.value })}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-ticket-modal-input"
                         placeholder="موضوع تیکت را وارد کنید"
                         required
                         aria-required="true"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">متن تیکت *</label>
+                      <label className="ud-ticket-modal-label">متن تیکت *</label>
                       <textarea
                         value={newTicket.message}
                         onChange={(e) => setNewTicket({ ...newTicket, message: e.target.value })}
                         placeholder="توضیحات تیکت خود را وارد کنید"
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-ticket-modal-textarea"
                         rows={6}
                         required
                         aria-required="true"
                       />
                     </div>
                     {ticketError && (
-                      <p className="text-sm text-red-600 text-right">{ticketError}</p>
+                      <p className="ud-ticket-modal-error">{ticketError}</p>
                     )}
-                    <div className="flex justify-end gap-x-4 space-x-reverse">
+                    <div className="ud-ticket-modal-buttons">
                       <button
                         onClick={() => {
                           setIsTicketModalOpen(false);
                           setTicketError('');
                         }}
-                        className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-300 text-sm font-medium"
+                        className="ud-ticket-modal-button-cancel"
                         aria-label="لغو ثبت تیکت"
                       >
                         لغو
                       </button>
                       <button
                         onClick={handleSubmitTicket}
-                        className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-300 shadow-md text-sm font-medium"
+                        className="ud-ticket-modal-button-submit"
                         aria-label="ارسال تیکت جدید"
                       >
                         ارسال تیکت
@@ -844,40 +830,40 @@ export default function UserDashboardContainer() {
                 aria-describedby="reply-modal-description"
               >
                 <Box sx={modalStyle}>
-                  <Typography   sx={{fontFamily:"yekannew"}} id="reply-modal-title" variant="h6" component="h2" className="text-teal-800 font-semibold mb-6 text-right">
+                  <Typography sx={{fontFamily:"yekannew"}} id="reply-modal-title" variant="h6" component="h2" className="ud-modal-title">
                     پاسخ به تیکت #{selectedTicket?.id}
                   </Typography>
-                  <div className="space-y-6">
+                  <div className="ud-ticket-modal-content">
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">متن پاسخ *</label>
+                      <label className="ud-ticket-modal-label">متن پاسخ *</label>
                       <textarea
                         value={ticketReply}
                         onChange={(e) => setTicketReply(e.target.value)}
                         placeholder="پاسخ خود را وارد کنید"
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-ticket-modal-textarea"
                         rows={6}
                         required
                         aria-required="true"
                       />
                     </div>
                     {ticketError && (
-                      <p className="text-sm text-red-600 text-right">{ticketError}</p>
+                      <p className="ud-ticket-modal-error">{ticketError}</p>
                     )}
-                    <div className="flex justify-end gap-x-4 space-x-reverse">
+                    <div className="ud-ticket-modal-buttons">
                       <button
                         onClick={() => {
                           setIsReplyModalOpen(false);
                           setTicketReply('');
                           setTicketError('');
                         }}
-                        className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-300 text-sm font-medium"
+                        className="ud-ticket-modal-button-cancel"
                         aria-label="لغو پاسخ به تیکت"
                       >
                         لغو
                       </button>
                       <button
                         onClick={handleSubmitReply}
-                        className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-300 shadow-md text-sm font-medium"
+                        className="ud-ticket-modal-button-submit"
                         aria-label="ارسال پاسخ به تیکت"
                       >
                         ارسال پاسخ
@@ -886,28 +872,28 @@ export default function UserDashboardContainer() {
                   </div>
                 </Box>
               </Modal>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
+              <div className="ud-tickets-stats">
                 {[
-                  { label: 'تیکت باز', count: supportTickets.filter(t => t.status === 'باز').length, color: 'bg-teal-100 text-teal-700' },
-                  { label: 'تیکت بسته', count: supportTickets.filter(t => t.status === 'بسته').length, color: 'bg-gray-100 text-gray-700' },
-                  { label: 'پاسخ داده شده', count: supportTickets.filter(t => t.response).length, color: 'bg-green-100 text-green-700' },
-                  { label: 'اتمام یافته', count: 0, color: 'bg-yellow-100 text-yellow-700' },
-                  { label: 'همه', count: supportTickets.length, color: 'bg-blue-100 text-blue-700' },
+                  { label: 'تیکت باز', count: supportTickets.filter(t => t.status === 'باز').length, color: 'ud-ticket-stat-open' },
+                  { label: 'تیکت بسته', count: supportTickets.filter(t => t.status === 'بسته').length, color: 'ud-ticket-stat-closed' },
+                  { label: 'پاسخ داده شده', count: supportTickets.filter(t => t.response).length, color: 'ud-ticket-stat-responded' },
+                  { label: 'اتمام یافته', count: 0, color: 'ud-ticket-stat-completed' },
+                  { label: 'همه', count: supportTickets.length, color: 'ud-ticket-stat-all' },
                 ].map((stat, index) => (
                   <div
                     key={index}
-                    className={`rounded-lg p-4 text-center shadow-sm border border-teal-100/50 ${stat.color} transition-transform duration-300 hover:scale-105`}
+                    className={`ud-ticket-stat ${stat.color}`}
                     role="region"
                     aria-label={`آمار ${stat.label}`}
                   >
-                    <p className="text-sm font-semibold">{stat.label}</p>
-                    <p className="text-xl font-bold">{stat.count.toLocaleString('fa-IR')}</p>
+                    <p className="ud-ticket-stat-label">{stat.label}</p>
+                    <p className="ud-ticket-stat-count">{stat.count.toLocaleString('fa-IR')}</p>
                   </div>
                 ))}
               </div>
               <div className="space-y-4">
                 {supportTickets.length === 0 ? (
-                  <p className="text-center text-gray-500 text-sm md:text-base">
+                  <p className="ud-tickets-empty">
                     هیچ تیکتی ثبت نشده است!
                   </p>
                 ) : (
@@ -916,28 +902,26 @@ export default function UserDashboardContainer() {
                       key={ticket.id}
                       expanded={expandedAccordion === ticket.id}
                       onChange={handleAccordionChange(ticket.id)}
-                      className="bg-white rounded-lg shadow-sm border border-teal-100/50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                      className="ud-ticket-accordion"
                     >
                       <AccordionSummary
-                        expandIcon={<Add className="h-5 w-5 text-teal-600" />}
+                        expandIcon={<Add className="ud-tickets-button-icon" />}
                         aria-controls={`ticket-panel-${ticket.id}`}
                         id={`ticket-header-${ticket.id}`}
                       >
-                        <div className="flex items-center justify-between w-full">
-                          <Typography   sx={{fontFamily:"yekannew"}} className="text-sm md:text-base font-semibold text-teal-800">
+                        <div className="ud-ticket-summary">
+                          <Typography sx={{fontFamily:"yekannew"}} className="ud-ticket-title">
                             {ticket.subject}
                           </Typography>
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              ticket.status === 'باز' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'
-                            }`}
+                            className={`ud-ticket-status ${ticket.status === 'باز' ? 'ud-ticket-status-open' : 'ud-ticket-status-closed'}`}
                           >
                             {ticket.status}
                           </span>
                         </div>
                       </AccordionSummary>
                       <AccordionDetails>
-                        <div className="space-y-3 text-sm text-gray-600">
+                        <div className="ud-ticket-details">
                           <p><strong>موضوع:</strong> {ticket.subject}</p>
                           <p><strong>متن تیکت:</strong> {ticket.message}</p>
                           <p><strong>وضعیت:</strong> {ticket.status}</p>
@@ -945,11 +929,11 @@ export default function UserDashboardContainer() {
                           {ticket.response && (
                             <p><strong>پاسخ پشتیبانی:</strong> {ticket.response}</p>
                           )}
-                          <div className="flex justify-end gap-2">
+                          <div className="ud-ticket-buttons">
                             {ticket.status === 'باز' && (
                               <button
                                 onClick={() => handleReplyTicket(ticket)}
-                                className="px-3 py-1 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                                className="ud-ticket-button ud-ticket-button-reply"
                                 aria-label={`پاسخ به تیکت ${ticket.subject}`}
                               >
                                 پاسخ
@@ -957,7 +941,7 @@ export default function UserDashboardContainer() {
                             )}
                             <button
                               onClick={() => handleCloseTicket(ticket.id)}
-                              className="px-3 py-1 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                              className="ud-ticket-button ud-ticket-button-close"
                               aria-label={`بستن تیکت ${ticket.subject}`}
                             >
                               بستن تیکت
@@ -974,11 +958,11 @@ export default function UserDashboardContainer() {
         )}
 
         {activeTab === 'addresses' && (
-          <div className="animate-slide-in-up">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-teal-900 mb-6 md:mb-8 tracking-tight text-center md:text-right">
+          <div className="ud-animate-slide-in-up">
+            <h2 className="ud-main-title">
               آدرس‌ها
             </h2>
-            <div className="bg-white/90 backdrop-blur-lg shadow-lg rounded-2xl p-4 md:p-6 border border-teal-100/50">
+            <div className="ud-addresses-container">
               <div className="mb-6 flex justify-end">
                 <button
                   onClick={() => {
@@ -999,71 +983,71 @@ export default function UserDashboardContainer() {
                     });
                     setAddressError('');
                   }}
-                  className="flex items-center px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-300 shadow-md text-sm md:text-base font-semibold"
+                  className="ud-addresses-button"
                   aria-label="افزودن آدرس جدید"
                 >
-                  <Add className="ml-2 h-5 w-5" />
+                  <Add className="ud-addresses-button-icon" />
                   افزودن آدرس جدید
                 </button>
               </div>
               {showAddressForm && (
-                <div className="p-4 bg-white  rounded-lg shadow-sm mb-6 border border-teal-100/50">
-                  <h3 className="text-base md:text-lg font-semibold text-teal-800 mb-4 text-right">
+                <div className="ud-address-form">
+                  <h3 className="ud-address-form-title">
                     {editingAddressId ? 'ویرایش آدرس' : 'افزودن آدرس جدید'}
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                  <div className="ud-address-form-grid">
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">نام *</label>
+                      <label className="ud-address-form-label">نام *</label>
                       <input
                         type="text"
                         value={newAddress.firstName}
                         onChange={(e) => setNewAddress({ ...newAddress, firstName: e.target.value })}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-address-form-input"
                         placeholder="نام خود را وارد کنید"
                         required
                         aria-required="true"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">نام خانوادگی *</label>
+                      <label className="ud-address-form-label">نام خانوادگی *</label>
                       <input
                         type="text"
                         value={newAddress.lastName}
                         onChange={(e) => setNewAddress({ ...newAddress, lastName: e.target.value })}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-address-form-input"
                         placeholder="نام خانوادگی خود را وارد کنید"
                         required
                         aria-required="true"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">شماره همراه *</label>
+                      <label className="ud-address-form-label">شماره همراه *</label>
                       <input
                         type="text"
                         value={newAddress.phone}
                         onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-address-form-input"
                         placeholder="شماره همراه خود را وارد کنید"
                         required
                         aria-required="true"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">آدرس ایمیل (اختیاری)</label>
+                      <label className="ud-address-form-label">آدرس ایمیل (اختیاری)</label>
                       <input
                         type="email"
                         value={newAddress.email}
                         onChange={(e) => setNewAddress({ ...newAddress, email: e.target.value })}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-address-form-input"
                         placeholder="ایمیل خود را وارد کنید"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">استان *</label>
+                      <label className="ud-address-form-label">استان *</label>
                       <select
                         value={newAddress.province}
                         onChange={(e) => setNewAddress({ ...newAddress, province: e.target.value, city: '' })}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm"
+                        className="ud-address-form-select"
                         required
                         aria-required="true"
                       >
@@ -1074,11 +1058,11 @@ export default function UserDashboardContainer() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">شهر *</label>
+                      <label className="ud-address-form-label">شهر *</label>
                       <select
                         value={newAddress.city}
                         onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm"
+                        className="ud-address-form-select"
                         required
                         disabled={!newAddress.province}
                         aria-required="true"
@@ -1090,57 +1074,57 @@ export default function UserDashboardContainer() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">کدپستی *</label>
+                      <label className="ud-address-form-label">کدپستی *</label>
                       <input
                         type="text"
                         value={newAddress.postalCode}
                         onChange={(e) => setNewAddress({ ...newAddress, postalCode: e.target.value })}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-address-form-input"
                         placeholder="کدپستی را وارد کنید"
                         required
                         aria-required="true"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">آدرس *</label>
+                      <label className="ud-address-form-label">آدرس *</label>
                       <input
                         type="text"
                         value={newAddress.address}
                         onChange={(e) => setNewAddress({ ...newAddress, address: e.target.value })}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-address-form-input"
                         placeholder="آدرس کامل را وارد کنید"
                         required
                         aria-required="true"
                       />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">پلاک / واحد (اختیاری)</label>
+                      <label className="ud-address-form-label">پلاک / واحد (اختیاری)</label>
                       <input
                         type="text"
                         value={newAddress.unit}
                         onChange={(e) => setNewAddress({ ...newAddress, unit: e.target.value })}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-address-form-input"
                         placeholder="پلاک یا واحد را وارد کنید"
                       />
                     </div>
                     {addressError && (
-                      <p className="sm:col-span-2 text-sm text-red-600 text-right">{addressError}</p>
+                      <p className="ud-address-form-error">{addressError}</p>
                     )}
-                    <div className="sm:col-span-2 flex justify-end gap-4">
+                    <div className="ud-address-form-buttons">
                       <button
                         onClick={() => {
                           setShowAddressForm(false);
                           setAddressError('');
                           setEditingAddressId(null);
                         }}
-                        className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-300 text-sm font-medium"
+                        className="ud-address-form-button-cancel"
                         aria-label="لغو افزودن آدرس"
                       >
                         لغو
                       </button>
                       <button
                         onClick={handleAddAddress}
-                        className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-300 shadow-md text-sm font-medium"
+                        className="ud-address-form-button-save"
                         aria-label={editingAddressId ? 'ذخیره تغییرات آدرس' : 'ذخیره آدرس جدید'}
                       >
                         {editingAddressId ? 'ذخیره تغییرات' : 'ذخیره آدرس'}
@@ -1151,7 +1135,7 @@ export default function UserDashboardContainer() {
               )}
               <div className="space-y-4">
                 {addresses.length === 0 ? (
-                  <p className="text-center text-gray-500 text-sm md:text-base">
+                  <p className="ud-addresses-empty">
                     هیچ آدرسی ثبت نشده است!
                   </p>
                 ) : (
@@ -1161,28 +1145,26 @@ export default function UserDashboardContainer() {
                       expanded={expandedAccordion === address.id}
                       onChange={handleAccordionChange(address.id)}
                       sx={{fontFamily:"yekannew"}}
-                      className="bg-white  rounded-lg shadow-sm border border-teal-100/50 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                      className="ud-address-accordion"
                     >
                       <AccordionSummary
-                        expandIcon={<Add className="h-5 w-5 text-teal-600" />}
+                        expandIcon={<Add className="ud-addresses-button-icon" />}
                         aria-controls={`address-panel-${address.id}`}
                         id={`address-header-${address.id}`}
                       >
-                        <div className="flex items-center justify-between w-full">
-                          <Typography   sx={{fontFamily:"yekannew"}} className="text-sm md:text-base font-semibold text-teal-800">
+                        <div className="ud-address-summary">
+                          <Typography sx={{fontFamily:"yekannew"}} className="ud-address-title">
                             {address.firstName} {address.lastName} - {address.city}
                           </Typography>
                           <span
-                            className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              address.isDefault ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                            }`}
+                            className={`ud-address-status ${address.isDefault ? 'ud-address-status-default' : 'ud-address-status-normal'}`}
                           >
                             {address.isDefault ? 'پیش‌فرض' : 'معمولی'}
                           </span>
                         </div>
                       </AccordionSummary>
                       <AccordionDetails>
-                        <div className="space-y-3 text-sm text-gray-600">
+                        <div className="ud-address-details">
                           <p><strong>نام:</strong> {address.firstName}</p>
                           <p><strong>نام خانوادگی:</strong> {address.lastName}</p>
                           <p><strong>شماره همراه:</strong> {address.phone}</p>
@@ -1192,17 +1174,17 @@ export default function UserDashboardContainer() {
                           <p><strong>کدپستی:</strong> {address.postalCode}</p>
                           <p><strong>آدرس:</strong> {address.address}</p>
                           {address.unit && <p><strong>پلاک/واحد:</strong> {address.unit}</p>}
-                          <div className="flex justify-end gap-2">
+                          <div className="ud-address-buttons">
                             <button
                               onClick={() => handleEditAddress(address)}
-                              className="px-3 py-1 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+                              className="ud-address-button ud-address-button-edit"
                               aria-label={`ویرایش آدرس ${address.firstName} ${address.lastName}`}
                             >
                               ویرایش
                             </button>
                             <button
                               onClick={() => handleDeleteAddress(address.id)}
-                              className="px-3 py-1 text-sm bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                              className="ud-address-button ud-address-button-delete"
                               aria-label={`حذف آدرس ${address.firstName} ${address.lastName}`}
                             >
                               حذف
@@ -1219,142 +1201,142 @@ export default function UserDashboardContainer() {
         )}
 
         {activeTab === 'account' && (
-          <div className="animate-slide-in-up">
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-extrabold text-teal-900 mb-6 md:mb-8 tracking-tight text-center md:text-right">
+          <div className="ud-animate-slide-in-up">
+            <h2 className="ud-main-title">
               اطلاعات حساب کاربری
             </h2>
-            <div className="bg-white/90 backdrop-blur-lg shadow-lg rounded-2xl p-4 md:p-6 border border-teal-100/50">
-              <div className="grid grid-cols-1  gap-6">
+            <div className="ud-account-container">
+              <div className="ud-account-grid">
                 <div>
-                  <h3 className="text-base md:text-lg font-semibold text-teal-800 mb-4 text-right">
+                  <h3 className="ud-account-title">
                     اطلاعات حساب کاربری
                   </h3>
-                  <div className="space-y-4">
+                  <div className="ud-account-form">
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">نام *</label>
+                      <label className="ud-account-label">نام *</label>
                       <input
                         type="text"
                         value={accountInfo.name}
                         onChange={(e) => handleAccountInfoChange('name', e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-account-input"
                         placeholder="نام خود را وارد کنید"
                         required
                         aria-required="true"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">آدرس ایمیل *</label>
+                      <label className="ud-account-label">آدرس ایمیل *</label>
                       <input
                         type="email"
                         value={accountInfo.email}
                         onChange={(e) => handleAccountInfoChange('email', e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-account-input"
                         placeholder="ایمیل خود را وارد کنید"
                         required
                         aria-required="true"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">شماره همراه</label>
+                      <label className="ud-account-label">شماره همراه</label>
                       <input
                         type="text"
                         value={accountInfo.phone}
                         onChange={(e) => handleAccountInfoChange('phone', e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-account-input"
                         placeholder="شماره همراه خود را وارد کنید"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">کدملی</label>
+                      <label className="ud-account-label">کدملی</label>
                       <input
                         type="text"
                         value={accountInfo.nationalId}
                         onChange={(e) => handleAccountInfoChange('nationalId', e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-account-input"
                         placeholder="کدملی را وارد کنید"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">شماره ثابت</label>
+                      <label className="ud-account-label">شماره ثابت</label>
                       <input
                         type="text"
                         value={accountInfo.landline}
                         onChange={(e) => handleAccountInfoChange('landline', e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-account-input"
                         placeholder="شماره ثابت را وارد کنید"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">شماره کارت بانکی (جهت عودت وجه)</label>
+                      <label className="ud-account-label">شماره کارت بانکی (جهت عودت وجه)</label>
                       <input
                         type="text"
                         value={accountInfo.bankCard}
                         onChange={(e) => handleAccountInfoChange('bankCard', e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-account-input"
                         placeholder="شماره کارت بانکی را وارد کنید"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">شماره شبا (جهت عودت وجه)</label>
+                      <label className="ud-account-label">شماره شبا (جهت عودت وجه)</label>
                       <input
                         type="text"
                         value={accountInfo.sheba}
                         onChange={(e) => handleAccountInfoChange('sheba', e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-account-input"
                         placeholder="شماره شبا را وارد کنید"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">نام بانک</label>
+                      <label className="ud-account-label">نام بانک</label>
                       <input
                         type="text"
                         value={accountInfo.bankName}
                         onChange={(e) => handleAccountInfoChange('bankName', e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-account-input"
                         placeholder="نام بانک را وارد کنید"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">نام صنف</label>
+                      <label className="ud-account-label">نام صنف</label>
                       <input
                         type="text"
                         value={accountInfo.guild}
                         onChange={(e) => handleAccountInfoChange('guild', e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-account-input"
                         placeholder="نام صنف را وارد کنید"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">نام شرکت یا فروشگاه شما</label>
+                      <label className="ud-account-label">نام شرکت یا فروشگاه شما</label>
                       <input
                         type="text"
                         value={accountInfo.company}
                         onChange={(e) => handleAccountInfoChange('company', e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-account-input"
                         placeholder="نام شرکت یا فروشگاه را وارد کنید"
                       />
                     </div>
                     <div>
-                      <label className="block text-gray-600 text-sm font-medium mb-2 text-right">سمت شما</label>
+                      <label className="ud-account-label">سمت شما</label>
                       <input
                         type="text"
                         value={accountInfo.position}
                         onChange={(e) => handleAccountInfoChange('position', e.target.value)}
-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white/50 text-right text-sm placeholder-gray-400"
+                        className="ud-account-input"
                         placeholder="سمت خود را وارد کنید"
                       />
                     </div>
-                    <div className="sm:col-span-2 flex justify-end gap-4">
+                    <div className="ud-account-buttons">
                       <button
                         onClick={() => alert('تغییرات لغو شد.')}
-                        className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-300 text-sm font-medium"
+                        className="ud-account-button-cancel"
                         aria-label="لغو تغییرات"
                       >
                         لغو
                       </button>
                       <button
                         onClick={handleSaveAccountInfo}
-                        className="px-6 py-3 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors duration-300 shadow-md text-sm font-medium"
+                        className="ud-account-button-save"
                         aria-label="ذخیره تغییرات حساب کاربری"
                       >
                         ذخیره تغییرات
@@ -1367,25 +1349,6 @@ export default function UserDashboardContainer() {
           </div>
         )}
       </main>
-
-      <style jsx>{`
-        @keyframes slide-in-up {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-slide-in-up {
-          animation: slide-in-up 0.5s ease-out forwards;
-        }
-        .font-yekan {
-          font-family: 'Yekan Bakh', sans-serif;
-        }
-      `}</style>
     </div>
   );
 }
