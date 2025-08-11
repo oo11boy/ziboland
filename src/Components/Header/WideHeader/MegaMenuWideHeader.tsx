@@ -51,7 +51,7 @@ export default function MegaMenuWideHeader() {
   }, []);
 
   return (
-    <section ref={menuRef} className="bg-black w-full shadow-lg z-[999] relative">
+    <section ref={menuRef} className="bg-black w-full shadow-lg z-[500] relative">
       <ul className="flex justify-start items-center text-white h-[35px] gap-10 w-[90%] mx-auto">
         {megamenu.map((category) => (
           <li key={category.id} className="relative">

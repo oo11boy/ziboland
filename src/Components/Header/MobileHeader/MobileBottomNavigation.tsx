@@ -14,12 +14,12 @@ export default function MobileBottomNavigation() {
         </Link>
 
 
-        <Link href={'/category'} className='flex flex-col justify-center items-center'>
+        <Link href={'../category'} className='flex flex-col justify-center items-center'>
             <CategoryOutlined/>
             <p>دسته بندی</p>
         </Link>
     
-        <Link href={'/'} className='flex flex-col justify-center items-center'>
+        <Link href={'../cartlist'} className='flex flex-col justify-center items-center'>
         
             <ShoppingBagOutlined/>
             <p>سبد خرید</p>
