@@ -1,5 +1,5 @@
 "use client";
-import { useSearchParams } from "next/navigation"; // برای دریافت query string
+import { useSearchParams } from "next/navigation";
 import FooterContainer from "@/Components/Footer/FooterContainer";
 import MobileBottomNavigation from "@/Components/Header/MobileHeader/MobileBottomNavigation";
 import MoblieHeaderTopTab from "@/Components/Header/MobileHeader/MoblieHeaderTopTab";
@@ -8,14 +8,15 @@ import SearchPageContainer from "@/Components/SearchPageComponents/SearchPageCon
 import React from "react";
 
 export default function Page() {
-  const searchParams = useSearchParams(); // دریافت query string
-  const cat = searchParams.get("cat"); // دریافت مقدار cat
-  const brands = searchParams.get("brands"); // دریافت مقدار brands
+  const searchParams = useSearchParams();
+  const mothercatId = searchParams.get("mothercatId");
+  const subcatId = searchParams.get("subcatId");
+  const brands = searchParams.get("brands");
 
-  // ساخت شیء برای پاس دادن به SearchPageContainer
   const queryParams = {
-    cat: cat ? cat.split(",") : [], // تبدیل به آرایه اگر چند مقدار داشته باشد
-    brands: brands ? brands.split(",") : [], // تبدیل به آرایه
+    mothercatId: mothercatId || undefined,
+    subcatId: subcatId || undefined,
+    brands: brands ? brands.split(",") : [],
   };
 
   return (

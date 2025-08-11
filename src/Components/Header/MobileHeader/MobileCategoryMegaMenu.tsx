@@ -1,17 +1,20 @@
 "use client";
 import React, { useState, useCallback } from "react";
-import { megamenu, MenuItem } from "@/lib/staticDb";
+
 import { JSX } from "@emotion/react/jsx-runtime";
 import { ArrowBack } from "@mui/icons-material";
 import './MobileHeader.css';
+import { MenuItem } from "@/lib/types";
+import { megamenu } from "@/lib/staticDb";
+
 // تابع برای دریافت آیکون Google Material
 const getIconComponent = (iconName: string): JSX.Element => {
   // تبدیل نام آیکون از PascalCase به lowercase (مثلاً Build به build)
   const formattedIconName = iconName
     .replace(/([A-Z])/g, "_$1")
     .toLowerCase()
-    .slice(1); 
-  
+    .slice(1);
+
   return (
     <span className="material-icons h-8 w-8 text-[#805B99]" aria-label={formattedIconName}>
       {formattedIconName}
@@ -35,12 +38,11 @@ export default function MobileCategoryMegaMenu() {
   }, [openSubCategory]);
 
   return (
-    <div className="relative  lg:mt-4 flex h-screen flex-col bg-white">
-
+    <div className="relative lg:mt-4 flex h-screen flex-col bg-white">
       {/* Header */}
       <div className="flex h-14 items-center yekan justify-between px-4 text-gray-900 shadow-sm bg-white">
         <div></div>
-        <span className="header-title yekanh text-center w-full">دسته‌بندی‌ها</span>
+        <span className="header-title yekan text-center w-full">دسته‌بندی‌ها</span>
       </div>
 
       {/* Category Grid */}
@@ -69,26 +71,22 @@ export default function MobileCategoryMegaMenu() {
               >
                 {/* Sub-Menu Header */}
                 <div className="flex h-14 items-center justify-between px-4 text-gray-900 shadow-sm bg-white">
-              
-               
+                  <span className="text-primary">
+                    همه محصولات{" "}
+                    <a href={`/search?mothercatId=${item.id}`} className="text-[#805B99] hover:underline">
+                      {item.name}
+                    </a>
+                  </span>
+                  <button
+                    onClick={() => setOpenCategory(null)}
+                    aria-label="بازگشت به دسته‌بندی‌های اصلی"
+                    className="p-1 rounded hover:bg-gray-100"
+                  >
+                    <ArrowBack />
+                  </button>
                 </div>
                 {/* Sub-Menu Content */}
                 <div className="flex w-full flex-col bg-white p-3">
-                  <div className="flex items-center justify-between border-b border-gray-200 px-3 py-3">
-                    <span className="text-primary">
-                      همه محصولات{" "}
-                    <a href={`/${item.link}`} className="text-[#805B99] hover:underline">
-                        {item.name}
-                      </a>
-                    </span>
-                    <button
-                      onClick={() => setOpenCategory(null)}
-                      aria-label="بازگشت به دسته‌بندی‌های اصلی"
-                      className="p-1 rounded hover:bg-gray-100"
-                    >
-                      <ArrowBack />
-                    </button>
-                  </div>
                   {item.subcat.map((sub) => (
                     <div
                       key={sub.id}
@@ -99,7 +97,14 @@ export default function MobileCategoryMegaMenu() {
                         className="flex w-full items-center justify-between px-3 py-3 text-gray-900 border-b border-gray-200"
                         aria-expanded={openSubCategory === sub.id}
                       >
-                        <span className="text-primary">{sub.name}</span>
+                        <span className="text-primary">
+                          <a
+                            href={`/search?mothercatId=${item.id}&subcatId=${sub.id}`}
+                            className="text-gray-900 hover:text-[#805B99]"
+                          >
+                            {sub.name}
+                          </a>
+                        </span>
                         <span
                           className={`material-icons h-5 w-5 arrow ${
                             openSubCategory === sub.id ? "open" : ""
@@ -113,7 +118,7 @@ export default function MobileCategoryMegaMenu() {
                           {sub.items.map((subItem) => (
                             <div key={subItem.id} className="py-1">
                               <a
-                                href={`/${item.link}/${subItem.id}`}
+                                href={`/search?mothercatId=${item.id}&subcatId=${sub.id}`}
                                 className="block px-3 py-2 text-secondary hover:text-[#805B99] hover:bg-indigo-50 rounded-md"
                               >
                                 {subItem.name}

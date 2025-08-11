@@ -1,17 +1,7 @@
-export interface MenuItem {
-  id: number;
-  name: string;
-  link: string;
-  mothercat: boolean;
-  icon: string; // نام آیکون در فرمت PascalCase (مثل "Build", "Power")
-  subcat: {
-    id: number;
-    name: string;
-    items: { id: number; name: string }[];
-  }[];
-}
+import { MenuItem, Product } from "./types";
 
 export const megamenu: MenuItem[] = [
+  // دسته‌بندی‌های ابزارآلات
   {
     id: 1,
     name: "ابزار دستی",
@@ -19,22 +9,8 @@ export const megamenu: MenuItem[] = [
     mothercat: true,
     icon: "Build",
     subcat: [
-      {
-        id: 1,
-        name: "آچار و پیچ‌گوشتی",
-        items: [
-          { id: 1, name: "آچار فرانسه" },
-          { id: 2, name: "آچار شلاقی" },
-        ],
-      },
-      {
-        id: 2,
-        name: "انبر و قیچی",
-        items: [
-          { id: 1, name: "انبر کلاغی" },
-          { id: 2, name: "قیچی ورق‌بر" },
-        ],
-      },
+      { id: 1, name: "آچار و پیچ‌گوشتی", items: [{ id: 1, name: "آچار فرانسه" }, { id: 2, name: "آچار شلاقی" }] },
+      { id: 2, name: "انبر و قیچی", items: [{ id: 1, name: "انبر کلاغی" }, { id: 2, name: "قیچی ورق‌بر" }] },
     ],
   },
   {
@@ -44,22 +20,8 @@ export const megamenu: MenuItem[] = [
     mothercat: true,
     icon: "Power",
     subcat: [
-      {
-        id: 1,
-        name: "دریل و پیچ‌گوشتی برقی",
-        items: [
-          { id: 1, name: "دریل شارژی" },
-          { id: 2, name: "دریل برقی" },
-        ],
-      },
-      {
-        id: 2,
-        name: "اره برقی",
-        items: [
-          { id: 1, name: "اره زنجیری" },
-          { id: 2, name: "اره گردبر" },
-        ],
-      },
+      { id: 1, name: "دریل و پیچ‌گوشتی برقی", items: [{ id: 1, name: "دریل شارژی" }, { id: 2, name: "دریل برقی" }] },
+      { id: 2, name: "اره برقی", items: [{ id: 1, name: "اره زنجیری" }, { id: 2, name: "اره گردبر" }] },
     ],
   },
   {
@@ -69,22 +31,8 @@ export const megamenu: MenuItem[] = [
     mothercat: true,
     icon: "Factory",
     subcat: [
-      {
-        id: 1,
-        name: "جوشکاری",
-        items: [
-          { id: 1, name: "دستگاه جوش اینورتر" },
-          { id: 2, name: "الکترود جوشکاری" },
-        ],
-      },
-      {
-        id: 2,
-        name: "کمپرسور هوا",
-        items: [
-          { id: 1, name: "کمپرسور تک‌فاز" },
-          { id: 2, name: "کمپرسور سه‌فاز" },
-        ],
-      },
+      { id: 1, name: "جوشکاری", items: [{ id: 1, name: "دستگاه جوش اینورتر" }, { id: 2, name: "الکترود جوشکاری" }] },
+      { id: 2, name: "کمپرسور هوا", items: [{ id: 1, name: "کمپرسور تک‌فاز" }, { id: 2, name: "کمپرسور سه‌فاز" }] },
     ],
   },
   {
@@ -94,22 +42,8 @@ export const megamenu: MenuItem[] = [
     mothercat: true,
     icon: "Yard",
     subcat: [
-      {
-        id: 1,
-        name: "ابزار هرس",
-        items: [
-          { id: 1, name: "قیچی هرس" },
-          { id: 2, name: "اره هرس" },
-        ],
-      },
-      {
-        id: 2,
-        name: "ابزار خاک‌ورزی",
-        items: [
-          { id: 1, name: "بیلچه باغبانی" },
-          { id: 2, name: "شن‌کش" },
-        ],
-      },
+      { id: 1, name: "ابزار هرس", items: [{ id: 1, name: "قیچی هرس" }, { id: 2, name: "اره هرس" }] },
+      { id: 2, name: "ابزار خاک‌ورزی", items: [{ id: 1, name: "بیلچه باغبانی" }, { id: 2, name: "شن‌کش" }] },
     ],
   },
   {
@@ -119,56 +53,60 @@ export const megamenu: MenuItem[] = [
     mothercat: true,
     icon: "Security",
     subcat: [
-      {
-        id: 1,
-        name: "تجهیزات حفاظت فردی",
-        items: [
-          { id: 1, name: "کلاه ایمنی" },
-          { id: 2, name: "دستکش کار" },
-        ],
-      },
-      {
-        id: 2,
-        name: "تجهیزات ایمنی محیط",
-        items: [
-          { id: 1, name: "کپسول آتش‌نشانی" },
-          { id: 2, name: "تابلو هشدار" },
-        ],
-      },
+      { id: 1, name: "تجهیزات حفاظت فردی", items: [{ id: 1, name: "کلاه ایمنی" }, { id: 2, name: "دستکش کار" }] },
+      { id: 2, name: "تجهیزات ایمنی محیط", items: [{ id: 1, name: "کپسول آتش‌نشانی" }, { id: 2, name: "تابلو هشدار" }] },
+    ],
+  },
+  // دسته‌بندی‌های آرایشی/مراقبتی
+  {
+    id: 6,
+    name: "مراقبت پوست",
+    link: "skincare",
+    mothercat: true,
+    icon: "Skincare",
+    subcat: [
+      { id: 1, name: "ضد آفتاب", items: [{ id: 1, name: "ضد آفتاب بدون رنگ" }, { id: 2, name: "ضد آفتاب رنگی" }] },
+      { id: 2, name: "مرطوب کننده و آبرسان", items: [{ id: 1, name: "کرم مرطوب کننده" }, { id: 2, name: "سرم آبرسان" }] },
+      { id: 3, name: "پاک کننده آرایش", items: [{ id: 1, name: "میسلار واتر" }, { id: 2, name: "ژل شستشو" }] },
+      { id: 4, name: "ضد چروک", items: [{ id: 1, name: "سرم ضد چروک" }, { id: 2, name: "کرم دور چشم" }] },
+    ],
+  },
+  {
+    id: 7,
+    name: "مراقبت مو",
+    link: "haircare",
+    mothercat: true,
+    icon: "Haircare",
+    subcat: [
+      { id: 1, name: "شامپو", items: [{ id: 1, name: "شامپو تقویت کننده" }, { id: 2, name: "شامپو ضد ریزش" }] },
+      { id: 2, name: "مراقبت تخصصی مو", items: [{ id: 1, name: "ماسک مو" }, { id: 2, name: "سشوار حرفه‌ای" }] },
+      { id: 3, name: "مراقبت ابرو", items: [{ id: 1, name: "ژل ابرو" }, { id: 2, name: "رنگ ابرو" }] },
+    ],
+  },
+  {
+    id: 8,
+    name: "عطر و ادکلن",
+    link: "fragrance",
+    mothercat: true,
+    icon: "Fragrance",
+    subcat: [
+      { id: 1, name: "عطر زنانه", items: [{ id: 1, name: "ادو پرفیوم زنانه" }, { id: 2, name: "ادو تویلت زنانه" }] },
+      { id: 2, name: "عطر مردانه", items: [{ id: 1, name: "ادو پرفیوم مردانه" }, { id: 2, name: "ادو تویلت مردانه" }] },
+    ],
+  },
+  {
+    id: 9,
+    name: "آرایشی",
+    link: "makeup",
+    mothercat: true,
+    icon: "Makeup",
+    subcat: [
+      { id: 1, name: "آرایش چشم", items: [{ id: 1, name: "ریمل" }, { id: 2, name: "پالت سایه چشم" }] },
+      { id: 2, name: "آرایش لب", items: [{ id: 1, name: "رژ لب" }, { id: 2, name: "برق لب" }] },
+      { id: 3, name: "آرایش ناخن", items: [{ id: 1, name: "لاک ناخن" }, { id: 2, name: "مراقبت ناخن" }] },
     ],
   },
 ];
-
-interface MediaItem {
-  type: 'image' | 'video';
-  src: string;
-  thumbnail: string;
-  alt: string;
-}
-
-interface Product {
-  id: number;
-  title: string;
-  mothercat?: string;
-  subcat?: string;
-  features?: string[];
-  content?: string;
-  brand: string;
-  originalPrice: string;
-  discountedPrice: string;
-  wholesalePrice: string;
-  discountwholesalePrice: string;
-  minwholesale: number;
-  discount: string;
-  discountwholesale: string;
-  media?: MediaItem[];
-  category: string;
-  image?: string;
-  rating: number;
-  inStock: boolean;
-  numericPrice: number;
-  sales?: number; // Added sales property for best-selling sorting
-}
 
 export const products: Product[] = [
   {
@@ -184,10 +122,12 @@ export const products: Product[] = [
     discount: "10%",
     discountwholesale: "15%",
     category: "مراقبت پوست",
+    mothercatId: 6, // مراقبت پوست
+    subcatId: 1, // ضد آفتاب
     rating: 3.5,
     inStock: true,
     numericPrice: 431100,
-    sales: 120, // Sample sales data
+    sales: 120,
   },
   {
     id: 2,
@@ -202,10 +142,12 @@ export const products: Product[] = [
     minwholesale: 6,
     discountwholesale: "15%",
     category: "مراقبت پوست",
+    mothercatId: 6, // مراقبت پوست
+    subcatId: 4, // ضد چروک
     rating: 4.0,
     inStock: true,
     numericPrice: 298900,
-    sales: 200, // Sample sales data
+    sales: 200,
   },
   {
     id: 3,
@@ -220,10 +162,12 @@ export const products: Product[] = [
     discount: "10%",
     discountwholesale: "10%",
     category: "مراقبت پوست",
+    mothercatId: 6, // مراقبت پوست
+    subcatId: 2, // مرطوب کننده و آبرسان
     rating: 4.2,
     inStock: true,
     numericPrice: 537300,
-    sales: 80, // Sample sales data
+    sales: 80,
   },
   {
     id: 4,
@@ -238,10 +182,12 @@ export const products: Product[] = [
     discount: "10%",
     discountwholesale: "15%",
     category: "مراقبت پوست",
+    mothercatId: 6, // مراقبت پوست
+    subcatId: 3, // پاک کننده آرایش
     rating: 4.3,
     inStock: false,
     numericPrice: 568710,
-    sales: 150, // Sample sales data
+    sales: 150,
   },
   {
     id: 5,
@@ -256,10 +202,12 @@ export const products: Product[] = [
     discount: "3%",
     discountwholesale: "20%",
     category: "مراقبت مو",
+    mothercatId: 7, // مراقبت مو
+    subcatId: 2, // مراقبت تخصصی مو
     rating: 4.5,
     inStock: true,
     numericPrice: 4370000,
-    sales: 50, // Sample sales data
+    sales: 50,
   },
   {
     id: 6,
@@ -274,10 +222,12 @@ export const products: Product[] = [
     discount: "30%",
     discountwholesale: "10%",
     category: "مراقبت مو",
+    mothercatId: 7, // مراقبت مو
+    subcatId: 3, // مراقبت ابرو
     rating: 3.8,
     inStock: true,
     numericPrice: 123900,
-    sales: 300, // Sample sales data
+    sales: 300,
   },
   {
     id: 7,
@@ -292,10 +242,12 @@ export const products: Product[] = [
     discount: "31%",
     discountwholesale: "20%",
     category: "مراقبت پوست",
+    mothercatId: 6, // مراقبت پوست
+    subcatId: 4, // ضد چروک
     rating: 4.1,
     inStock: true,
     numericPrice: 749000,
-    sales: 90, // Sample sales data
+    sales: 90,
   },
   {
     id: 8,
@@ -310,10 +262,12 @@ export const products: Product[] = [
     discount: "10%",
     discountwholesale: "10%",
     category: "مراقبت مو",
+    mothercatId: 7, // مراقبت مو
+    subcatId: 2, // مراقبت تخصصی مو
     rating: 4.0,
     inStock: false,
     numericPrice: 502110,
-    sales: 110, // Sample sales data
+    sales: 110,
   },
   {
     id: 9,
@@ -328,10 +282,12 @@ export const products: Product[] = [
     discount: "30%",
     discountwholesale: "20%",
     category: "عطر و ادکلن",
+    mothercatId: 8, // عطر و ادکلن
+    subcatId: 1, // عطر زنانه
     rating: 4.4,
     inStock: true,
     numericPrice: 689000,
-    sales: 180, // Sample sales data
+    sales: 180,
   },
   {
     id: 10,
@@ -346,10 +302,12 @@ export const products: Product[] = [
     discount: "20%",
     discountwholesale: "5%",
     category: "مراقبت پوست",
+    mothercatId: 6, // مراقبت پوست
+    subcatId: 1, // ضد آفتاب
     rating: 4.2,
     inStock: true,
     numericPrice: 200000,
-    sales: 250, // Sample sales data
+    sales: 250,
   },
   {
     id: 11,
@@ -364,10 +322,12 @@ export const products: Product[] = [
     discount: "20%",
     discountwholesale: "5%",
     category: "مراقبت مو",
+    mothercatId: 7, // مراقبت مو
+    subcatId: 1, // شامپو
     rating: 3.9,
     inStock: true,
     numericPrice: 144000,
-    sales: 220, // Sample sales data
+    sales: 220,
   },
   {
     id: 12,
@@ -382,10 +342,12 @@ export const products: Product[] = [
     discount: "20%",
     discountwholesale: "15%",
     category: "آرایشی",
+    mothercatId: 9, // آرایشی
+    subcatId: 2, // آرایش لب
     rating: 4.5,
     inStock: true,
     numericPrice: 280000,
-    sales: 170, // Sample sales data
+    sales: 170,
   },
   {
     id: 13,
@@ -400,10 +362,12 @@ export const products: Product[] = [
     discount: "20%",
     discountwholesale: "15%",
     category: "آرایشی",
+    mothercatId: 9, // آرایشی
+    subcatId: 1, // آرایش چشم
     rating: 4.3,
     inStock: false,
     numericPrice: 232000,
-    sales: 140, // Sample sales data
+    sales: 140,
   },
   {
     id: 14,
@@ -418,10 +382,12 @@ export const products: Product[] = [
     discount: "20%",
     discountwholesale: "25%",
     category: "عطر و ادکلن",
+    mothercatId: 8, // عطر و ادکلن
+    subcatId: 2, // عطر مردانه
     rating: 4.6,
     inStock: false,
     numericPrice: 960000,
-    sales: 100, // Sample sales data
+    sales: 100,
   },
   {
     id: 15,
@@ -436,10 +402,12 @@ export const products: Product[] = [
     discount: "20%",
     discountwholesale: "25%",
     category: "آرایشی",
+    mothercatId: 9, // آرایشی
+    subcatId: 1, // آرایش چشم
     rating: 4.7,
     inStock: true,
     numericPrice: 2000000,
-    sales: 60, // Sample sales data
+    sales: 60,
   },
   {
     id: 16,
@@ -454,10 +422,12 @@ export const products: Product[] = [
     discount: "20%",
     discountwholesale: "10%",
     category: "مراقبت پوست",
+    mothercatId: 6, // مراقبت پوست
+    subcatId: 4, // ضد چروک
     rating: 4.0,
     inStock: true,
     numericPrice: 256000,
-    sales: 130, // Sample sales data
+    sales: 130,
   },
   {
     id: 17,
@@ -472,10 +442,12 @@ export const products: Product[] = [
     discount: "20%",
     discountwholesale: "10%",
     category: "مراقبت مو",
+    mothercatId: 7, // مراقبت مو
+    subcatId: 1, // شامپو
     rating: 3.8,
     inStock: false,
     numericPrice: 120000,
-    sales: 240, // Sample sales data
+    sales: 240,
   },
   {
     id: 18,
@@ -490,10 +462,12 @@ export const products: Product[] = [
     discount: "20%",
     discountwholesale: "5%",
     category: "آرایشی",
+    mothercatId: 9, // آرایشی
+    subcatId: 3, // آرایش ناخن
     rating: 4.1,
     inStock: true,
     numericPrice: 160000,
-    sales: 190, // Sample sales data
+    sales: 190,
   },
   {
     id: 19,
@@ -508,10 +482,12 @@ export const products: Product[] = [
     discount: "20%",
     discountwholesale: "25%",
     category: "عطر و ادکلن",
+    mothercatId: 8, // عطر و ادکلن
+    subcatId: 2, // عطر مردانه
     rating: 4.8,
     inStock: true,
     numericPrice: 3040000,
-    sales: 70, // Sample sales data
+    sales: 70,
   },
   {
     id: 20,
@@ -526,9 +502,11 @@ export const products: Product[] = [
     discount: "20%",
     discountwholesale: "10%",
     category: "مراقبت پوست",
+    mothercatId: 6, // مراقبت پوست
+    subcatId: 3, // پاک کننده آرایش
     rating: 4.3,
     inStock: true,
     numericPrice: 360000,
-    sales: 160, // Sample sales data
+    sales: 160,
   },
 ];

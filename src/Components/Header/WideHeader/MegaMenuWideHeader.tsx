@@ -99,9 +99,7 @@ export default function MegaMenuWideHeader() {
           megamenu.find((category) => category.id === activeMenu)?.subcat ? (
             <>
               <Link
-                href={`/${
-                  megamenu.find((category) => category.id === activeMenu)?.link
-                }`}
+                href={`/search?mothercatId=${activeMenu}`}
                 className="mb-2 text-lg text-[#805B99] inline-flex items-center gap-2"
               >
                 همه {megamenu.find((category) => category.id === activeMenu)?.name}
@@ -125,14 +123,12 @@ export default function MegaMenuWideHeader() {
                       <ul className="space-y-3">
                         {sub.items.map((item) => (
                           <li key={item.id}>
-                            <a
-                              href={`/${
-                                megamenu.find((cat) => cat.id === activeMenu)?.link
-                              }/${item.id}`}
+                            <Link
+                              href={`/search?mothercatId=${activeMenu}&subcatId=${sub.id}`}
                               className="text-base text-[#666] hover:text-[#c7c7c7] flex items-center gap-2"
                             >
                               {item.name}
-                            </a>
+                            </Link>
                           </li>
                         ))}
                       </ul>
