@@ -1,43 +1,76 @@
 "use client";
-import { megamenu } from "@/lib/staticDb";
 import React, { useState, useEffect, useRef } from "react";
-import {
-  ArrowDropDown,
-  ArrowLeft,
-  Close,
-} from "@mui/icons-material";
+import { ArrowDropDown, ArrowLeft, Close } from "@mui/icons-material";
 import Link from "next/link";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { Categoryapi } from "@/types/types";
+
+
 
 export default function MegaMenuWideHeader() {
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
+  const [categories, setCategories] = useState<Categoryapi[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("http://localhost:3000/api/categories");
+        if (!response.ok) {
+          throw new Error("Failed to fetch categories");
+        }
+        const categoriesData: Categoryapi[] = await response.json();
+        setCategories(categoriesData);
+        setLoading(false);
+      } catch (err) {
+        setError("خطا در بارگذاری دسته‌بندی‌ها. لطفاً دوباره تلاش کنید.");
+        setLoading(false);
+        toast.error("خطا در بارگذاری دسته‌بندی‌ها", {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: "colored",
+        });
+      }
+    };
+
+    fetchCategories();
+  }, []);
+
   const handleMenuClick = (id: number) => {
     if (activeMenu === id) {
-      setActiveMenu(null); // مستقیماً منو را ببند
+      setActiveMenu(null);
     } else {
-      setActiveMenu(id); // مستقیماً منو را باز کن
+      setActiveMenu(id);
     }
   };
 
   const handleMouseEnter = (id: number) => {
     if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current); // لغو تأخیر بسته شدن
+      clearTimeout(timeoutRef.current);
     }
-    setActiveMenu(id); // باز کردن منو
+    setActiveMenu(id);
   };
 
   const handleMouseLeave = () => {
     timeoutRef.current = setTimeout(() => {
-      setActiveMenu(null); // بستن منو پس از تأخیر
+      setActiveMenu(null);
     }, 200);
   };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setActiveMenu(null); // بستن منو هنگام کلیک خارج
+        setActiveMenu(null);
       }
     };
 
@@ -45,34 +78,65 @@ export default function MegaMenuWideHeader() {
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
       if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current); // پاکسازی تأخیر در cleanup
+        clearTimeout(timeoutRef.current);
       }
     };
   }, []);
 
+  if (loading) {
+    return (
+      <div className="flex h-[35px] items-center justify-center bg-black text-white">
+        <p className="text-lg">در حال بارگذاری...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-[35px] items-center justify-center bg-black text-white">
+        <p className="text-lg">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <section ref={menuRef} className="bg-black w-full shadow-lg z-[500] relative">
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={true}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+        style={{ zIndex: 99999, top: 0, width: "100%", padding: "10px" }}
+      />
       <ul className="flex justify-start items-center text-white h-[35px] gap-10 w-[90%] mx-auto">
-        {megamenu.map((category) => (
-          <li key={category.id} className="relative">
-            <button
-              onClick={() => handleMenuClick(category.id)}
-              onMouseEnter={() => handleMouseEnter(category.id)}
-              className={`text-base font-semibold flex items-center gap-2 ${
-                activeMenu === category.id
-                  ? "text-[#EBEBEB]"
-                  : "text-white hover:text-[#EBEBEB]"
-              }`}
-            >
-              <span className="text-sm">{category.name}</span>
-              <ArrowDropDown
-                className={`text-base ${
-                  activeMenu === category.id ? "rotate-180" : ""
+        {categories
+          .filter((category) => category.mothercat === 1)
+          .map((category) => (
+            <li key={category.id} className="relative">
+              <button
+                onClick={() => handleMenuClick(category.id)}
+                onMouseEnter={() => handleMouseEnter(category.id)}
+                className={`text-base font-semibold flex items-center gap-2 ${
+                  activeMenu === category.id
+                    ? "text-[#EBEBEB]"
+                    : "text-white hover:text-[#EBEBEB]"
                 }`}
-              />
-            </button>
-          </li>
-        ))}
+              >
+                <span className="text-sm">{category.name}</span>
+                <ArrowDropDown
+                  className={`text-base ${
+                    activeMenu === category.id ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            </li>
+          ))}
       </ul>
 
       <section
@@ -85,7 +149,7 @@ export default function MegaMenuWideHeader() {
           className="w-[90%] mx-auto relative"
           onMouseEnter={() => {
             if (timeoutRef.current) {
-              clearTimeout(timeoutRef.current); // لغو بسته شدن هنگام ورود به منوی بازشو
+              clearTimeout(timeoutRef.current);
             }
           }}
         >
@@ -96,18 +160,18 @@ export default function MegaMenuWideHeader() {
             <Close fontSize="medium" className="text-[#805B99]" />
           </button>
           {activeMenu !== null &&
-          megamenu.find((category) => category.id === activeMenu)?.subcat ? (
+          categories.find((category) => category.id === activeMenu)?.subcat ? (
             <>
               <Link
                 href={`/search?mothercatId=${activeMenu}`}
                 className="mb-2 text-lg text-[#805B99] inline-flex items-center gap-2"
               >
-                همه {megamenu.find((category) => category.id === activeMenu)?.name}
+                همه {categories.find((category) => category.id === activeMenu)?.name}
                 <ArrowLeft />
               </Link>
 
               <div className="mt-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 md:supports-[not(display:grid)]:flex md:supports-[not(display:grid)]:flex-wrap">
-                {megamenu
+                {categories
                   .find((category) => category.id === activeMenu)
                   ?.subcat.map((sub) => (
                     <div

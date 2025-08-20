@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './SingleProduct.css';
+import { Product, Color } from '@/types/types';
 
 interface BenefitItem {
   id: number;
@@ -15,41 +16,23 @@ interface BenefitItem {
   link: string;
 }
 
-interface Color {
-  englishName: string;
-  persianName: string;
-  hexCode: string;
-}
-
-interface AddToCartInfoProps {
-  infoproduct: {
-    minwholesale: number;
-    discountwholesalePrice: string;
-    discountedPrice: string;
-    discountwholesale: string;
-    discount: string;
-    colors: Color[];
-  };
-}
-
-const AddToCartInfo: React.FC<AddToCartInfoProps> = ({ infoproduct }) => {
+const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
   const [quantity, setQuantity] = useState<number>(1);
-  const [selectedColor, setSelectedColor] = useState<Color>(infoproduct.colors[0]);
+  const [selectedColor, setSelectedColor] = useState<Color | null>(
+    infoproduct.colors && infoproduct.colors.length > 0 ? infoproduct.colors[0] : null
+  );
   const [isWholesale, setIsWholesale] = useState<boolean>(false);
 
-  // تبدیل قیمت‌ها به عدد
   const retailPrice = parseInt(infoproduct.discountedPrice.replace(/[^\d]/g, '')) || 0;
   const wholesalePrice = parseInt(infoproduct.discountwholesalePrice.replace(/[^\d]/g, '')) || 0;
 
-  // محاسبه قیمت نهایی بر اساس تعداد
   const finalPrice = quantity >= infoproduct.minwholesale ? wholesalePrice * quantity : retailPrice * quantity;
 
-  // بررسی تغییر وضعیت عمده‌فروشی
   useEffect(() => {
     if (quantity >= infoproduct.minwholesale && !isWholesale) {
       toast.success(`قیمت عمده‌فروشی (${infoproduct.minwholesale} عدد به بالا) اعمال شد!`, {
         position: "top-center",
-        className:"yekan",
+        className: "yekan",
         autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: true,
@@ -61,7 +44,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({ infoproduct }) => {
     } else if (quantity < infoproduct.minwholesale && isWholesale) {
       toast.info('قیمت به حالت تک‌فروشی بازگشت.', {
         position: "top-center",
-        className:"yekan",
+        className: "yekan",
         autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: true,
@@ -93,10 +76,10 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({ infoproduct }) => {
   };
 
   const handleAddToCart = () => {
-    console.log(`محصول با رنگ ${selectedColor.persianName} (${selectedColor.englishName}) و تعداد ${quantity} به سبد خرید اضافه شد`);
+    console.log(`محصول با رنگ ${selectedColor?.persianName || 'نامشخص'} (${selectedColor?.englishName || 'نامشخص'}) و تعداد ${quantity} به سبد خرید اضافه شد`);
     toast.success('محصول به سبد خرید اضافه شد!', {
       position: "top-center",
-      className:"yekan",
+      className: "yekan",
       autoClose: 3000,
       hideProgressBar: false,
       closeOnClick: true,
@@ -137,7 +120,6 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({ infoproduct }) => {
     },
   ];
 
-  // فرمت کردن قیمت به‌صورت رشته با افزودن "تومان"
   const formatPrice = (price: number) => {
     return `${price.toLocaleString('fa-IR')} تومان`;
   };
@@ -178,67 +160,69 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({ infoproduct }) => {
           </div>
         </div>
 
-        <div className="sp-color-selection">
-          <span className="sp-color-label">رنگ‌بندی:</span>
-          <div className="sp-color-options">
-            {infoproduct.colors.map((color) => {
-              const getContrastColor = (hexCode: string) => {
-                const hex = hexCode.replace('#', '');
-                const r = parseInt(hex.substring(0, 2), 16);
-                const g = parseInt(hex.substring(2, 4), 16);
-                const b = parseInt(hex.substring(4, 6), 16);
-                const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-                return luminance > 0.5 ? { tickColor: '#0000004d', borderColor: '#FFFFFF' } : { tickColor: '#FFFFFF', borderColor: '#0000004d' };
-              };
+        {infoproduct.colors && infoproduct.colors.length > 0 && (
+          <div className="sp-color-selection">
+            <span className="sp-color-label">رنگ‌بندی:</span>
+            <div className="sp-color-options">
+              {infoproduct.colors.map((color) => {
+                const getContrastColor = (hexCode: string) => {
+                  const hex = hexCode.replace('#', '');
+                  const r = parseInt(hex.substring(0, 2), 16);
+                  const g = parseInt(hex.substring(2, 4), 16);
+                  const b = parseInt(hex.substring(4, 6), 16);
+                  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                  return luminance > 0.5 ? { tickColor: '#0000004d', borderColor: '#FFFFFF' } : { tickColor: '#FFFFFF', borderColor: '#0000004d' };
+                };
 
-              const { tickColor, borderColor } = getContrastColor(color.hexCode);
+                const { tickColor, borderColor } = getContrastColor(color.hexCode);
 
-              return (
-                <button
-                  key={color.englishName}
-                  onClick={() => handleColorSelect(color)}
-                  style={{
-                    backgroundColor: color.hexCode,
-                    width: '24px',
-                    height: '24px',
-                    borderRadius: '50%',
-                    border: selectedColor.englishName === color.englishName ? '2px solid #805b99' : '1px solid #d1d5db',
-                    outline: selectedColor.englishName === color.englishName ? '2px solid #e9d5ff' : 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                  className="sp-color-button"
-                  aria-label={`انتخاب رنگ ${color.persianName} (${color.englishName})`}
-                >
-                  {selectedColor.englishName === color.englishName && (
-                    <span
-                      style={{
-                        color: tickColor,
-                        fontSize: '10px',
-                        fontWeight: 'bold',
-                        backgroundColor: borderColor,
-                        borderRadius: '50%',
-                        width: '16px',
-                        height: '16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'absolute',
-                      }}
-                    >
-                      ✔
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+                return (
+                  <button
+                    key={color.englishName}
+                    onClick={() => handleColorSelect(color)}
+                    style={{
+                      backgroundColor: color.hexCode,
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      border: selectedColor?.englishName === color.englishName ? '2px solid #805b99' : '1px solid #d1d5db',
+                      outline: selectedColor?.englishName === color.englishName ? '2px solid #e9d5ff' : 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                    className="sp-color-button"
+                    aria-label={`انتخاب رنگ ${color.persianName} (${color.englishName})`}
+                  >
+                    {selectedColor?.englishName === color.englishName && (
+                      <span
+                        style={{
+                          color: tickColor,
+                          fontSize: '10px',
+                          fontWeight: 'bold',
+                          backgroundColor: borderColor,
+                          borderRadius: '50%',
+                          width: '16px',
+                          height: '16px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          position: 'absolute',
+                        }}
+                      >
+                        ✔
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+            <span className="sp-selected-color">{selectedColor?.persianName || 'نامشخص'}</span>
           </div>
-          <span className="sp-selected-color">{selectedColor.persianName}</span>
-        </div>
+        )}
 
         <div className="sp-quantity-section">
           <div className="sp-quantity-control">

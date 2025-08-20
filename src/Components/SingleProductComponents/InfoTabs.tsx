@@ -8,18 +8,7 @@ import { InformationTable } from './InformationTable';
 import { CommentOutlined, DescriptionOutlined, InfoOutlined } from '@mui/icons-material';
 import { CommentsSection } from './CommentsSection';
 import './SingleProduct.css';
-
-interface SummaryProductProps {
-  infoproduct: {
-    title: string;
-    features: string[];
-    mothercat: string;
-    subcat: string;
-    brand: string;
-    content: string;
-    infotable: { id: number; name: string; value: string }[];
-  };
-}
+import { Product } from '@/types/types';
 
 function CustomTabPanel(props: { children?: React.ReactNode; index: number; value: number }) {
   const { children, value, index, ...other } = props;
@@ -45,7 +34,7 @@ function a11yProps(index: number) {
   };
 }
 
-export const InfoTabs: React.FC<SummaryProductProps> = ({ infoproduct }) => {
+export const InfoTabs: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
   const [value, setValue] = React.useState(0);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -84,14 +73,16 @@ export const InfoTabs: React.FC<SummaryProductProps> = ({ infoproduct }) => {
           />
         </Tabs>
       </Box>
-      <CustomTabPanel  value={value} index={0}>
+      <CustomTabPanel value={value} index={0}>
         <InformationTable infoproduct={infoproduct} />
       </CustomTabPanel>
       <CustomTabPanel value={value} index={1}>
-        <p className="sp-tabs-content-text p-4 text-justify">{infoproduct.content}</p>
+        <p className="sp-tabs-content-text p-4 text-justify">
+          {infoproduct.content || 'توضیحاتی برای این محصول ثبت نشده است.'}
+        </p>
       </CustomTabPanel>
       <CustomTabPanel value={value} index={2}>
-        <CommentsSection />
+        <CommentsSection infoproduct={infoproduct} />
       </CustomTabPanel>
     </Box>
   );

@@ -11,38 +11,17 @@ import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import Avatar from '@mui/material/Avatar';
 import SendIcon from '@mui/icons-material/Send';
-import './SingleProduct.css'
-interface Comment {
-  id: number;
-  name: string;
-  rating: number;
-  text: string;
-  date: string;
-}
+import { toast } from 'react-toastify';
+import './SingleProduct.css';
+import { Product, Comment } from '@/types/types';
 
-export const CommentsSection: React.FC = () => {
-  const [comments, setComments] = useState<Comment[]>([
-    {
-      id: 1,
-      name: 'علی محمدی',
-      rating: 4,
-      text: 'محصول بسیار باکیفیتی است و عملکرد خوبی دارد. فقط بسته‌بندی می‌توانست بهتر باشد.',
-      date: '1404/03/10',
-    },
-    {
-      id: 2,
-      name: 'سارا حسینی',
-      rating: 5,
-      text: 'عالی بود! دقیقاً همان چیزی که انتظار داشتم.',
-      date: '1404/03/08',
-    },
-  ]);
-
+export const CommentsSection: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
+  const [comments, setComments] = useState<Comment[]>(infoproduct.comments || []);
   const [name, setName] = useState('');
   const [rating, setRating] = useState<number | null>(null);
   const [text, setText] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name && rating && text) {
       const newComment: Comment = {
@@ -52,10 +31,35 @@ export const CommentsSection: React.FC = () => {
         text,
         date: new Date().toLocaleDateString('fa-IR'),
       };
-      setComments([newComment, ...comments]);
-      setName('');
-      setRating(null);
-      setText('');
+
+      try {
+        const response = await fetch(`http://localhost:3000/api/products/${infoproduct.id}/comments`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newComment),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to submit comment');
+        }
+
+        setComments([newComment, ...comments]);
+        setName('');
+        setRating(null);
+        setText('');
+        toast.success('نظر شما با موفقیت ثبت شد!', {
+          position: 'top-center',
+          className: 'yekan',
+          autoClose: 3000,
+        });
+      } catch (error) {
+        console.error('Error submitting comment:', error);
+        toast.error('خطا در ثبت نظر. لطفاً دوباره تلاش کنید.', {
+          position: 'top-center',
+          className: 'yekan',
+          autoClose: 3000,
+        });
+      }
     }
   };
 

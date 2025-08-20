@@ -5,27 +5,14 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Thumbs, Autoplay, Zoom } from 'swiper/modules';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-
 import 'swiper/css';
 import 'swiper/css/thumbs';
 import 'swiper/css/zoom';
 import { Swiper as SwiperType } from 'swiper/types';
 import { Close, PlayArrow, ZoomIn } from '@mui/icons-material';
+import { Product } from '@/types/types';
 
-interface MediaItem {
-  type: 'image' | 'video';
-  src: string;
-  thumbnail: string;
-  alt: string;
-}
-
-interface ProductSliderProps {
-  infoproduct: {
-    media: MediaItem[];
-  };
-}
-
-const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
+const ProductSlider: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
   const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
   const [isClient, setIsClient] = useState<boolean>(false);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -35,16 +22,11 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mainSwiperRef = useRef<SwiperType | null>(null);
 
-  useEffect(() => {
-    setIsClient(true);
-    imageRefs.current = new Array(infoproduct.media.length).fill(null);
-    videoRefs.current = new Array(infoproduct.media.length).fill(null);
-  }, [infoproduct.media.length]);
-
+  // Define all hooks at the top level
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>, index: number) => {
       const image = imageRefs.current[index];
-      if (image && infoproduct.media[index].type === 'image' && !isLightboxOpen) {
+      if (image && infoproduct.media && infoproduct.media[index]?.type === 'image' && !isLightboxOpen) {
         const { clientX, clientY } = e;
         const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
         const x = ((clientX - left) / width) * 100;
@@ -69,6 +51,14 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
     document.body.style.overflow = isLightboxOpen ? 'auto' : 'hidden';
   }, [isLightboxOpen]);
 
+  useEffect(() => {
+    setIsClient(true);
+    if (infoproduct.media && infoproduct.media.length > 0) {
+      imageRefs.current = new Array(infoproduct.media.length).fill(null);
+      videoRefs.current = new Array(infoproduct.media.length).fill(null);
+    }
+  }, [infoproduct.media]);
+
   const handleSlideChange = (swiper: SwiperType) => {
     setActiveIndex(swiper.realIndex);
   };
@@ -80,6 +70,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
     }
   };
 
+  // Early returns after all hooks are defined
   if (!isClient) {
     return (
       <div className="woocommerce-product-gallery max-w-[450px] mx-auto" dir="rtl">
@@ -88,22 +79,29 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
     );
   }
 
+  if (!infoproduct.media || infoproduct.media.length === 0) {
+    return (
+      <div className="woocommerce-product-gallery max-w-[450px] mx-auto" dir="rtl">
+        <p className="text-center text-gray-500">هیچ رسانه‌ای برای این محصول موجود نیست.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="woocommerce-product-gallery max-w-[450px] mx-auto relative touch-pan-y" dir="rtl" ref={containerRef}>
-      {/* Main Slider */}
       <Swiper
         className="single-product-slider mb-4 rounded-xl overflow-hidden"
         modules={[Thumbs, Autoplay, Zoom]}
         thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
         spaceBetween={10}
         slidesPerView={1}
-        loop={infoproduct.media.length > 2} // حلقه فقط برای بیش از 2 اسلاید
-        rewind={infoproduct.media.length <= 2} // برای 1 یا 2 اسلاید از rewind استفاده شود
+        loop={infoproduct.media.length > 2}
+        rewind={infoproduct.media.length <= 2}
         speed={500}
         autoplay={{
           delay: 5000,
           disableOnInteraction: true,
-          pauseOnMouseEnter: true, // توقف هنگام هاور
+          pauseOnMouseEnter: true,
         }}
         zoom={true}
         onSlideChange={handleSlideChange}
@@ -172,7 +170,6 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
         ))}
       </Swiper>
 
-      {/* Thumbnail Slider */}
       {infoproduct.media.length > 1 && (
         <Swiper
           className="thumbs-slider"
@@ -181,8 +178,8 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
           onSwiper={setThumbsSwiper}
           spaceBetween={8}
           slidesPerView={Math.min(3, infoproduct.media.length)}
-          loop={infoproduct.media.length > 2} // هماهنگی حلقه با اسلایدر اصلی
-          rewind={infoproduct.media.length <= 2} // برای 1 یا 2 اسلاید از rewind استفاده شود
+          loop={infoproduct.media.length > 2}
+          rewind={infoproduct.media.length <= 2}
           breakpoints={{
             320: {
               slidesPerView: Math.min(2.5, infoproduct.media.length),
@@ -219,7 +216,6 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct }) => {
         </Swiper>
       )}
 
-      {/* Lightbox Modal */}
       <AnimatePresence>
         {isLightboxOpen && (
           <motion.div

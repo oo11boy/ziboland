@@ -4,40 +4,17 @@ import SummaryProduct from './SummaryProduct';
 import { InfoTabs } from './InfoTabs';
 import AddToCartInfo from './AddToCartInfo';
 import './SingleProduct.css';
+import { Product } from '@/types/types';
 
-interface MediaItem {
-  type: 'image' | 'video';
-  src: string;
-  thumbnail: string;
-  alt: string;
-}
-interface Color {
-  englishName: string;
-  persianName: string;
-  hexCode: string;
-}
+export const SingleProductContainer: React.FC<{ infoproduct: Product | null }> = ({ infoproduct }) => {
+  if (!infoproduct) {
+    return (
+      <div className="sp-container-wrapper">
+        <p className="text-center text-red-500">محصول یافت نشد یا خطایی رخ داده است.</p>
+      </div>
+    );
+  }
 
-interface Product {
-  id: number;
-  title: string;
-  mothercat: string;
-  subcat: string;
-  features: string[];
-  content: string;
-  brand: string;
-  originalPrice: string;
-  discountedPrice: string;
-  wholesalePrice: string;
-  discountwholesalePrice: string;
-  minwholesale: number;
-  discount: string;
-  discountwholesale: string;
-  media: MediaItem[];
-  colors: Color[];
-  infotable: { id: number; name: string; value: string }[];
-}
-
-export const SingleProductContainer: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
   return (
     <div className="sp-container-wrapper">
       <div className="sp-container-main">
