@@ -15,7 +15,7 @@ export async function GET() {
     it.id AS infotable_id, it.name AS infotable_name, it.value AS infotable_value,
     com.id AS comment_id, com.name AS comment_name, com.rating AS comment_rating, 
     com.text AS comment_text, com.date AS comment_date,
-    b.id AS brand_id, b.img AS brand_img, b.link AS brand_link
+    b.id AS brand_id,b.title AS brand_title, b.img AS brand_img, b.link AS brand_link
   FROM products p
   LEFT JOIN media m ON p.id = m.product_id
   LEFT JOIN colors col ON p.id = col.product_id
@@ -59,6 +59,7 @@ export async function GET() {
           brandDetails: row.brand_id
             ? {
                 id: row.brand_id,
+                title: row.brand_title ?? '',
                 img: row.brand_img ?? '',
                 link: row.brand_link ?? '',
               }

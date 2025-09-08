@@ -50,6 +50,7 @@ export interface ProductRow extends RowDataPacket {
   comment_text: string | null;
   comment_date: string | null;
   brand_id: number | null;
+    brand_title: string | null;
   brand_img: string | null;
   brand_link: string | null;
 }
@@ -134,6 +135,7 @@ export interface Comment {
 
 export interface Brand {
   id: number;
+  title:string;
   img: string;
   link: string;
 }
