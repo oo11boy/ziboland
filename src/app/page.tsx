@@ -26,7 +26,7 @@ export default function page() {
    <TabProductsSliderContainer title="ارزانترین ها" />
    <Banners/>
    <TabProductsSliderContainer title="جدیدترین ها" />
-   <ArticlesListContainer />
+   <ArticlesListContainer ispage={false}/>
    <BrandsContainer />
    <FooterContainer />
    <MobileBottomNavigation/>

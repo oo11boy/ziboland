@@ -159,7 +159,7 @@ const handleQuantityChange = (id: number, priceType: "single" | "wholesale", del
         </div>
         <div className="w-[33%] flex justify-end gap-2">
           <Link
-            href={"/login"}
+            href={"../myaccount"}
             className="flex items-center gap-2 hover:bg-[#EBEBEB] hover:text-[black] p-2 rounded-lg border border-[#d9d6d6] text-base hover:border-[#C7C7C7]"
           >
             <LoginOutlined fontSize="small" />

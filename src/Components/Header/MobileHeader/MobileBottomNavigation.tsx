@@ -1,4 +1,4 @@
-import { CategoryOutlined, FavoriteBorderOutlined, HomeOutlined, PersonOutline, ShoppingBagOutlined } from '@mui/icons-material'
+import { Book, CategoryOutlined, FavoriteBorderOutlined, HomeOutlined, PersonOutline, ShoppingBagOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import React from 'react'
 
@@ -24,12 +24,12 @@ export default function MobileBottomNavigation() {
             <ShoppingBagOutlined/>
             <p>سبد خرید</p>
         </Link>
-        <Link href={'/'} className='flex flex-col justify-center items-center'>
+        <Link href={'../articles'} className='flex flex-col justify-center items-center'>
         
-        <FavoriteBorderOutlined/>
-        <p>علاقه مندی</p>
+        <Book/>
+        <p>وبلاگ</p>
     </Link>
-        <Link href={'/'} className='flex flex-col justify-center items-center'>
+        <Link href={'../myaccount'} className='flex flex-col justify-center items-center'>
         
             <PersonOutline/>
             <p>حساب</p>

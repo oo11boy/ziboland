@@ -3,8 +3,19 @@ import { VisibilitySharp } from "@mui/icons-material";
 import Link from "next/link";
 import React, { useState } from "react";
 
-export default function ArticlesListContainer() {
-  const data = [
+interface Article {
+  id: number;
+  img: string;
+  title: string;
+}
+
+interface ArticlesListContainerProps {
+  count?: number; // پیش فرض 4
+  ispage:boolean;
+}
+
+export default function ArticlesListContainer({ count = 4,ispage=false }: ArticlesListContainerProps) {
+  const data: Article[] = [
     {
       id: 1,
       img: "https://abzarreza.com/wp-content/uploads/2025/04/%D8%AA%D8%B5%D9%88%DB%8C%D8%B1-%D8%B9%DA%A9%D8%B3-%D8%B4%D8%A7%D8%AE%D8%B5-4.jpg",
@@ -29,29 +40,34 @@ export default function ArticlesListContainer() {
 
   const [hoveredId, setHoveredId] = useState<number | null>(null);
 
+  // تصمیم گیری برای تعداد نمایش
+  const articlesToShow = count === 0 ? data : data.slice(0, count);
+
   return (
-    <div className="w-[90%] yekan mx-auto my-8 bg-white rounded-lg p-2">
+    <div className={` ${ispage ? " w-[100%] px-4 ": "w-[90%] my-8"}yekan mx-auto  bg-white rounded-lg p-2`}>
       <div className="w-full mb-8 mt-2 flex justify-between items-center">
-      <p className="font-semibold yekanh text-sm sm:text-base md:text-lg lg:text-xl">
-        مقالات
+        <p className="font-semibold yekanh text-sm sm:text-base md:text-lg lg:text-xl">
+          مقالات
         </p>
-        <Link
-          href="/"
-          className="flex items-center text-xs sm:text-sm gap-1 sm:gap-2 px-2 sm:px-3 py-1 text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
-          style={{
-            backgroundImage: "linear-gradient(to right, #f3f4f6, #e5e7eb)",
-          }}
-        >
-          <VisibilitySharp fontSize="inherit" className="text-gray-600" />
-          مشاهده همه
-        </Link>
+        {count !== 0 && (
+          <Link
+            href="../articles"
+            className="flex items-center text-xs sm:text-sm gap-1 sm:gap-2 px-2 sm:px-3 py-1 text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
+            style={{
+              backgroundImage: "linear-gradient(to right, #f3f4f6, #e5e7eb)",
+            }}
+          >
+            <VisibilitySharp fontSize="inherit" className="text-gray-600" />
+            مشاهده همه
+          </Link>
+        )}
       </div>
 
-      <div className="flex justify-between w-full max-[885px]:flex-nowrap max-[885px]:overflow-x-auto max-[885px]:overflow-y-hidden max-[885px]:space-x-4 max-[885px]:pb-4">
-        {data.map((item) => (
+      <div className={`flex justify-between w-full ${!ispage ? "max-[885px]:flex-nowrap max-[885px]:overflow-x-auto max-[885px]:overflow-y-hidden max-[885px]:space-x-4 max-[885px]:pb-4": "max-[885px]:flex-wrap  max-[885px]:gap-4"}`}>
+        {articlesToShow.map((item) => (
           <div
             key={item.id}
-            className="relative rounded-xl overflow-hidden w-[23%] max-[885px]:w-[200px] max-[885px]:flex-shrink-0"
+            className="relative rounded-xl overflow-hidden w-[23%] max-[885px]:w-[46%] max-[885px]:flex-shrink-0"
             onMouseEnter={() => setHoveredId(item.id)}
             onMouseLeave={() => setHoveredId(null)}
           >
@@ -64,7 +80,7 @@ export default function ArticlesListContainer() {
               className="absolute bottom-0 w-full p-4"
               style={{ backgroundImage: "linear-gradient(to top, #000, transparent)" }}
             >
-              <h2 className="text-white text-sm  lg:text-lg font-semibold font-vazir">
+              <h2 className="text-white text-sm lg:text-lg font-semibold font-vazir">
                 {item.title}
               </h2>
             </div>
@@ -74,7 +90,7 @@ export default function ArticlesListContainer() {
               } bg-[#0000007c] backdrop-blur-sm`}
             >
               <Link
-                href={`/article/${item.id}`}
+                href={`/articles/${item.id}`}
                 className="bg-white text-black px-4 py-2 rounded-lg yekan font-medium transition-colors"
               >
                 مشاهده مقاله
