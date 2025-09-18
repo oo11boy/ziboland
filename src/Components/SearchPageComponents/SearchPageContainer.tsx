@@ -972,8 +972,8 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                           </div>
                         )}
                         <Link href={`/products/${item.id}`} className="flex items-center flex-col">
-                          <Image
-                            src={item.media && item.media.length > 0 ? item.media[0].src : item.image || "/placeholder.jpg"}
+                          <img
+                            src={item.image.length > 0 ? item.image :  "/placeholder.jpg"}
                             alt={item.media && item.media.length > 0 ? item.media[0].alt : item.title}
                             width={200}
                             height={200}

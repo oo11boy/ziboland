@@ -1,4 +1,3 @@
-// types.ts
 import { RowDataPacket } from 'mysql2/promise';
 
 export interface CategoryRow extends RowDataPacket {
@@ -15,7 +14,7 @@ export interface CategoryRow extends RowDataPacket {
 
 export interface ProductRow extends RowDataPacket {
   product_id: number;
-  brand: string | null;
+  brand_id: number | null;
   title: string;
   image: string;
   originalPrice: string;
@@ -29,7 +28,7 @@ export interface ProductRow extends RowDataPacket {
   mothercatId: number;
   subcatId: number;
   rating: number;
-  inStock: boolean;
+  inStock: number;
   numericPrice: number;
   sales: number;
   features: string | null;
@@ -49,25 +48,10 @@ export interface ProductRow extends RowDataPacket {
   comment_rating: number | null;
   comment_text: string | null;
   comment_date: string | null;
-  brand_id: number | null;
-    brand_title: string | null;
+  brand_title: string | null;
   brand_img: string | null;
   brand_link: string | null;
 }
-
-export interface CommentRow extends RowDataPacket {
-  id: number;
-  name: string;
-  rating: number;
-  text: string;
-  date: string;
-}
-
-// ====================
-// API Response Types
-// ====================
-
-
 
 export interface Categoryapi {
   id: number;
@@ -80,7 +64,7 @@ export interface Categoryapi {
 
 export interface Product {
   id: number;
-
+  brand_id: number | null;
   title: string;
   image: string;
   originalPrice: string;
@@ -135,7 +119,21 @@ export interface Comment {
 
 export interface Brand {
   id: number;
-  title:string;
+  title: string;
   img: string;
   link: string;
+}
+
+export interface Category {
+  id: number;
+  name: string;
+  link: string;
+  mothercat: number;
+  icon: string;
+}
+
+export interface Subcategory {
+  id: number;
+  category_id: number;
+  name: string;
 }

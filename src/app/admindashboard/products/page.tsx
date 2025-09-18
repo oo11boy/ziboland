@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Plus, Edit, Trash2, View } from "lucide-react";
 import { Button } from "@/Components/ui/button";
@@ -15,28 +14,36 @@ const ProductsPage = () => {
 
   useEffect(() => {
     fetch(`${API}/products`)
-      .then((res) => res.json())
-      .then((data) => {
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to fetch products");
+        return res.json();
+      })
+      .then((data: Product[]) => {
         setProducts(data);
         setLoading(false);
       })
       .catch((err) => {
-        console.error(err);
+        console.error("Error fetching products:", err);
         setLoading(false);
       });
   }, []);
 
   const handleDelete = async (id: number) => {
     if (confirm("آیا مطمئن هستید؟")) {
-      await fetch(`${API}/products/${id}`, {
-        method: "DELETE",
-      });
-      setProducts(products.filter((p) => p.id !== id));
+      try {
+        const res = await fetch(`${API}/products/${id}`, {
+          method: "DELETE",
+        });
+        if (!res.ok) throw new Error("Failed to delete product");
+        setProducts(products.filter((p) => p.id !== id));
+      } catch (err) {
+        console.error("Error deleting product:", err);
+        alert("خطا در حذف محصول");
+      }
     }
   };
 
-  if (loading)
-    return <div className="text-center py-8">در حال بارگذاری...</div>;
+  if (loading) return <div className="text-center py-8">در حال بارگذاری...</div>;
 
   return (
     <div className="space-y-6">
@@ -56,12 +63,12 @@ const ProductsPage = () => {
           <CardTitle>لیست محصولات</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* جدول ریسپانسیو */}
           <div className="overflow-x-auto">
             <table className="w-full text-sm md:text-base table-auto border-collapse">
               <thead className="hidden md:table-header-group">
                 <tr className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                   <th className="px-4 py-2 text-right">نام</th>
+                  <th className="px-4 py-2 text-right">برند</th>
                   <th className="px-4 py-2 text-right">قیمت تک</th>
                   <th className="px-4 py-2 text-right">قیمت عمده</th>
                   <th className="px-4 py-2 text-right">دسته‌بندی</th>
@@ -75,39 +82,35 @@ const ProductsPage = () => {
                     key={product.id}
                     className="block md:table-row border-b md:border-0 border-gray-200 dark:border-gray-700 mb-4 md:mb-0 rounded-lg md:rounded-none shadow-sm md:shadow-none bg-gray-50 md:bg-transparent dark:bg-gray-900 md:dark:bg-transparent"
                   >
-                    {/* نام محصول با محدودیت کاراکتر */}
                     <td className="px-4 py-2 text-right block md:table-cell">
                       <span className="font-medium md:hidden">نام: </span>
                       {product.title.length > 20
                         ? product.title.slice(0, 20) + "..."
                         : product.title}
                     </td>
-
+                    <td className="px-4 py-2 text-right block md:table-cell">
+                      <span className="font-medium md:hidden">برند: </span>
+                      {product.brandDetails?.title || "نامشخص"}
+                    </td>
                     <td className="px-4 py-2 text-right block md:table-cell">
                       <span className="font-medium md:hidden">قیمت تک: </span>
                       {product.discountedPrice} تومان
                     </td>
-
                     <td className="px-4 py-2 text-right block md:table-cell">
                       <span className="font-medium md:hidden">قیمت عمده: </span>
                       {product.discountwholesalePrice} تومان
                     </td>
-
                     <td className="px-4 py-2 text-right block md:table-cell">
                       <span className="font-medium md:hidden">دسته‌بندی: </span>
                       {product.category}
                     </td>
-
                     <td className="px-4 py-2 text-right block md:table-cell">
                       <span className="font-medium md:hidden">وضعیت: </span>
-                      {product.inStock === false ? "ناموجود" : "موجود"}
+                      {product.inStock ? "موجود" : "ناموجود"}
                     </td>
-
                     <td className="px-4 py-2 block md:table-cell">
                       <div className="flex space-x-2 space-x-reverse">
-                        <Link
-                          href={`/admindashboard/products/${product.id}/edit`}
-                        >
+                        <Link href={`/admindashboard/products/${product.id}/edit`}>
                           <Button variant="ghost" size="sm">
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -120,7 +123,7 @@ const ProductsPage = () => {
                           <Trash2 className="h-4 w-4" />
                         </Button>
                         <a
-                          href={`../products/${product.id}`}
+                          href={`/products/${product.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
                         >
