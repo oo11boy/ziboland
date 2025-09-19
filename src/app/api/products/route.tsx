@@ -1,8 +1,7 @@
-
-import { NextResponse } from 'next/server';
-import pool from '@/lib/db';
-import { Product, ProductRow } from '@/types/types';
-import { RowDataPacket } from 'mysql2/promise';
+import { NextResponse } from "next/server";
+import pool from "@/lib/db";
+import { Product, ProductRow } from "@/types/types";
+import { RowDataPacket } from "mysql2/promise";
 
 export async function GET() {
   try {
@@ -61,64 +60,77 @@ export async function GET() {
           brandDetails: row.brand_id
             ? {
                 id: row.brand_id,
-                title: row.brand_title ?? '',
-                img: row.brand_img ?? '',
-                link: row.brand_link ?? '',
+                title: row.brand_title ?? "",
+                img: row.brand_img ?? "",
+                link: row.brand_link ?? "",
               }
             : undefined,
         };
       }
 
-      if (row.media_type && row.media_src &&
-        !productsMap[pid].media!.some(m => m.src === row.media_src)) {
+      if (
+        row.media_type &&
+        row.media_src &&
+        !productsMap[pid].media!.some((m) => m.src === row.media_src)
+      ) {
         productsMap[pid].media!.push({
           type: row.media_type,
           src: row.media_src,
-          thumbnail: row.media_thumbnail ?? '',
-          alt: row.media_alt ?? '',
+          thumbnail: row.media_thumbnail ?? "",
+          alt: row.media_alt ?? "",
         });
       }
 
-      if (row.englishName && row.hexCode &&
-        !productsMap[pid].colors!.some(c => c.hexCode === row.hexCode)) {
+      if (
+        row.englishName &&
+        row.hexCode &&
+        !productsMap[pid].colors!.some((c) => c.hexCode === row.hexCode)
+      ) {
         productsMap[pid].colors!.push({
           englishName: row.englishName,
-          persianName: row.persianName ?? '',
+          persianName: row.persianName ?? "",
           hexCode: row.hexCode,
         });
       }
 
-      if (row.infotable_id &&
-        !productsMap[pid].infotable!.some(it => it.id === row.infotable_id)) {
+      if (
+        row.infotable_id &&
+        !productsMap[pid].infotable!.some((it) => it.id === row.infotable_id)
+      ) {
         productsMap[pid].infotable!.push({
           id: row.infotable_id,
-          name: row.infotable_name ?? '',
-          value: row.infotable_value ?? '',
+          name: row.infotable_name ?? "",
+          value: row.infotable_value ?? "",
         });
       }
 
-      if (row.comment_id &&
-        !productsMap[pid].comments!.some(c => c.id === row.comment_id)) {
+      if (
+        row.comment_id &&
+        !productsMap[pid].comments!.some((c) => c.id === row.comment_id)
+      ) {
         productsMap[pid].comments!.push({
           id: row.comment_id,
-          name: row.comment_name ?? '',
+          product_id: row.comment_product_id,
+          name: row.comment_name ?? "",
           rating: row.comment_rating ?? 0,
-          text: row.comment_text ?? '',
-          date: row.comment_date ?? '',
+          text: row.comment_text ?? "",
+          date: row.comment_date ?? "",
+          status: !!row.comment_status, // Convert to boolean
+          is_admin: !!row.comment_is_admin, // Convert to boolean
         });
       }
     });
 
     const products = Object.values(productsMap);
     if (products.length === 0) {
-      return NextResponse.json({ error: 'No products found' }, { status: 404 });
+      return NextResponse.json({ error: "No products found" }, { status: 404 });
     }
 
     return NextResponse.json(products);
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error("Error fetching products:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch products', details: (error as Error).message },
+      { error: "Failed to fetch products", details: (error as Error).message },
       { status: 500 }
     );
   }
@@ -128,53 +140,116 @@ export async function POST(request: Request) {
   try {
     const data = await request.json();
     const {
-      title, brand_id, image, originalPrice, discountedPrice, wholesalePrice,
-      discountwholesalePrice, minwholesale, discount, discountwholesale,
-      category, mothercatId, subcatId, rating, inStock, numericPrice, sales,
-      features, content, infotable, media
+      title,
+      brand_id,
+      image,
+      originalPrice,
+      discountedPrice,
+      wholesalePrice,
+      discountwholesalePrice,
+      minwholesale,
+      discount,
+      discountwholesale,
+      category,
+      mothercatId,
+      subcatId,
+      rating,
+      inStock,
+      numericPrice,
+      sales,
+      features,
+      content,
+      infotable,
+      media,
     } = data;
 
     // Validate required fields
-    if (!title || !image || !originalPrice || !discountedPrice ||
-        !wholesalePrice || !discountwholesalePrice || !minwholesale ||
-        !discount || !discountwholesale || !category || !mothercatId || !subcatId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (
+      !title ||
+      !image ||
+      !originalPrice ||
+      !discountedPrice ||
+      !wholesalePrice ||
+      !discountwholesalePrice ||
+      !minwholesale ||
+      !discount ||
+      !discountwholesale ||
+      !category ||
+      !mothercatId ||
+      !subcatId
+    ) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
     // Validate infotable entries
     if (infotable && !Array.isArray(infotable)) {
-      return NextResponse.json({ error: 'infotable must be an array' }, { status: 400 });
+      return NextResponse.json(
+        { error: "infotable must be an array" },
+        { status: 400 }
+      );
     }
     if (infotable && infotable.some((item: any) => !item.name || !item.value)) {
-      return NextResponse.json({ error: 'All infotable entries must have name and value' }, { status: 400 });
+      return NextResponse.json(
+        { error: "All infotable entries must have name and value" },
+        { status: 400 }
+      );
     }
 
     // Validate media entries
     if (media && !Array.isArray(media)) {
-      return NextResponse.json({ error: 'media must be an array' }, { status: 400 });
+      return NextResponse.json(
+        { error: "media must be an array" },
+        { status: 400 }
+      );
     }
     if (
-      media && media.some(
-        (item: any) => !item.type || !item.src || !item.alt || !['image', 'video'].includes(item.type)
+      media &&
+      media.some(
+        (item: any) =>
+          !item.type ||
+          !item.src ||
+          !item.alt ||
+          !["image", "video"].includes(item.type)
       )
     ) {
-      return NextResponse.json({ error: 'All media entries must have valid type, src, and alt' }, { status: 400 });
+      return NextResponse.json(
+        { error: "All media entries must have valid type, src, and alt" },
+        { status: 400 }
+      );
     }
 
     // Validate foreign keys
     if (brand_id) {
-      const [brandRows] = await pool.query<RowDataPacket[]>('SELECT id FROM brands WHERE id = ?', [brand_id]);
+      const [brandRows] = await pool.query<RowDataPacket[]>(
+        "SELECT id FROM brands WHERE id = ?",
+        [brand_id]
+      );
       if (brandRows.length === 0) {
-        return NextResponse.json({ error: 'Invalid brand_id' }, { status: 400 });
+        return NextResponse.json(
+          { error: "Invalid brand_id" },
+          { status: 400 }
+        );
       }
     }
-    const [categoryRows] = await pool.query<RowDataPacket[]>('SELECT id FROM categories WHERE id = ?', [mothercatId]);
+    const [categoryRows] = await pool.query<RowDataPacket[]>(
+      "SELECT id FROM categories WHERE id = ?",
+      [mothercatId]
+    );
     if (categoryRows.length === 0) {
-      return NextResponse.json({ error: 'Invalid mothercatId' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid mothercatId" },
+        { status: 400 }
+      );
     }
-    const [subcatRows] = await pool.query<RowDataPacket[]>('SELECT id FROM subcategories WHERE id = ? AND category_id = ?', [subcatId, mothercatId]);
+    const [subcatRows] = await pool.query<RowDataPacket[]>(
+      "SELECT id FROM subcategories WHERE id = ? AND category_id = ?",
+      [subcatId, mothercatId]
+    );
     if (subcatRows.length === 0) {
-      return NextResponse.json({ error: 'Invalid subcatId' }, { status: 400 });
+      return NextResponse.json({ error: "Invalid subcatId" }, { status: 400 });
     }
 
     const connection = await pool.getConnection();
@@ -182,19 +257,37 @@ export async function POST(request: Request) {
       await connection.beginTransaction();
 
       // Insert product
-      const [result] = await connection.query(`
+      const [result] = await connection.query(
+        `
         INSERT INTO products (
           brand_id, title, image, originalPrice, discountedPrice, wholesalePrice,
           discountwholesalePrice, minwholesale, discount, discountwholesale,
           category, mothercatId, subcatId, rating, inStock, numericPrice, sales,
           features, content
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `, [
-        brand_id || null, title, image, originalPrice, discountedPrice, wholesalePrice,
-        discountwholesalePrice, minwholesale, discount, discountwholesale,
-        category, mothercatId, subcatId, rating, inStock, numericPrice, sales,
-        features, content || null
-      ]);
+      `,
+        [
+          brand_id || null,
+          title,
+          image,
+          originalPrice,
+          discountedPrice,
+          wholesalePrice,
+          discountwholesalePrice,
+          minwholesale,
+          discount,
+          discountwholesale,
+          category,
+          mothercatId,
+          subcatId,
+          rating,
+          inStock,
+          numericPrice,
+          sales,
+          features,
+          content || null,
+        ]
+      );
 
       const productId = (result as any).insertId;
 
@@ -202,7 +295,7 @@ export async function POST(request: Request) {
       if (infotable && infotable.length > 0) {
         for (const item of infotable) {
           await connection.query(
-            'INSERT INTO infotable (product_id, name, value) VALUES (?, ?, ?)',
+            "INSERT INTO infotable (product_id, name, value) VALUES (?, ?, ?)",
             [productId, item.name, item.value]
           );
         }
@@ -212,7 +305,7 @@ export async function POST(request: Request) {
       if (media && media.length > 0) {
         for (const item of media) {
           await connection.query(
-            'INSERT INTO media (product_id, type, src, thumbnail, alt) VALUES (?, ?, ?, ?, ?)',
+            "INSERT INTO media (product_id, type, src, thumbnail, alt) VALUES (?, ?, ?, ?, ?)",
             [productId, item.type, item.src, item.thumbnail || null, item.alt]
           );
         }
@@ -227,9 +320,9 @@ export async function POST(request: Request) {
       connection.release();
     }
   } catch (error) {
-    console.error('Error adding product:', error);
+    console.error("Error adding product:", error);
     return NextResponse.json(
-      { error: 'Failed to add product', details: (error as Error).message },
+      { error: "Failed to add product", details: (error as Error).message },
       { status: 500 }
     );
   }

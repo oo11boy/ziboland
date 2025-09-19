@@ -11,7 +11,6 @@ export interface CategoryRow extends RowDataPacket {
   item_id: number | null;
   item_name: string | null;
 }
-
 export interface ProductRow extends RowDataPacket {
   product_id: number;
   brand_id: number | null;
@@ -44,15 +43,17 @@ export interface ProductRow extends RowDataPacket {
   infotable_name: string | null;
   infotable_value: string | null;
   comment_id: number | null;
+  comment_product_id: number | null; // Add
   comment_name: string | null;
   comment_rating: number | null;
   comment_text: string | null;
   comment_date: string | null;
+  comment_status: number | null; // Add
+  comment_is_admin: number | null; // Add
   brand_title: string | null;
   brand_img: string | null;
   brand_link: string | null;
 }
-
 export interface Categoryapi {
   id: number;
   name: string;
@@ -108,13 +109,19 @@ export interface InfoTable {
   name: string;
   value: string;
 }
-
 export interface Comment {
   id: number;
+product_id: number | null;
   name: string;
-  rating: number;
+  rating?: number;
   text: string;
+  admin_reply?: string;
   date: string;
+  status: boolean;
+  parent_id?: number; // Remove | null
+  is_admin: boolean;
+  product_title?: string;
+  level?: number;
 }
 
 export interface Brand {

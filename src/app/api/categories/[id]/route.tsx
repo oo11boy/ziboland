@@ -1,16 +1,16 @@
-// pages/api/categories/index.ts
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { Categoryapi, CategoryRow } from "@/types/types";
-import { RowDataPacket } from "mysql2/promise";
+import { Categoryapi } from "@/types/types";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const mothercat = searchParams.get("mothercat");
-  const categoryId = searchParams.get("id");
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const categoryId = parseInt(params.id);
+  if (isNaN(categoryId)) {
+    return NextResponse.json({ error: "شناسه دسته‌بندی نامعتبر است" }, { status: 400 });
+  }
 
   try {
-    let query = `
+    const [rows] = await pool.query(
+      `
       SELECT 
         c.id AS cat_id, c.name AS cat_name, c.link, c.mothercat, c.icon,
         sc.id AS subcat_id, sc.name AS subcat_name,
@@ -18,42 +18,17 @@ export async function GET(request: Request) {
       FROM categories c
       LEFT JOIN subcategories sc ON c.id = sc.category_id
       LEFT JOIN subcategory_items sci ON sc.id = sci.subcategory_id
-    `;
-    const queryParams: (number | undefined)[] = [];
-
-    const conditions: string[] = [];
-    if (mothercat !== null) {
-      if (isNaN(parseInt(mothercat))) {
-        return NextResponse.json(
-          { error: "پارامتر mothercat نامعتبر است" },
-          { status: 400 }
-        );
-      }
-      conditions.push("c.mothercat = ?");
-      queryParams.push(parseInt(mothercat));
-    }
-    if (categoryId !== null) {
-      if (isNaN(parseInt(categoryId))) {
-        return NextResponse.json(
-          { error: "شناسه دسته‌بندی نامعتبر است" },
-          { status: 400 }
-        );
-      }
-      conditions.push("c.id = ?");
-      queryParams.push(parseInt(categoryId));
-    }
-    if (conditions.length > 0) {
-      query += " WHERE " + conditions.join(" AND ");
-    }
-    query += " ORDER BY c.id, sc.id, sci.id";
-
-    const [rows] = await pool.query<CategoryRow[]>(query, queryParams);
+      WHERE c.id = ?
+      ORDER BY c.id, sc.id, sci.id
+      `,
+      [categoryId]
+    );
 
     const categoriesMap: Record<number, Categoryapi> = {};
     const subcatIds = new Set<number>();
     const itemIds = new Set<number>();
 
-    rows.forEach((row) => {
+    (rows as any[]).forEach((row: any) => {
       const catId = row.cat_id;
 
       if (!categoriesMap[catId]) {
@@ -94,20 +69,20 @@ export async function GET(request: Request) {
       }
     });
 
-    const categories = Object.values(categoriesMap);
-    if (categories.length === 0) {
+    const category = Object.values(categoriesMap)[0];
+    if (!category) {
       return NextResponse.json(
-        { error: "هیچ دسته‌بندی یافت نشد" },
+        { error: "دسته‌بندی یافت نشد" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(categories);
+    return NextResponse.json(category);
   } catch (error) {
-    console.error("خطا در دریافت دسته‌بندی‌ها:", error);
+    console.error("خطا در دریافت دسته‌بندی:", error);
     return NextResponse.json(
       {
-        error: "خطا در دریافت دسته‌بندی‌ها",
+        error: "خطا در دریافت دسته‌بندی",
         details: (error as Error).message,
       },
       { status: 500 }
@@ -115,7 +90,12 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+export async function PUT(request: Request, { params }: { params: { id: string } }) {
+  const categoryId = parseInt(params.id);
+  if (isNaN(categoryId)) {
+    return NextResponse.json({ error: "شناسه دسته‌بندی نامعتبر است" }, { status: 400 });
+  }
+
   try {
     const data = await request.json();
     const { name, link, mothercat, icon, subcat } = data;
@@ -132,11 +112,16 @@ export async function POST(request: Request) {
       await connection.beginTransaction();
 
       const [result] = await connection.query(
-        "INSERT INTO categories (name, link, mothercat, icon) VALUES (?, ?, ?, ?)",
-        [name, link, mothercat ? 1 : 0, icon]
+        "UPDATE categories SET name = ?, link = ?, mothercat = ?, icon = ? WHERE id = ?",
+        [name, link, mothercat ? 1 : 0, icon, categoryId]
       );
 
-      const categoryId = (result as any).insertId;
+      if ((result as any).affectedRows === 0) {
+        throw new Error("دسته‌بندی یافت نشد");
+      }
+
+      await connection.query("DELETE FROM subcategories WHERE category_id = ?", [categoryId]);
+      await connection.query("DELETE FROM subcategory_items WHERE subcategory_id IN (SELECT id FROM subcategories WHERE category_id = ?)", [categoryId]);
 
       if (subcat && Array.isArray(subcat)) {
         for (const sub of subcat) {
@@ -164,7 +149,7 @@ export async function POST(request: Request) {
       }
 
       await connection.commit();
-      return NextResponse.json({ id: categoryId }, { status: 201 });
+      return NextResponse.json({ message: "دسته‌بندی با موفقیت بروزرسانی شد" });
     } catch (error) {
       await connection.rollback();
       throw error;
@@ -172,9 +157,45 @@ export async function POST(request: Request) {
       connection.release();
     }
   } catch (error) {
-    console.error("خطا در افزودن دسته‌بندی:", error);
+    console.error("خطا در بروزرسانی دسته‌بندی:", error);
     return NextResponse.json(
-      { error: "خطا در افزودن دسته‌بندی", details: (error as Error).message },
+      { error: "خطا در بروزرسانی دسته‌بندی", details: (error as Error).message },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+  const categoryId = parseInt(params.id);
+  if (isNaN(categoryId)) {
+    return NextResponse.json({ error: "شناسه دسته‌بندی نامعتبر است" }, { status: 400 });
+  }
+
+  try {
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+
+      await connection.query("DELETE FROM subcategory_items WHERE subcategory_id IN (SELECT id FROM subcategories WHERE category_id = ?)", [categoryId]);
+      await connection.query("DELETE FROM subcategories WHERE category_id = ?", [categoryId]);
+      const [result] = await connection.query("DELETE FROM categories WHERE id = ?", [categoryId]);
+
+      if ((result as any).affectedRows === 0) {
+        throw new Error("دسته‌بندی یافت نشد");
+      }
+
+      await connection.commit();
+      return NextResponse.json({ message: "دسته‌بندی با موفقیت حذف شد" });
+    } catch (error) {
+      await connection.rollback();
+      throw error;
+    } finally {
+      connection.release();
+    }
+  } catch (error) {
+    console.error("خطا در حذف دسته‌بندی:", error);
+    return NextResponse.json(
+      { error: "خطا در حذف دسته‌بندی", details: (error as Error).message },
       { status: 500 }
     );
   }
