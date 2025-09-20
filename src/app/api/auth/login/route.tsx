@@ -1,3 +1,4 @@
+// app/api/auth/login/route.ts
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import bcrypt from 'bcryptjs';
@@ -21,10 +22,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ایمیل یا رمز عبور اشتباه است' }, { status: 401 });
     }
 
-    const token = jwt.sign({ userId: user.id, email: user.email }, SECRET_KEY, { expiresIn: '1d' });
+    // Include role in the JWT token
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, role: user.role },
+      SECRET_KEY,
+      { expiresIn: '1d' }
+    );
 
-    const response = NextResponse.json({ message: 'ورود با موفقیت انجام شد' });
-    response.cookies.set('authToken', token, { httpOnly: false, secure: true, sameSite: 'strict', maxAge: 86400 });
+    const response = NextResponse.json({
+      message: 'ورود با موفقیت انجام شد',
+      role: user.role, // Include role in response
+    });
+    response.cookies.set('authToken', token, {
+      httpOnly: false,
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 86400,
+    });
     return response;
   } catch (error) {
     console.error('Login error:', error);

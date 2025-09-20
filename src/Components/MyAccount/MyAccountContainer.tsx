@@ -21,8 +21,7 @@ export default function MyAccountContainer() {
     setFormData({ ...formData, [field]: value });
     setError('');
   };
-
-  const handleLogin = async (e: React.FormEvent) => {
+const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.email || !formData.password) {
       setError('ایمیل و رمز عبور الزامی هستند');
@@ -38,7 +37,12 @@ export default function MyAccountContainer() {
 
       const data = await res.json();
       if (res.ok) {
-        router.push('/userdashboard');
+        // Redirect based on user role
+        if (data.role === 'admin') {
+          router.push('/admindashboard');
+        } else {
+          router.push('/userdashboard');
+        }
       } else {
         setError(data.error || 'خطا در ورود');
       }
