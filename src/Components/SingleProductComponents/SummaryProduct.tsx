@@ -20,7 +20,7 @@ const SummaryProduct: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => 
       <div className="sp-summary-details">
         <span>دسته: {infoproduct.category || 'نامشخص'}</span>
         <br />
-        <span>برند: {infoproduct.brandDetails?.img || 'نامشخص'}</span>
+        <span>برند: {infoproduct.brandDetails?.title || 'نامشخص'}</span>
       </div>
       <div className="sp-summary-actions">
         <FavoriteBorderOutlined className="sp-summary-icon" />
