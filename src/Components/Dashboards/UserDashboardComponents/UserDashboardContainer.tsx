@@ -1,11 +1,15 @@
+// UserDashboardContainer.tsx
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Favorite, FireTruck, Home, Logout, Settings, ShoppingBag, Menu, Close, Add, ShoppingCart, Message } from '@mui/icons-material';
 import { Accordion, AccordionSummary, AccordionDetails, Typography, Modal, Box, Avatar } from '@mui/material';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
 import './UserDashboard.css';
-// TypeScript interfaces
+
+// TypeScript interfaces (unchanged from your provided code)
 interface Order {
   id: string;
   date: string;
@@ -45,31 +49,29 @@ interface SupportTicket {
 
 interface Address {
   id: string;
-  firstName: string;
-  lastName: string;
-  phone: string;
-  email?: string;
+  userId: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
   province: string;
   city: string;
-  postalCode: string;
-  address: string;
+  street: string;
+  alley?: string;
+  building_number?: string;
   unit?: string;
-  isDefault?: boolean;
+  postal_code: string;
+  extra_details?: string;
+  is_default: boolean;
 }
 
 interface AccountInfo {
-  name: string;
+  username: string;
   email: string;
-  phone: string;
-  nationalId: string;
-  landline: string;
-  bankCard: string;
-  sheba: string;
-  bankName: string;
-  guild: string;
-  company: string;
-  position: string;
-  isComplete: boolean;
+  phone_number: string;
+  first_name: string;
+  last_name: string;
+  role: 'admin' | 'customer';
+  isActive: boolean;
 }
 
 interface RecentActivity {
@@ -83,48 +85,32 @@ export default function UserDashboardContainer() {
   const [trackingResult, setTrackingResult] = useState<TrackingResult | null>(null);
   const [trackingError, setTrackingError] = useState<string>('');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
-  const [addresses, setAddresses] = useState<Address[]>([
-    {
-      id: '1',
-      firstName: 'علی',
-      lastName: 'محمدی',
-      phone: '09123456789',
-      email: 'ali@example.com',
-      province: 'تهران',
-      city: 'تهران',
-      postalCode: '1234567890',
-      address: 'خیابان نمونه، کوچه اول',
-      unit: 'پلاک 10، واحد 5',
-      isDefault: true,
-    },
-  ]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [newAddress, setNewAddress] = useState<Address>({
     id: '',
-    firstName: '',
-    lastName: '',
-    phone: '',
-    email: '',
+    userId: '',
+    first_name: '',
+    last_name: '',
+    phone_number: '',
     province: '',
     city: '',
-    postalCode: '',
-    address: '',
+    street: '',
+    alley: '',
+    building_number: '',
     unit: '',
-    isDefault: false,
+    postal_code: '',
+    extra_details: '',
+    is_default: false,
   });
   const [addressError, setAddressError] = useState<string>('');
   const [accountInfo, setAccountInfo] = useState<AccountInfo>({
-    name: 'علی محمدی',
-    email: 'ali@example.com',
-    phone: '09123456789',
-    nationalId: '1234567890',
-    landline: '02112345678',
-    bankCard: '1234-5678-9012-3456',
-    sheba: 'IR1234567890123456789012',
-    bankName: 'بانک ملی',
-    guild: 'فناوری اطلاعات',
-    company: 'شرکت نمونه',
-    position: 'مدیر',
-    isComplete: true,
+    username: '',
+    email: '',
+    phone_number: '',
+    first_name: '',
+    last_name: '',
+    role: 'customer',
+    isActive: false,
   });
   const [showAddressForm, setShowAddressForm] = useState<boolean>(false);
   const [expandedAccordion, setExpandedAccordion] = useState<string | false>(false);
@@ -137,51 +123,13 @@ export default function UserDashboardContainer() {
   const [isReplyModalOpen, setIsReplyModalOpen] = useState<boolean>(false);
   const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
   const [ticketReply, setTicketReply] = useState<string>('');
-  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([
-    { id: 'T001', subject: 'مشکل در تحویل سفارش', message: 'سفارشم هنوز به دستم نرسیده است.', status: 'باز', date: '1404/05/10', response: 'در حال بررسی هستیم.' },
-    { id: 'T002', subject: 'درخواست بازگشت کالا', message: 'محصول معیوب است.', status: 'بسته', date: '1404/05/08', response: 'عودت پذیرفته شد.' },
-  ]);
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
 
-  // Sample data
-  const orders: Order[] = [
-    {
-      id: '1234',
-      date: '1404/05/10',
-      total: '2,500,000',
-      status: 'ارسال شده',
-      product: {
-        name: 'گوشی سامسونگ S23',
-        image: 'https://picsum.photos/200/300',
-        details: 'گوشی سامسونگ S23 با 128 گیگابایت حافظه داخلی و رنگ مشکی',
-      },
-    },
-    {
-      id: '1235',
-      date: '1404/05/08',
-      total: '1,800,000',
-      status: 'در حال پردازش',
-      product: {
-        name: 'لپ‌تاپ مک‌بوک پرو',
-        image: 'https://picsum.photos/200/302',
-        details: 'لپ‌تاپ مک‌بوک پرو 13 اینچ با پردازنده M1',
-      },
-    },
-  ];
-
-  const wishlist: WishlistItem[] = [
-    { id: 1, name: 'گوشی سامسونگ S23', price: '32,000,000', image: 'https://picsum.photos/200/300' },
-    { id: 2, name: 'لپ‌تاپ مک‌بوک پرو', price: '85,000,000', image: 'https://picsum.photos/200' },
-  ];
-
-  const tracking: Tracking[] = [
-    { id: '1234', status: 'در حال ارسال', estimatedDelivery: '1404/05/15' },
-    { id: '1235', status: 'در حال پردازش', estimatedDelivery: '1404/05/18' },
-  ];
-
-  const recentActivities: RecentActivity[] = [
-    { description: 'سفارش #1234 ثبت شد', date: '1404/05/10' },
-    { description: 'محصول به لیست علاقه‌مندی‌ها اضافه شد', date: '1404/05/09' },
-  ];
+  const router = useRouter();
+  const token = Cookies.get('authToken');
 
   const provinces = ['تهران', 'اصفهان', 'شیراز', 'مشهد'];
   const cities: { [key: string]: string[] } = {
@@ -191,8 +139,105 @@ export default function UserDashboardContainer() {
     مشهد: ['مشهد', 'نیشابور', 'سبزوار'],
   };
 
-  // Handlers
-  const handleTrackOrder = () => {
+  useEffect(() => {
+    if (!token) {
+      router.push('/myaccount');
+    } else {
+      fetchAddresses();
+      fetchAccountInfo();
+      fetchOrders();
+      fetchWishlist();
+      fetchTickets();
+      fetchRecentActivities();
+    }
+  }, [token]);
+
+  const fetchAddresses = async () => {
+    try {
+      const res = await fetch('/api/addresses', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAddresses(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch addresses:', err);
+    }
+  };
+
+  const fetchAccountInfo = async () => {
+    try {
+      const res = await fetch('/api/users/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAccountInfo(data);
+        setNewAddress((prev) => ({ ...prev, userId: data.id }));
+      }
+    } catch (err) {
+      console.error('Failed to fetch account info:', err);
+    }
+  };
+
+  const fetchOrders = async () => {
+    try {
+      const res = await fetch('/api/orders', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch orders:', err);
+    }
+  };
+
+  const fetchWishlist = async () => {
+    try {
+      const res = await fetch('/api/wishlist', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWishlist(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch wishlist:', err);
+    }
+  };
+
+  const fetchTickets = async () => {
+    try {
+      const res = await fetch('/api/tickets', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSupportTickets(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch tickets:', err);
+    }
+  };
+
+  const fetchRecentActivities = async () => {
+    try {
+      const res = await fetch('/api/activities', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRecentActivities(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch activities:', err);
+    }
+  };
+
+  const handleTrackOrder = async () => {
     if (!orderTrackingId.trim()) {
       setTrackingError('لطفاً شماره سفارش را وارد کنید.');
       setTrackingResult(null);
@@ -203,18 +248,21 @@ export default function UserDashboardContainer() {
       setTrackingResult(null);
       return;
     }
-    const result = tracking.find((track) => track.id === orderTrackingId);
-    if (result) {
-      setTrackingResult({
-        id: result.id,
-        status: result.status,
-        date: result.estimatedDelivery,
-        details: `تحویل تخمینی: ${result.estimatedDelivery}`,
+    try {
+      const res = await fetch(`/api/orders/track/${orderTrackingId}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      setTrackingError('');
-    } else {
+      if (res.ok) {
+        const data = await res.json();
+        setTrackingResult(data);
+        setTrackingError('');
+      } else {
+        setTrackingResult(null);
+        setTrackingError('سفارش با این شماره یافت نشد.');
+      }
+    } catch (err) {
       setTrackingResult(null);
-      setTrackingError('سفارش با این شماره یافت نشد.');
+      setTrackingError('خطا در پیگیری سفارش.');
     }
   };
 
@@ -223,49 +271,64 @@ export default function UserDashboardContainer() {
   };
 
   const validateAddress = (address: Address): string | null => {
-    if (!address.firstName || !address.lastName || !address.phone || !address.province || !address.city || !address.postalCode || !address.address) {
+    if (!address.first_name || !address.last_name || !address.phone_number || !address.province || !address.city || !address.postal_code) {
       return 'لطفاً تمام فیلدهای الزامی را پر کنید.';
     }
-    if (!/^\d{11}$/.test(address.phone)) {
+    if (!/^\d{11}$/.test(address.phone_number)) {
       return 'شماره همراه باید 11 رقم باشد.';
     }
-    if (!/^\d{10}$/.test(address.postalCode)) {
+    if (!/^\d{10}$/.test(address.postal_code)) {
       return 'کدپستی باید 10 رقم باشد.';
-    }
-    if (address.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address.email)) {
-      return 'ایمیل واردشده معتبر نیست.';
     }
     return null;
   };
 
-  const handleAddAddress = () => {
-    const error = validateAddress(newAddress);
-    if (error) {
-      setAddressError(error);
-      return;
-    }
-    if (editingAddressId) {
-      setAddresses(addresses.map((addr) => (addr.id === editingAddressId ? { ...newAddress, id: editingAddressId } : addr)));
-      setEditingAddressId(null);
-    } else {
-      setAddresses([...addresses, { ...newAddress, id: `${addresses.length + 1}` }]);
-    }
-    setNewAddress({
-      id: '',
-      firstName: '',
-      lastName: '',
-      phone: '',
-      email: '',
-      province: '',
-      city: '',
-      postalCode: '',
-      address: '',
-      unit: '',
-      isDefault: false,
+const handleAddAddress = async () => {
+  const error = validateAddress(newAddress);
+  if (error) {
+    setAddressError(error);
+    return;
+  }
+  try {
+    // تبدیل camelCase به snake_case
+    const payload = {
+      first_name: newAddress.first_name,
+      last_name: newAddress.last_name,
+      phone_number: newAddress.phone_number,
+      province: newAddress.province,
+      city: newAddress.city,
+      street: newAddress.street,
+      alley: newAddress.alley || null,
+      building_number: newAddress.building_number || null,
+      unit: newAddress.unit || null,
+      postal_code: newAddress.postal_code,
+      extra_details: newAddress.extra_details || null,
+      is_default: newAddress.is_default,
+    };
+
+    console.log('Sending payload:', payload); // لاگ کردن داده‌های ارسالی
+
+    const res = await fetch(editingAddressId ? `/api/addresses/${editingAddressId}` : '/api/addresses', {
+      method: editingAddressId ? 'PUT' : 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(payload),
     });
-    setShowAddressForm(false);
-    setAddressError('');
-  };
+
+    if (res.ok) {
+      fetchAddresses();
+      setShowAddressForm(false);
+      setEditingAddressId(null);
+      setAddressError('');
+    } else {
+      const errorData = await res.json();
+      console.error('Error response:', errorData); // لاگ کردن پاسخ خطا
+      setAddressError(errorData.error || 'خطا در ذخیره آدرس');
+    }
+  } catch (err) {
+    console.error('Error in handleAddAddress:', err);
+    setAddressError('خطا در ارتباط با سرور');
+  }
+};
 
   const handleEditAddress = (address: Address) => {
     setNewAddress(address);
@@ -273,8 +336,18 @@ export default function UserDashboardContainer() {
     setShowAddressForm(true);
   };
 
-  const handleDeleteAddress = (id: string) => {
-    setAddresses(addresses.filter((addr) => addr.id !== id));
+  const handleDeleteAddress = async (id: string) => {
+    try {
+      const res = await fetch(`/api/addresses/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        fetchAddresses();
+      }
+    } catch (err) {
+      console.error('Failed to delete address:', err);
+    }
   };
 
   const handleAccordionChange = (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => {
@@ -285,28 +358,43 @@ export default function UserDashboardContainer() {
     setAccountInfo({ ...accountInfo, [field]: value });
   };
 
-  const handleSubmitTicket = () => {
+  const handleSubmitTicket = async () => {
     if (!newTicket.subject.trim() || !newTicket.message.trim()) {
       setTicketError('لطفاً موضوع و متن تیکت را پر کنید.');
       return;
     }
-    setSupportTickets([
-      ...supportTickets,
-      {
-        id: `T${supportTickets.length + 1}`.padStart(4, '0'),
-        subject: newTicket.subject,
-        message: newTicket.message,
-        status: 'باز',
-        date: new Date().toLocaleDateString('fa-IR'),
-      },
-    ]);
-    setNewTicket({ subject: '', message: '' });
-    setIsTicketModalOpen(false);
-    setTicketError('');
+    try {
+      const res = await fetch('/api/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(newTicket),
+      });
+      if (res.ok) {
+        fetchTickets();
+        setNewTicket({ subject: '', message: '' });
+        setIsTicketModalOpen(false);
+        setTicketError('');
+      } else {
+        setTicketError('خطا در ثبت تیکت');
+      }
+    } catch (err) {
+      setTicketError('خطا در ثبت تیکت');
+    }
   };
 
-  const handleCloseTicket = (id: string) => {
-    setSupportTickets(supportTickets.map((ticket) => (ticket.id === id ? { ...ticket, status: 'بسته' } : ticket)));
+  const handleCloseTicket = async (id: string) => {
+    try {
+      const res = await fetch(`/api/tickets/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: 'بسته' }),
+      });
+      if (res.ok) {
+        fetchTickets();
+      }
+    } catch (err) {
+      console.error('Failed to close ticket:', err);
+    }
   };
 
   const handleViewOrderDetails = (order: Order) => {
@@ -314,16 +402,49 @@ export default function UserDashboardContainer() {
     setIsOrderModalOpen(true);
   };
 
-  const handleCancelOrder = (id: string) => {
-    alert(`سفارش شماره ${id} لغو شد.`);
+  const handleCancelOrder = async (id: string) => {
+    try {
+      const res = await fetch(`/api/orders/${id}/cancel`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        fetchOrders();
+        alert(`سفارش شماره ${id} لغو شد.`);
+      }
+    } catch (err) {
+      console.error('Failed to cancel order:', err);
+    }
   };
 
-  const handleAddToCart = (item: WishlistItem) => {
-    alert(`محصول ${item.name} به سبد خرید اضافه شد.`);
+  const handleAddToCart = async (item: WishlistItem) => {
+    try {
+      const res = await fetch('/api/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ productId: item.id }),
+      });
+      if (res.ok) {
+        alert(`محصول ${item.name} به سبد خرید اضافه شد.`);
+      }
+    } catch (err) {
+      console.error('Failed to add to cart:', err);
+    }
   };
 
-  const handleRemoveFromWishlist = (id: number) => {
-    alert(`محصول با شناسه ${id} از لیست علاقه‌مندی‌ها حذف شد.`);
+  const handleRemoveFromWishlist = async (id: number) => {
+    try {
+      const res = await fetch(`/api/wishlist/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        fetchWishlist();
+        alert(`محصول با شناسه ${id} از لیست علاقه‌مندی‌ها حذف شد.`);
+      }
+    } catch (err) {
+      console.error('Failed to remove from wishlist:', err);
+    }
   };
 
   const handleReplyTicket = (ticket: SupportTicket) => {
@@ -331,28 +452,60 @@ export default function UserDashboardContainer() {
     setIsReplyModalOpen(true);
   };
 
-  const handleSubmitReply = () => {
+  const handleSubmitReply = async () => {
     if (!ticketReply.trim()) {
       setTicketError('لطفاً متن پاسخ را وارد کنید.');
       return;
     }
-    setSupportTickets(
-      supportTickets.map((ticket) =>
-        ticket.id === selectedTicket?.id ? { ...ticket, response: ticketReply, status: 'پاسخ داده شده' } : ticket
-      )
-    );
-    setTicketReply('');
-    setIsReplyModalOpen(false);
-    setTicketError('');
-    setSelectedTicket(null);
+    try {
+      const res = await fetch(`/api/tickets/${selectedTicket?.id}/reply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ response: ticketReply }),
+      });
+      if (res.ok) {
+        fetchTickets();
+        setTicketReply('');
+        setIsReplyModalOpen(false);
+        setTicketError('');
+        setSelectedTicket(null);
+      } else {
+        setTicketError('خطا در ارسال پاسخ');
+      }
+    } catch (err) {
+      setTicketError('خطا در ارسال پاسخ');
+    }
   };
 
-  const handleSaveAccountInfo = () => {
-    if (!accountInfo.name || !accountInfo.email) {
+  const handleSaveAccountInfo = async () => {
+    if (!accountInfo.first_name || !accountInfo.email) {
       alert('لطفاً نام و ایمیل را پر کنید.');
       return;
     }
-    alert('تغییرات حساب کاربری با موفقیت ذخیره شد.');
+    try {
+      const res = await fetch('/api/users/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(accountInfo),
+      });
+      if (res.ok) {
+        alert('تغییرات حساب کاربری با موفقیت ذخیره شد.');
+      } else {
+        alert('خطا در ذخیره تغییرات');
+      }
+    } catch (err) {
+      alert('خطا در ذخیره تغییرات');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      Cookies.remove('authToken');
+      router.push('/myaccount');
+    } catch (err) {
+      console.error('Logout failed:', err);
+    }
   };
 
   const modalStyle = {
@@ -374,9 +527,9 @@ export default function UserDashboardContainer() {
       {/* Mobile Hamburger Menu */}
       <div className="ud-mobile-header">
         <div className="ud-mobile-header-user">
-          <Avatar alt={accountInfo.name} />
+          <Avatar alt={accountInfo.first_name} />
           <div>
-            <h1 className="ud-mobile-header-title">{accountInfo.name}</h1>
+            <h1 className="ud-mobile-header-title">{accountInfo.first_name}</h1>
             <p className="ud-mobile-header-email">{accountInfo.email}</p>
           </div>
         </div>
@@ -386,13 +539,11 @@ export default function UserDashboardContainer() {
       </div>
 
       {/* Sidebar */}
-      <aside
-        className={`ud-sidebar ${isSidebarOpen ? 'ud-sidebar-open' : ''}`}
-      >
+      <aside className={`ud-sidebar ${isSidebarOpen ? 'ud-sidebar-open' : ''}`}>
         <div className="ud-sidebar-user">
-          <Avatar alt={accountInfo.name} />
+          <Avatar alt={accountInfo.first_name} />
           <div>
-            <h1 className="ud-mobile-header-title">{accountInfo.name}</h1>
+            <h1 className="ud-mobile-header-title">{accountInfo.first_name}</h1>
             <p className="ud-mobile-header-email">{accountInfo.email}</p>
           </div>
         </div>
@@ -428,6 +579,7 @@ export default function UserDashboardContainer() {
             بازگشت به خانه
           </Link>
           <button
+            onClick={handleLogout}
             className="ud-sidebar-button"
             aria-label="خروج از حساب کاربری"
           >
@@ -441,52 +593,30 @@ export default function UserDashboardContainer() {
       <main className="ud-main">
         {activeTab === 'dashboard' && (
           <div className="ud-animate-slide-in-up">
-            <h2 className="ud-main-title">
-              پیشخوان
-            </h2>
+            <h2 className="ud-main-title">پیشخوان</h2>
             <div className="ud-dashboard-grid">
-              <div
-                className="ud-card"
-                role="region"
-                aria-label="تعداد کل سفارش‌ها"
-              >
+              <div className="ud-card" role="region" aria-label="تعداد کل سفارش‌ها">
                 <div className="ud-card-dot ud-card-dot-teal"></div>
                 <h3 className="ud-card-title">تعداد کل سفارش‌ها</h3>
                 <p className="ud-card-value">{orders.length.toLocaleString('fa-IR')}</p>
-                <p className="ud-card-info">آخرین سفارش: ۲ روز پیش</p>
+                <p className="ud-card-info">آخرین سفارش: {orders[0]?.date || 'نامشخص'}</p>
               </div>
-              <div
-                className="ud-card"
-                role="region"
-                aria-label="تعداد علاقه‌مندی‌ها"
-              >
+              <div className="ud-card" role="region" aria-label="تعداد علاقه‌مندی‌ها">
                 <div className="ud-card-dot ud-card-dot-yellow"></div>
                 <h3 className="ud-card-title">تعداد علاقه‌مندی‌ها</h3>
                 <p className="ud-card-value">{wishlist.length.toLocaleString('fa-IR')}</p>
-                <p className="ud-card-info">آخرین افزودن: دیروز</p>
+                <p className="ud-card-info">آخرین افزودن: {recentActivities[0]?.date || 'نامشخص'}</p>
               </div>
-              <div
-                className="ud-card"
-                role="region"
-                aria-label="وضعیت پروفایل"
-              >
+              <div className="ud-card" role="region" aria-label="وضعیت پروفایل">
                 <div className="ud-card-dot ud-card-dot-green"></div>
                 <h3 className="ud-card-title">وضعیت پروفایل</h3>
-                <p className="ud-card-profile-status">
-                  {accountInfo.isComplete ? 'تکمیل‌شده' : 'ناقص'}
-                </p>
+                <p className="ud-card-profile-status">{accountInfo.email ? 'تکمیل‌شده' : 'ناقص'}</p>
                 <p className="ud-card-info">ایمیل: {accountInfo.email}</p>
               </div>
-              <div
-                className="ud-card"
-                role="region"
-                aria-label="تیکت‌های پشتیبانی"
-              >
+              <div className="ud-card" role="region" aria-label="تیکت‌های پشتیبانی">
                 <div className="ud-card-dot ud-card-dot-blue"></div>
                 <h3 className="ud-card-title">تیکت‌های پشتیبانی</h3>
-                <p className="ud-card-value">
-                  {supportTickets.filter(t => t.status === 'باز').length.toLocaleString('fa-IR')}
-                </p>
+                <p className="ud-card-value">{supportTickets.filter(t => t.status === 'باز').length.toLocaleString('fa-IR')}</p>
                 <p className="ud-card-info">تیکت‌های باز</p>
               </div>
             </div>
@@ -513,20 +643,12 @@ export default function UserDashboardContainer() {
               {trackingResult && (
                 <div className="ud-tracking-result">
                   <p className="ud-tracking-result-title">وضعیت سفارش #{trackingResult.id}</p>
-                  <p className="ud-tracking-result-text">
-                    <strong>وضعیت:</strong> {trackingResult.status}
-                  </p>
-                  <p className="ud-tracking-result-text">
-                    <strong>تاریخ تحویل تخمینی:</strong> {trackingResult.date}
-                  </p>
-                  <p className="ud-tracking-result-text">
-                    <strong>جزئیات:</strong> {trackingResult.details || 'در حال پردازش'}
-                  </p>
+                  <p className="ud-tracking-result-text"><strong>وضعیت:</strong> {trackingResult.status}</p>
+                  <p className="ud-tracking-result-text"><strong>تاریخ تحویل تخمینی:</strong> {trackingResult.date}</p>
+                  <p className="ud-tracking-result-text"><strong>جزئیات:</strong> {trackingResult.details || 'در حال پردازش'}</p>
                 </div>
               )}
-              {trackingError && (
-                <p className="ud-tracking-error">{trackingError}</p>
-              )}
+              {trackingError && <p className="ud-tracking-error">{trackingError}</p>}
             </div>
             <div className="ud-activities-container">
               <h3 className="ud-activities-title">فعالیت اخیر</h3>
@@ -535,11 +657,7 @@ export default function UserDashboardContainer() {
               ) : (
                 <ul className="ud-activities-list">
                   {recentActivities.slice(0, 5).map((activity, index) => (
-                    <li
-                      key={index}
-                      className="ud-activities-item"
-                      role="listitem"
-                    >
+                    <li key={index} className="ud-activities-item" role="listitem">
                       <span className="ud-activities-description">{activity.description}</span>
                       <span className="ud-activities-date">{new Date(activity.date).toLocaleDateString('fa-IR')}</span>
                     </li>
@@ -550,27 +668,15 @@ export default function UserDashboardContainer() {
             <div className="ud-shortcuts-container">
               <h3 className="ud-shortcuts-title">میانبرهای سریع</h3>
               <div className="ud-shortcuts-grid">
-                <button
-                  onClick={() => setActiveTab('orders')}
-                  className="ud-shortcuts-button"
-                  aria-label="مشاهده سفارش‌ها"
-                >
+                <button onClick={() => setActiveTab('orders')} className="ud-shortcuts-button" aria-label="مشاهده سفارش‌ها">
                   <ShoppingCart className="ud-shortcuts-icon" />
                   مشاهده سفارش‌ها
                 </button>
-                <button
-                  onClick={() => setActiveTab('wishlist')}
-                  className="ud-shortcuts-button"
-                  aria-label="مشاهده علاقه‌مندی‌ها"
-                >
+                <button onClick={() => setActiveTab('wishlist')} className="ud-shortcuts-button" aria-label="مشاهده علاقه‌مندی‌ها">
                   <Favorite className="ud-shortcuts-icon" />
                   مشاهده علاقه‌مندی‌ها
                 </button>
-                <button
-                  onClick={() => setActiveTab('tickets')}
-                  className="ud-shortcuts-button"
-                  aria-label="ثبت تیکت جدید"
-                >
+                <button onClick={() => setActiveTab('tickets')} className="ud-shortcuts-button" aria-label="ثبت تیکت جدید">
                   <Message className="ud-shortcuts-icon" />
                   ثبت تیکت جدید
                 </button>
@@ -581,65 +687,33 @@ export default function UserDashboardContainer() {
 
         {activeTab === 'orders' && (
           <div className="ud-animate-slide-in-up">
-            <h2 className="ud-main-title">
-              سفارش‌های شما
-            </h2>
+            <h2 className="ud-main-title">سفارش‌های شما</h2>
             <div className="ud-orders-grid">
               {orders.length === 0 ? (
-                <p className="ud-orders-empty">
-                  هیچ سفارشی ثبت نشده است!
-                </p>
+                <p className="ud-orders-empty">هیچ سفارشی ثبت نشده است!</p>
               ) : (
                 orders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="ud-order-card"
-                    role="article"
-                    aria-label={`سفارش ${order.id}`}
-                  >
-                    <div
-                      className={`ud-order-status-dot ${order.status === 'ارسال شده' ? 'ud-order-status-dot-green' : 'ud-order-status-dot-yellow'}`}
-                    ></div>
+                  <div key={order.id} className="ud-order-card" role="article" aria-label={`سفارش ${order.id}`}>
+                    <div className={`ud-order-status-dot ${order.status === 'ارسال شده' ? 'ud-order-status-dot-green' : 'ud-order-status-dot-yellow'}`}></div>
                     <div className="ud-order-content">
-                      <Image
-                        src={order.product.image}
-                        alt={order.product.name}
-                        width={64}
-                        height={64}
-                        className="ud-order-image"
-                        loading="lazy"
-                      />
+                      <Image src={order.product.image} alt={order.product.name} width={64} height={64} className="ud-order-image" loading="lazy" />
                       <div className="ud-order-details">
-                        <p className="ud-order-name">
-                          {order.product.name}
-                        </p>
+                        <p className="ud-order-name">{order.product.name}</p>
                         <p className="ud-order-info">شماره سفارش: {order.id}</p>
                         <p className="ud-order-info">تاریخ: {new Date(order.date).toLocaleDateString('fa-IR')}</p>
                         <p className="ud-order-info">مبلغ: {order.total} تومان</p>
-                        <span
-                          className={`ud-order-status ${order.status === 'ارسال شده' ? 'ud-order-status-green' : 'ud-order-status-yellow'}`}
-                        >
-                          <span
-                            className={`ud-order-status-dot-status ${order.status === 'ارسال شده' ? 'ud-order-status-dot-green' : 'ud-order-status-dot-yellow'}`}
-                          ></span>
+                        <span className={`ud-order-status ${order.status === 'ارسال شده' ? 'ud-order-status-green' : 'ud-order-status-yellow'}`}>
+                          <span className={`ud-order-status-dot-status ${order.status === 'ارسال شده' ? 'ud-order-status-dot-green' : 'ud-order-status-dot-yellow'}`}></span>
                           {order.status}
                         </span>
                       </div>
                     </div>
                     <div className="ud-order-buttons">
-                      <button
-                        onClick={() => handleViewOrderDetails(order)}
-                        className="ud-order-button ud-order-button-details"
-                        aria-label={`مشاهده جزئیات سفارش ${order.id}`}
-                      >
+                      <button onClick={() => handleViewOrderDetails(order)} className="ud-order-button ud-order-button-details" aria-label={`مشاهده جزئیات سفارش ${order.id}`}>
                         مشاهده جزئیات
                       </button>
                       {order.status === 'در حال پردازش' && (
-                        <button
-                          onClick={() => handleCancelOrder(order.id)}
-                          className="ud-order-button ud-order-button-cancel"
-                          aria-label={`لغو سفارش ${order.id}`}
-                        >
+                        <button onClick={() => handleCancelOrder(order.id)} className="ud-order-button ud-order-button-cancel" aria-label={`لغو سفارش ${order.id}`}>
                           لغو سفارش
                         </button>
                       )}
@@ -648,14 +722,9 @@ export default function UserDashboardContainer() {
                 ))
               )}
             </div>
-            <Modal
-              open={isOrderModalOpen}
-              onClose={() => setIsOrderModalOpen(false)}
-              aria-labelledby="order-modal-title"
-              aria-describedby="order-modal-description"
-            >
+            <Modal open={isOrderModalOpen} onClose={() => setIsOrderModalOpen(false)} aria-labelledby="order-modal-title" aria-describedby="order-modal-description">
               <Box sx={modalStyle}>
-                <Typography sx={{fontFamily:"yekannew"}} id="order-modal-title" variant="h6" component="h2" className="ud-modal-title">
+                <Typography sx={{ fontFamily: "yekannew" }} id="order-modal-title" variant="h6" component="h2" className="ud-modal-title">
                   جزئیات سفارش #{selectedOrder?.id}
                 </Typography>
                 {selectedOrder && (
@@ -667,11 +736,7 @@ export default function UserDashboardContainer() {
                     <p><strong>مبلغ:</strong> {selectedOrder.total} تومان</p>
                     <p><strong>وضعیت:</strong> {selectedOrder.status}</p>
                     <div className="ud-modal-buttons">
-                      <button
-                        onClick={() => setIsOrderModalOpen(false)}
-                        className="ud-modal-button-close"
-                        aria-label="بستن جزئیات سفارش"
-                      >
+                      <button onClick={() => setIsOrderModalOpen(false)} className="ud-modal-button-close" aria-label="بستن جزئیات سفارش">
                         بستن
                       </button>
                     </div>
@@ -684,54 +749,26 @@ export default function UserDashboardContainer() {
 
         {activeTab === 'wishlist' && (
           <div className="ud-animate-slide-in-up">
-            <h2 className="ud-main-title">
-              لیست علاقه‌مندی‌ها
-            </h2>
+            <h2 className="ud-main-title">لیست علاقه‌مندی‌ها</h2>
             <div className="ud-wishlist-container">
               {wishlist.length === 0 ? (
-                <p className="ud-wishlist-empty">
-                  لیست علاقه‌مندی‌های شما خالی است!
-                </p>
+                <p className="ud-wishlist-empty">لیست علاقه‌مندی‌های شما خالی است!</p>
               ) : (
                 <ul className="ud-wishlist-list">
                   {wishlist.map((item) => (
-                    <li
-                      key={item.id}
-                      className="ud-wishlist-item"
-                      role="listitem"
-                      aria-label={`محصول ${item.name} در لیست علاقه‌مندی‌ها`}
-                    >
+                    <li key={item.id} className="ud-wishlist-item" role="listitem" aria-label={`محصول ${item.name} در لیست علاقه‌مندی‌ها`}>
                       <div className="ud-wishlist-item-content">
-                        <Image
-                          src={item.image}
-                          alt={item.name}
-                          width={48}
-                          height={48}
-                          className="ud-wishlist-image"
-                          loading="lazy"
-                        />
+                        <Image src={item.image} alt={item.name} width={48} height={48} className="ud-wishlist-image" loading="lazy" />
                         <div className="ud-wishlist-details">
-                          <span className="ud-wishlist-name">
-                            {item.name}
-                          </span>
-                          <span className="ud-wishlist-price">
-                            {item.price} تومان
-                          </span>
+                          <span className="ud-wishlist-name">{item.name}</span>
+                          <span className="ud-wishlist-price">{item.price} تومان</span>
                         </div>
                       </div>
                       <div className="ud-wishlist-buttons">
-                        <button
-                          onClick={() => handleAddToCart(item)}
-                          className="ud-wishlist-button ud-wishlist-button-add"
-                          aria-label={`افزودن ${item.name} به سبد خرید`}
-                        >
+                        <button onClick={() => handleAddToCart(item)} className="ud-wishlist-button ud-wishlist-button-add" aria-label={`افزودن ${item.name} به سبد خرید`}>
                           افزودن به سبد
                         </button>
-                        <button
-                          onClick={() => handleRemoveFromWishlist(item.id)}
-                          className="ud-wishlist-button ud-wishlist-button-remove"
-                          aria-label={`حذف ${item.name} از لیست علاقه‌مندی‌ها`}
-                        >
+                        <button onClick={() => handleRemoveFromWishlist(item.id)} className="ud-wishlist-button ud-wishlist-button-remove" aria-label={`حذف ${item.name} از لیست علاقه‌مندی‌ها`}>
                           حذف
                         </button>
                       </div>
@@ -745,28 +782,17 @@ export default function UserDashboardContainer() {
 
         {activeTab === 'tickets' && (
           <div className="ud-animate-slide-in-up">
-            <h2 className="ud-main-title">
-              تیکت‌های پشتیبانی
-            </h2>
+            <h2 className="ud-main-title">تیکت‌های پشتیبانی</h2>
             <div className="ud-tickets-container">
               <div className="mb-6 flex justify-end">
-                <button
-                  onClick={() => setIsTicketModalOpen(true)}
-                  className="ud-tickets-button"
-                  aria-label="افزودن تیکت جدید"
-                >
+                <button onClick={() => setIsTicketModalOpen(true)} className="ud-tickets-button" aria-label="افزودن تیکت جدید">
                   <Add className="ud-tickets-button-icon" />
                   افزودن تیکت جدید
                 </button>
               </div>
-              <Modal
-                open={isTicketModalOpen}
-                onClose={() => setIsTicketModalOpen(false)}
-                aria-labelledby="modal-modal-title"
-                aria-describedby="modal-modal-description"
-              >
+              <Modal open={isTicketModalOpen} onClose={() => setIsTicketModalOpen(false)} aria-labelledby="modal-modal-title" aria-describedby="modal-modal-description">
                 <Box sx={modalStyle}>
-                  <Typography sx={{fontFamily:"yekannew"}} id="modal-modal-title" variant="h6" component="h2" className="ud-modal-title">
+                  <Typography sx={{ fontFamily: "yekannew" }} id="modal-modal-title" variant="h6" component="h2" className="ud-modal-title">
                     ثبت تیکت جدید
                   </Typography>
                   <div className="ud-ticket-modal-content">
@@ -794,43 +820,21 @@ export default function UserDashboardContainer() {
                         aria-required="true"
                       />
                     </div>
-                    {ticketError && (
-                      <p className="ud-ticket-modal-error">{ticketError}</p>
-                    )}
+                    {ticketError && <p className="ud-ticket-modal-error">{ticketError}</p>}
                     <div className="ud-ticket-modal-buttons">
-                      <button
-                        onClick={() => {
-                          setIsTicketModalOpen(false);
-                          setTicketError('');
-                        }}
-                        className="ud-ticket-modal-button-cancel"
-                        aria-label="لغو ثبت تیکت"
-                      >
+                      <button onClick={() => { setIsTicketModalOpen(false); setTicketError(''); }} className="ud-ticket-modal-button-cancel" aria-label="لغو ثبت تیکت">
                         لغو
                       </button>
-                      <button
-                        onClick={handleSubmitTicket}
-                        className="ud-ticket-modal-button-submit"
-                        aria-label="ارسال تیکت جدید"
-                      >
+                      <button onClick={handleSubmitTicket} className="ud-ticket-modal-button-submit" aria-label="ارسال تیکت جدید">
                         ارسال تیکت
                       </button>
                     </div>
                   </div>
                 </Box>
               </Modal>
-              <Modal
-                open={isReplyModalOpen}
-                onClose={() => {
-                  setIsReplyModalOpen(false);
-                  setTicketReply('');
-                  setTicketError('');
-                }}
-                aria-labelledby="reply-modal-title"
-                aria-describedby="reply-modal-description"
-              >
+              <Modal open={isReplyModalOpen} onClose={() => { setIsReplyModalOpen(false); setTicketReply(''); setTicketError(''); }} aria-labelledby="reply-modal-title" aria-describedby="reply-modal-description">
                 <Box sx={modalStyle}>
-                  <Typography sx={{fontFamily:"yekannew"}} id="reply-modal-title" variant="h6" component="h2" className="ud-modal-title">
+                  <Typography sx={{ fontFamily: "yekannew" }} id="reply-modal-title" variant="h6" component="h2" className="ud-modal-title">
                     پاسخ به تیکت #{selectedTicket?.id}
                   </Typography>
                   <div className="ud-ticket-modal-content">
@@ -846,26 +850,12 @@ export default function UserDashboardContainer() {
                         aria-required="true"
                       />
                     </div>
-                    {ticketError && (
-                      <p className="ud-ticket-modal-error">{ticketError}</p>
-                    )}
+                    {ticketError && <p className="ud-ticket-modal-error">{ticketError}</p>}
                     <div className="ud-ticket-modal-buttons">
-                      <button
-                        onClick={() => {
-                          setIsReplyModalOpen(false);
-                          setTicketReply('');
-                          setTicketError('');
-                        }}
-                        className="ud-ticket-modal-button-cancel"
-                        aria-label="لغو پاسخ به تیکت"
-                      >
+                      <button onClick={() => { setIsReplyModalOpen(false); setTicketReply(''); setTicketError(''); }} className="ud-ticket-modal-button-cancel" aria-label="لغو پاسخ به تیکت">
                         لغو
                       </button>
-                      <button
-                        onClick={handleSubmitReply}
-                        className="ud-ticket-modal-button-submit"
-                        aria-label="ارسال پاسخ به تیکت"
-                      >
+                      <button onClick={handleSubmitReply} className="ud-ticket-modal-button-submit" aria-label="ارسال پاسخ به تیکت">
                         ارسال پاسخ
                       </button>
                     </div>
@@ -880,12 +870,7 @@ export default function UserDashboardContainer() {
                   { label: 'اتمام یافته', count: 0, color: 'ud-ticket-stat-completed' },
                   { label: 'همه', count: supportTickets.length, color: 'ud-ticket-stat-all' },
                 ].map((stat, index) => (
-                  <div
-                    key={index}
-                    className={`ud-ticket-stat ${stat.color}`}
-                    role="region"
-                    aria-label={`آمار ${stat.label}`}
-                  >
+                  <div key={index} className={`ud-ticket-stat ${stat.color}`} role="region" aria-label={`آمار ${stat.label}`}>
                     <p className="ud-ticket-stat-label">{stat.label}</p>
                     <p className="ud-ticket-stat-count">{stat.count.toLocaleString('fa-IR')}</p>
                   </div>
@@ -893,31 +878,14 @@ export default function UserDashboardContainer() {
               </div>
               <div className="space-y-4">
                 {supportTickets.length === 0 ? (
-                  <p className="ud-tickets-empty">
-                    هیچ تیکتی ثبت نشده است!
-                  </p>
+                  <p className="ud-tickets-empty">هیچ تیکتی ثبت نشده است!</p>
                 ) : (
                   supportTickets.map((ticket) => (
-                    <Accordion
-                      key={ticket.id}
-                      expanded={expandedAccordion === ticket.id}
-                      onChange={handleAccordionChange(ticket.id)}
-                      className="ud-ticket-accordion"
-                    >
-                      <AccordionSummary
-                        expandIcon={<Add className="ud-tickets-button-icon" />}
-                        aria-controls={`ticket-panel-${ticket.id}`}
-                        id={`ticket-header-${ticket.id}`}
-                      >
+                    <Accordion key={ticket.id} expanded={expandedAccordion === ticket.id} onChange={handleAccordionChange(ticket.id)} className="ud-ticket-accordion">
+                      <AccordionSummary expandIcon={<Add className="ud-tickets-button-icon" />} aria-controls={`ticket-panel-${ticket.id}`} id={`ticket-header-${ticket.id}`}>
                         <div className="ud-ticket-summary">
-                          <Typography sx={{fontFamily:"yekannew"}} className="ud-ticket-title">
-                            {ticket.subject}
-                          </Typography>
-                          <span
-                            className={`ud-ticket-status ${ticket.status === 'باز' ? 'ud-ticket-status-open' : 'ud-ticket-status-closed'}`}
-                          >
-                            {ticket.status}
-                          </span>
+                          <Typography sx={{ fontFamily: "yekannew" }} className="ud-ticket-title">{ticket.subject}</Typography>
+                          <span className={`ud-ticket-status ${ticket.status === 'باز' ? 'ud-ticket-status-open' : 'ud-ticket-status-closed'}`}>{ticket.status}</span>
                         </div>
                       </AccordionSummary>
                       <AccordionDetails>
@@ -926,24 +894,14 @@ export default function UserDashboardContainer() {
                           <p><strong>متن تیکت:</strong> {ticket.message}</p>
                           <p><strong>وضعیت:</strong> {ticket.status}</p>
                           <p><strong>تاریخ:</strong> {new Date(ticket.date).toLocaleDateString('fa-IR')}</p>
-                          {ticket.response && (
-                            <p><strong>پاسخ پشتیبانی:</strong> {ticket.response}</p>
-                          )}
+                          {ticket.response && <p><strong>پاسخ پشتیبانی:</strong> {ticket.response}</p>}
                           <div className="ud-ticket-buttons">
                             {ticket.status === 'باز' && (
-                              <button
-                                onClick={() => handleReplyTicket(ticket)}
-                                className="ud-ticket-button ud-ticket-button-reply"
-                                aria-label={`پاسخ به تیکت ${ticket.subject}`}
-                              >
+                              <button onClick={() => handleReplyTicket(ticket)} className="ud-ticket-button ud-ticket-button-reply" aria-label={`پاسخ به تیکت ${ticket.subject}`}>
                                 پاسخ
                               </button>
                             )}
-                            <button
-                              onClick={() => handleCloseTicket(ticket.id)}
-                              className="ud-ticket-button ud-ticket-button-close"
-                              aria-label={`بستن تیکت ${ticket.subject}`}
-                            >
+                            <button onClick={() => handleCloseTicket(ticket.id)} className="ud-ticket-button ud-ticket-button-close" aria-label={`بستن تیکت ${ticket.subject}`}>
                               بستن تیکت
                             </button>
                           </div>
@@ -959,234 +917,110 @@ export default function UserDashboardContainer() {
 
         {activeTab === 'addresses' && (
           <div className="ud-animate-slide-in-up">
-            <h2 className="ud-main-title">
-              آدرس‌ها
-            </h2>
+            <h2 className="ud-main-title">آدرس‌ها</h2>
             <div className="ud-addresses-container">
               <div className="mb-6 flex justify-end">
-                <button
-                  onClick={() => {
-                    setShowAddressForm(!showAddressForm);
-                    setEditingAddressId(null);
-                    setNewAddress({
-                      id: '',
-                      firstName: '',
-                      lastName: '',
-                      phone: '',
-                      email: '',
-                      province: '',
-                      city: '',
-                      postalCode: '',
-                      address: '',
-                      unit: '',
-                      isDefault: false,
-                    });
-                    setAddressError('');
-                  }}
-                  className="ud-addresses-button"
-                  aria-label="افزودن آدرس جدید"
-                >
+                <button onClick={() => { setShowAddressForm(!showAddressForm); setEditingAddressId(null); setAddressError(''); }} className="ud-addresses-button" aria-label="افزودن آدرس جدید">
                   <Add className="ud-addresses-button-icon" />
                   افزودن آدرس جدید
                 </button>
               </div>
               {showAddressForm && (
                 <div className="ud-address-form">
-                  <h3 className="ud-address-form-title">
-                    {editingAddressId ? 'ویرایش آدرس' : 'افزودن آدرس جدید'}
-                  </h3>
+                  <h3 className="ud-address-form-title">{editingAddressId ? 'ویرایش آدرس' : 'افزودن آدرس جدید'}</h3>
                   <div className="ud-address-form-grid">
                     <div>
                       <label className="ud-address-form-label">نام *</label>
-                      <input
-                        type="text"
-                        value={newAddress.firstName}
-                        onChange={(e) => setNewAddress({ ...newAddress, firstName: e.target.value })}
-                        className="ud-address-form-input"
-                        placeholder="نام خود را وارد کنید"
-                        required
-                        aria-required="true"
-                      />
+                      <input type="text" value={newAddress.first_name} onChange={(e) => setNewAddress({ ...newAddress, first_name: e.target.value })} className="ud-address-form-input" placeholder="نام خود را وارد کنید" required aria-required="true" />
                     </div>
                     <div>
                       <label className="ud-address-form-label">نام خانوادگی *</label>
-                      <input
-                        type="text"
-                        value={newAddress.lastName}
-                        onChange={(e) => setNewAddress({ ...newAddress, lastName: e.target.value })}
-                        className="ud-address-form-input"
-                        placeholder="نام خانوادگی خود را وارد کنید"
-                        required
-                        aria-required="true"
-                      />
+                      <input type="text" value={newAddress.last_name} onChange={(e) => setNewAddress({ ...newAddress, last_name: e.target.value })} className="ud-address-form-input" placeholder="نام خانوادگی خود را وارد کنید" required aria-required="true" />
                     </div>
                     <div>
                       <label className="ud-address-form-label">شماره همراه *</label>
-                      <input
-                        type="text"
-                        value={newAddress.phone}
-                        onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })}
-                        className="ud-address-form-input"
-                        placeholder="شماره همراه خود را وارد کنید"
-                        required
-                        aria-required="true"
-                      />
-                    </div>
-                    <div>
-                      <label className="ud-address-form-label">آدرس ایمیل (اختیاری)</label>
-                      <input
-                        type="email"
-                        value={newAddress.email}
-                        onChange={(e) => setNewAddress({ ...newAddress, email: e.target.value })}
-                        className="ud-address-form-input"
-                        placeholder="ایمیل خود را وارد کنید"
-                      />
+                      <input type="text" value={newAddress.phone_number} onChange={(e) => setNewAddress({ ...newAddress, phone_number: e.target.value })} className="ud-address-form-input" placeholder="شماره همراه خود را وارد کنید" required aria-required="true" />
                     </div>
                     <div>
                       <label className="ud-address-form-label">استان *</label>
-                      <select
-                        value={newAddress.province}
-                        onChange={(e) => setNewAddress({ ...newAddress, province: e.target.value, city: '' })}
-                        className="ud-address-form-select"
-                        required
-                        aria-required="true"
-                      >
+                      <select value={newAddress.province} onChange={(e) => setNewAddress({ ...newAddress, province: e.target.value, city: '' })} className="ud-address-form-select" required aria-required="true">
                         <option value="">انتخاب کنید</option>
-                        {provinces.map((province) => (
-                          <option key={province} value={province}>{province}</option>
-                        ))}
+                        {provinces.map((province) => <option key={province} value={province}>{province}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="ud-address-form-label">شهر *</label>
-                      <select
-                        value={newAddress.city}
-                        onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                        className="ud-address-form-select"
-                        required
-                        disabled={!newAddress.province}
-                        aria-required="true"
-                      >
+                      <select value={newAddress.city} onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })} className="ud-address-form-select" required disabled={!newAddress.province} aria-required="true">
                         <option value="">ابتدا استان را انتخاب کنید</option>
-                        {newAddress.province && cities[newAddress.province]?.map((city) => (
-                          <option key={city} value={city}>{city}</option>
-                        ))}
+                        {newAddress.province && cities[newAddress.province]?.map((city) => <option key={city} value={city}>{city}</option>)}
                       </select>
                     </div>
                     <div>
-                      <label className="ud-address-form-label">کدپستی *</label>
-                      <input
-                        type="text"
-                        value={newAddress.postalCode}
-                        onChange={(e) => setNewAddress({ ...newAddress, postalCode: e.target.value })}
-                        className="ud-address-form-input"
-                        placeholder="کدپستی را وارد کنید"
-                        required
-                        aria-required="true"
-                      />
+                      <label className="ud-address-form-label">خیابان *</label>
+                      <input type="text" value={newAddress.street} onChange={(e) => setNewAddress({ ...newAddress, street: e.target.value })} className="ud-address-form-input" placeholder="خیابان را وارد کنید" required aria-required="true" />
                     </div>
                     <div>
-                      <label className="ud-address-form-label">آدرس *</label>
-                      <input
-                        type="text"
-                        value={newAddress.address}
-                        onChange={(e) => setNewAddress({ ...newAddress, address: e.target.value })}
-                        className="ud-address-form-input"
-                        placeholder="آدرس کامل را وارد کنید"
-                        required
-                        aria-required="true"
-                      />
+                      <label className="ud-address-form-label">کوچه *</label>
+                      <input type="text" value={newAddress.alley} onChange={(e) => setNewAddress({ ...newAddress, alley: e.target.value })} className="ud-address-form-input" placeholder="کوچه را وارد کنید" />
+                    </div>
+                    <div>
+                      <label className="ud-address-form-label">پلاک *</label>
+                      <input type="text" value={newAddress.building_number} onChange={(e) => setNewAddress({ ...newAddress, building_number: e.target.value })} className="ud-address-form-input" placeholder="پلاک را وارد کنید" />
+                    </div>
+                    <div>
+                      <label className="ud-address-form-label">واحد (اختیاری)</label>
+                      <input type="text" value={newAddress.unit} onChange={(e) => setNewAddress({ ...newAddress, unit: e.target.value })} className="ud-address-form-input" placeholder="واحد را وارد کنید" />
+                    </div>
+                    <div>
+                      <label className="ud-address-form-label">کدپستی *</label>
+                      <input type="text" value={newAddress.postal_code} onChange={(e) => setNewAddress({ ...newAddress, postal_code: e.target.value })} className="ud-address-form-input" placeholder="کدپستی را وارد کنید" required aria-required="true" />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="ud-address-form-label">پلاک / واحد (اختیاری)</label>
-                      <input
-                        type="text"
-                        value={newAddress.unit}
-                        onChange={(e) => setNewAddress({ ...newAddress, unit: e.target.value })}
-                        className="ud-address-form-input"
-                        placeholder="پلاک یا واحد را وارد کنید"
-                      />
+                      <label className="ud-address-form-label">جزئیات اضافی (اختیاری)</label>
+                      <textarea value={newAddress.extra_details} onChange={(e) => setNewAddress({ ...newAddress, extra_details: e.target.value })} className="ud-address-form-input" placeholder="جزئیات اضافی (مانند توضیحات تحویل)" rows={4} />
                     </div>
-                    {addressError && (
-                      <p className="ud-address-form-error">{addressError}</p>
-                    )}
+                    <div>
+                      <label className="ud-address-form-label">آدرس پیش‌فرض</label>
+                      <input type="checkbox" checked={newAddress.is_default} onChange={(e) => setNewAddress({ ...newAddress, is_default: e.target.checked })} className="ud-address-form-checkbox" />
+                    </div>
+                    {addressError && <p className="ud-address-form-error">{addressError}</p>}
                     <div className="ud-address-form-buttons">
-                      <button
-                        onClick={() => {
-                          setShowAddressForm(false);
-                          setAddressError('');
-                          setEditingAddressId(null);
-                        }}
-                        className="ud-address-form-button-cancel"
-                        aria-label="لغو افزودن آدرس"
-                      >
-                        لغو
-                      </button>
-                      <button
-                        onClick={handleAddAddress}
-                        className="ud-address-form-button-save"
-                        aria-label={editingAddressId ? 'ذخیره تغییرات آدرس' : 'ذخیره آدرس جدید'}
-                      >
-                        {editingAddressId ? 'ذخیره تغییرات' : 'ذخیره آدرس'}
-                      </button>
+                      <button onClick={() => { setShowAddressForm(false); setAddressError(''); setEditingAddressId(null); }} className="ud-address-form-button-cancel" aria-label="لغو افزودن آدرس">لغو</button>
+                      <button onClick={handleAddAddress} className="ud-address-form-button-save" aria-label={editingAddressId ? 'ذخیره تغییرات آدرس' : 'ذخیره آدرس جدید'}>{editingAddressId ? 'ذخیره تغییرات' : 'ذخیره آدرس'}</button>
                     </div>
                   </div>
                 </div>
               )}
               <div className="space-y-4">
                 {addresses.length === 0 ? (
-                  <p className="ud-addresses-empty">
-                    هیچ آدرسی ثبت نشده است!
-                  </p>
+                  <p className="ud-addresses-empty">هیچ آدرسی ثبت نشده است!</p>
                 ) : (
                   addresses.map((address) => (
-                    <Accordion
-                      key={address.id}
-                      expanded={expandedAccordion === address.id}
-                      onChange={handleAccordionChange(address.id)}
-                      sx={{fontFamily:"yekannew"}}
-                      className="ud-address-accordion"
-                    >
-                      <AccordionSummary
-                        expandIcon={<Add className="ud-addresses-button-icon" />}
-                        aria-controls={`address-panel-${address.id}`}
-                        id={`address-header-${address.id}`}
-                      >
+                    <Accordion key={address.id} expanded={expandedAccordion === address.id} onChange={handleAccordionChange(address.id)} sx={{ fontFamily: "yekannew" }} className="ud-address-accordion">
+                      <AccordionSummary expandIcon={<Add className="ud-addresses-button-icon" />} aria-controls={`address-panel-${address.id}`} id={`address-header-${address.id}`}>
                         <div className="ud-address-summary">
-                          <Typography sx={{fontFamily:"yekannew"}} className="ud-address-title">
-                            {address.firstName} {address.lastName} - {address.city}
-                          </Typography>
-                          <span
-                            className={`ud-address-status ${address.isDefault ? 'ud-address-status-default' : 'ud-address-status-normal'}`}
-                          >
-                            {address.isDefault ? 'پیش‌فرض' : 'معمولی'}
-                          </span>
+                          <Typography sx={{ fontFamily: "yekannew" }} className="ud-address-title">{address.first_name} {address.last_name} - {address.city}</Typography>
+                          <span className={`ud-address-status ${address.is_default ? 'ud-address-status-default' : 'ud-address-status-normal'}`}>{address.is_default ? 'پیش‌فرض' : 'معمولی'}</span>
                         </div>
                       </AccordionSummary>
                       <AccordionDetails>
                         <div className="ud-address-details">
-                          <p><strong>نام:</strong> {address.firstName}</p>
-                          <p><strong>نام خانوادگی:</strong> {address.lastName}</p>
-                          <p><strong>شماره همراه:</strong> {address.phone}</p>
-                          {address.email && <p><strong>ایمیل:</strong> {address.email}</p>}
+                          <p><strong>نام:</strong> {address.first_name}</p>
+                          <p><strong>نام خانوادگی:</strong> {address.last_name}</p>
+                          <p><strong>شماره همراه:</strong> {address.phone_number}</p>
                           <p><strong>استان:</strong> {address.province}</p>
                           <p><strong>شهر:</strong> {address.city}</p>
-                          <p><strong>کدپستی:</strong> {address.postalCode}</p>
-                          <p><strong>آدرس:</strong> {address.address}</p>
-                          {address.unit && <p><strong>پلاک/واحد:</strong> {address.unit}</p>}
+                          <p><strong>خیابان:</strong> {address.street}</p>
+                          {address.alley && <p><strong>کوچه:</strong> {address.alley}</p>}
+                          {address.building_number && <p><strong>پلاک:</strong> {address.building_number}</p>}
+                          {address.unit && <p><strong>واحد:</strong> {address.unit}</p>}
+                          <p><strong>کدپستی:</strong> {address.postal_code}</p>
+                          {address.extra_details && <p><strong>جزئیات اضافی:</strong> {address.extra_details}</p>}
                           <div className="ud-address-buttons">
-                            <button
-                              onClick={() => handleEditAddress(address)}
-                              className="ud-address-button ud-address-button-edit"
-                              aria-label={`ویرایش آدرس ${address.firstName} ${address.lastName}`}
-                            >
+                            <button onClick={() => handleEditAddress(address)} className="ud-address-button ud-address-button-edit" aria-label={`ویرایش آدرس ${address.first_name} ${address.last_name}`}>
                               ویرایش
                             </button>
-                            <button
-                              onClick={() => handleDeleteAddress(address.id)}
-                              className="ud-address-button ud-address-button-delete"
-                              aria-label={`حذف آدرس ${address.firstName} ${address.lastName}`}
-                            >
+                            <button onClick={() => handleDeleteAddress(address.id)} className="ud-address-button ud-address-button-delete" aria-label={`حذف آدرس ${address.first_name} ${address.last_name}`}>
                               حذف
                             </button>
                           </div>
@@ -1202,145 +1036,35 @@ export default function UserDashboardContainer() {
 
         {activeTab === 'account' && (
           <div className="ud-animate-slide-in-up">
-            <h2 className="ud-main-title">
-              اطلاعات حساب کاربری
-            </h2>
+            <h2 className="ud-main-title">اطلاعات حساب کاربری</h2>
             <div className="ud-account-container">
               <div className="ud-account-grid">
                 <div>
-                  <h3 className="ud-account-title">
-                    اطلاعات حساب کاربری
-                  </h3>
+                  <h3 className="ud-account-title">اطلاعات حساب کاربری</h3>
                   <div className="ud-account-form">
                     <div>
+                      <label className="ud-account-label">نام کاربری *</label>
+                      <input type="text" value={accountInfo.username} onChange={(e) => handleAccountInfoChange('username', e.target.value)} className="ud-account-input" placeholder="نام کاربری خود را وارد کنید" required aria-required="true" />
+                    </div>
+                    <div>
                       <label className="ud-account-label">نام *</label>
-                      <input
-                        type="text"
-                        value={accountInfo.name}
-                        onChange={(e) => handleAccountInfoChange('name', e.target.value)}
-                        className="ud-account-input"
-                        placeholder="نام خود را وارد کنید"
-                        required
-                        aria-required="true"
-                      />
+                      <input type="text" value={accountInfo.first_name} onChange={(e) => handleAccountInfoChange('first_name', e.target.value)} className="ud-account-input" placeholder="نام خود را وارد کنید" required aria-required="true" />
+                    </div>
+                    <div>
+                      <label className="ud-account-label">نام خانوادگی *</label>
+                      <input type="text" value={accountInfo.last_name} onChange={(e) => handleAccountInfoChange('last_name', e.target.value)} className="ud-account-input" placeholder="نام خانوادگی خود را وارد کنید" required aria-required="true" />
                     </div>
                     <div>
                       <label className="ud-account-label">آدرس ایمیل *</label>
-                      <input
-                        type="email"
-                        value={accountInfo.email}
-                        onChange={(e) => handleAccountInfoChange('email', e.target.value)}
-                        className="ud-account-input"
-                        placeholder="ایمیل خود را وارد کنید"
-                        required
-                        aria-required="true"
-                      />
+                      <input type="email" value={accountInfo.email} onChange={(e) => handleAccountInfoChange('email', e.target.value)} className="ud-account-input" placeholder="ایمیل خود را وارد کنید" required aria-required="true" />
                     </div>
                     <div>
                       <label className="ud-account-label">شماره همراه</label>
-                      <input
-                        type="text"
-                        value={accountInfo.phone}
-                        onChange={(e) => handleAccountInfoChange('phone', e.target.value)}
-                        className="ud-account-input"
-                        placeholder="شماره همراه خود را وارد کنید"
-                      />
-                    </div>
-                    <div>
-                      <label className="ud-account-label">کدملی</label>
-                      <input
-                        type="text"
-                        value={accountInfo.nationalId}
-                        onChange={(e) => handleAccountInfoChange('nationalId', e.target.value)}
-                        className="ud-account-input"
-                        placeholder="کدملی را وارد کنید"
-                      />
-                    </div>
-                    <div>
-                      <label className="ud-account-label">شماره ثابت</label>
-                      <input
-                        type="text"
-                        value={accountInfo.landline}
-                        onChange={(e) => handleAccountInfoChange('landline', e.target.value)}
-                        className="ud-account-input"
-                        placeholder="شماره ثابت را وارد کنید"
-                      />
-                    </div>
-                    <div>
-                      <label className="ud-account-label">شماره کارت بانکی (جهت عودت وجه)</label>
-                      <input
-                        type="text"
-                        value={accountInfo.bankCard}
-                        onChange={(e) => handleAccountInfoChange('bankCard', e.target.value)}
-                        className="ud-account-input"
-                        placeholder="شماره کارت بانکی را وارد کنید"
-                      />
-                    </div>
-                    <div>
-                      <label className="ud-account-label">شماره شبا (جهت عودت وجه)</label>
-                      <input
-                        type="text"
-                        value={accountInfo.sheba}
-                        onChange={(e) => handleAccountInfoChange('sheba', e.target.value)}
-                        className="ud-account-input"
-                        placeholder="شماره شبا را وارد کنید"
-                      />
-                    </div>
-                    <div>
-                      <label className="ud-account-label">نام بانک</label>
-                      <input
-                        type="text"
-                        value={accountInfo.bankName}
-                        onChange={(e) => handleAccountInfoChange('bankName', e.target.value)}
-                        className="ud-account-input"
-                        placeholder="نام بانک را وارد کنید"
-                      />
-                    </div>
-                    <div>
-                      <label className="ud-account-label">نام صنف</label>
-                      <input
-                        type="text"
-                        value={accountInfo.guild}
-                        onChange={(e) => handleAccountInfoChange('guild', e.target.value)}
-                        className="ud-account-input"
-                        placeholder="نام صنف را وارد کنید"
-                      />
-                    </div>
-                    <div>
-                      <label className="ud-account-label">نام شرکت یا فروشگاه شما</label>
-                      <input
-                        type="text"
-                        value={accountInfo.company}
-                        onChange={(e) => handleAccountInfoChange('company', e.target.value)}
-                        className="ud-account-input"
-                        placeholder="نام شرکت یا فروشگاه را وارد کنید"
-                      />
-                    </div>
-                    <div>
-                      <label className="ud-account-label">سمت شما</label>
-                      <input
-                        type="text"
-                        value={accountInfo.position}
-                        onChange={(e) => handleAccountInfoChange('position', e.target.value)}
-                        className="ud-account-input"
-                        placeholder="سمت خود را وارد کنید"
-                      />
+                      <input type="text" value={accountInfo.phone_number} onChange={(e) => handleAccountInfoChange('phone_number', e.target.value)} className="ud-account-input" placeholder="شماره همراه خود را وارد کنید" />
                     </div>
                     <div className="ud-account-buttons">
-                      <button
-                        onClick={() => alert('تغییرات لغو شد.')}
-                        className="ud-account-button-cancel"
-                        aria-label="لغو تغییرات"
-                      >
-                        لغو
-                      </button>
-                      <button
-                        onClick={handleSaveAccountInfo}
-                        className="ud-account-button-save"
-                        aria-label="ذخیره تغییرات حساب کاربری"
-                      >
-                        ذخیره تغییرات
-                      </button>
+                      <button onClick={() => alert('تغییرات لغو شد.')} className="ud-account-button-cancel" aria-label="لغو تغییرات">لغو</button>
+                      <button onClick={handleSaveAccountInfo} className="ud-account-button-save" aria-label="ذخیره تغییرات حساب کاربری">ذخیره تغییرات</button>
                     </div>
                   </div>
                 </div>
