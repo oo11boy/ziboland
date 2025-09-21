@@ -1,4 +1,3 @@
-// UserDashboardContainer.tsx
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
@@ -29,7 +28,6 @@ import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import "./UserDashboard.css";
 
-// TypeScript interfaces (unchanged from your provided code)
 interface Order {
   id: string;
   date: string;
@@ -102,9 +100,7 @@ interface RecentActivity {
 export default function UserDashboardContainer() {
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [orderTrackingId, setOrderTrackingId] = useState<string>("");
-  const [trackingResult, setTrackingResult] = useState<TrackingResult | null>(
-    null
-  );
+  const [trackingResult, setTrackingResult] = useState<TrackingResult | null>(null);
   const [trackingError, setTrackingError] = useState<string>("");
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -135,9 +131,7 @@ export default function UserDashboardContainer() {
     isActive: false,
   });
   const [showAddressForm, setShowAddressForm] = useState<boolean>(false);
-  const [expandedAccordion, setExpandedAccordion] = useState<string | false>(
-    false
-  );
+  const [expandedAccordion, setExpandedAccordion] = useState<string | false>(false);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState<boolean>(false);
   const [newTicket, setNewTicket] = useState<{
     subject: string;
@@ -147,17 +141,10 @@ export default function UserDashboardContainer() {
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState<boolean>(false);
-  const [isReplyModalOpen, setIsReplyModalOpen] = useState<boolean>(false);
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(
-    null
-  );
-  const [ticketReply, setTicketReply] = useState<string>("");
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>(
-    []
-  );
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
 
   const router = useRouter();
   const token = Cookies.get("authToken");
@@ -171,7 +158,6 @@ export default function UserDashboardContainer() {
   };
 
   useEffect(() => {
-    // همیشه fetchها را انجام بده (اگر token نباشد، سرور redirect کرده)
     if (token) {
       fetchAddresses();
       fetchAccountInfo();
@@ -180,7 +166,7 @@ export default function UserDashboardContainer() {
       fetchTickets();
       fetchRecentActivities();
     }
-  }, [token]); // dependency نگه داشته شد، اما بدون redirect
+  }, [token]);
 
   const fetchAddresses = async () => {
     try {
@@ -246,7 +232,16 @@ export default function UserDashboardContainer() {
       });
       if (res.ok) {
         const data = await res.json();
-        setSupportTickets(data);
+        setSupportTickets(data.map((ticket: any) => ({
+          id: ticket.id.toString(),
+          subject: ticket.subject,
+          message: ticket.message,
+          status: ticket.status === 'open' ? 'باز' : 
+                 ticket.status === 'closed' ? 'بسته' : 
+                 ticket.status === 'responded' ? 'پاسخ داده شده' : 'در انتظار',
+          date: ticket.created_at,
+          response: ticket.response
+        })));
       }
     } catch (err) {
       console.error("Failed to fetch tickets:", err);
@@ -327,7 +322,6 @@ export default function UserDashboardContainer() {
       return;
     }
     try {
-      // تبدیل camelCase به snake_case
       const payload = {
         first_name: newAddress.first_name,
         last_name: newAddress.last_name,
@@ -342,8 +336,6 @@ export default function UserDashboardContainer() {
         extra_details: newAddress.extra_details || null,
         is_default: newAddress.is_default,
       };
-
-      console.log("Sending payload:", payload); // لاگ کردن داده‌های ارسالی
 
       const res = await fetch(
         editingAddressId
@@ -366,11 +358,9 @@ export default function UserDashboardContainer() {
         setAddressError("");
       } else {
         const errorData = await res.json();
-        console.error("Error response:", errorData); // لاگ کردن پاسخ خطا
         setAddressError(errorData.error || "خطا در ذخیره آدرس");
       }
     } catch (err) {
-      console.error("Error in handleAddAddress:", err);
       setAddressError("خطا در ارتباط با سرور");
     }
   };
@@ -439,7 +429,7 @@ export default function UserDashboardContainer() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: "بسته" }),
+        body: JSON.stringify({ status: "closed" }),
       });
       if (res.ok) {
         fetchTickets();
@@ -502,39 +492,6 @@ export default function UserDashboardContainer() {
     }
   };
 
-  const handleReplyTicket = (ticket: SupportTicket) => {
-    setSelectedTicket(ticket);
-    setIsReplyModalOpen(true);
-  };
-
-  const handleSubmitReply = async () => {
-    if (!ticketReply.trim()) {
-      setTicketError("لطفاً متن پاسخ را وارد کنید.");
-      return;
-    }
-    try {
-      const res = await fetch(`/api/tickets/${selectedTicket?.id}/reply`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ response: ticketReply }),
-      });
-      if (res.ok) {
-        fetchTickets();
-        setTicketReply("");
-        setIsReplyModalOpen(false);
-        setTicketError("");
-        setSelectedTicket(null);
-      } else {
-        setTicketError("خطا در ارسال پاسخ");
-      }
-    } catch (err) {
-      setTicketError("خطا در ارسال پاسخ");
-    }
-  };
-
   const handleSaveAccountInfo = async () => {
     if (!accountInfo.first_name || !accountInfo.email) {
       alert("لطفاً نام و ایمیل را پر کنید.");
@@ -559,16 +516,6 @@ export default function UserDashboardContainer() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      Cookies.remove("authToken");
-      router.push("/myaccount");
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
-  };
-
   const modalStyle = {
     position: "absolute",
     top: "50%",
@@ -585,7 +532,6 @@ export default function UserDashboardContainer() {
 
   return (
     <div className="ud-container">
-      {/* Mobile Hamburger Menu */}
       <div className="ud-mobile-header">
         <div className="ud-mobile-header-user">
           <Avatar alt={accountInfo.first_name} />
@@ -607,7 +553,6 @@ export default function UserDashboardContainer() {
         </button>
       </div>
 
-      {/* Sidebar */}
       <aside className={`ud-sidebar ${isSidebarOpen ? "ud-sidebar-open" : ""}`}>
         <div className="ud-sidebar-user">
           <Avatar alt={accountInfo.first_name} />
@@ -660,36 +605,23 @@ export default function UserDashboardContainer() {
         </nav>
       </aside>
 
-      {/* Main Content */}
       <main className="ud-main">
         {activeTab === "dashboard" && (
           <div className="ud-animate-slide-in-up">
             <h2 className="ud-main-title">پیشخوان</h2>
             <div className="ud-dashboard-grid">
-              <div
-                className="ud-card"
-                role="region"
-                aria-label="تعداد کل سفارش‌ها"
-              >
+              <div className="ud-card" role="region" aria-label="تعداد کل سفارش‌ها">
                 <div className="ud-card-dot ud-card-dot-teal"></div>
                 <h3 className="ud-card-title">تعداد کل سفارش‌ها</h3>
-                <p className="ud-card-value">
-                  {orders.length.toLocaleString("fa-IR")}
-                </p>
+                <p className="ud-card-value">{orders.length.toLocaleString("fa-IR")}</p>
                 <p className="ud-card-info">
                   آخرین سفارش: {orders[0]?.date || "نامشخص"}
                 </p>
               </div>
-              <div
-                className="ud-card"
-                role="region"
-                aria-label="تعداد علاقه‌مندی‌ها"
-              >
+              <div className="ud-card" role="region" aria-label="تعداد علاقه‌مندی‌ها">
                 <div className="ud-card-dot ud-card-dot-yellow"></div>
                 <h3 className="ud-card-title">تعداد علاقه‌مندی‌ها</h3>
-                <p className="ud-card-value">
-                  {wishlist.length.toLocaleString("fa-IR")}
-                </p>
+                <p className="ud-card-value">{wishlist.length.toLocaleString("fa-IR")}</p>
                 <p className="ud-card-info">
                   آخرین افزودن: {recentActivities[0]?.date || "نامشخص"}
                 </p>
@@ -702,17 +634,11 @@ export default function UserDashboardContainer() {
                 </p>
                 <p className="ud-card-info">ایمیل: {accountInfo.email}</p>
               </div>
-              <div
-                className="ud-card"
-                role="region"
-                aria-label="تیکت‌های پشتیبانی"
-              >
+              <div className="ud-card" role="region" aria-label="تیکت‌های پشتیبانی">
                 <div className="ud-card-dot ud-card-dot-blue"></div>
                 <h3 className="ud-card-title">تیکت‌های پشتیبانی</h3>
                 <p className="ud-card-value">
-                  {supportTickets
-                    .filter((t) => t.status === "باز")
-                    .length.toLocaleString("fa-IR")}
+                  {supportTickets.filter((t) => t.status === "باز").length.toLocaleString("fa-IR")}
                 </p>
                 <p className="ud-card-info">تیکت‌های باز</p>
               </div>
@@ -765,14 +691,8 @@ export default function UserDashboardContainer() {
               ) : (
                 <ul className="ud-activities-list">
                   {recentActivities.slice(0, 5).map((activity, index) => (
-                    <li
-                      key={index}
-                      className="ud-activities-item"
-                      role="listitem"
-                    >
-                      <span className="ud-activities-description">
-                        {activity.description}
-                      </span>
+                    <li key={index} className="ud-activities-item" role="listitem">
+                      <span className="ud-activities-description">{activity.description}</span>
                       <span className="ud-activities-date">
                         {new Date(activity.date).toLocaleDateString("fa-IR")}
                       </span>
@@ -847,12 +767,9 @@ export default function UserDashboardContainer() {
                         <p className="ud-order-name">{order.product.name}</p>
                         <p className="ud-order-info">شماره سفارش: {order.id}</p>
                         <p className="ud-order-info">
-                          تاریخ:{" "}
-                          {new Date(order.date).toLocaleDateString("fa-IR")}
+                          تاریخ: {new Date(order.date).toLocaleDateString("fa-IR")}
                         </p>
-                        <p className="ud-order-info">
-                          مبلغ: {order.total} تومان
-                        </p>
+                        <p className="ud-order-info">مبلغ: {order.total} تومان</p>
                         <span
                           className={`ud-order-status ${
                             order.status === "ارسال شده"
@@ -911,26 +828,12 @@ export default function UserDashboardContainer() {
                 </Typography>
                 {selectedOrder && (
                   <div className="ud-modal-content">
-                    <p>
-                      <strong>محصول:</strong> {selectedOrder.product.name}
-                    </p>
-                    <p>
-                      <strong>جزئیات محصول:</strong>{" "}
-                      {selectedOrder.product.details || "جزئیات موجود نیست"}
-                    </p>
-                    <p>
-                      <strong>شماره سفارش:</strong> {selectedOrder.id}
-                    </p>
-                    <p>
-                      <strong>تاریخ:</strong>{" "}
-                      {new Date(selectedOrder.date).toLocaleDateString("fa-IR")}
-                    </p>
-                    <p>
-                      <strong>مبلغ:</strong> {selectedOrder.total} تومان
-                    </p>
-                    <p>
-                      <strong>وضعیت:</strong> {selectedOrder.status}
-                    </p>
+                    <p><strong>محصول:</strong> {selectedOrder.product.name}</p>
+                    <p><strong>جزئیات محصول:</strong> {selectedOrder.product.details || "جزئیات موجود نیست"}</p>
+                    <p><strong>شماره سفارش:</strong> {selectedOrder.id}</p>
+                    <p><strong>تاریخ:</strong> {new Date(selectedOrder.date).toLocaleDateString("fa-IR")}</p>
+                    <p><strong>مبلغ:</strong> {selectedOrder.total} تومان</p>
+                    <p><strong>وضعیت:</strong> {selectedOrder.status}</p>
                     <div className="ud-modal-buttons">
                       <button
                         onClick={() => setIsOrderModalOpen(false)}
@@ -952,9 +855,7 @@ export default function UserDashboardContainer() {
             <h2 className="ud-main-title">لیست علاقه‌مندی‌ها</h2>
             <div className="ud-wishlist-container">
               {wishlist.length === 0 ? (
-                <p className="ud-wishlist-empty">
-                  لیست علاقه‌مندی‌های شما خالی است!
-                </p>
+                <p className="ud-wishlist-empty">لیست علاقه‌مندی‌های شما خالی است!</p>
               ) : (
                 <ul className="ud-wishlist-list">
                   {wishlist.map((item) => (
@@ -975,9 +876,7 @@ export default function UserDashboardContainer() {
                         />
                         <div className="ud-wishlist-details">
                           <span className="ud-wishlist-name">{item.name}</span>
-                          <span className="ud-wishlist-price">
-                            {item.price} تومان
-                          </span>
+                          <span className="ud-wishlist-price">{item.price} تومان</span>
                         </div>
                       </div>
                       <div className="ud-wishlist-buttons">
@@ -1053,9 +952,7 @@ export default function UserDashboardContainer() {
                       />
                     </div>
                     <div>
-                      <label className="ud-ticket-modal-label">
-                        متن تیکت *
-                      </label>
+                      <label className="ud-ticket-modal-label">متن تیکت *</label>
                       <textarea
                         value={newTicket.message}
                         onChange={(e) =>
@@ -1096,90 +993,27 @@ export default function UserDashboardContainer() {
                   </div>
                 </Box>
               </Modal>
-              <Modal
-                open={isReplyModalOpen}
-                onClose={() => {
-                  setIsReplyModalOpen(false);
-                  setTicketReply("");
-                  setTicketError("");
-                }}
-                aria-labelledby="reply-modal-title"
-                aria-describedby="reply-modal-description"
-              >
-                <Box sx={modalStyle}>
-                  <Typography
-                    sx={{ fontFamily: "yekannew" }}
-                    id="reply-modal-title"
-                    variant="h6"
-                    component="h2"
-                    className="ud-modal-title"
-                  >
-                    پاسخ به تیکت #{selectedTicket?.id}
-                  </Typography>
-                  <div className="ud-ticket-modal-content">
-                    <div>
-                      <label className="ud-ticket-modal-label">
-                        متن پاسخ *
-                      </label>
-                      <textarea
-                        value={ticketReply}
-                        onChange={(e) => setTicketReply(e.target.value)}
-                        placeholder="پاسخ خود را وارد کنید"
-                        className="ud-ticket-modal-textarea"
-                        rows={6}
-                        required
-                        aria-required="true"
-                      />
-                    </div>
-                    {ticketError && (
-                      <p className="ud-ticket-modal-error">{ticketError}</p>
-                    )}
-                    <div className="ud-ticket-modal-buttons">
-                      <button
-                        onClick={() => {
-                          setIsReplyModalOpen(false);
-                          setTicketReply("");
-                          setTicketError("");
-                        }}
-                        className="ud-ticket-modal-button-cancel"
-                        aria-label="لغو پاسخ به تیکت"
-                      >
-                        لغو
-                      </button>
-                      <button
-                        onClick={handleSubmitReply}
-                        className="ud-ticket-modal-button-submit"
-                        aria-label="ارسال پاسخ به تیکت"
-                      >
-                        ارسال پاسخ
-                      </button>
-                    </div>
-                  </div>
-                </Box>
-              </Modal>
               <div className="ud-tickets-stats">
                 {[
                   {
                     label: "تیکت باز",
-                    count: supportTickets.filter((t) => t.status === "باز")
-                      .length,
+                    count: supportTickets.filter((t) => t.status === "باز").length,
                     color: "ud-ticket-stat-open",
                   },
                   {
                     label: "تیکت بسته",
-                    count: supportTickets.filter((t) => t.status === "بسته")
-                      .length,
+                    count: supportTickets.filter((t) => t.status === "بسته").length,
                     color: "ud-ticket-stat-closed",
                   },
                   {
                     label: "پاسخ داده شده",
-                    count: supportTickets.filter((t) => t.response).length,
+                    count: supportTickets.filter((t) => t.status === "پاسخ داده شده").length,
                     color: "ud-ticket-stat-responded",
                   },
                   {
-                    label: "اتمام یافته",
-                    count: 0,
-                    color: "ud-ticket-stat-completed",
+                    label: "در انتظار",
+                    count: supportTickets.filter((t) => t.status === "در انتظار").length,
+                    color: "ud-ticket-stat-pending",
                   },
                   {
                     label: "همه",
@@ -1194,9 +1028,7 @@ export default function UserDashboardContainer() {
                     aria-label={`آمار ${stat.label}`}
                   >
                     <p className="ud-ticket-stat-label">{stat.label}</p>
-                    <p className="ud-ticket-stat-count">
-                      {stat.count.toLocaleString("fa-IR")}
-                    </p>
+                    <p className="ud-ticket-stat-count">{stat.count.toLocaleString("fa-IR")}</p>
                   </div>
                 ))}
               </div>
@@ -1227,7 +1059,11 @@ export default function UserDashboardContainer() {
                             className={`ud-ticket-status ${
                               ticket.status === "باز"
                                 ? "ud-ticket-status-open"
-                                : "ud-ticket-status-closed"
+                                : ticket.status === "بسته"
+                                ? "ud-ticket-status-closed"
+                                : ticket.status === "پاسخ داده شده"
+                                ? "ud-ticket-status-responded"
+                                : "ud-ticket-status-pending"
                             }`}
                           >
                             {ticket.status}
@@ -1236,41 +1072,23 @@ export default function UserDashboardContainer() {
                       </AccordionSummary>
                       <AccordionDetails>
                         <div className="ud-ticket-details">
-                          <p>
-                            <strong>موضوع:</strong> {ticket.subject}
-                          </p>
-                          <p>
-                            <strong>متن تیکت:</strong> {ticket.message}
-                          </p>
-                          <p>
-                            <strong>وضعیت:</strong> {ticket.status}
-                          </p>
-                          <p>
-                            <strong>تاریخ:</strong>{" "}
-                            {new Date(ticket.date).toLocaleDateString("fa-IR")}
-                          </p>
+                          <p><strong>موضوع:</strong> {ticket.subject}</p>
+                          <p><strong>متن تیکت:</strong> {ticket.message}</p>
+                          <p><strong>وضعیت:</strong> {ticket.status}</p>
+                          <p><strong>تاریخ:</strong> {new Date(ticket.date).toLocaleDateString("fa-IR")}</p>
                           {ticket.response && (
-                            <p>
-                              <strong>پاسخ پشتیبانی:</strong> {ticket.response}
-                            </p>
+                            <p><strong>پاسخ پشتیبانی:</strong> {ticket.response}</p>
                           )}
                           <div className="ud-ticket-buttons">
-                            {ticket.status === "باز" && (
+                            {ticket.status !== "بسته" && (
                               <button
-                                onClick={() => handleReplyTicket(ticket)}
-                                className="ud-ticket-button ud-ticket-button-reply"
-                                aria-label={`پاسخ به تیکت ${ticket.subject}`}
+                                onClick={() => handleCloseTicket(ticket.id)}
+                                className="ud-ticket-button ud-ticket-button-close"
+                                aria-label={`بستن تیکت ${ticket.subject}`}
                               >
-                                پاسخ
+                                بستن تیکت
                               </button>
                             )}
-                            <button
-                              onClick={() => handleCloseTicket(ticket.id)}
-                              className="ud-ticket-button ud-ticket-button-close"
-                              aria-label={`بستن تیکت ${ticket.subject}`}
-                            >
-                              بستن تیکت
-                            </button>
                           </div>
                         </div>
                       </AccordionDetails>
@@ -1324,9 +1142,7 @@ export default function UserDashboardContainer() {
                       />
                     </div>
                     <div>
-                      <label className="ud-address-form-label">
-                        نام خانوادگی *
-                      </label>
+                      <label className="ud-address-form-label">نام خانوادگی *</label>
                       <input
                         type="text"
                         value={newAddress.last_name}
@@ -1343,9 +1159,7 @@ export default function UserDashboardContainer() {
                       />
                     </div>
                     <div>
-                      <label className="ud-address-form-label">
-                        شماره همراه *
-                      </label>
+                      <label className="ud-address-form-label">شماره همراه *</label>
                       <input
                         type="text"
                         value={newAddress.phone_number}
@@ -1453,9 +1267,7 @@ export default function UserDashboardContainer() {
                       />
                     </div>
                     <div>
-                      <label className="ud-address-form-label">
-                        واحد (اختیاری)
-                      </label>
+                      <label className="ud-address-form-label">واحد (اختیاری)</label>
                       <input
                         type="text"
                         value={newAddress.unit}
@@ -1484,9 +1296,7 @@ export default function UserDashboardContainer() {
                       />
                     </div>
                     <div className="sm:col-span-2">
-                      <label className="ud-address-form-label">
-                        جزئیات اضافی (اختیاری)
-                      </label>
+                      <label className="ud-address-form-label">جزئیات اضافی (اختیاری)</label>
                       <textarea
                         value={newAddress.extra_details}
                         onChange={(e) =>
@@ -1501,9 +1311,7 @@ export default function UserDashboardContainer() {
                       />
                     </div>
                     <div>
-                      <label className="ud-address-form-label">
-                        آدرس پیش‌فرض
-                      </label>
+                      <label className="ud-address-form-label">آدرس پیش‌فرض</label>
                       <input
                         type="checkbox"
                         checked={newAddress.is_default}
@@ -1559,9 +1367,7 @@ export default function UserDashboardContainer() {
                       className="ud-address-accordion"
                     >
                       <AccordionSummary
-                        expandIcon={
-                          <Add className="ud-addresses-button-icon" />
-                        }
+                        expandIcon={<Add className="ud-addresses-button-icon" />}
                         aria-controls={`address-panel-${address.id}`}
                         id={`address-header-${address.id}`}
                       >
@@ -1570,8 +1376,7 @@ export default function UserDashboardContainer() {
                             sx={{ fontFamily: "yekannew" }}
                             className="ud-address-title"
                           >
-                            {address.first_name} {address.last_name} -{" "}
-                            {address.city}
+                            {address.first_name} {address.last_name} - {address.city}
                           </Typography>
                           <span
                             className={`ud-address-status ${
@@ -1586,47 +1391,19 @@ export default function UserDashboardContainer() {
                       </AccordionSummary>
                       <AccordionDetails>
                         <div className="ud-address-details">
-                          <p>
-                            <strong>نام:</strong> {address.first_name}
-                          </p>
-                          <p>
-                            <strong>نام خانوادگی:</strong> {address.last_name}
-                          </p>
-                          <p>
-                            <strong>شماره همراه:</strong> {address.phone_number}
-                          </p>
-                          <p>
-                            <strong>استان:</strong> {address.province}
-                          </p>
-                          <p>
-                            <strong>شهر:</strong> {address.city}
-                          </p>
-                          <p>
-                            <strong>خیابان:</strong> {address.street}
-                          </p>
-                          {address.alley && (
-                            <p>
-                              <strong>کوچه:</strong> {address.alley}
-                            </p>
-                          )}
+                    <p> <strong>نام:</strong> {address.first_name} {address.last_name}</p>
+                          <p><strong>شماره همراه:</strong> {address.phone_number}</p>
+                          <p><strong>استان:</strong> {address.province}</p>
+                          <p><strong>شهر:</strong> {address.city}</p>
+                          <p><strong>خیابان:</strong> {address.street}</p>
+                          {address.alley && <p><strong>کوچه:</strong> {address.alley}</p>}
                           {address.building_number && (
-                            <p>
-                              <strong>پلاک:</strong> {address.building_number}
-                            </p>
+                            <p><strong>پلاک:</strong> {address.building_number}</p>
                           )}
-                          {address.unit && (
-                            <p>
-                              <strong>واحد:</strong> {address.unit}
-                            </p>
-                          )}
-                          <p>
-                            <strong>کدپستی:</strong> {address.postal_code}
-                          </p>
+                          {address.unit && <p><strong>واحد:</strong> {address.unit}</p>}
+                          <p><strong>کدپستی:</strong> {address.postal_code}</p>
                           {address.extra_details && (
-                            <p>
-                              <strong>جزئیات اضافی:</strong>{" "}
-                              {address.extra_details}
-                            </p>
+                            <p><strong>جزئیات اضافی:</strong> {address.extra_details}</p>
                           )}
                           <div className="ud-address-buttons">
                             <button
@@ -1644,7 +1421,7 @@ export default function UserDashboardContainer() {
                               حذف
                             </button>
                           </div>
-                        </div>
+                 </div>
                       </AccordionDetails>
                     </Accordion>
                   ))
@@ -1658,98 +1435,81 @@ export default function UserDashboardContainer() {
           <div className="ud-animate-slide-in-up">
             <h2 className="ud-main-title">اطلاعات حساب کاربری</h2>
             <div className="ud-account-container">
-              <div className="ud-account-grid">
+              <div className="ud-account-form">
                 <div>
-                  <h3 className="ud-account-title">اطلاعات حساب کاربری</h3>
-                  <div className="ud-account-form">
-                    <div>
-                      <label className="ud-account-label">نام کاربری *</label>
-                      <input
-                        type="text"
-                        value={accountInfo.username}
-                        onChange={(e) =>
-                          handleAccountInfoChange("username", e.target.value)
-                        }
-                        className="ud-account-input"
-                        placeholder="نام کاربری خود را وارد کنید"
-                        required
-                        aria-required="true"
-                      />
-                    </div>
-                    <div>
-                      <label className="ud-account-label">نام *</label>
-                      <input
-                        type="text"
-                        value={accountInfo.first_name}
-                        onChange={(e) =>
-                          handleAccountInfoChange("first_name", e.target.value)
-                        }
-                        className="ud-account-input"
-                        placeholder="نام خود را وارد کنید"
-                        required
-                        aria-required="true"
-                      />
-                    </div>
-                    <div>
-                      <label className="ud-account-label">نام خانوادگی *</label>
-                      <input
-                        type="text"
-                        value={accountInfo.last_name}
-                        onChange={(e) =>
-                          handleAccountInfoChange("last_name", e.target.value)
-                        }
-                        className="ud-account-input"
-                        placeholder="نام خانوادگی خود را وارد کنید"
-                        required
-                        aria-required="true"
-                      />
-                    </div>
-                    <div>
-                      <label className="ud-account-label">آدرس ایمیل *</label>
-                      <input
-                        type="email"
-                        value={accountInfo.email}
-                        onChange={(e) =>
-                          handleAccountInfoChange("email", e.target.value)
-                        }
-                        className="ud-account-input"
-                        placeholder="ایمیل خود را وارد کنید"
-                        required
-                        aria-required="true"
-                      />
-                    </div>
-                    <div>
-                      <label className="ud-account-label">شماره همراه</label>
-                      <input
-                        type="text"
-                        value={accountInfo.phone_number}
-                        onChange={(e) =>
-                          handleAccountInfoChange(
-                            "phone_number",
-                            e.target.value
-                          )
-                        }
-                        className="ud-account-input"
-                        placeholder="شماره همراه خود را وارد کنید"
-                      />
-                    </div>
-                    <div className="ud-account-buttons">
-                      <button
-                        onClick={() => alert("تغییرات لغو شد.")}
-                        className="ud-account-button-cancel"
-                        aria-label="لغو تغییرات"
-                      >
-                        لغو
-                      </button>
-                      <button
-                        onClick={handleSaveAccountInfo}
-                        className="ud-account-button-save"
-                        aria-label="ذخیره تغییرات حساب کاربری"
-                      >
-                        ذخیره تغییرات
-                      </button>
-                    </div>
-                  </div>
+                  <label className="ud-account-form-label">نام کاربری *</label>
+                  <input
+                    type="text"
+                    value={accountInfo.username}
+                    onChange={(e) =>
+                      handleAccountInfoChange("username", e.target.value)
+                    }
+                    className="ud-account-form-input"
+                    placeholder="نام کاربری خود را وارد کنید"
+                    required
+                    aria-required="true"
+                  />
+                </div>
+                <div>
+                  <label className="ud-account-form-label">ایمیل *</label>
+                  <input
+                    type="email"
+                    value={accountInfo.email}
+                    onChange={(e) => handleAccountInfoChange("email", e.target.value)}
+                    className="ud-account-form-input"
+                    placeholder="ایمیل خود را وارد کنید"
+                    required
+                    aria-required="true"
+                  />
+                </div>
+                <div>
+                  <label className="ud-account-form-label">نام *</label>
+                  <input
+                    type="text"
+                    value={accountInfo.first_name}
+                    onChange={(e) =>
+                      handleAccountInfoChange("first_name", e.target.value)
+                    }
+                    className="ud-account-form-input"
+                    placeholder="نام خود را وارد کنید"
+                    required
+                    aria-required="true"
+                  />
+                </div>
+                <div>
+                  <label className="ud-account-form-label">نام خانوادگی *</label>
+                  <input
+                    type="text"
+                    value={accountInfo.last_name}
+                    onChange={(e) =>
+                      handleAccountInfoChange("last_name", e.target.value)
+                    }
+                    className="ud-account-form-input"
+                    placeholder="نام خانوادگی خود را وارد کنید"
+                    required
+                    aria-required="true"
+                  />
+                </div>
+                <div>
+                  <label className="ud-account-form-label">شماره همراه</label>
+                  <input
+                    type="text"
+                    value={accountInfo.phone_number}
+                    onChange={(e) =>
+                      handleAccountInfoChange("phone_number", e.target.value)
+                    }
+                    className="ud-account-form-input"
+                    placeholder="شماره همراه خود را وارد کنید"
+                  />
+                </div>
+                <div className="ud-account-form-buttons">
+                  <button
+                    onClick={handleSaveAccountInfo}
+                    className="ud-account-form-button-save"
+                    aria-label="ذخیره تغییرات حساب کاربری"
+                  >
+                    ذخیره تغییرات
+                  </button>
                 </div>
               </div>
             </div>
@@ -1758,4 +1518,10 @@ export default function UserDashboardContainer() {
       </main>
     </div>
   );
+}
+
+
+function handleLogout() {
+  Cookies.remove("authToken");
+  window.location.href = "/myaccount";
 }

@@ -144,3 +144,17 @@ export interface Subcategory {
   category_id: number;
   name: string;
 }
+
+
+
+export interface Ticket {
+  id: number;
+  user_id: number;
+  subject: string;
+  message: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  response: string | null;
+  admin_id: number | null;
+}

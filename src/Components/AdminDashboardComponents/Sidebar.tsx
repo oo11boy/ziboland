@@ -1,9 +1,8 @@
-// components/AdminDashboardComponents/Sidebar.tsx
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Home, ShoppingBag, Tag, Building, MessageCircle, BarChart3, Settings, Menu, X, LogOut } from 'lucide-react';
+import { Home, ShoppingBag, Tag, Building, MessageCircle, BarChart3, Settings, Menu, X, LogOut, Ticket } from 'lucide-react';
 import Cookies from 'js-cookie';
 
 const Sidebar = () => {
@@ -41,6 +40,7 @@ const Sidebar = () => {
     { href: '/admindashboard/categories', label: 'دسته‌بندی‌ها', icon: Tag },
     { href: '/admindashboard/brands', label: 'برندها', icon: Building },
     { href: '/admindashboard/comments', label: 'نظرات', icon: MessageCircle },
+    { href: '/admindashboard/tickets', label: 'تیکت‌ها', icon: Ticket },
     { href: '/admindashboard/analytics', label: 'تحلیل‌ها', icon: BarChart3 },
     { href: '/admindashboard/settings', label: 'تنظیمات', icon: Settings },
   ];
