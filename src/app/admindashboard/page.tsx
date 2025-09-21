@@ -3,11 +3,6 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/Components/ui/card'
 import { BarChart3, ShoppingBag, Users, DollarSign } from 'lucide-react'
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { verify } from 'jsonwebtoken';
-import Cookies from 'js-cookie';
-const SECRET_KEY = process.env.JWT_SECRET || '5b139e5c95598b17e8a6064a7f972f4f2b5970801f4cd4118a35cd7d782fa370';
 const DashboardPage = () => {
   const stats = [
     { title: 'کل محصولات', value: '1,234', icon: ShoppingBag, change: '+12%' },
@@ -16,25 +11,7 @@ const DashboardPage = () => {
     { title: 'دسته‌بندی‌ها', value: '23', icon: BarChart3, change: '0%' },
   ]
 
-  const router = useRouter();
-
-  useEffect(() => {
-    const token = Cookies.get('authToken');
-    if (!token) {
-      router.push('/myaccount');
-      return;
-    }
-
-    try {
-      const decoded = verify(token, SECRET_KEY) as { userId: number; email: string; role: string };
-      if (decoded.role !== 'admin') {
-        router.push('/userdashboard');
-      }
-    } catch (error) {
-      router.push('/myaccount');
-    }
-  }, [router]);
-
+ 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

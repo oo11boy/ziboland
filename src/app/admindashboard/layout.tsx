@@ -1,47 +1,37 @@
-// src/app/admindashboard/layout.tsx
-'use client';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { verify } from 'jsonwebtoken';
-import Cookies from 'js-cookie';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import jwt from 'jsonwebtoken';
 import Sidebar from '@/Components/AdminDashboardComponents/Sidebar';
 import Header from '@/Components/AdminDashboardComponents/Header';
 
-const SECRET_KEY = process.env.JWT_SECRET || '5b139e5c95598b17e8a6064a7f972f4f2b5970801f4cd4118a35cd7d782fa370';
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('authToken')?.value;
 
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
+  if (!token) {
+    redirect('/myaccount');
+    return null; // redirect خودش هندل می‌کند
+  }
 
-  useEffect(() => {
-    const token = Cookies.get('authToken');
-    if (!token) {
-      router.push('/myaccount');
-      return;
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { role: string };
+    if (decoded.role !== 'admin') {
+      redirect(decoded.role === 'customer' ? '/userdashboard' : '/myaccount');
     }
+  } catch (error) {
+    redirect('/myaccount');
+  }
 
-    try {
-      const decoded = verify(token, SECRET_KEY) as { userId: number; email: string; role: string };
-      if (decoded.role !== 'admin') {
-        router.push('/userdashboard');
-      }
-    } catch (error) {
-      router.push('/myaccount');
-    }
-  }, [router]);
-
+  // حذف <html> و <body> چون sub-layout است؛ root layout مدیریت می‌کند
   return (
-    <html lang="fa" dir="rtl">
-      <body className="font-yekan min-h-screen bg-gray-100 dark:bg-gray-900">
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <div className="flex-1 flex flex-col">
-            <Header />
-            <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
-              {children}
-            </main>
-          </div>
-        </div>
-      </body>
-    </html>
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <div className="flex-1 flex flex-col">
+        <Header />
+        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 lg:p-8">
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }
