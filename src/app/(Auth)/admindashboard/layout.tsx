@@ -1,8 +1,8 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import jwt from 'jsonwebtoken';
-import Sidebar from '@/Components/AdminDashboardComponents/Sidebar';
-import Header from '@/Components/AdminDashboardComponents/Header';
+import Sidebar from '@/Components/Dashboards/AdminDashboardComponents/Sidebar';
+import Header from '@/Components/Dashboards/AdminDashboardComponents/Header';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();

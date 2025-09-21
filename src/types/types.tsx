@@ -147,6 +147,26 @@ export interface Subcategory {
 
 
 
+
+
+
+export interface Address {
+  id: string;
+  userId: string;
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  province: string;
+  city: string;
+  street: string;
+  alley?: string;
+  building_number?: string;
+  unit?: string;
+  postal_code: string;
+  extra_details?: string;
+  is_default: boolean;
+}
+
 export interface Ticket {
   id: number;
   user_id: number;
@@ -157,4 +177,105 @@ export interface Ticket {
   updated_at: string;
   response: string | null;
   admin_id: number | null;
+}
+
+
+export interface AccountInfo {
+  username: string;
+  email: string;
+  phone_number: string;
+  first_name: string;
+  last_name: string;
+  role: "admin" | "customer";
+  isActive: boolean;
+}
+export interface AccountContentProps {
+  accountInfo: AccountInfo;
+  handleAccountInfoChange: (field: keyof AccountInfo, value: string) => void;
+  handleSaveAccountInfo: () => void;
+}
+
+
+export interface Order {
+  id: string;
+  date: string;
+  total: string;
+  status: string;
+  product: { name: string; image: string; details?: string };
+}
+
+export interface WishlistItem {
+  id: number;
+  name: string;
+  price: string;
+  image: string;
+}
+
+export interface Tracking {
+  id: string;
+  status: string;
+  estimatedDelivery: string;
+}
+
+export interface TrackingResult {
+  id: string;
+  status: string;
+  date: string;
+  details?: string;
+}
+
+export interface SupportTicket {
+  id: string;
+  subject: string;
+  message: string;
+  status: string;
+  date: string;
+  response?: string;
+}
+
+
+
+export interface RecentActivity {
+  description: string;
+  date: string;
+}
+
+export interface OrdersContentProps {
+  orders: Order[];
+  selectedOrder: Order | null;
+  isOrderModalOpen: boolean;
+  setIsOrderModalOpen: (open: boolean) => void;
+  handleViewOrderDetails: (order: Order) => void;
+  handleCancelOrder: (id: string) => void;
+  modalStyle: any;
+}
+export interface userdashSidebarProps {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  isSidebarOpen: boolean;
+  toggleSidebar: () => void;
+  accountInfo: AccountInfo;
+  handleLogout: () => void;
+}
+
+export interface TicketsContentProps {
+  supportTickets: SupportTicket[];
+  isTicketModalOpen: boolean;
+  setIsTicketModalOpen: (open: boolean) => void;
+  newTicket: { subject: string; message: string };
+  setNewTicket: (ticket: { subject: string; message: string }) => void;
+  ticketError: string;
+  setTicketError: (error: string) => void;
+  handleSubmitTicket: () => void;
+  handleCloseTicket: (id: string) => void;
+  expandedAccordion: string | false;
+  handleAccordionChange: (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => void;
+  modalStyle: any;
+}
+
+
+export interface WishlistContentProps {
+  wishlist: WishlistItem[];
+  handleAddToCart: (item: WishlistItem) => void;
+  handleRemoveFromWishlist: (id: number) => void;
 }
