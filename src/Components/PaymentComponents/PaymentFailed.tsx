@@ -1,19 +1,57 @@
-"use client"
-import React, { useEffect, useState } from "react";
+"use client";
+import { useEffect, useState } from "react";
+import { useCart } from "@/ContextApi/CartContext";
+
+interface Order {
+  order_code: string;
+}
 
 export default function PaymentFailed() {
-  const [countdown, setCountdown] = useState(5);
-  const [orderCode, setOrderCode] = useState("");
+  const { state: { cartItems } } = useCart();
+  const [countdown, setCountdown] = useState(15);
+  const [order, setOrder] = useState<Order | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   useEffect(() => {
-    const code = "ORD-" + Math.floor(100000 + Math.random() * 900000);
-    setOrderCode(code);
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get("orderId");
+    const error = urlParams.get("error") || "unknown";
+
+    setErrorMessage(
+      error === "missing_params"
+        ? "اطلاعات پرداخت ناقص است."
+        : error === "server_error"
+        ? "خطای سرور رخ داد."
+        : error === "پرداخت لغو شده توسط کاربر"
+        ? "شما پرداخت را لغو کردید. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید."
+        : decodeURIComponent(error)
+    );
+
+    if (orderId) {
+      fetch(`/api/orders/${orderId}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("سفارش یافت نشد");
+          return res.json();
+        })
+        .then((data) => {
+          setOrder(data);
+          setLoading(false);
+        })
+        .catch((err) => {
+          console.error("خطا در بارگذاری سفارش:", err);
+          setLoading(false);
+        });
+    } else {
+      setLoading(false);
+    }
+
+    localStorage.setItem("cartItems", JSON.stringify(cartItems));
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev === 1) {
           clearInterval(timer);
-          // اینجا می‌تونی ریدایرکت بزنی مثلاً به صفحه پرداخت دوباره
           window.location.href = "/checkout";
         }
         return prev - 1;
@@ -21,7 +59,15 @@ export default function PaymentFailed() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [cartItems]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-100 flex items-center justify-center min-h-screen px-4">
@@ -32,12 +78,14 @@ export default function PaymentFailed() {
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg">
+            xmlns="http://www.w3.org/2000/svg"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth="2"
-              d="M6 18L18 6M6 6l12 12"></path>
+              d="M6 18L18 6M6 6l12 12"
+            ></path>
           </svg>
         </div>
 
@@ -45,16 +93,18 @@ export default function PaymentFailed() {
           پرداخت ناموفق بود!
         </h1>
 
-        <p className="text-gray-600 text-lg mb-6">
-          متأسفانه پرداخت شما انجام نشد. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید.
+        <p className="text-gray-600 text-lg mb-4">
+          {errorMessage || "متأسفانه پرداخت شما انجام نشد. لطفاً دوباره تلاش کنید یا با پشتیبانی تماس بگیرید."}
         </p>
 
-        <div className="bg-gray-50 p-4 rounded-md mb-6">
-          <p className="text-gray-700">
-            کد سفارش شما:
-            <span className="font-semibold text-red-600"> {orderCode} </span>
-          </p>
-        </div>
+        {order && (
+          <div className="bg-gray-50 p-4 rounded-md mb-6">
+            <p className="text-gray-700">
+              کد سفارش شما:
+              <span className="font-semibold text-red-600"> {order.order_code} </span>
+            </p>
+          </div>
+        )}
 
         <div className="bg-gray-50 p-4 rounded-md mb-8">
           <p className="text-gray-700">
@@ -66,12 +116,21 @@ export default function PaymentFailed() {
           </p>
         </div>
 
-        <a
-          href="/payment"
-          id="manual-redirect-link"
-          className="text-red-600 hover:text-red-700 font-medium transition-colors duration-200 underline">
-          تلاش مجدد برای پرداخت
-        </a>
+        <div className="flex justify-center gap-4">
+          <a
+            href="/checkout"
+            id="manual-redirect-link"
+            className="text-red-600 hover:text-red-700 font-medium transition-colors duration-200 underline"
+          >
+            تلاش مجدد برای پرداخت
+          </a>
+          <a
+            href="/support"
+            className="text-blue-600 hover:text-blue-700 font-medium transition-colors duration-200 underline"
+          >
+            تماس با پشتیبانی
+          </a>
+        </div>
       </div>
     </div>
   );
