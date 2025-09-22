@@ -167,6 +167,26 @@ export interface Address {
   is_default: boolean;
 }
 
+export interface AddressesContentProps {
+  addresses: Address[];
+  newAddress: Address;
+  setNewAddress: (address: Address) => void;
+  addressError: string;
+  setAddressError: (error: string) => void;
+  showAddressForm: boolean;
+  setShowAddressForm: (show: boolean) => void;
+  editingAddressId: string | null;
+  setEditingAddressId: (id: string | null) => void;
+  provinces: string[];
+  cities: { [key: string]: string[] };
+  handleAddAddress: () => void;
+  handleEditAddress: (address: Address) => void;
+  handleDeleteAddress: (id: string) => void;
+  expandedAccordion: string | false;
+  handleAccordionChange: (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => void;
+}
+
+
 export interface Ticket {
   id: number;
   user_id: number;
