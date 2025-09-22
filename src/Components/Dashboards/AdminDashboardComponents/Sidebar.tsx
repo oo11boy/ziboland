@@ -1,9 +1,9 @@
-'use client';
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { Home, ShoppingBag, Tag, Building, MessageCircle, BarChart3, Settings, Menu, X, LogOut, Ticket } from 'lucide-react';
-import Cookies from 'js-cookie';
+"use client";
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { Home, ShoppingBag, Tag, Building, MessageCircle, BarChart3, Settings, Menu, X, LogOut, Ticket, Package } from "lucide-react";
+import Cookies from "js-cookie";
 
 const Sidebar = () => {
   const pathname = usePathname();
@@ -26,23 +26,24 @@ const Sidebar = () => {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      Cookies.remove('authToken');
-      router.push('/myaccount');
+      await fetch("/api/auth/logout", { method: "POST" });
+      Cookies.remove("authToken");
+      router.push("/myaccount");
     } catch (err) {
-      console.error('Logout failed:', err);
+      console.error("Logout failed:", err);
     }
   };
 
   const navItems = [
-    { href: '/admindashboard', label: 'داشبورد', icon: Home },
-    { href: '/admindashboard/products', label: 'محصولات', icon: ShoppingBag },
-    { href: '/admindashboard/categories', label: 'دسته‌بندی‌ها', icon: Tag },
-    { href: '/admindashboard/brands', label: 'برندها', icon: Building },
-    { href: '/admindashboard/comments', label: 'نظرات', icon: MessageCircle },
-    { href: '/admindashboard/tickets', label: 'تیکت‌ها', icon: Ticket },
-    { href: '/admindashboard/analytics', label: 'تحلیل‌ها', icon: BarChart3 },
-    { href: '/admindashboard/settings', label: 'تنظیمات', icon: Settings },
+    { href: "/admindashboard", label: "داشبورد", icon: Home },
+    { href: "/admindashboard/products", label: "محصولات", icon: ShoppingBag },
+    { href: "/admindashboard/orders", label: "سفارشات", icon: Package },
+    { href: "/admindashboard/categories", label: "دسته‌بندی‌ها", icon: Tag },
+    { href: "/admindashboard/brands", label: "برندها", icon: Building },
+    { href: "/admindashboard/comments", label: "نظرات", icon: MessageCircle },
+    { href: "/admindashboard/tickets", label: "تیکت‌ها", icon: Ticket },
+    { href: "/admindashboard/analytics", label: "تحلیل‌ها", icon: BarChart3 },
+    { href: "/admindashboard/settings", label: "تنظیمات", icon: Settings },
   ];
 
   return (
@@ -67,8 +68,8 @@ const Sidebar = () => {
           md:sticky md:top-0 md:h-screen md:z-30
           bg-white dark:bg-gray-800 shadow-lg
           transition-all duration-300 ease-in-out
-          ${isOpen ? 'w-64' : 'w-16'}
-          ${isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'}
+          ${isOpen ? "w-64" : "w-16"}
+          ${isMobileMenuOpen ? "translate-x-0" : "translate-x-full"}
           md:translate-x-0
           overflow-y-auto
           scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600
@@ -103,11 +104,11 @@ const Sidebar = () => {
                     href={item.href}
                     className={`flex items-center px-3 py-2 rounded-lg transition-colors duration-200
                       ${isActive
-                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                        : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                       }`}
                   >
-                    <Icon size={20} className={`${isOpen ? 'ml-3' : 'mx-auto'} flex-shrink-0`} />
+                    <Icon size={20} className={`${isOpen ? "ml-3" : "mx-auto"} flex-shrink-0`} />
                     {isOpen && <span className="text-sm">{item.label}</span>}
                   </Link>
                 </li>
@@ -118,7 +119,7 @@ const Sidebar = () => {
                 onClick={handleLogout}
                 className="flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full"
               >
-                <LogOut size={20} className={`${isOpen ? 'ml-3' : 'mx-auto'} flex-shrink-0`} />
+                <LogOut size={20} className={`${isOpen ? "ml-3" : "mx-auto"} flex-shrink-0`} />
                 {isOpen && <span className="text-sm">خروج</span>}
               </button>
             </li>

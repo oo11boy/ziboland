@@ -215,14 +215,53 @@ export interface AccountContentProps {
   handleSaveAccountInfo: () => void;
 }
 
-
 export interface Order {
-  id: string;
-  date: string;
-  total: string;
-  status: string;
-  product: { name: string; image: string; details?: string };
+  id: number;
+  order_code: string;
+  user_id: number;
+  username?: string;
+  email?: string;
+  first_name?: string; // Added
+  last_name?: string; // Added
+  phone_number?: string; // Added
+  address_id: number;
+  total_amount: number;
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  payment_status: "pending" | "paid" | "failed" | "refunded";
+  shipping_method: string;
+  tracking_code: string | null;
+  created_at: string;
+  updated_at: string;
+  province?: string;
+  city?: string;
+  street?: string;
+  alley?: string | null;
+  building_number?: string | null;
+  unit?: string | null;
+  postal_code?: string;
+  items: {
+    id: number;
+    order_id: number;
+    product_id: number;
+    quantity: number;
+    price_type: "single" | "wholesale";
+    unit_price: number;
+    discount: string | null;
+    title: string;
+    image: string | null;
+  }[];
 }
+
+export interface OrdersContentProps {
+  orders: Order[];
+  selectedOrder: Order | null;
+  isOrderModalOpen: boolean;
+  setIsOrderModalOpen: (open: boolean) => void;
+  handleViewOrderDetails: (order: Order) => void;
+  modalStyle: any;
+}
+
+// Other types (AccountInfo, Address, etc.) remain unchanged
 
 export interface WishlistItem {
   id: number;
@@ -260,15 +299,7 @@ export interface RecentActivity {
   date: string;
 }
 
-export interface OrdersContentProps {
-  orders: Order[];
-  selectedOrder: Order | null;
-  isOrderModalOpen: boolean;
-  setIsOrderModalOpen: (open: boolean) => void;
-  handleViewOrderDetails: (order: Order) => void;
-  handleCancelOrder: (id: string) => void;
-  modalStyle: any;
-}
+
 export interface userdashSidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;

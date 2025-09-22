@@ -36,7 +36,6 @@ export default function DashboardContent({
           <div className="ud-card-dot ud-card-dot-teal"></div>
           <h3 className="ud-card-title">تعداد کل سفارش‌ها</h3>
           <p className="ud-card-value">{orders.length.toLocaleString("fa-IR")}</p>
-          <p className="ud-card-info">آخرین سفارش: {orders[0]?.date || "نامشخص"}</p>
         </div>
         <div className="ud-card" role="region" aria-label="تعداد علاقه‌مندی‌ها">
           <div className="ud-card-dot ud-card-dot-yellow"></div>
