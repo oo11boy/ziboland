@@ -97,7 +97,7 @@ const OrdersPage = () => {
     setStatusUpdating((prev) => ({ ...prev, [orderId]: true }));
     try {
       const token = Cookies.get("authToken");
-      const response = await fetch(`${API}/admin/orders/${orderId}/status`, {
+      const response = await fetch(`${API}/admin/orders/${orderId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

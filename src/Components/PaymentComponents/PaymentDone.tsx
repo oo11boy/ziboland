@@ -130,7 +130,7 @@ export default function PaymentDone() {
                 <span>
                   {item.title} × {item.quantity}
                 </span>
-                <span>{(item.unit_price / 10).toLocaleString("fa-IR")} تومان</span>
+                <span>{(item.unit_price ).toLocaleString("fa-IR")} تومان</span>
               </li>
             ))}
           </ul>
