@@ -1,5 +1,6 @@
+// src\app\dashboard\DashboardContent.tsx
 import { ShoppingCart, Favorite, Message } from "@mui/icons-material";
-import { Order, WishlistItem, AccountInfo, SupportTicket, RecentActivity } from "@/types/types";
+import { Order, WishlistItem, AccountInfo, SupportTicket, RecentActivity, TrackingResult } from "@/types/types";
 
 interface DashboardContentProps {
   orders: Order[];
@@ -9,7 +10,7 @@ interface DashboardContentProps {
   recentActivities: RecentActivity[];
   orderTrackingId: string;
   setOrderTrackingId: (id: string) => void;
-  trackingResult: any;
+  trackingResult: TrackingResult | null;
   trackingError: string;
   handleTrackOrder: () => void;
   setActiveTab: (tab: string) => void;
@@ -28,6 +29,27 @@ export default function DashboardContent({
   handleTrackOrder,
   setActiveTab,
 }: DashboardContentProps) {
+  const translateStatus = (status: string) => {
+    switch (status) {
+      case "pending": return "در انتظار";
+      case "processing": return "در حال پردازش";
+      case "shipped": return "ارسال شده";
+      case "delivered": return "تحویل داده شده";
+      case "cancelled": return "لغو شده";
+      default: return status;
+    }
+  };
+
+  const translatePaymentStatus = (status: string) => {
+    switch (status) {
+      case "pending": return "در انتظار پرداخت";
+      case "paid": return "پرداخت شده";
+      case "failed": return "پرداخت ناموفق";
+      case "refunded": return "بازپرداخت شده";
+      default: return status;
+    }
+  };
+
   return (
     <div className="ud-animate-slide-in-up">
       <h2 className="ud-main-title">پیشخوان</h2>
@@ -41,7 +63,7 @@ export default function DashboardContent({
           <div className="ud-card-dot ud-card-dot-yellow"></div>
           <h3 className="ud-card-title">تعداد علاقه‌مندی‌ها</h3>
           <p className="ud-card-value">{wishlist.length.toLocaleString("fa-IR")}</p>
-          <p className="ud-card-info">آخرین افزودن: {recentActivities[0]?.date || "نامشخص"}</p>
+          <p className="ud-card-info">آخرین افزودن: {recentActivities[0]?.date ? new Date(recentActivities[0].date).toLocaleDateString("fa-IR") : "نامشخص"}</p>
         </div>
         <div className="ud-card" role="region" aria-label="وضعیت پروفایل">
           <div className="ud-card-dot ud-card-dot-green"></div>
@@ -78,15 +100,29 @@ export default function DashboardContent({
             پیگیری
           </button>
         </div>
+        {trackingError && <p className="ud-tracking-error">{trackingError}</p>}
         {trackingResult && (
           <div className="ud-tracking-result">
-            <p className="ud-tracking-result-title">وضعیت سفارش #{trackingResult.id}</p>
-            <p className="ud-tracking-result-text"><strong>وضعیت:</strong> {trackingResult.status}</p>
-            <p className="ud-tracking-result-text"><strong>تاریخ تحویل تخمینی:</strong> {trackingResult.date}</p>
-            <p className="ud-tracking-result-text"><strong>جزئیات:</strong> {trackingResult.details || "در حال پردازش"}</p>
+            <p className="ud-tracking-result-title">وضعیت سفارش #{trackingResult.order_code}</p>
+            <p className="ud-tracking-result-text">
+              <strong>وضعیت سفارش:</strong> {translateStatus(trackingResult.status)}
+            </p>
+            <p className="ud-tracking-result-text">
+              <strong>وضعیت پرداخت:</strong> {translatePaymentStatus(trackingResult.payment_status)}
+            </p>
+            <p className="ud-tracking-result-text">
+              <strong>مبلغ کل:</strong> {(trackingResult.total_amount / 10).toLocaleString("fa-IR")} تومان
+            </p>
+            <p className="ud-tracking-result-text">
+              <strong>روش ارسال:</strong>{" "}
+              {trackingResult.shipping_method === "express" ? "اکسپرس" : "عادی"}
+            </p>
+            <p className="ud-tracking-result-text">
+              <strong>تاریخ ثبت:</strong>{" "}
+              {new Date(trackingResult.created_at).toLocaleDateString("fa-IR")}
+            </p>
           </div>
         )}
-        {trackingError && <p className="ud-tracking-error">{trackingError}</p>}
       </div>
       <div className="ud-activities-container">
         <h3 className="ud-activities-title">فعالیت اخیر</h3>

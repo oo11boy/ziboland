@@ -191,34 +191,35 @@ export default function UserDashboardContainer() {
     }
   };
 
-  const handleTrackOrder = async () => {
-    if (!orderTrackingId.trim()) {
-      setTrackingError("لطفاً شماره سفارش را وارد کنید.");
+const handleTrackOrder = async () => {
+  setTrackingResult(null); // Clear previous result
+  setTrackingError(""); // Clear previous error
+  if (!orderTrackingId.trim()) {
+    setTrackingError("لطفاً شماره سفارش را وارد کنید.");
+    return;
+  }
+  if (!/^\d+$/.test(orderTrackingId)) {
+    setTrackingError("شماره سفارش باید فقط شامل اعداد باشد.");
+    return;
+  }
+  try {
+    const res = await fetch(`/api/orders/track/${orderTrackingId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setTrackingResult(data);
+      setTrackingError("");
+    } else {
+      const errorData = await res.json();
       setTrackingResult(null);
-      return;
+      setTrackingError(errorData.error || "سفارش با این شماره یافت نشد.");
     }
-    if (!/^\d+$/.test(orderTrackingId)) {
-      setTrackingError("شماره سفارش باید فقط شامل اعداد باشد.");
-      setTrackingResult(null);
-      return;
-    }
-    try {
-      const res = await fetch(`/api/orders/track/${orderTrackingId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setTrackingResult(data);
-        setTrackingError("");
-      } else {
-        setTrackingResult(null);
-        setTrackingError("سفارش با این شماره یافت نشد.");
-      }
-    } catch (err) {
-      setTrackingResult(null);
-      setTrackingError("خطا در پیگیری سفارش.");
-    }
-  };
+  } catch (err) {
+    setTrackingResult(null);
+    setTrackingError("خطا در پیگیری سفارش.");
+  }
+};
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -492,7 +493,7 @@ export default function UserDashboardContainer() {
             isOrderModalOpen={isOrderModalOpen}
             setIsOrderModalOpen={setIsOrderModalOpen}
             handleViewOrderDetails={handleViewOrderDetails}
-            handleCancelOrder={handleCancelOrder}
+          
             modalStyle={modalStyle}
           />
         )}

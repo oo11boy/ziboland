@@ -1,3 +1,4 @@
+// src/app/(Auth)/admindashboard/orders/page.tsx
 "use client";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
@@ -9,38 +10,7 @@ import { toast } from "react-hot-toast";
 import Image from "next/image";
 import { API } from "@/lib/MainRoutes";
 import Cookies from "js-cookie";
-
-interface Order {
-  id: number;
-  order_code: string;
-  user_id: number;
-  username: string;
-  email: string;
-  first_name: string; // Added
-  last_name: string; // Added
-  phone_number: string; // Added
-  total_amount: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
-  payment_status: "pending" | "paid" | "failed" | "refunded";
-  shipping_method: string;
-  created_at: string;
-  province: string;
-  city: string;
-  street: string;
-  alley: string | null;
-  building_number: string | null;
-  unit: string | null;
-  postal_code: string;
-  items: {
-    id: number;
-    product_id: number;
-    title: string;
-    image: string | null;
-    quantity: number;
-    unit_price: number;
-    price_type: "single" | "wholesale";
-  }[];
-}
+import { Order } from "@/types/types";
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -90,7 +60,7 @@ const OrdersPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleStatusChange = async (orderId: number, newStatus: string) => {
+  const handleStatusChange = async (orderId: number, newStatus: Order["status"]) => {
     if (!confirm(`آیا مطمئن هستید که می‌خواهید وضعیت سفارش #${orderId} را به "${translateStatus(newStatus)}" تغییر دهید؟`)) {
       return;
     }
@@ -125,7 +95,7 @@ const OrdersPage = () => {
     }
   };
 
-  const translateStatus = (status: string) => {
+  const translateStatus = (status: Order["status"]) => {
     switch (status) {
       case "pending": return "در انتظار";
       case "processing": return "در حال پردازش";
@@ -136,7 +106,7 @@ const OrdersPage = () => {
     }
   };
 
-  const translatePaymentStatus = (status: string) => {
+  const translatePaymentStatus = (status: Order["payment_status"]) => {
     switch (status) {
       case "pending": return "در انتظار پرداخت";
       case "paid": return "پرداخت شده";
@@ -199,7 +169,7 @@ const OrdersPage = () => {
                       <span className="font-medium md:hidden">وضعیت: </span>
                       <Select
                         value={order.status}
-                        onValueChange={(value) => handleStatusChange(order.id, value)}
+                        onValueChange={(value: Order["status"]) => handleStatusChange(order.id, value)}
                         disabled={statusUpdating[order.id]}
                       >
                         <SelectTrigger className="w-[120px]">

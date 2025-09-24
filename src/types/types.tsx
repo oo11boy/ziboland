@@ -221,9 +221,9 @@ export interface Order {
   user_id: number;
   username?: string;
   email?: string;
-  first_name?: string; // Added
-  last_name?: string; // Added
-  phone_number?: string; // Added
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
   address_id: number;
   total_amount: number;
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
@@ -276,11 +276,15 @@ export interface Tracking {
   estimatedDelivery: string;
 }
 
+// src\types\types.ts
 export interface TrackingResult {
-  id: string;
-  status: string;
-  date: string;
-  details?: string;
+  id: number;
+  order_code: string;
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  payment_status: "pending" | "paid" | "failed" | "refunded";
+  created_at: string;
+  total_amount: number;
+  shipping_method: string;
 }
 
 export interface SupportTicket {
@@ -330,3 +334,7 @@ export interface WishlistContentProps {
   handleAddToCart: (item: WishlistItem) => void;
   handleRemoveFromWishlist: (id: number) => void;
 }
+
+
+
+export type { RowDataPacket };

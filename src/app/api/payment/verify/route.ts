@@ -1,3 +1,4 @@
+// src\app\api\payment\verify\route.ts
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
@@ -24,21 +25,22 @@ async function verifyPayment(trackId: string, orderId: string) {
     const data = await res.json();
 
     if (data.result === 100 && data.status === 1) {
+      // Update only the payments table; the trigger will handle orders table
       await conn.execute(
-        `UPDATE orders SET payment_status='paid', status='processing' WHERE id=?`,
-        [orderId]
-      );
-      await conn.execute(
-        `UPDATE payments SET status='paid', ref_number=?, card_number=?, paid_at=NOW() WHERE track_id=?`,
+        `UPDATE payments SET status = 'paid', ref_number = ?, card_number = ?, paid_at = NOW() WHERE track_id = ?`,
         [data.refNumber, data.cardNumber, trackId]
       );
-
       await conn.commit();
-      return { success: true, redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/paymentdone?orderId=${orderId}` };
+      return {
+        success: true,
+        redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/paymentdone?orderId=${orderId}`,
+      };
     } else {
-      console.error("Zibal verification failed:", data);
-      await conn.execute(`UPDATE orders SET payment_status='failed' WHERE id=?`, [orderId]);
-      await conn.execute(`UPDATE payments SET status='failed' WHERE track_id=?`, [trackId]);
+      // Update only the payments table; the trigger will handle orders table
+      await conn.execute(
+        `UPDATE payments SET status = 'failed' WHERE track_id = ?`,
+        [trackId]
+      );
       await conn.commit();
       return {
         success: false,
@@ -50,9 +52,17 @@ async function verifyPayment(trackId: string, orderId: string) {
   } catch (error: any) {
     await conn.rollback();
     console.error("Error verifying payment:", error);
+    // Update only the payments table; the trigger will handle orders table
+    await conn.execute(
+      `UPDATE payments SET status = 'failed' WHERE track_id = ?`,
+      [trackId]
+    );
+    await conn.commit();
     return {
       success: false,
-      redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/paymentfailed?orderId=${orderId}&error=${encodeURIComponent("خطای سرور")}`,
+      redirectUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/paymentfailed?orderId=${orderId}&error=${encodeURIComponent(
+        "خطای سرور"
+      )}`,
     };
   } finally {
     conn.release();
@@ -90,15 +100,14 @@ export async function GET(req: Request) {
 
   console.log("Zibal callback received:", { trackId, orderId, success, status });
 
-  // Handle explicit failures (e.g., success=0 or specific status codes)
   if (success !== "1") {
     const errorMessage = "پرداخت ناموفق بود";
     console.error("Payment failed:", { trackId, orderId, success, status });
     const conn = await pool.getConnection();
     try {
       await conn.beginTransaction();
-      await conn.execute(`UPDATE orders SET payment_status='failed' WHERE id=?`, [orderId]);
-      await conn.execute(`UPDATE payments SET status='failed' WHERE track_id=?`, [trackId]);
+      // Update only the payments table; the trigger will handle orders table
+      await conn.execute(`UPDATE payments SET status = 'failed' WHERE track_id = ?`, [trackId]);
       await conn.commit();
     } catch (error) {
       await conn.rollback();
@@ -111,7 +120,6 @@ export async function GET(req: Request) {
     );
   }
 
-  // For success=1, verify the payment regardless of status
   const result = await verifyPayment(trackId, orderId);
   return NextResponse.redirect(result.redirectUrl);
 }

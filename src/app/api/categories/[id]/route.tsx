@@ -2,10 +2,19 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { Categoryapi } from "@/types/types";
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
+// ===================== GET CATEGORY BY ID =====================
+export async function GET(
+  request: Request,
+  context: { params: { id: string } }
+) {
+  const { params } = await context;
   const categoryId = parseInt(params.id);
+
   if (isNaN(categoryId)) {
-    return NextResponse.json({ error: "شناسه دسته‌بندی نامعتبر است" }, { status: 400 });
+    return NextResponse.json(
+      { error: "شناسه دسته‌بندی نامعتبر است" },
+      { status: 400 }
+    );
   }
 
   try {
@@ -33,7 +42,9 @@ export async function GET(request: Request, { params }: { params: { id: string }
 
       if (!categoriesMap[catId]) {
         if (!row.cat_name || !row.link || !row.icon) {
-          console.warn(`فیلدهای مورد نیاز برای دسته‌بندی با شناسه ${catId} وجود ندارد`);
+          console.warn(
+            `فیلدهای مورد نیاز برای دسته‌بندی با شناسه ${catId} وجود ندارد`
+          );
           return;
         }
         categoriesMap[catId] = {
@@ -90,10 +101,19 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+// ===================== UPDATE CATEGORY =====================
+export async function PUT(
+  request: Request,
+  context: { params: { id: string } }
+) {
+  const { params } = await context;
   const categoryId = parseInt(params.id);
+
   if (isNaN(categoryId)) {
-    return NextResponse.json({ error: "شناسه دسته‌بندی نامعتبر است" }, { status: 400 });
+    return NextResponse.json(
+      { error: "شناسه دسته‌بندی نامعتبر است" },
+      { status: 400 }
+    );
   }
 
   try {
@@ -111,6 +131,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     try {
       await connection.beginTransaction();
 
+      // بروزرسانی دسته‌بندی
       const [result] = await connection.query(
         "UPDATE categories SET name = ?, link = ?, mothercat = ?, icon = ? WHERE id = ?",
         [name, link, mothercat ? 1 : 0, icon, categoryId]
@@ -120,14 +141,20 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         throw new Error("دسته‌بندی یافت نشد");
       }
 
-      await connection.query("DELETE FROM subcategories WHERE category_id = ?", [categoryId]);
-      await connection.query("DELETE FROM subcategory_items WHERE subcategory_id IN (SELECT id FROM subcategories WHERE category_id = ?)", [categoryId]);
+      // حذف زیرمجموعه‌ها و آیتم‌ها قبلی
+      await connection.query(
+        "DELETE FROM subcategory_items WHERE subcategory_id IN (SELECT id FROM subcategories WHERE category_id = ?)",
+        [categoryId]
+      );
+      await connection.query("DELETE FROM subcategories WHERE category_id = ?", [
+        categoryId,
+      ]);
 
+      // درج مجدد زیرمجموعه‌ها و آیتم‌ها
       if (subcat && Array.isArray(subcat)) {
         for (const sub of subcat) {
-          if (!sub.name) {
-            throw new Error("نام زیرمجموعه الزامی است");
-          }
+          if (!sub.name) throw new Error("نام زیرمجموعه الزامی است");
+
           const [subResult] = await connection.query(
             "INSERT INTO subcategories (category_id, name) VALUES (?, ?)",
             [categoryId, sub.name]
@@ -136,9 +163,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
           if (sub.items && Array.isArray(sub.items)) {
             for (const item of sub.items) {
-              if (!item.name) {
-                throw new Error("نام آیتم زیرمجموعه الزامی است");
-              }
+              if (!item.name) throw new Error("نام آیتم زیرمجموعه الزامی است");
               await connection.query(
                 "INSERT INTO subcategory_items (subcategory_id, name) VALUES (?, ?)",
                 [subcatId, item.name]
@@ -165,10 +190,19 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+// ===================== DELETE CATEGORY =====================
+export async function DELETE(
+  request: Request,
+  context: { params: { id: string } }
+) {
+  const { params } = await context;
   const categoryId = parseInt(params.id);
+
   if (isNaN(categoryId)) {
-    return NextResponse.json({ error: "شناسه دسته‌بندی نامعتبر است" }, { status: 400 });
+    return NextResponse.json(
+      { error: "شناسه دسته‌بندی نامعتبر است" },
+      { status: 400 }
+    );
   }
 
   try {
@@ -176,9 +210,17 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     try {
       await connection.beginTransaction();
 
-      await connection.query("DELETE FROM subcategory_items WHERE subcategory_id IN (SELECT id FROM subcategories WHERE category_id = ?)", [categoryId]);
-      await connection.query("DELETE FROM subcategories WHERE category_id = ?", [categoryId]);
-      const [result] = await connection.query("DELETE FROM categories WHERE id = ?", [categoryId]);
+      await connection.query(
+        "DELETE FROM subcategory_items WHERE subcategory_id IN (SELECT id FROM subcategories WHERE category_id = ?)",
+        [categoryId]
+      );
+      await connection.query("DELETE FROM subcategories WHERE category_id = ?", [
+        categoryId,
+      ]);
+      const [result] = await connection.query(
+        "DELETE FROM categories WHERE id = ?",
+        [categoryId]
+      );
 
       if ((result as any).affectedRows === 0) {
         throw new Error("دسته‌بندی یافت نشد");
