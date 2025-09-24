@@ -1,4 +1,5 @@
-'use client';
+
+"use client";
 import { useState, useEffect } from 'react';
 import { Ticket } from '@/types/types';
 import { Modal, Box, Typography, TextField, Button } from '@mui/material';
@@ -86,6 +87,27 @@ export default function TicketsPage() {
     }
   };
 
+  const handleDelete = async (ticketId: number) => {
+    if (!confirm('آیا مطمئن هستید که می‌خواهید این تیکت را حذف کنید؟')) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/tickets/${ticketId}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (res.ok) {
+        fetchTickets();
+      } else {
+        setError('خطا در حذف تیکت');
+      }
+    } catch (err) {
+      setError('خطا در حذف تیکت');
+    }
+  };
+
   const modalStyle = {
     position: 'absolute',
     top: '50%',
@@ -167,6 +189,12 @@ export default function TicketsPage() {
                     باز کردن
                   </button>
                 )}
+                <button
+                  onClick={() => handleDelete(ticket.id)}
+                  className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+                >
+                  حذف
+                </button>
               </div>
             </div>
           ))

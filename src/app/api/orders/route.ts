@@ -1,18 +1,18 @@
-//src\app\api\orders\route.ts
-import { NextResponse } from "next/server";
-import pool from "@/lib/db";
-import * as jose from "jose";
+import { NextResponse } from 'next/server';
+import pool from '@/lib/db';
+import * as jose from 'jose';
+
 export async function POST(req: Request) {
   const body = await req.json();
   const { userId, address, items, deliveryType, amount, callbackUrl } = body;
 
   if (!userId || !address?.id || !items?.length || !deliveryType || !amount || !callbackUrl) {
-    return NextResponse.json({ error: "داده‌های ورودی نامعتبر است" }, { status: 400 });
+    return NextResponse.json({ error: 'داده‌های ورودی نامعتبر است' }, { status: 400 });
   }
 
-  const validDeliveryTypes = ["normal", "express"];
+  const validDeliveryTypes = ['normal', 'express'];
   if (!validDeliveryTypes.includes(deliveryType)) {
-    return NextResponse.json({ error: "روش ارسال نامعتبر است" }, { status: 400 });
+    return NextResponse.json({ error: 'روش ارسال نامعتبر است' }, { status: 400 });
   }
 
   const deliveryCosts: { [key: string]: number } = {
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
   );
   const expectedAmount = (itemsTotal + deliveryCosts[deliveryType]) * 10;
   if (amount !== expectedAmount) {
-    return NextResponse.json({ error: "مبلغ سفارش با آیتم‌ها مطابقت ندارد" }, { status: 400 });
+    return NextResponse.json({ error: 'مبلغ سفارش با آیتم‌ها مطابقت ندارد' }, { status: 400 });
   }
 
   const conn = await pool.getConnection();
@@ -40,10 +40,7 @@ export async function POST(req: Request) {
     const maxAttempts = 5;
 
     while (!isUnique && attempts < maxAttempts) {
-      const [existing]: any = await conn.query(
-        "SELECT id FROM orders WHERE order_code = ?",
-        [orderCode]
-      );
+      const [existing]: any = await conn.query('SELECT id FROM orders WHERE order_code = ?', [orderCode]);
       if (existing.length === 0) {
         isUnique = true;
       } else {
@@ -53,7 +50,7 @@ export async function POST(req: Request) {
     }
 
     if (!isUnique) {
-      throw new Error("ناتوانی در تولید کد سفارش منحصربه‌فرد");
+      throw new Error('ناتوانی در تولید کد سفارش منحصربه‌فرد');
     }
 
     const [orderResult]: any = await conn.execute(
@@ -65,7 +62,7 @@ export async function POST(req: Request) {
 
     for (const item of items) {
       if (!item.product_id || !item.quantity || !item.price || !item.price_type) {
-        throw new Error("آیتم‌های سفارش نامعتبر است");
+        throw new Error('آیتم‌های سفارش نامعتبر است');
       }
       await conn.execute(
         `INSERT INTO order_items (order_id, product_id, quantity, unit_price, price_type)
@@ -74,14 +71,21 @@ export async function POST(req: Request) {
       );
     }
 
+    // Create notification
+    const notificationMessage = `سفارش جدید با کد ${orderCode} ثبت شد`;
+    await conn.query(
+      'INSERT INTO notifications (type, message, related_id) VALUES (?, ?, ?)',
+      ['order', notificationMessage, orderId]
+    );
+
     const merchantKey = process.env.ZIBAL_MERCHANT;
     if (!merchantKey) {
-      throw new Error("کلید درگاه پرداخت تنظیم نشده است");
+      throw new Error('کلید درگاه پرداخت تنظیم نشده است');
     }
 
-    const res = await fetch("https://gateway.zibal.ir/request/lazy", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const res = await fetch('https://gateway.zibal.ir/request/lazy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         merchant: merchantKey,
         amount,
@@ -113,9 +117,9 @@ export async function POST(req: Request) {
     }
   } catch (error: any) {
     await conn.rollback();
-    console.error("Error creating order:", error);
+    console.error('Error creating order:', error);
     return NextResponse.json(
-      { error: "خطا در ثبت سفارش", details: error.message },
+      { error: 'خطا در ثبت سفارش', details: error.message },
       { status: 500 }
     );
   } finally {
@@ -123,18 +127,16 @@ export async function POST(req: Request) {
   }
 }
 
-
 export async function GET(request: Request) {
-  // Extract the JWT token from the Authorization header
-  const token = request.headers.get("Authorization")?.replace("Bearer ", "");
+  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
   if (!token) {
-    return NextResponse.json({ error: "لطفاً توکن را ارائه دهید" }, { status: 401 });
+    return NextResponse.json({ error: 'لطفاً توکن را ارائه دهید' }, { status: 401 });
   }
 
   const secretKey = process.env.JWT_SECRET;
   if (!secretKey) {
-    console.error("JWT_SECRET is not set");
-    return NextResponse.json({ error: "خطای سرور: تنظیمات نادرست" }, { status: 500 });
+    console.error('JWT_SECRET is not set');
+    return NextResponse.json({ error: 'خطای سرور: تنظیمات نادرست' }, { status: 500 });
   }
 
   let userId;
@@ -143,14 +145,13 @@ export async function GET(request: Request) {
     const { payload } = await jose.jwtVerify(token, secret);
     userId = payload.userId;
   } catch (error: any) {
-    console.error("JWT verification error:", error.message);
-    return NextResponse.json({ error: "توکن نامعتبر است", details: error.message }, { status: 401 });
+    console.error('JWT verification error:', error.message);
+    return NextResponse.json({ error: 'توکن نامعتبر است', details: error.message }, { status: 401 });
   }
 
   const conn = await pool.getConnection();
 
   try {
-    // Fetch all orders for the user
     const [orders]: any = await conn.query(
       `SELECT o.*, a.province, a.city, a.street, a.building_number, a.alley, a.unit, a.postal_code
        FROM orders o 
@@ -159,7 +160,6 @@ export async function GET(request: Request) {
       [userId]
     );
 
-    // For each order, fetch its items
     for (let order of orders) {
       const [items]: any = await conn.query(
         `SELECT oi.*, p.title, p.image
@@ -173,9 +173,9 @@ export async function GET(request: Request) {
 
     return NextResponse.json(orders);
   } catch (error: any) {
-    console.error("Error fetching orders:", error);
+    console.error('Error fetching orders:', error);
     return NextResponse.json(
-      { error: "خطا در دریافت اطلاعات سفارشات", details: error.message },
+      { error: 'خطا در دریافت اطلاعات سفارشات', details: error.message },
       { status: 500 }
     );
   } finally {
