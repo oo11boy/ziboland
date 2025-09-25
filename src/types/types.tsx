@@ -1,5 +1,34 @@
 import { RowDataPacket } from 'mysql2/promise';
 
+export interface Comment {
+  id: number;
+  product_id: number;
+  name: string;
+  rating: number | null;
+  text: string;
+  admin_reply: string | null;
+  date: string;
+  status: number;
+  parent_id: number | null;
+  is_admin: number;
+  product_title: string | null;
+  replies?: Comment[];
+}
+
+export interface CommentRow extends RowDataPacket {
+  id: number;
+  product_id: number;
+  name: string;
+  rating: number | null;
+  text: string;
+  admin_reply: string | null;
+  date: string;
+  status: number;
+  parent_id: number | null;
+  is_admin: number;
+  product_title: string | null;
+}
+
 export interface CategoryRow extends RowDataPacket {
   cat_id: number;
   cat_name: string;
@@ -11,6 +40,7 @@ export interface CategoryRow extends RowDataPacket {
   item_id: number | null;
   item_name: string | null;
 }
+
 export interface ProductRow extends RowDataPacket {
   product_id: number;
   brand_id: number | null;
@@ -43,17 +73,18 @@ export interface ProductRow extends RowDataPacket {
   infotable_name: string | null;
   infotable_value: string | null;
   comment_id: number | null;
-  comment_product_id: number | null; // Add
+  comment_product_id: number;
   comment_name: string | null;
   comment_rating: number | null;
   comment_text: string | null;
   comment_date: string | null;
-  comment_status: number | null; // Add
-  comment_is_admin: number | null; // Add
+  comment_status: number | null;
+  comment_is_admin: number | null;
   brand_title: string | null;
   brand_img: string | null;
   brand_link: string | null;
 }
+
 export interface Categoryapi {
   id: number;
   name: string;
@@ -109,20 +140,6 @@ export interface InfoTable {
   name: string;
   value: string;
 }
-export interface Comment {
-  id: number;
-product_id: number | null;
-  name: string;
-  rating?: number;
-  text: string;
-  admin_reply?: string;
-  date: string;
-  status: boolean;
-  parent_id?: number; // Remove | null
-  is_admin: boolean;
-  product_title?: string;
-  level?: number;
-}
 
 export interface Brand {
   id: number;
@@ -144,11 +161,6 @@ export interface Subcategory {
   category_id: number;
   name: string;
 }
-
-
-
-
-
 
 export interface Address {
   id: string;
@@ -186,7 +198,6 @@ export interface AddressesContentProps {
   handleAccordionChange: (panel: string) => (event: React.SyntheticEvent, isExpanded: boolean) => void;
 }
 
-
 export interface Ticket {
   id: number;
   user_id: number;
@@ -199,7 +210,6 @@ export interface Ticket {
   admin_id: number | null;
 }
 
-
 export interface AccountInfo {
   username: string;
   email: string;
@@ -209,6 +219,7 @@ export interface AccountInfo {
   role: "admin" | "customer";
   isActive: boolean;
 }
+
 export interface AccountContentProps {
   accountInfo: AccountInfo;
   handleAccountInfoChange: (field: keyof AccountInfo, value: string) => void;
@@ -261,8 +272,6 @@ export interface OrdersContentProps {
   modalStyle: any;
 }
 
-// Other types (AccountInfo, Address, etc.) remain unchanged
-
 export interface WishlistItem {
   id: number;
   name: string;
@@ -276,7 +285,6 @@ export interface Tracking {
   estimatedDelivery: string;
 }
 
-// src\types\types.ts
 export interface TrackingResult {
   id: number;
   order_code: string;
@@ -296,13 +304,10 @@ export interface SupportTicket {
   response?: string;
 }
 
-
-
 export interface RecentActivity {
   description: string;
   date: string;
 }
-
 
 export interface userdashSidebarProps {
   activeTab: string;
@@ -328,13 +333,10 @@ export interface TicketsContentProps {
   modalStyle: any;
 }
 
-
 export interface WishlistContentProps {
   wishlist: WishlistItem[];
   handleAddToCart: (item: WishlistItem) => void;
   handleRemoveFromWishlist: (id: number) => void;
 }
-
-
 
 export type { RowDataPacket };

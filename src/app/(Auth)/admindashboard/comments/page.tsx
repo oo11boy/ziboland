@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -17,52 +18,37 @@ import {
   EyeOff,
   ChevronDown,
   ChevronUp,
+  MessageCircle,
 } from "lucide-react";
 import { Comment } from "@/types/types";
 import { API } from "@/lib/MainRoutes";
 import { toast } from "react-hot-toast";
 
 interface DebugComment extends Comment {
-  children?: DebugComment[];
   level?: number;
-  product_title?: string;
   collapsed?: boolean;
 }
-
-const buildCommentTree = (comments: DebugComment[]): DebugComment[] => {
-  const map: Record<number, DebugComment> = {};
-  const roots: DebugComment[] = [];
-
-  comments.forEach((c) => {
-    map[c.id] = { ...c, children: [], level: 0 };
-  });
-
-  comments.forEach((c) => {
-    if (!c.parent_id || c.parent_id === c.id || !map[c.parent_id]) {
-      roots.push(map[c.id]);
-    } else {
-      map[c.id].level = (map[c.parent_id].level || 0) + 1;
-      map[c.parent_id].children!.push(map[c.id]);
-    }
-  });
-
-  return roots;
-};
 
 const CommentsPage = () => {
   const [comments, setComments] = useState<DebugComment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedParent, setSelectedParent] = useState<DebugComment | null>(
-    null
-  );
+  const [selectedParent, setSelectedParent] = useState<DebugComment | null>(null);
   const [replyText, setReplyText] = useState("");
 
   const fetchComments = async () => {
     try {
       const res = await fetch(`${API}/comments`);
       if (!res.ok) throw new Error("Failed to fetch comments");
-      const data: DebugComment[] = await res.json();
-      setComments(data);
+      const data: Comment[] = await res.json();
+      // Add level and collapsed for frontend rendering
+      const addLevels = (comments: Comment[], level: number = 0): DebugComment[] =>
+        comments.map((comment) => ({
+          ...comment,
+          level,
+          collapsed: false,
+          replies: comment.replies ? addLevels(comment.replies, level + 1) : [],
+        }));
+      setComments(addLevels(data.filter((c) => !c.parent_id))); // Only top-level comments
     } catch {
       toast.error("خطا در دریافت کامنت‌ها");
     } finally {
@@ -74,16 +60,24 @@ const CommentsPage = () => {
     fetchComments();
   }, []);
 
-  const handleToggleStatus = async (id: number, currentStatus: boolean) => {
+  const handleToggleStatus = async (id: number, currentStatus: number) => {
     try {
-      const res = await fetch(`${API}/comments/${id}`, {
+      const res = await fetch(`${API}/comments`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: !currentStatus }),
+        body: JSON.stringify({ id, status: currentStatus ? 0 : 1 }),
       });
       if (!res.ok) throw new Error("Failed to toggle status");
       setComments((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, status: !currentStatus } : c))
+        prev.map((comment) => ({
+          ...comment,
+          status: comment.id === id ? (currentStatus ? 0 : 1) : comment.status,
+          replies: comment.replies?.map((reply) => ({
+            ...reply,
+            status: reply.id === id ? (currentStatus ? 0 : 1) : reply.status,
+            replies: reply.replies || [],
+          })) || [],
+        }))
       );
       toast.success("وضعیت کامنت تغییر یافت");
     } catch {
@@ -92,14 +86,13 @@ const CommentsPage = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (
-      !confirm(
-        "آیا مطمئن هستید؟ این عمل کامنت و تمام پاسخ‌های زیرین را حذف می‌کند."
-      )
-    )
-      return;
+    if (!confirm("آیا مطمئن هستید؟ این عمل کامنت و تمام پاسخ‌های زیرین را حذف می‌کند.")) return;
     try {
-      const res = await fetch(`${API}/comments/${id}`, { method: "DELETE" });
+      const res = await fetch(`${API}/comments`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
       if (!res.ok) throw new Error("Failed to delete comment");
       await fetchComments();
       toast.success("کامنت حذف شد");
@@ -135,66 +128,49 @@ const CommentsPage = () => {
   };
 
   const toggleCollapse = (id: number) => {
-    setComments((prev) =>
-      prev.map((c) => {
-        if (c.id === id) return { ...c, collapsed: !c.collapsed };
-        if (c.children && c.children.length > 0) {
-          return {
-            ...c,
-            children: c.children.map((child) => toggleChildCollapse(child, id)),
-          };
-        }
-        return c;
-      })
+    setComments((prev: DebugComment[]) =>
+      prev.map((comment: DebugComment) => ({
+        ...comment,
+        collapsed: comment.id === id ? !comment.collapsed : comment.collapsed,
+        replies: comment.replies?.map((reply: DebugComment) => ({
+          ...reply,
+          collapsed: reply.id === id ? !reply.collapsed : reply.collapsed,
+          replies: reply.replies || [],
+        })) || [],
+      }))
     );
   };
 
-  const toggleChildCollapse = (
-    comment: DebugComment,
-    id: number
-  ): DebugComment => {
-    if (comment.id === id) return { ...comment, collapsed: !comment.collapsed };
-    if (comment.children && comment.children.length > 0) {
-      return {
-        ...comment,
-        children: comment.children.map((child) =>
-          toggleChildCollapse(child, id)
-        ),
-      };
-    }
-    return comment;
-  };
-
-  const renderComment = (comment: DebugComment) => {
+  const renderComment = (comment: DebugComment, level: number = 0) => {
     const levelColors = ["#7C3AED", "#6366F1", "#10B981", "#F59E0B"];
-    const borderColor = levelColors[comment.level! % levelColors.length];
+    const borderColor = levelColors[level % levelColors.length];
 
     return (
       <Card
         key={comment.id}
-        className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 shadow-xl rounded-2xl mt-4 hover:shadow-2xl transition-shadow duration-300"
+        className={`bg-gradient-to-br ${comment.is_admin ? "from-purple-50 to-purple-100 dark:from-purple-900 dark:to-purple-800" : "from-white to-gray-50 dark:from-gray-800 dark:to-gray-900"} shadow-xl rounded-2xl mt-4 hover:shadow-2xl transition-shadow duration-300`}
         style={{
-          marginLeft: `${(comment.level || 0) * 28}px`,
-          borderLeft:
-            (comment.level || 0) > 0 ? `4px solid ${borderColor}` : "none",
+          marginLeft: `${level * 28}px`,
+          borderLeft: level > 0 ? `4px solid ${borderColor}` : "none",
         }}
       >
         <CardHeader className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
           <div className="space-y-1 text-right w-full md:w-auto">
             <CardTitle className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <MessageCircle className="h-4 w-4" />
               {comment.name}
-              {comment.is_admin && (
+              {comment.is_admin ? (
                 <span className="bg-purple-500 text-white text-xs px-2 py-0.5 rounded-full">
                   ادمین
                 </span>
-              )}
+              ) : null}
             </CardTitle>
             <p className="text-sm text-gray-500 dark:text-gray-400 truncate max-w-[250px] md:max-w-full">
               {comment.product_title || `Product ID: ${comment.product_id}`}
             </p>
           </div>
           <div className="flex gap-2 items-center flex-wrap">
-            {comment.children && comment.children.length > 0 && (
+            {comment.replies && comment.replies.length > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
@@ -248,13 +224,11 @@ const CommentsPage = () => {
           <p className="text-sm text-gray-400 mt-2">
             {new Date(comment.date).toLocaleDateString("fa-IR")}
           </p>
-          {comment.children &&
-            comment.children.length > 0 &&
-            !comment.collapsed && (
-              <div className="mt-4 space-y-3">
-                {comment.children.map((child) => renderComment(child))}
-              </div>
-            )}
+          {comment.replies && comment.replies.length > 0 && !comment.collapsed && (
+            <div className="mt-4 space-y-3">
+              {comment.replies.map((reply) => renderComment(reply, level + 1))}
+            </div>
+          )}
         </CardContent>
       </Card>
     );
@@ -282,9 +256,7 @@ const CommentsPage = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {buildCommentTree(comments).map((comment) =>
-              renderComment(comment)
-            )}
+            {comments.map((comment) => renderComment(comment, comment.level || 0))}
           </div>
         </CardContent>
       </Card>
