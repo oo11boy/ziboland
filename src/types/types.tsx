@@ -8,7 +8,7 @@ export interface Comment {
   text: string;
   admin_reply: string | null;
   date: string;
-  status: number;
+  status: number ;
   parent_id: number | null;
   is_admin: number;
   product_title: string | null;

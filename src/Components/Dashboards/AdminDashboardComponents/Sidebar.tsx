@@ -36,6 +36,7 @@ const Sidebar = () => {
 
   const navItems = [
     { href: "/admindashboard", label: "داشبورد", icon: Home },
+        { href: "/admindashboard/articles", label: "نوشته ها", icon: ShoppingBag },
     { href: "/admindashboard/products", label: "محصولات", icon: ShoppingBag },
     { href: "/admindashboard/orders", label: "سفارشات", icon: Package },
     { href: "/admindashboard/categories", label: "دسته‌بندی‌ها", icon: Tag },

@@ -1,0 +1,123 @@
+
+/* ======== تیترها ======== */
+.article-content-tags h1,.article-content-tags  h2,.article-content-tags  h3,.article-content-tags  h4,.article-content-tags  h5,.article-content-tags  h6 {
+  margin: 0 0 1rem 0;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #111;
+}
+
+.article-content-tags h1 { font-size: 2.5rem; }
+.article-content-tags h2 { font-size: 2rem; }
+.article-content-tags h3 { font-size: 1.75rem; }
+.article-content-tags h4 { font-size: 1.5rem; }
+.article-content-tags h5 { font-size: 1.25rem; }
+.article-content-tags h6 { font-size: 1rem; }
+
+/* ======== پاراگراف ======== */
+.article-content-tags p {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+/* ======== لینک ها ======== */
+.article-content-tags a {
+  color: #007bff;
+  text-decoration: none;
+  transition: color 0.3s;
+}
+
+.article-content-tags a:hover {
+  color: #0056b3;
+  text-decoration: underline;
+}
+
+/* ======== کد و pre ======== */
+.article-content-tags code {
+  font-family: 'Courier New', monospace;
+  background-color: #f8f8f8;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.article-content-tags pre {
+  font-family: 'Courier New', monospace;
+  background-color: #f4f4f4;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/* ======== لیست ها ======== */
+.article-content-tags ul, .article-content-tags ol {
+  margin: 0 0 1rem 1.5rem;
+}
+
+.article-content-tags li {
+  margin-bottom: 0.5rem;
+}
+
+/* ======== نقل قول ======== */
+.article-content-tags blockquote {
+  border-left: 4px solid #ccc;
+  padding-left: 1rem;
+  color: #666;
+  margin: 0 0 1rem 0;
+  font-style: italic;
+}
+
+/* ======== افکت های عمومی ======== */
+.article-content-tags strong, .article-content-tags b {
+  font-weight: 700;
+}
+
+.article-content-tags em, .article-content-tags i {
+  font-style: italic;
+}
+
+/* ======== جدول ها ======== */
+.article-content-tags table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.article-content-tags th, .article-content-tags td {
+  border: 1px solid #ddd;
+  padding: 0.5rem 1rem;
+  text-align: left;
+}
+
+.article-content-tags th {
+  background-color: #f8f8f8;
+}
+
+/* ======== تصاویر ======== */
+.article-content-tags img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ======== فرم ها ======== */
+.article-content-tags input,.article-content-tags  textarea,.article-content-tags  select,.article-content-tags  button {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.article-content-tags button {
+  cursor: pointer;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  transition: background-color 0.3s;
+}
+
+.article-content-tags button:hover {
+  background-color: #0056b3;
+}
