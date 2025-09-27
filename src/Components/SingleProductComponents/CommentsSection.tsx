@@ -115,10 +115,10 @@ export const CommentsSection: React.FC<{ infoproduct: Product; isAdmin?: boolean
   const renderComment = (comment: Comment, depth = 0) => (
     <Card
       key={comment.id}
-      className={`sp-comment-card ${comment.is_admin ? "sp-comment-card-admin" : ""}`}
+      className={`sp-comment-card  ${comment.is_admin ? "sp-comment-card-admin" : ""}`}
       style={{ marginLeft: depth * 20 }}
     >
-      <CardContent className="sp-comment-card-content">
+      <CardContent className="sp-comment-card-content ">
         <div className="sp-comment-header">
           <Avatar className="sp-comment-avatar">{comment.name[0]}</Avatar>
           <div className="sp-comment-info">
@@ -189,9 +189,9 @@ export const CommentsSection: React.FC<{ infoproduct: Product; isAdmin?: boolean
   );
 
   return (
-    <Box sx={{ p: 2 }}>
+    <Box sx={{ p: 2 }} className="sp-comment-container">
       {comments.length === 0 ? (
-        <Typography variant="body1" className="sp-comment-typography-empty">
+        <Typography variant="body1" className="sp-comment-typography-empty ">
           هنوز نظری ثبت نشده است.
         </Typography>
       ) : (
@@ -200,7 +200,7 @@ export const CommentsSection: React.FC<{ infoproduct: Product; isAdmin?: boolean
 
       {!isAdmin && (
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
-          <Typography variant="h6" className="sp-comment-typography-title">
+          <Typography variant="h6" className="sp-comment-typography-title ">
             ثبت نظر جدید
           </Typography>
           <TextField
