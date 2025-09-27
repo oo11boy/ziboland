@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
@@ -92,6 +91,7 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
         setLoading(false);
       } catch (err) {
         setError("خطا در بارگذاری داده‌ها. لطفاً دوباره تلاش کنید.");
+        console.log(err)
         setLoading(false);
         toast.error("خطا در بارگذاری داده‌ها", {
           position: "top-center",
@@ -249,7 +249,7 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
     }
   };
 
-  const handleNotifyMe = (productId: number) => {
+  const handleNotifyMe = () => {
     toast.info("هنگامی که محصول موجود شد، به شما اطلاع خواهیم داد!", {
       position: "top-center",
       autoClose: 3000,
@@ -1014,7 +1014,7 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                             <p className="tpsc-price">موجود شد خبرم کن</p>
                             <button
                               className="tpsc-add-to-nocart"
-                              onClick={() => handleNotifyMe(item.id)}
+                              onClick={() => handleNotifyMe()}
                               aria-label="نمایش انتخابگر تعداد"
                             >
                               <NotificationAdd fontSize="small" />

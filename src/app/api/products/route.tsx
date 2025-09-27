@@ -115,8 +115,11 @@ export async function GET() {
           rating: row.comment_rating ?? 0,
           text: row.comment_text ?? "",
           date: row.comment_date ?? "",
-          status: !!row.comment_status, // Convert to boolean
-          is_admin: !!row.comment_is_admin, // Convert to boolean
+          status: row.comment_status ? 1 : 0, // Convert to number (0 or 1)
+          is_admin: row.comment_is_admin ? 1 : 0,
+          admin_reply: null,
+          parent_id: null,
+          product_title: null,
         });
       }
     });

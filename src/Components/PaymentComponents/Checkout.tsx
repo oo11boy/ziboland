@@ -73,7 +73,7 @@ export default function Checkout() {
         const data: Address[] = await res.json();
         setAddresses(data);
         const defaultAddr = data.find((addr) => addr.is_default);
-        if (defaultAddr) selectAddress(defaultAddr, false);
+        if (defaultAddr) selectAddress(defaultAddr);
       } else {
         setSubmissionError("خطا در دریافت آدرس‌ها");
       }
@@ -100,7 +100,7 @@ export default function Checkout() {
     }
   };
 
-  const selectAddress = (addr: Address | null, showForm: boolean = false) => {
+  const selectAddress = (addr: Address | null) => {
     if (addr) {
       setSelectedAddress(addr);
       setFormData({
@@ -353,7 +353,7 @@ export default function Checkout() {
                       </button>
                     )}
                     <button
-                      onClick={() => selectAddress(null, true)}
+                      onClick={() => selectAddress(null)}
                       className="px-4 sm:px-5 py-2 sm:py-3 bg-purple-700 text-white rounded-lg shadow-sm hover:bg-purple-800 transition text-sm sm:text-base"
                     >
                       افزودن آدرس جدید
@@ -373,7 +373,7 @@ export default function Checkout() {
                       </button>
                     )}
                     <button
-                      onClick={() => selectAddress(null, true)}
+                      onClick={() => selectAddress(null)}
                       className="px-4 sm:px-5 py-2 sm:py-3 bg-purple-700 text-white rounded-lg shadow-sm hover:bg-purple-800 transition text-sm sm:text-base"
                     >
                       افزودن آدرس جدید
@@ -631,7 +631,7 @@ export default function Checkout() {
             <div className="text-center">
               هیچ آدرسی ثبت نشده است.
               <Button
-                onClick={() => selectAddress(null, true)}
+                onClick={() => selectAddress(null)}
                 variant="contained"
                 className="mt-4 bg-purple-700 hover:bg-purple-800 rounded-lg"
               >
@@ -668,7 +668,7 @@ export default function Checkout() {
               بستن
             </Button>
             <Button
-              onClick={() => selectAddress(null, true)}
+              onClick={() => selectAddress(null)}
               variant="contained"
               className="bg-purple-700 hover:bg-purple-800 rounded-lg"
             >

@@ -1,7 +1,7 @@
 // app/api/auth/logout/route.ts
 import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
     const response = NextResponse.json({ message: 'خروج با موفقیت انجام شد' });
     response.cookies.set('authToken', '', { maxAge: 0 }); // Clear the cookie

@@ -1,13 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { Product, ProductRow } from "@/types/types";
-import { RowDataPacket } from "mysql2/promise";
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  const productId = parseInt(params.id);
+// ===================== GET PRODUCT BY ID =====================
+export async function GET(request: NextRequest) {
+  const idStr = request.nextUrl.pathname.split("/").pop();
+  const productId = parseInt(idStr || "");
   if (isNaN(productId)) {
     return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
   }
@@ -15,29 +13,30 @@ export async function GET(
   try {
     const [rows] = await pool.query<ProductRow[]>(
       `
-  SELECT 
-    p.id AS product_id, p.title, p.image, p.originalPrice, p.discountedPrice, 
-    p.wholesalePrice, p.discountwholesalePrice, p.minwholesale, p.discount, 
-    p.discountwholesale, p.category, p.mothercatId, p.subcatId, p.rating, 
-    p.inStock, p.numericPrice, p.sales, p.features, p.content,
-    m.type AS media_type, m.src AS media_src, m.thumbnail AS media_thumbnail, m.alt AS media_alt,
-    col.englishName, col.persianName, col.hexCode,
-    it.id AS infotable_id, it.name AS infotable_name, it.value AS infotable_value,
-    com.id AS comment_id, com.product_id AS comment_product_id, com.name AS comment_name, 
-    com.rating AS comment_rating, com.text AS comment_text, com.date AS comment_date,
-    com.status AS comment_status, com.is_admin AS comment_is_admin,
-    b.id AS brand_id, b.title AS brand_title, b.img AS brand_img, b.link AS brand_link
-  FROM products p
-  LEFT JOIN media m ON p.id = m.product_id
-  LEFT JOIN colors col ON p.id = col.product_id
-  LEFT JOIN infotable it ON p.id = it.product_id
-  LEFT JOIN comments com ON p.id = com.product_id
-  LEFT JOIN brands b ON p.brand_id = b.id
-  WHERE p.id = ?
-  ORDER BY p.id, m.id, col.id, it.id, com.id, b.id
-`,
+      SELECT 
+        p.id AS product_id, p.title, p.image, p.originalPrice, p.discountedPrice, 
+        p.wholesalePrice, p.discountwholesalePrice, p.minwholesale, p.discount, 
+        p.discountwholesale, p.category, p.mothercatId, p.subcatId, p.rating, 
+        p.inStock, p.numericPrice, p.sales, p.features, p.content,
+        m.type AS media_type, m.src AS media_src, m.thumbnail AS media_thumbnail, m.alt AS media_alt,
+        col.englishName, col.persianName, col.hexCode,
+        it.id AS infotable_id, it.name AS infotable_name, it.value AS infotable_value,
+        com.id AS comment_id, com.product_id AS comment_product_id, com.name AS comment_name, 
+        com.rating AS comment_rating, com.text AS comment_text, com.date AS comment_date,
+        com.status AS comment_status, com.is_admin AS comment_is_admin,
+        b.id AS brand_id, b.title AS brand_title, b.img AS brand_img, b.link AS brand_link
+      FROM products p
+      LEFT JOIN media m ON p.id = m.product_id
+      LEFT JOIN colors col ON p.id = col.product_id
+      LEFT JOIN infotable it ON p.id = it.product_id
+      LEFT JOIN comments com ON p.id = com.product_id
+      LEFT JOIN brands b ON p.brand_id = b.id
+      WHERE p.id = ?
+      ORDER BY p.id, m.id, col.id, it.id, com.id, b.id
+      `,
       [productId]
     );
+
     if (rows.length === 0) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
@@ -131,8 +130,11 @@ export async function GET(
           rating: row.comment_rating ?? 0,
           text: row.comment_text ?? "",
           date: row.comment_date ?? "",
-          status: !!row.comment_status, // Convert to boolean
-          is_admin: !!row.comment_is_admin, // Convert to boolean
+          status: row.comment_status ? 1 : 0,
+          is_admin: row.comment_is_admin ? 1 : 0,
+          admin_reply: null,
+          parent_id: null,
+          product_title: null
         });
       }
     });
@@ -147,11 +149,10 @@ export async function GET(
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  const productId = parseInt(params.id);
+// ===================== UPDATE PRODUCT =====================
+export async function PUT(request: NextRequest) {
+  const idStr = request.nextUrl.pathname.split("/").pop();
+  const productId = parseInt(idStr || "");
   if (isNaN(productId)) {
     return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
   }
@@ -182,111 +183,24 @@ export async function PUT(
       media,
     } = data;
 
-    // Validate required fields
-    if (
-      !title ||
-      !image ||
-      !originalPrice ||
-      !discountedPrice ||
-      !wholesalePrice ||
-      !discountwholesalePrice ||
-      !minwholesale ||
-      !discount ||
-      !discountwholesale ||
-      !category ||
-      !mothercatId ||
-      !subcatId
-    ) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+    // validate fields...
+    if (!title || !image || !originalPrice || !discountedPrice || !wholesalePrice || !discountwholesalePrice || !minwholesale || !discount || !discountwholesale || !category || !mothercatId || !subcatId) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Validate infotable entries
-    if (infotable && !Array.isArray(infotable)) {
-      return NextResponse.json(
-        { error: "infotable must be an array" },
-        { status: 400 }
-      );
-    }
-    if (infotable && infotable.some((item: any) => !item.name || !item.value)) {
-      return NextResponse.json(
-        { error: "All infotable entries must have name and value" },
-        { status: 400 }
-      );
-    }
-
-    // Validate media entries
-    if (media && !Array.isArray(media)) {
-      return NextResponse.json(
-        { error: "media must be an array" },
-        { status: 400 }
-      );
-    }
-    if (
-      media &&
-      media.some(
-        (item: any) =>
-          !item.type ||
-          !item.src ||
-          !item.alt ||
-          !["image", "video"].includes(item.type)
-      )
-    ) {
-      return NextResponse.json(
-        { error: "All media entries must have valid type, src, and alt" },
-        { status: 400 }
-      );
-    }
-
-    // Validate foreign keys
-    if (brand_id) {
-      const [brandRows] = await pool.query<RowDataPacket[]>(
-        "SELECT id FROM brands WHERE id = ?",
-        [brand_id]
-      );
-      if (brandRows.length === 0) {
-        return NextResponse.json(
-          { error: "Invalid brand_id" },
-          { status: 400 }
-        );
-      }
-    }
-    const [categoryRows] = await pool.query<RowDataPacket[]>(
-      "SELECT id FROM categories WHERE id = ?",
-      [mothercatId]
-    );
-    if (categoryRows.length === 0) {
-      return NextResponse.json(
-        { error: "Invalid mothercatId" },
-        { status: 400 }
-      );
-    }
-    const [subcatRows] = await pool.query<RowDataPacket[]>(
-      "SELECT id FROM subcategories WHERE id = ? AND category_id = ?",
-      [subcatId, mothercatId]
-    );
-    if (subcatRows.length === 0) {
-      return NextResponse.json({ error: "Invalid subcatId" }, { status: 400 });
-    }
-
-    // Start a transaction to ensure atomicity
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
 
       // Update product
       const [result] = await connection.query(
-        `
-        UPDATE products SET
+        `UPDATE products SET
           brand_id = ?, title = ?, image = ?, originalPrice = ?, discountedPrice = ?,
           wholesalePrice = ?, discountwholesalePrice = ?, minwholesale = ?,
           discount = ?, discountwholesale = ?, category = ?, mothercatId = ?,
           subcatId = ?, rating = ?, inStock = ?, numericPrice = ?, sales = ?,
           features = ?, content = ?
-        WHERE id = ?
-      `,
+        WHERE id = ?`,
         [
           brand_id || null,
           title,
@@ -311,16 +225,10 @@ export async function PUT(
         ]
       );
 
-      if ((result as any).affectedRows === 0) {
-        throw new Error("Product not found");
-      }
+      if ((result as any).affectedRows === 0) throw new Error("Product not found");
 
-      // Delete existing infotable entries
-      await connection.query("DELETE FROM infotable WHERE product_id = ?", [
-        productId,
-      ]);
-
-      // Insert new infotable entries
+      // Replace infotable
+      await connection.query("DELETE FROM infotable WHERE product_id = ?", [productId]);
       if (infotable && infotable.length > 0) {
         for (const item of infotable) {
           await connection.query(
@@ -330,12 +238,8 @@ export async function PUT(
         }
       }
 
-      // Delete existing media entries
-      await connection.query("DELETE FROM media WHERE product_id = ?", [
-        productId,
-      ]);
-
-      // Insert new media entries
+      // Replace media
+      await connection.query("DELETE FROM media WHERE product_id = ?", [productId]);
       if (media && media.length > 0) {
         for (const item of media) {
           await connection.query(
@@ -362,51 +266,34 @@ export async function PUT(
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  const productId = parseInt(params.id);
+// ===================== DELETE PRODUCT =====================
+export async function DELETE(request: NextRequest) {
+  const idStr = request.nextUrl.pathname.split("/").pop();
+  const productId = parseInt(idStr || "");
   if (isNaN(productId)) {
     return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
   }
 
+  const connection = await pool.getConnection();
   try {
-    const connection = await pool.getConnection();
-    try {
-      await connection.beginTransaction();
+    await connection.beginTransaction();
 
-      // Delete related infotable and media entries
-      await connection.query("DELETE FROM infotable WHERE product_id = ?", [
-        productId,
-      ]);
-      await connection.query("DELETE FROM media WHERE product_id = ?", [
-        productId,
-      ]);
+    await connection.query("DELETE FROM infotable WHERE product_id = ?", [productId]);
+    await connection.query("DELETE FROM media WHERE product_id = ?", [productId]);
 
-      // Delete product
-      const [result] = await connection.query(
-        "DELETE FROM products WHERE id = ?",
-        [productId]
-      );
+    const [result] = await connection.query("DELETE FROM products WHERE id = ?", [productId]);
+    if ((result as any).affectedRows === 0) throw new Error("Product not found");
 
-      if ((result as any).affectedRows === 0) {
-        throw new Error("Product not found");
-      }
-
-      await connection.commit();
-      return NextResponse.json({ message: "Product deleted successfully" });
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
-    }
+    await connection.commit();
+    return NextResponse.json({ message: "Product deleted successfully" });
   } catch (error) {
+    await connection.rollback();
     console.error("Error deleting product:", error);
     return NextResponse.json(
       { error: "Failed to delete product", details: (error as Error).message },
       { status: 500 }
     );
+  } finally {
+    connection.release();
   }
 }

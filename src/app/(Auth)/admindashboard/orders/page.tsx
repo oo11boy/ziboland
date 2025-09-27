@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { Modal, Box, Typography } from "@mui/material";
-import { Package, View } from "lucide-react";
+import {  View } from "lucide-react";
 import { toast } from "react-hot-toast";
 import Image from "next/image";
 import { API } from "@/lib/MainRoutes";
@@ -20,7 +20,8 @@ const OrdersPage = () => {
   const [statusUpdating, setStatusUpdating] = useState<{ [key: number]: boolean }>({});
 
   const modalStyle = {
-    position: "absolute" as "absolute",
+    // eslint-disable-next-line prefer-const
+    position:  "absolute",
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",

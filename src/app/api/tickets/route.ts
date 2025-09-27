@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { RowDataPacket } from 'mysql2/promise';
 import jwt from 'jsonwebtoken';
@@ -16,7 +16,8 @@ interface TicketRow extends RowDataPacket {
   admin_id: number | null;
 }
 
-export async function GET(request: Request) {
+// ===================== GET TICKETS =====================
+export async function GET(request: NextRequest) {
   try {
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     if (!token) {
@@ -67,7 +68,8 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+// ===================== CREATE TICKET =====================
+export async function POST(request: NextRequest) {
   const conn = await pool.getConnection();
   try {
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
@@ -89,21 +91,9 @@ export async function POST(request: Request) {
     const data = await request.json();
     const { subject, message } = data;
 
-    if (!subject || !message) {
-      const missingFields = [];
-      if (!subject) missingFields.push('subject');
-      if (!message) missingFields.push('message');
-      console.error('Missing fields in POST /api/tickets:', missingFields);
+    if (!subject || !message || subject.trim() === '' || message.trim() === '') {
       return NextResponse.json(
-        { error: `Missing required fields: ${missingFields.join(', ')}` },
-        { status: 400 }
-      );
-    }
-
-    if (subject.trim() === '' || message.trim() === '') {
-      console.error('Empty string fields in POST /api/tickets:', { subject, message });
-      return NextResponse.json(
-        { error: 'Subject and message cannot be empty' },
+        { error: 'Subject and message are required and cannot be empty' },
         { status: 400 }
       );
     }
@@ -116,6 +106,7 @@ export async function POST(request: Request) {
     );
 
     const ticketId = (result as any).insertId;
+
     const notificationMessage = `تیکت جدید با موضوع "${subject}" ثبت شد`;
     await conn.query(
       'INSERT INTO notifications (type, message, related_id) VALUES (?, ?, ?)',
@@ -136,12 +127,17 @@ export async function POST(request: Request) {
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
+// ===================== UPDATE TICKET =====================
+export async function PUT(request: NextRequest) {
   const conn = await pool.getConnection();
   try {
-    const id = params.id;
-    const { response, status } = await request.json();
+    const idStr = request.nextUrl.pathname.split("/").pop();
+    const ticketId = parseInt(idStr || '');
+    if (isNaN(ticketId)) {
+      return NextResponse.json({ error: 'Invalid ticket ID' }, { status: 400 });
+    }
 
+    const { response, status } = await request.json();
     if (!status) {
       return NextResponse.json({ error: 'Status is required' }, { status: 400 });
     }
@@ -150,10 +146,14 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     await conn.query(
       'UPDATE tickets SET response = ?, status = ?, updated_at = NOW() WHERE id = ?',
-      [response || null, status, id]
+      [response || null, status, ticketId]
     );
 
-    const [ticketRows] = await conn.query<RowDataPacket[]>('SELECT subject FROM tickets WHERE id = ?', [id]);
+    const [ticketRows] = await conn.query<RowDataPacket[]>(
+      'SELECT subject FROM tickets WHERE id = ?',
+      [ticketId]
+    );
+
     if (ticketRows.length === 0) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 });
     }
@@ -162,7 +162,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       const notificationMessage = `پاسخ جدید برای تیکت "${ticketRows[0].subject}" ثبت شد`;
       await conn.query(
         'INSERT INTO notifications (type, message, related_id) VALUES (?, ?, ?)',
-        ['ticket', notificationMessage, id]
+        ['ticket', notificationMessage, ticketId]
       );
     }
 

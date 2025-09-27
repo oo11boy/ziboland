@@ -56,6 +56,7 @@ const EditCategoryPage = () => {
       .catch((err) => {
         toast.error("خطا در بارگذاری دسته‌بندی");
         setLoading(false);
+        console.log(err)
       });
   }, [id]);
 

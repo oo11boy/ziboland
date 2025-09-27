@@ -10,6 +10,7 @@ export async function GET() {
     );
     return NextResponse.json(rows);
   } catch (err) {
+    console.log(err)
     return NextResponse.json({ error: "Failed to fetch articles" }, { status: 500 });
   }
 }
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ id: (result as any).insertId }, { status: 201 });
   } catch (err) {
+    console.log(err)
     return NextResponse.json({ error: "Failed to add article" }, { status: 500 });
   }
 }

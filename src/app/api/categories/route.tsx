@@ -2,7 +2,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { Categoryapi, CategoryRow } from "@/types/types";
-import { RowDataPacket } from "mysql2/promise";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

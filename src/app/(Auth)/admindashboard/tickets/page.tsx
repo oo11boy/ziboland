@@ -31,6 +31,7 @@ export default function TicketsPage() {
       }
     } catch (err) {
       setError('خطا در دریافت تیکت‌ها');
+      console.log(err)
     }
   };
 
@@ -64,6 +65,7 @@ export default function TicketsPage() {
       }
     } catch (err) {
       setError('خطا در ارسال پاسخ');
+      console.log(err)
     }
   };
 
@@ -84,6 +86,7 @@ export default function TicketsPage() {
       }
     } catch (err) {
       setError('خطا در تغییر وضعیت تیکت');
+      console.log(err)
     }
   };
 
@@ -105,6 +108,7 @@ export default function TicketsPage() {
       }
     } catch (err) {
       setError('خطا در حذف تیکت');
+      console.log(err)
     }
   };
 

@@ -56,6 +56,7 @@ const EditBrandPage = () => {
       .catch((err) => {
         toast.error("خطا در بارگذاری برند");
         setLoading(false);
+        console.log(err)
       });
   }, [id]);
 

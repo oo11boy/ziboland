@@ -15,11 +15,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ orde
   if (!secretKey) {
     return NextResponse.json({ error: "خطای سرور: تنظیمات نادرست" }, { status: 500 });
   }
-
+// eslint-disable-next-line prefer-const
   let userId;
   try {
     const secret = new TextEncoder().encode(secretKey);
     const { payload } = await jose.jwtVerify(token, secret);
+  // eslint-disable-next-line  @typescript-eslint/no-unused-vars
     userId = payload.id;
   } catch (error: any) {
     console.error("JWT verification error:", error.message);

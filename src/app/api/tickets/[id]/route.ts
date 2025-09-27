@@ -31,6 +31,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     }
 
     let query = 'SELECT * FROM tickets WHERE id = ?';
+    // eslint-disable-next-line prefer-const
     let queryParams: any[] = [ticketId];
 
     if (decoded.role !== 'admin') {
@@ -70,7 +71,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       console.log(`PUT /api/tickets/${ticketId}: No token provided`);
       return NextResponse.json({ error: 'Unauthorized: No token provided' }, { status: 401 });
     }
-
+// eslint-disable-next-line prefer-const
     let decoded: { userId: number; role: string };
     try {
       decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: number; role: string };
@@ -187,6 +188,7 @@ export async function DELETE(request: Request, context: { params: Promise<{ id: 
     }
 
     let query = 'DELETE FROM tickets WHERE id = ?';
+    // eslint-disable-next-line prefer-const
     let queryParams: any[] = [ticketId];
 
     if (decoded.role !== 'admin') {

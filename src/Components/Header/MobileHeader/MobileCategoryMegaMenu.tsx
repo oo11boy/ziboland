@@ -41,7 +41,9 @@ export default function MobileCategoryMegaMenu() {
         setCategories(categoriesData);
         setLoading(false);
       } catch (err) {
+      
         setError("خطا در بارگذاری دسته‌بندی‌ها. لطفاً دوباره تلاش کنید.");
+          console.log(err)
         setLoading(false);
         toast.error("خطا در بارگذاری دسته‌بندی‌ها", {
           position: "top-center",

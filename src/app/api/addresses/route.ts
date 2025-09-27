@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
-import jwt from 'jsonwebtoken';
 import { verifyToken } from '@/lib/auth';
-
-const SECRET_KEY = process.env.JWT_SECRET || 'your-secret-key';
 
 export async function GET(request: Request) {
   try {

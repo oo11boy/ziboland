@@ -1,4 +1,4 @@
-import { Book, CategoryOutlined, FavoriteBorderOutlined, HomeOutlined, PersonOutline, ShoppingBagOutlined } from '@mui/icons-material'
+import { Book, CategoryOutlined, HomeOutlined, PersonOutline, ShoppingBagOutlined } from '@mui/icons-material'
 import Link from 'next/link'
 import React from 'react'
 

@@ -53,6 +53,7 @@ export default function MyAccountContainer() {
       }
     } catch (error) {
       setError("خطا در ارتباط با سرور");
+      console.log(error)
     }
   };
 
@@ -96,6 +97,7 @@ export default function MyAccountContainer() {
       }
     } catch (error) {
       setError("خطا در ارتباط با سرور");
+      console.log(error)
     }
   };
 
@@ -122,6 +124,7 @@ export default function MyAccountContainer() {
       }
     } catch (error) {
       setError("خطا در ارتباط با سرور");
+      console.log(error)
     }
   };
 

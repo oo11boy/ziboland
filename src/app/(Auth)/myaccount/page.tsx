@@ -21,6 +21,7 @@ export default async function page() {
       }
     } catch (error) {
       // توکن نامعتبر: اجازه نمایش صفحه لاگین
+      console.log(error)
     }
   }
 

@@ -1,12 +1,12 @@
-// api/brands/[id]/route.ts
-
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import { Brand } from '@/types/types';
 import { RowDataPacket } from 'mysql2/promise';
 
-export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const brandId = parseInt(params.id);
+// GET برند با id
+export async function GET(request: NextRequest) {
+  const idStr = request.nextUrl.pathname.split("/").pop();
+  const brandId = parseInt(idStr || "");
   if (isNaN(brandId)) {
     return NextResponse.json({ error: 'Invalid brand ID' }, { status: 400 });
   }
@@ -38,8 +38,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  const brandId = parseInt(params.id);
+// PUT بروزرسانی برند
+export async function PUT(request: NextRequest) {
+  const idStr = request.nextUrl.pathname.split("/").pop();
+  const brandId = parseInt(idStr || "");
   if (isNaN(brandId)) {
     return NextResponse.json({ error: 'Invalid brand ID' }, { status: 400 });
   }
@@ -48,7 +50,6 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const data = await request.json();
     const { title, img, link } = data;
 
-    // Validate required fields
     if (!title || !img || !link) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
@@ -72,8 +73,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  const brandId = parseInt(params.id);
+// DELETE حذف برند
+export async function DELETE(request: NextRequest) {
+  const idStr = request.nextUrl.pathname.split("/").pop();
+  const brandId = parseInt(idStr || "");
   if (isNaN(brandId)) {
     return NextResponse.json({ error: 'Invalid brand ID' }, { status: 400 });
   }

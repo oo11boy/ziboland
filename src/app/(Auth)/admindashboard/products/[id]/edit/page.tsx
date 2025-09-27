@@ -161,6 +161,7 @@ const EditProductPage = () => {
       })
       .catch((err) => {
         toast.error("خطا در بارگذاری محصول");
+        console.log(err)
         setLoading(false);
       });
 
@@ -171,7 +172,7 @@ const EditProductPage = () => {
         return res.json();
       })
       .then((data: Brand[]) => setBrands(data))
-      .catch((err) => toast.error("خطا در دریافت برندها"));
+      .catch((err) => toast.error("خطا در دریافت برندها"+err));
 
     // Fetch mother categories
     fetch(`${API}/categories?mothercat=1`)
@@ -180,7 +181,7 @@ const EditProductPage = () => {
         return res.json();
       })
       .then((data: Category[]) => setCategories(data))
-      .catch((err) => toast.error("خطا در دریافت دسته‌بندی‌ها"));
+      .catch((err) => toast.error("خطا در دریافت دسته‌بندی‌ها")+err);
   }, [id]);
 
   useEffect(() => {
@@ -191,7 +192,7 @@ const EditProductPage = () => {
           return res.json();
         })
         .then((data: Subcategory[]) => setSubcategories(data))
-        .catch((err) => toast.error("خطا در دریافت زیرمجموعه‌ها"));
+        .catch((err) => toast.error("خطا در دریافت زیرمجموعه‌ها"+err));
     } else {
       setSubcategories([]);
     }

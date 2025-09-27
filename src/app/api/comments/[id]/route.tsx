@@ -1,10 +1,13 @@
-// app/api/comments/[id]/route.ts
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/lib/db';
 
-export async function PUT(request: Request, { params }: { params: { id: string } }) {
-  const id = parseInt(params.id);
-  if (isNaN(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+// ===================== UPDATE COMMENT =====================
+export async function PUT(request: NextRequest) {
+  const idStr = request.nextUrl.pathname.split("/").pop();
+  const id = parseInt(idStr || "");
+  if (isNaN(id)) {
+    return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+  }
 
   try {
     const { status, admin_reply } = await request.json();
@@ -24,13 +27,20 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     return NextResponse.json({ message: 'Comment updated' });
   } catch (error) {
     console.error('Error updating comment:', error);
-    return NextResponse.json({ error: 'Failed to update', details: (error as Error).message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update', details: (error as Error).message },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(request: Request, { params }: { params: { id: string } }) {
-  const id = parseInt(params.id);
-  if (isNaN(id)) return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+// ===================== DELETE COMMENT =====================
+export async function DELETE(request: NextRequest) {
+  const idStr = request.nextUrl.pathname.split("/").pop();
+  const id = parseInt(idStr || "");
+  if (isNaN(id)) {
+    return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+  }
 
   const connection = await pool.getConnection();
   try {
@@ -41,15 +51,19 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   } catch (error) {
     await connection.rollback();
     console.error('Error deleting comment:', error);
-    return NextResponse.json({ error: 'Failed to delete', details: (error as Error).message }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to delete', details: (error as Error).message },
+      { status: 500 }
+    );
   } finally {
     connection.release();
   }
 }
 
+// ===================== HELPER FUNCTION =====================
 async function deleteCommentTree(connection: any, commentId: number) {
   const [children] = await connection.query('SELECT id FROM comments WHERE parent_id = ?', [commentId]);
-  for (const child of children) {
+  for (const child of children as any[]) {
     await deleteCommentTree(connection, child.id);
   }
   await connection.query('DELETE FROM comments WHERE id = ?', [commentId]);

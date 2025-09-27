@@ -54,6 +54,7 @@ export async function GET(request: Request) {
     );
 
     // Fetch items for each order
+    // eslint-disable-next-line prefer-const
     for (let order of orders) {
       const [items]: any = await conn.query(
         `SELECT oi.*, p.title, p.image

@@ -13,14 +13,29 @@ import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-toastify";
 import { useCart } from "@/ContextApi/CartContext";
-import { products } from "@/lib/staticDb";
+import { Product } from "@/types/types";
+import { API } from "@/lib/MainRoutes";
 
 export default function WideHeaderMiddle() {
   const { state: { cartItems }, dispatch } = useCart();
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+  const [productsMap, setProductsMap] = useState<Record<number, Product>>({});
 
-  const toggleCartModal = () => {
-    setIsCartModalOpen(!isCartModalOpen);
+  const toggleCartModal = () => setIsCartModalOpen(!isCartModalOpen);
+
+  // دریافت داده‌های محصول از API
+  const fetchProduct = async (id: number) => {
+    if (productsMap[id]) return productsMap[id]; // جلوگیری از fetch دوباره
+    try {
+      const res = await fetch(`${API}/products/${id}`, { cache: "no-store" });
+      if (!res.ok) throw new Error(`Failed to fetch product ${id}`);
+      const product: Product = await res.json();
+      setProductsMap((prev) => ({ ...prev, [id]: product }));
+      return product;
+    } catch (err) {
+      console.error(err);
+      return null;
+    }
   };
 
   const handleRemoveItem = (id: number) => {
@@ -28,97 +43,73 @@ export default function WideHeaderMiddle() {
     toast.success("محصول از سبد خرید حذف شد!", {
       position: "top-center",
       autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
       theme: "colored",
     });
   };
 
-const handleQuantityChange = (id: number, priceType: "single" | "wholesale", delta: number) => {
-  const item = cartItems.find((item) => item.id === id && item.priceType === priceType);
-  if (!item) return;
+  const handleQuantityChange = async (
+    id: number,
+    priceType: "single" | "wholesale",
+    delta: number
+  ) => {
+    const item = cartItems.find((i) => i.id === id && i.priceType === priceType);
+    if (!item) return;
 
-  const newQuantity = item.quantity + delta;
-  const product = products.find((p) => p.id === id);
-  if (!product) return;
+    const newQuantity = item.quantity + delta;
+    const product = await fetchProduct(id);
+    if (!product) return;
 
-  if (newQuantity <= 0) {
-    handleRemoveItem(id);
-    return;
-  }
+    if (newQuantity <= 0) {
+      handleRemoveItem(id);
+      return;
+    }
 
-  // تعیین نوع قیمت جدید بر اساس تعداد
-  const shouldBeWholesale = newQuantity >= product.minwholesale;
-  const newPriceType = shouldBeWholesale ? "wholesale" : "single";
-  
-  // اگر نوع قیمت تغییر کرده باشد
-  if (priceType !== newPriceType) {
-    // حذف آیتم قدیمی
-    dispatch({ type: "REMOVE_ITEM_BY_TYPE", payload: { id, priceType } });
-    
-    // بررسی وجود آیتم با نوع قیمت جدید
-    const existingItem = cartItems.find((item) => item.id === id && item.priceType === newPriceType);
-    
-    // مقادیر قیمت و تخفیف جدید
-    const newPrice = newPriceType === "single" 
-      ? product.discountedPrice.toString() 
-      : product.discountwholesalePrice.toString();
-    const newDiscount = newPriceType === "single" 
-      ? product.discount 
-      : product.discountwholesale;
+    const shouldBeWholesale = newQuantity >= product.minwholesale;
+    const newPriceType = shouldBeWholesale ? "wholesale" : "single";
 
-    if (existingItem) {
-      // اگر آیتم با نوع قیمت جدید وجود دارد، فقط مقدار آن را به‌روز کنید
+    const newPrice = newPriceType === "single" ? product.discountedPrice.toString() : product.discountwholesalePrice.toString();
+    const newDiscount = newPriceType === "single" ? product.discount : product.discountwholesale;
+
+    if (priceType !== newPriceType) {
+      dispatch({ type: "REMOVE_ITEM_BY_TYPE", payload: { id, priceType } });
+      const existingItem = cartItems.find((i) => i.id === id && i.priceType === newPriceType);
+
+      if (existingItem) {
+        dispatch({
+          type: "UPDATE_QUANTITY",
+          payload: {
+            ...existingItem,
+            quantity: existingItem.quantity + newQuantity,
+            price: newPrice,
+            discount: newDiscount,
+          },
+        });
+      } else {
+        dispatch({
+          type: "ADD_ITEM",
+          payload: {
+            id,
+            title: product.title,
+            quantity: newQuantity,
+            priceType: newPriceType,
+            price: newPrice,
+            image: product.media?.[0]?.src || product.image || "/placeholder.jpg",
+            discount: newDiscount,
+          },
+        });
+      }
+    } else {
       dispatch({
         type: "UPDATE_QUANTITY",
         payload: {
-          ...existingItem,
-          quantity: existingItem.quantity + newQuantity,
-          price: newPrice,
-          discount: newDiscount
-        },
-      });
-    } else {
-      // اگر آیتم با نوع قیمت جدید وجود ندارد، یک آیتم جدید اضافه کنید
-      dispatch({
-        type: "ADD_ITEM",
-        payload: {
-          id,
-          title: product.title,
+          ...item,
           quantity: newQuantity,
-          priceType: newPriceType,
           price: newPrice,
-          image: product.media ? product.media[0].src : product.image || "/placeholder.jpg",
           discount: newDiscount,
         },
       });
     }
-
-   
-  } else {
-    // اگر نوع قیمت تغییر نکرده، فقط مقدار را به‌روز کنید
-    const newPrice = priceType === "single" 
-      ? product.discountedPrice.toString() 
-      : product.discountwholesalePrice.toString();
-    const newDiscount = priceType === "single" 
-      ? product.discount 
-      : product.discountwholesale;
-
-    dispatch({
-      type: "UPDATE_QUANTITY",
-      payload: {
-        ...item,
-        quantity: newQuantity,
-        price: newPrice,
-        discount: newDiscount
-      },
-    });
-  }
-
-
-};
+  };
 
   const modalVariants = {
     hidden: { opacity: 0, y: "-100%" },
@@ -134,6 +125,7 @@ const handleQuantityChange = (id: number, priceType: "single" | "wholesale", del
 
   return (
     <section className="bg-[#F9F9F9] w-full py-2">
+      {/* هدر اصلی */}
       <div className="flex justify-between h-auto items-center w-[90%] gap-2 m-auto">
         <div className="flex w-[33%] gap-3 items-center">
           <Link href={'../'} className="flex items-center">
@@ -144,11 +136,7 @@ const handleQuantityChange = (id: number, priceType: "single" | "wholesale", del
             href="../search"
             className="flex w-1/2 items-center border border-[#d9d6d6] rounded-lg overflow-hidden"
           >
-            <input
-              className="w-full outline-0 px-2 text-base"
-              type="text"
-              placeholder="جستجو"
-            />
+            <input className="w-full outline-0 px-2 text-base" type="text" placeholder="جستجو" />
             <button className="bg-[#EDEDED] p-2">
               <SearchOutlined fontSize="medium" />
             </button>
@@ -183,6 +171,7 @@ const handleQuantityChange = (id: number, priceType: "single" | "wholesale", del
         </div>
       </div>
 
+      {/* مودال سبد خرید */}
       <AnimatePresence>
         {isCartModalOpen && (
           <>
@@ -204,13 +193,10 @@ const handleQuantityChange = (id: number, priceType: "single" | "wholesale", del
             >
               <div className="flex flex-col h-full">
                 <div className="flex justify-between items-center p-4 border-b border-[#e5e7eb] bg-[#F9F9F9]">
-                  <h2 className="text-lg font-bold text-[#374151] yekan">
-                    سبد خرید
-                  </h2>
+                  <h2 className="text-lg font-bold text-[#374151] yekan">سبد خرید</h2>
                   <button
                     onClick={toggleCartModal}
                     className="p-2 text-[#805B99] hover:bg-[#EBEBEB] rounded-full"
-                    aria-label="بستن سبد خرید"
                   >
                     <Close fontSize="medium" />
                   </button>
@@ -229,46 +215,22 @@ const handleQuantityChange = (id: number, priceType: "single" | "wholesale", del
                             className="w-16 h-16 object-cover rounded-lg"
                           />
                           <div className="flex-1">
-                            <h3 className="text-sm font-semibold text-[#374151] yekan">
-                              {item.title}
-                            </h3>
-                            <p className="text-sm text-[#6b7280] yekan">
-                              نوع قیمت: {item.priceType === "single" ? "تکی" : "عمده"}
-                            </p>
-                            <p className="text-sm text-[#6b7280] yekan">
-                              تعداد: {item.quantity}
-                            </p>
-                            <p className="text-sm text-[#6b7280] yekan">
-                              قیمت واحد: {item.price} تومان
-                            </p>
-                            {item.priceType === "wholesale" && (
-                              <p className="text-sm text-[#6b7280] yekan">
-                                درصد تخفیف عمده: {item.discount}
-                              </p>
-                            )}
+                            <h3 className="text-sm font-semibold text-[#374151] yekan">{item.title}</h3>
+                            <p className="text-sm text-[#6b7280] yekan">نوع قیمت: {item.priceType === "single" ? "تکی" : "عمده"}</p>
+                            <p className="text-sm text-[#6b7280] yekan">تعداد: {item.quantity}</p>
+                            <p className="text-sm text-[#6b7280] yekan">قیمت واحد: {item.price} تومان</p>
+                            {item.priceType === "wholesale" && <p className="text-sm text-[#6b7280] yekan">درصد تخفیف عمده: {item.discount}</p>}
                             <p className="text-sm font-bold text-[#805B99] yekan">
                               مجموع: {(parseInt(item.price.replace(/,/g, "")) * item.quantity).toLocaleString("fa-IR")} تومان
                             </p>
                             <div className="flex items-center gap-2 mt-2">
-                              <button
-                                onClick={() => handleQuantityChange(item.id, item.priceType, 1)}
-                                className="text-[#805B99] hover:text-[#6b4e82]"
-                                aria-label="افزایش تعداد"
-                              >
+                              <button onClick={() => handleQuantityChange(item.id, item.priceType, 1)} className="text-[#805B99] hover:text-[#6b4e82]">
                                 <AddCircleOutline fontSize="small" />
                               </button>
-                              <button
-                                onClick={() => handleQuantityChange(item.id, item.priceType, -1)}
-                                className="text-[#805B99] hover:text-[#6b4e82]"
-                                aria-label="کاهش تعداد"
-                              >
+                              <button onClick={() => handleQuantityChange(item.id, item.priceType, -1)} className="text-[#805B99] hover:text-[#6b4e82]">
                                 <RemoveCircleOutline fontSize="small" />
                               </button>
-                              <button
-                                onClick={() => handleRemoveItem(item.id)}
-                                className="text-red-500 hover:text-red-700 text-sm yekan"
-                                aria-label="حذف محصول"
-                              >
+                              <button onClick={() => handleRemoveItem(item.id)} className="text-red-500 hover:text-red-700 text-sm yekan">
                                 حذف
                               </button>
                             </div>
@@ -285,17 +247,12 @@ const handleQuantityChange = (id: number, priceType: "single" | "wholesale", del
                       </div>
                     </div>
                   ) : (
-                    <p className="text-center text-[#6b7280] yekan">
-                      سبد خرید شما خالی است
-                    </p>
+                    <p className="text-center text-[#6b7280] yekan">سبد خرید شما خالی است</p>
                   )}
                 </div>
                 {cartItems.length > 0 && (
                   <div className="p-4 border-t border-[#e5e7eb] bg-[#F9F9F9]">
-                    <Link
-                      href="/checkout"
-                      className="block w-full text-center bg-[#805B99] text-white py-2 rounded-lg hover:bg-[#6b4e82] transition duration-200 yekan"
-                    >
+                    <Link href="/checkout" className="block w-full text-center bg-[#805B99] text-white py-2 rounded-lg hover:bg-[#6b4e82] transition duration-200 yekan">
                       ادامه خرید
                     </Link>
                   </div>

@@ -41,6 +41,7 @@ export default function ArticlesPage() {
         setArticles(articles.filter(a => a.slug !== slug));
       } catch (err) {
         alert("خطا در حذف مقاله");
+        console.log(err)
       }
     }
   };

@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import "./UserDashboard.css";
 import Sidebar from "./Sidebar";
@@ -68,7 +67,6 @@ export default function UserDashboardContainer() {
     []
   );
 
-  const router = useRouter();
   const token = Cookies.get("authToken");
 
   const provinces = ["تهران", "اصفهان", "شیراز", "مشهد"];
@@ -218,6 +216,7 @@ const handleTrackOrder = async () => {
   } catch (err) {
     setTrackingResult(null);
     setTrackingError("خطا در پیگیری سفارش.");
+    console.log(err)
   }
 };
 
@@ -292,6 +291,7 @@ const handleTrackOrder = async () => {
       }
     } catch (err) {
       setAddressError("خطا در ارتباط با سرور");
+      console.log(err)
     }
   };
 
@@ -348,6 +348,7 @@ const handleTrackOrder = async () => {
       }
     } catch (err) {
       setTicketError("خطا در ثبت تیکت");
+      console.log(err)
     }
   };
 
@@ -374,20 +375,7 @@ const handleTrackOrder = async () => {
     setIsOrderModalOpen(true);
   };
 
-  const handleCancelOrder = async (id: string) => {
-    try {
-      const res = await fetch(`/api/orders/${id}/cancel`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        fetchOrders();
-        alert(`سفارش شماره ${id} لغو شد.`);
-      }
-    } catch (err) {
-      console.error("Failed to cancel order:", err);
-    }
-  };
+
 
   const handleAddToCart = async (item: WishlistItem) => {
     try {
@@ -443,6 +431,7 @@ const handleTrackOrder = async () => {
       }
     } catch (err) {
       alert("خطا در ذخیره تغییرات");
+      console.log(err)
     }
   };
 

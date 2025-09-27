@@ -5,14 +5,22 @@ import MoblieHeaderTopTab from "@/Components/Header/MobileHeader/MoblieHeaderTop
 import WideHeaderContainer from "@/Components/Header/WideHeader/WideHeaderContainer";
 import { API } from "@/lib/MainRoutes";
 
+// تابع دریافت مقاله از API
 async function getArticle(slug: string) {
   const res = await fetch(`${API}/articles/${slug}`, { cache: "no-store" });
   if (!res.ok) throw new Error("خطا در دریافت مقاله");
   return res.json();
 }
 
-export default async function ArticleDetailPage({ params }: { params: { slug: string } }) {
-  const article = await getArticle(params.slug);
+// ✅ اصلاح نوع پارامترهای مسیر برای Next.js 15
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export default async function ArticleDetailPage({ params }: PageProps) {
+  // دریافت slug به صورت آسنکرون
+  const { slug } = await params;
+  const article = await getArticle(slug);
 
   return (
     <>
