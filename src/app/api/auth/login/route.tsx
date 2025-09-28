@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     });
     response.cookies.set('authToken', token, {
       httpOnly: false,
-      secure: true,
+      secure: false,
       sameSite: 'strict',
       maxAge: 86400,
     });
