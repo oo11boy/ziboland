@@ -73,7 +73,7 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
         setLoading(true);
 
         // Fetch products
-        const productsResponse = await fetch("http://localhost:3000/api/products");
+        const productsResponse = await fetch("/api/products");
         if (!productsResponse.ok) {
           throw new Error("Failed to fetch products");
         }
@@ -81,7 +81,7 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
         setProducts(productsData);
 
         // Fetch categories
-        const categoriesResponse = await fetch("http://localhost:3000/api/categories");
+        const categoriesResponse = await fetch("/api/categories");
         if (!categoriesResponse.ok) {
           throw new Error("Failed to fetch categories");
         }

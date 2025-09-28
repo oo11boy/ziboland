@@ -33,7 +33,7 @@ export default function MobileCategoryMegaMenu() {
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:3000/api/categories");
+        const response = await fetch("/api/categories");
         if (!response.ok) {
           throw new Error("Failed to fetch categories");
         }
