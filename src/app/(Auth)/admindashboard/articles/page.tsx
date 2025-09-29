@@ -46,7 +46,6 @@ export default function ArticlesPage() {
     }
   };
 
-  if (loading) return <div className="text-center py-8">در حال بارگذاری...</div>;
 
   return (
     <div className="space-y-6">

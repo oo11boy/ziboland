@@ -25,11 +25,11 @@ const ArticlePage: React.FC<ArticlePageProps> = ({
   ];
 
   return (
-    <div className="flex flex-col bg-gray-100 w-full min-h-screen pb-16">
+    <div className="flex flex-col yekan bg-gray-100 w-full min-h-screen pb-16">
       <div className="relative w-full h-[40vh] md:h-[60vh] overflow-hidden">
         <img className="w-full h-full object-cover" src={coverImage} alt={title} />
       </div>
-      <div className="flex flex-col items-center z-[99] -mt-40 px-4">
+      <div className="flex flex-col items-center z-[20] -mt-40 px-4">
         <div className="w-full lg:w-[90%] bg-white rounded-xl shadow-lg p-6 sm:p-10 flex flex-col gap-6">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900">{title}</h1>
           <div className="flex items-center gap-4">

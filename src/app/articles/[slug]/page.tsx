@@ -1,8 +1,4 @@
 import ArticlePage from "@/Components/Articles/ArticlePage/ArticlePage";
-import FooterContainer from "@/Components/Footer/FooterContainer";
-import MobileBottomNavigation from "@/Components/Header/MobileHeader/MobileBottomNavigation";
-import MoblieHeaderTopTab from "@/Components/Header/MobileHeader/MoblieHeaderTopTab";
-import WideHeaderContainer from "@/Components/Header/WideHeader/WideHeaderContainer";
 import { API } from "@/lib/MainRoutes";
 
 // تابع دریافت مقاله از API
@@ -24,8 +20,6 @@ export default async function ArticleDetailPage({ params }: PageProps) {
 
   return (
     <>
-      <WideHeaderContainer />
-      <MoblieHeaderTopTab />
 
       <ArticlePage
         title={article.title}
@@ -37,8 +31,7 @@ export default async function ArticleDetailPage({ params }: PageProps) {
         content={article.content}
       />
 
-      <FooterContainer />
-      <MobileBottomNavigation />
+
     </>
   );
 }

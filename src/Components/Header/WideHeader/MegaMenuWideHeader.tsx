@@ -84,13 +84,7 @@ export default function MegaMenuWideHeader() {
     };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex h-[35px] items-center justify-center bg-black text-white">
-        <p className="text-lg">در حال بارگذاری...</p>
-      </div>
-    );
-  }
+
 
   if (error) {
     return (

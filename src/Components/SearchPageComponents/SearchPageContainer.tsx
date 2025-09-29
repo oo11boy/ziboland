@@ -34,9 +34,11 @@ interface QueryParams {
   brands?: string[];
 }
 
-
-
-export default function SearchPageContainer({ queryParams }: { queryParams: QueryParams }) {
+export default function SearchPageContainer({
+  queryParams,
+}: {
+  queryParams: QueryParams;
+}) {
   const searchParams = useSearchParams();
   const { dispatch } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
@@ -44,7 +46,9 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedBrands, setSelectedBrands] = useState<string[]>(queryParams.brands || []);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>(
+    queryParams.brands || []
+  );
   const [selectedMothercatIds, setSelectedMothercatIds] = useState<number[]>(
     queryParams.mothercatId ? [parseInt(queryParams.mothercatId)] : []
   );
@@ -58,9 +62,15 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
   const [discount, setDiscount] = useState(false);
   const [inStock, setInStock] = useState(false);
   const [brandSearch, setBrandSearch] = useState("");
-  const [cartQuantities, setCartQuantities] = useState<{ [key: number]: number }>({});
-  const [priceTypes, setPriceTypes] = useState<{ [key: number]: "single" | "wholesale" }>({});
-  const [showQuantitySelector, setShowQuantitySelector] = useState<number | null>(null);
+  const [cartQuantities, setCartQuantities] = useState<{
+    [key: number]: number;
+  }>({});
+  const [priceTypes, setPriceTypes] = useState<{
+    [key: number]: "single" | "wholesale";
+  }>({});
+  const [showQuantitySelector, setShowQuantitySelector] = useState<
+    number | null
+  >(null);
   const [showFilters, setShowFilters] = useState(false);
   const [sortOption, setSortOption] = useState<string>("جدیدترین");
 
@@ -91,7 +101,7 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
         setLoading(false);
       } catch (err) {
         setError("خطا در بارگذاری داده‌ها. لطفاً دوباره تلاش کنید.");
-        console.log(err)
+        console.log(err);
         setLoading(false);
         toast.error("خطا در بارگذاری داده‌ها", {
           position: "top-center",
@@ -147,7 +157,9 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
   }, [products]);
 
   const handleShowQuantitySelector = (productId: number) => {
-    setShowQuantitySelector(showQuantitySelector === productId ? null : productId);
+    setShowQuantitySelector(
+      showQuantitySelector === productId ? null : productId
+    );
   };
 
   const handleQuantityChange = (productId: number, delta: number) => {
@@ -170,13 +182,20 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
     });
   };
 
-  const handlePriceTypeChange = (productId: number, type: "single" | "wholesale") => {
+  const handlePriceTypeChange = (
+    productId: number,
+    type: "single" | "wholesale"
+  ) => {
     setPriceTypes((prev) => ({ ...prev, [productId]: type }));
   };
 
   const handleAddToCart = (productId: number) => {
     const product = products.find((p) => p.id === productId);
-    if (!product || !cartQuantities[productId] || cartQuantities[productId] < 1) {
+    if (
+      !product ||
+      !cartQuantities[productId] ||
+      cartQuantities[productId] < 1
+    ) {
       toast.error("لطفاً تعداد محصول را انتخاب کنید", {
         position: "top-center",
         autoClose: 3000,
@@ -191,20 +210,27 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
 
     const quantity = cartQuantities[productId];
     const priceType = priceTypes[productId];
-    const price = priceType === "single" ? product.discountedPrice : product.discountwholesalePrice;
-    const discount = priceType === "single" ? product.discount : product.discountwholesale;
+    const price =
+      priceType === "single"
+        ? product.discountedPrice
+        : product.discountwholesalePrice;
+    const discount =
+      priceType === "single" ? product.discount : product.discountwholesale;
 
     // Check minimum quantity for wholesale price
     if (priceType === "wholesale" && quantity < product.minwholesale) {
-      toast.error(`حداقل تعداد برای قیمت عمده ${product.minwholesale} عدد است.`, {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "colored",
-      });
+      toast.error(
+        `حداقل تعداد برای قیمت عمده ${product.minwholesale} عدد است.`,
+        {
+          position: "top-center",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: "colored",
+        }
+      );
       return;
     }
 
@@ -217,7 +243,10 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
           quantity: quantity,
           priceType: priceType,
           price: price.toString(),
-          image: product.media && product.media.length > 0 ? product.media[0].src : product.image || "/placeholder.jpg",
+          image:
+            product.media && product.media.length > 0
+              ? product.media[0].src
+              : product.image || "/placeholder.jpg",
           discount: discount,
         },
       });
@@ -276,25 +305,34 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
     setSortOption("جدیدترین");
   };
 
-  const allBrands = Array.from(new Set(products.map((p) => p.brandDetails?.img || '')));
+  const allBrands = Array.from(
+    new Set(products.map((p) => p.brandDetails?.img || ""))
+  );
   const allCategories = categories.filter((cat) => cat.mothercat === 1);
   const filteredCategories = allCategories.filter((cat) =>
     cat.name.toLowerCase().includes(categorySearch.toLowerCase())
   );
-  const filteredSubcats = selectedMothercatIds.length > 0
-    ? categories
-        .filter((cat) => selectedMothercatIds.includes(cat.id))
-        .flatMap((cat) => cat.subcat || [])
-        .filter((subcat) => subcat.name.toLowerCase().includes(subcatSearch.toLowerCase()))
-    : [];
+  const filteredSubcats =
+    selectedMothercatIds.length > 0
+      ? categories
+          .filter((cat) => selectedMothercatIds.includes(cat.id))
+          .flatMap((cat) => cat.subcat || [])
+          .filter((subcat) =>
+            subcat.name.toLowerCase().includes(subcatSearch.toLowerCase())
+          )
+      : [];
 
   const getSortedProducts = () => {
     const filtered = products.filter(
       (product) =>
         product.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        (selectedBrands.length === 0 || (product.brandDetails && selectedBrands.includes(product.brandDetails.img))) &&
-        (selectedMothercatIds.length === 0 || selectedMothercatIds.includes(product.mothercatId)) &&
-        (selectedSubcatIds.length === 0 || selectedSubcatIds.includes(product.subcatId)) &&
+        (selectedBrands.length === 0 ||
+          (product.brandDetails &&
+            selectedBrands.includes(product.brandDetails.img))) &&
+        (selectedMothercatIds.length === 0 ||
+          selectedMothercatIds.includes(product.mothercatId)) &&
+        (selectedSubcatIds.length === 0 ||
+          selectedSubcatIds.includes(product.subcatId)) &&
         product.numericPrice >= priceRange[0] &&
         product.numericPrice <= priceRange[1] &&
         (!discount || product.discount !== "0%") &&
@@ -325,38 +363,42 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
     .join(", ");
 
   const selectedSubcatNames = selectedSubcatIds
-    .map((id) =>
-      categories
-        .filter((cat) => selectedMothercatIds.includes(cat.id))
-        .flatMap((cat) => cat.subcat || [])
-        .find((sub) => sub.id === id)?.name
+    .map(
+      (id) =>
+        categories
+          .filter((cat) => selectedMothercatIds.includes(cat.id))
+          .flatMap((cat) => cat.subcat || [])
+          .find((sub) => sub.id === id)?.name
     )
     .filter(Boolean)
     .join(", ");
 
   const cardVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.3, ease: "easeOut" },
+    },
     exit: { opacity: 0, y: -20, transition: { duration: 0.2 } },
   };
 
   const filterVariants = {
     hidden: { y: "-100%", opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { duration: 0.3, ease: "easeOut" } },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { duration: 0.3, ease: "easeOut" },
+    },
     exit: { y: "-100%", opacity: 0, transition: { duration: 0.2 } },
   };
 
-  if (loading) {
-    return (
-      <div dir="rtl" className="min-h-screen yekan bg-[#F7F7F7] font-yekan flex items-center justify-center">
-        <p className="text-[#374151] text-lg">در حال بارگذاری...</p>
-      </div>
-    );
-  }
-
   if (error) {
     return (
-      <div dir="rtl" className="min-h-screen yekan bg-[#F7F7F7] font-yekan flex items-center justify-center">
+      <div
+        dir="rtl"
+        className="min-h-screen yekan bg-[#F7F7F7] font-yekan flex items-center justify-center"
+      >
         <p className="text-[#374151] text-lg">{error}</p>
       </div>
     );
@@ -390,7 +432,11 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
               className="p-2 text-white hover:bg-[#6b4e82] rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/50"
               aria-label={showFilters ? "بستن فیلترها" : "نمایش فیلترها"}
             >
-              {showFilters ? <Close fontSize="medium" /> : <Tune fontSize="medium" />}
+              {showFilters ? (
+                <Close fontSize="medium" />
+              ) : (
+                <Tune fontSize="medium" />
+              )}
             </button>
             <div className="relative flex items-center w-full">
               <input
@@ -401,7 +447,11 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                 className="w-full p-3 pr-10 bg-white/10 text-white border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-white/50 transition-all duration-200"
                 aria-label="جستجوی محصول"
               />
-              <Search fontSize="medium" className="absolute right-3 text-white/50" aria-hidden="true" />
+              <Search
+                fontSize="medium"
+                className="absolute right-3 text-white/50"
+                aria-hidden="true"
+              />
             </div>
           </div>
         </motion.div>
@@ -442,8 +492,12 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                       </button>
                     </div>
                     <div className="my-2">
-                      <label className="block text-sm font-medium mb-1 text-[#374151]" htmlFor="category-search">
-                        <Category className="ml-2 text-[#805b99] yekan" /> دسته‌بندی
+                      <label
+                        className="block text-sm font-medium mb-1 text-[#374151]"
+                        htmlFor="category-search"
+                      >
+                        <Category className="ml-2 text-[#805b99] yekan" />{" "}
+                        دسته‌بندی
                       </label>
                       <input
                         id="category-search"
@@ -456,13 +510,18 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                       />
                       <div className="mt-1 max-h-32 overflow-y-auto">
                         {filteredCategories.map((cat) => (
-                          <label key={cat.id} className="flex items-center text-sm mb-1">
+                          <label
+                            key={cat.id}
+                            className="flex items-center text-sm mb-1"
+                          >
                             <input
                               type="checkbox"
                               checked={selectedMothercatIds.includes(cat.id)}
                               onChange={() => {
                                 setSelectedMothercatIds((prev) =>
-                                  prev.includes(cat.id) ? prev.filter((id) => id !== cat.id) : [...prev, cat.id]
+                                  prev.includes(cat.id)
+                                    ? prev.filter((id) => id !== cat.id)
+                                    : [...prev, cat.id]
                                 );
                                 if (!selectedMothercatIds.includes(cat.id)) {
                                   setSelectedSubcatIds([]);
@@ -478,8 +537,12 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                     </div>
                     {selectedMothercatIds.length > 0 && (
                       <div className="my-2">
-                        <label className="block text-sm font-medium mb-1 text-[#374151]" htmlFor="subcat-search">
-                          <Category className="ml-2 text-[#805b99] yekan" /> زیرمجموعه
+                        <label
+                          className="block text-sm font-medium mb-1 text-[#374151]"
+                          htmlFor="subcat-search"
+                        >
+                          <Category className="ml-2 text-[#805b99] yekan" />{" "}
+                          زیرمجموعه
                         </label>
                         <input
                           id="subcat-search"
@@ -492,13 +555,18 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                         />
                         <div className="mt-1 max-h-32 overflow-y-auto">
                           {filteredSubcats.map((subcat) => (
-                            <label key={subcat.id} className="flex items-center text-sm mb-1">
+                            <label
+                              key={subcat.id}
+                              className="flex items-center text-sm mb-1"
+                            >
                               <input
                                 type="checkbox"
                                 checked={selectedSubcatIds.includes(subcat.id)}
                                 onChange={() => {
                                   setSelectedSubcatIds((prev) =>
-                                    prev.includes(subcat.id) ? prev.filter((id) => id !== subcat.id) : [...prev, subcat.id]
+                                    prev.includes(subcat.id)
+                                      ? prev.filter((id) => id !== subcat.id)
+                                      : [...prev, subcat.id]
                                   );
                                 }}
                                 className="ml-2 accent-[#805b99]"
@@ -511,7 +579,10 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                       </div>
                     )}
                     <div className="my-2">
-                      <label className="block text-sm font-medium mb-1 text-[#374151]" htmlFor="brand-search">
+                      <label
+                        className="block text-sm font-medium mb-1 text-[#374151]"
+                        htmlFor="brand-search"
+                      >
                         <Store className="ml-2 text-[#805b99]" /> برند
                       </label>
                       <input
@@ -525,15 +596,24 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                       />
                       <div className="mt-1 max-h-32 overflow-y-auto">
                         {allBrands
-                          .filter((brand) => brand.toLowerCase().includes(brandSearch.toLowerCase()))
+                          .filter((brand) =>
+                            brand
+                              .toLowerCase()
+                              .includes(brandSearch.toLowerCase())
+                          )
                           .map((brand) => (
-                            <label key={brand} className="flex items-center text-sm mb-1">
+                            <label
+                              key={brand}
+                              className="flex items-center text-sm mb-1"
+                            >
                               <input
                                 type="checkbox"
                                 checked={selectedBrands.includes(brand)}
                                 onChange={() => {
                                   setSelectedBrands((prev) =>
-                                    prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+                                    prev.includes(brand)
+                                      ? prev.filter((b) => b !== brand)
+                                      : [...prev, brand]
                                   );
                                 }}
                                 className="ml-2 accent-[#805b99]"
@@ -545,8 +625,12 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                       </div>
                     </div>
                     <div className="my-2">
-                      <label className="block text-sm font-medium mb-1 text-[#374151]" htmlFor="price-range">
-                        <PriceChange className="ml-2 text-[#805b99]" /> محدوده قیمت (تومان)
+                      <label
+                        className="block text-sm font-medium mb-1 text-[#374151]"
+                        htmlFor="price-range"
+                      >
+                        <PriceChange className="ml-2 text-[#805b99]" /> محدوده
+                        قیمت (تومان)
                       </label>
                       <div className="bapf_sfilter bapf_slidr bapf_slidr_jqrui bapf_attr_price bapf_slidr_ready bapf_ccolaps">
                         <div className="bapf_head bapf_colaps_togl">
@@ -563,7 +647,10 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                                 type="text"
                                 value={priceRange[0].toLocaleString("fa-IR")}
                                 onChange={(e) => {
-                                  const value = parseInt(e.target.value.replace(/,/g, "")) || 0;
+                                  const value =
+                                    parseInt(
+                                      e.target.value.replace(/,/g, "")
+                                    ) || 0;
                                   if (value <= priceRange[1]) {
                                     setPriceRange([value, priceRange[1]]);
                                   }
@@ -581,7 +668,10 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                                 type="text"
                                 value={priceRange[1].toLocaleString("fa-IR")}
                                 onChange={(e) => {
-                                  const value = parseInt(e.target.value.replace(/,/g, "")) || 5000000;
+                                  const value =
+                                    parseInt(
+                                      e.target.value.replace(/,/g, "")
+                                    ) || 5000000;
                                   if (value >= priceRange[0]) {
                                     setPriceRange([priceRange[0], value]);
                                   }
@@ -600,9 +690,14 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                                 max={5000000}
                                 step={10000}
                                 value={priceRange}
-                                onChange={(value) => setPriceRange(value as [number, number])}
+                                onChange={(value) =>
+                                  setPriceRange(value as [number, number])
+                                }
                                 trackStyle={{ backgroundColor: "#805b99" }}
-                                handleStyle={{ borderColor: "#805b99", backgroundColor: "#fff" }}
+                                handleStyle={{
+                                  borderColor: "#805b99",
+                                  backgroundColor: "#fff",
+                                }}
                                 railStyle={{ backgroundColor: "#e5e7eb" }}
                               />
                               <div className="flex justify-between mt-2 text-sm text-[#374151]">
@@ -615,7 +710,10 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                       </div>
                     </div>
                     <div className="my-2">
-                      <label className="block text-sm font-medium mb-1 text-[#374151]" htmlFor="rating-input">
+                      <label
+                        className="block text-sm font-medium mb-1 text-[#374151]"
+                        htmlFor="rating-input"
+                      >
                         <Star className="ml-2 text-[#805b99]" /> حداقل امتیاز
                       </label>
                       <input
@@ -682,7 +780,10 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#374151]" htmlFor="search-input">
+                <label
+                  className="block text-sm font-medium mb-1 text-[#374151]"
+                  htmlFor="search-input"
+                >
                   <Search className="ml-2 text-[#805b99]" /> جستجو
                 </label>
                 <input
@@ -696,7 +797,10 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#374151]" htmlFor="category-search">
+                <label
+                  className="block text-sm font-medium mb-1 text-[#374151]"
+                  htmlFor="category-search"
+                >
                   <Category className="ml-2 text-[#805b99]" /> دسته‌بندی
                 </label>
                 <input
@@ -710,13 +814,18 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                 />
                 <div className="mt-1 max-h-32 overflow-y-auto">
                   {filteredCategories.map((cat) => (
-                    <label key={cat.id} className="flex items-center text-sm mb-1">
+                    <label
+                      key={cat.id}
+                      className="flex items-center text-sm mb-1"
+                    >
                       <input
                         type="checkbox"
                         checked={selectedMothercatIds.includes(cat.id)}
                         onChange={() => {
                           setSelectedMothercatIds((prev) =>
-                            prev.includes(cat.id) ? prev.filter((id) => id !== cat.id) : [...prev, cat.id]
+                            prev.includes(cat.id)
+                              ? prev.filter((id) => id !== cat.id)
+                              : [...prev, cat.id]
                           );
                           if (!selectedMothercatIds.includes(cat.id)) {
                             setSelectedSubcatIds([]);
@@ -732,7 +841,10 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
               </div>
               {selectedMothercatIds.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium mb-1 text-[#374151]" htmlFor="subcat-search">
+                  <label
+                    className="block text-sm font-medium mb-1 text-[#374151]"
+                    htmlFor="subcat-search"
+                  >
                     <Category className="ml-2 text-[#805b99]" /> زیرمجموعه
                   </label>
                   <input
@@ -746,13 +858,18 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                   />
                   <div className="mt-1 max-h-32 overflow-y-auto">
                     {filteredSubcats.map((subcat) => (
-                      <label key={subcat.id} className="flex items-center text-sm mb-1">
+                      <label
+                        key={subcat.id}
+                        className="flex items-center text-sm mb-1"
+                      >
                         <input
                           type="checkbox"
                           checked={selectedSubcatIds.includes(subcat.id)}
                           onChange={() => {
                             setSelectedSubcatIds((prev) =>
-                              prev.includes(subcat.id) ? prev.filter((id) => id !== subcat.id) : [...prev, subcat.id]
+                              prev.includes(subcat.id)
+                                ? prev.filter((id) => id !== subcat.id)
+                                : [...prev, subcat.id]
                             );
                           }}
                           className="ml-2 accent-[#805b99]"
@@ -765,7 +882,10 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#374151]" htmlFor="brand-search">
+                <label
+                  className="block text-sm font-medium mb-1 text-[#374151]"
+                  htmlFor="brand-search"
+                >
                   <Store className="ml-2 text-[#805b99]" /> برند
                 </label>
                 <input
@@ -779,15 +899,22 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                 />
                 <div className="mt-1 max-h-32 overflow-y-auto">
                   {allBrands
-                    .filter((brand) => brand.toLowerCase().includes(brandSearch.toLowerCase()))
+                    .filter((brand) =>
+                      brand.toLowerCase().includes(brandSearch.toLowerCase())
+                    )
                     .map((brand) => (
-                      <label key={brand} className="flex items-center text-sm mb-1">
+                      <label
+                        key={brand}
+                        className="flex items-center text-sm mb-1"
+                      >
                         <input
                           type="checkbox"
                           checked={selectedBrands.includes(brand)}
                           onChange={() => {
                             setSelectedBrands((prev) =>
-                              prev.includes(brand) ? prev.filter((b) => b !== brand) : [...prev, brand]
+                              prev.includes(brand)
+                                ? prev.filter((b) => b !== brand)
+                                : [...prev, brand]
                             );
                           }}
                           className="ml-2 accent-[#805b99]"
@@ -799,8 +926,12 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#374151]" htmlFor="price-range">
-                  <PriceChange className="ml-2 text-[#805b99]" /> محدوده قیمت (تومان)
+                <label
+                  className="block text-sm font-medium mb-1 text-[#374151]"
+                  htmlFor="price-range"
+                >
+                  <PriceChange className="ml-2 text-[#805b99]" /> محدوده قیمت
+                  (تومان)
                 </label>
                 <div className="bapf_sfilter bapf_slidr bapf_slidr_jqrui bapf_attr_price bapf_slidr_ready bapf_ccolaps">
                   <div className="bapf_head bapf_colaps_togl">
@@ -817,7 +948,8 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                           type="text"
                           value={priceRange[0].toLocaleString("fa-IR")}
                           onChange={(e) => {
-                            const value = parseInt(e.target.value.replace(/,/g, "")) || 0;
+                            const value =
+                              parseInt(e.target.value.replace(/,/g, "")) || 0;
                             if (value <= priceRange[1]) {
                               setPriceRange([value, priceRange[1]]);
                             }
@@ -835,7 +967,9 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                           type="text"
                           value={priceRange[1].toLocaleString("fa-IR")}
                           onChange={(e) => {
-                            const value = parseInt(e.target.value.replace(/,/g, "")) || 5000000;
+                            const value =
+                              parseInt(e.target.value.replace(/,/g, "")) ||
+                              5000000;
                             if (value >= priceRange[0]) {
                               setPriceRange([priceRange[0], value]);
                             }
@@ -854,9 +988,14 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                           max={5000000}
                           step={10000}
                           value={priceRange}
-                          onChange={(value) => setPriceRange(value as [number, number])}
+                          onChange={(value) =>
+                            setPriceRange(value as [number, number])
+                          }
                           trackStyle={{ backgroundColor: "#805b99" }}
-                          handleStyle={{ borderColor: "#805b99", backgroundColor: "#fff" }}
+                          handleStyle={{
+                            borderColor: "#805b99",
+                            backgroundColor: "#fff",
+                          }}
                           railStyle={{ backgroundColor: "#e5e7eb" }}
                         />
                         <div className="flex justify-between mt-2 text-sm text-[#374151]">
@@ -869,7 +1008,10 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1 text-[#374151]" htmlFor="rating-input">
+                <label
+                  className="block text-sm font-medium mb-1 text-[#374151]"
+                  htmlFor="rating-input"
+                >
                   <Star className="ml-2 text-[#805b99]" /> حداقل امتیاز
                 </label>
                 <input
@@ -926,11 +1068,19 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                     </p>
                   </div>
                   <div className="flex gap-x-4">
-                    {["جدیدترین", "گران‌ترین", "ارزان‌ترین", "محبوب‌ترین", "پرفروش‌ترین"].map((option) => (
+                    {[
+                      "جدیدترین",
+                      "گران‌ترین",
+                      "ارزان‌ترین",
+                      "محبوب‌ترین",
+                      "پرفروش‌ترین",
+                    ].map((option) => (
                       <span
                         key={option}
                         className={`cursor-pointer whitespace-nowrap text-sm ${
-                          sortOption === option ? "text-[#805b99] font-bold" : "text-[#6b7280]"
+                          sortOption === option
+                            ? "text-[#805b99] font-bold"
+                            : "text-[#6b7280]"
                         }`}
                         onClick={() => setSortOption(option)}
                         aria-label={`مرتب‌سازی بر اساس ${option}`}
@@ -944,7 +1094,9 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
               {(selectedSubcatNames || selectedCategoryNames) && (
                 <div className="text-sm my-9 text-[#374151]">
                   {selectedSubcatNames ? (
-                    <span className="border-2 border-amber-600 p-4 my-4">{selectedSubcatNames}</span>
+                    <span className="border-2 border-amber-600 p-4 my-4">
+                      {selectedSubcatNames}
+                    </span>
                   ) : (
                     <span>{selectedCategoryNames}</span>
                   )}
@@ -971,10 +1123,21 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                             <p>{item.minwholesale} عدد</p>
                           </div>
                         )}
-                        <Link href={`/products/${item.id}`} className="flex items-center flex-col">
+                        <Link
+                          href={`/products/${item.id}`}
+                          className="flex items-center flex-col"
+                        >
                           <img
-                            src={item.image.length > 0 ? item.image :  "/placeholder.jpg"}
-                            alt={item.media && item.media.length > 0 ? item.media[0].alt : item.title}
+                            src={
+                              item.image.length > 0
+                                ? item.image
+                                : "/placeholder.jpg"
+                            }
+                            alt={
+                              item.media && item.media.length > 0
+                                ? item.media[0].alt
+                                : item.title
+                            }
                             width={200}
                             height={200}
                             className="tpsc-product-image"
@@ -983,15 +1146,27 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                         </Link>
                         <div className="tpsc-price-buttons">
                           <button
-                            className={`tpsc-price-button ${priceTypes[item.id] === "wholesale" ? "tpsc-price-button-active" : ""}`}
-                            onClick={() => handlePriceTypeChange(item.id, "wholesale")}
+                            className={`tpsc-price-button ${
+                              priceTypes[item.id] === "wholesale"
+                                ? "tpsc-price-button-active"
+                                : ""
+                            }`}
+                            onClick={() =>
+                              handlePriceTypeChange(item.id, "wholesale")
+                            }
                             aria-label="انتخاب قیمت عمده"
                           >
                             قیمت عمده
                           </button>
                           <button
-                            className={`tpsc-price-button ${priceTypes[item.id] === "single" ? "tpsc-price-button-active" : ""}`}
-                            onClick={() => handlePriceTypeChange(item.id, "single")}
+                            className={`tpsc-price-button ${
+                              priceTypes[item.id] === "single"
+                                ? "tpsc-price-button-active"
+                                : ""
+                            }`}
+                            onClick={() =>
+                              handlePriceTypeChange(item.id, "single")
+                            }
                             aria-label="انتخاب قیمت تکی"
                           >
                             قیمت تکی
@@ -1002,10 +1177,14 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                         ) : (
                           <div className="tpsc-price-discount-container">
                             <p className="tpsc-price-strikethrough-text">
-                              {priceTypes[item.id] === "single" ? item.originalPrice : item.wholesalePrice}
+                              {priceTypes[item.id] === "single"
+                                ? item.originalPrice
+                                : item.wholesalePrice}
                             </p>
                             <p className="tpsc-discount-badge">
-                              {priceTypes[item.id] === "single" ? item.discount : item.discountwholesale}
+                              {priceTypes[item.id] === "single"
+                                ? item.discount
+                                : item.discountwholesale}
                             </p>
                           </div>
                         )}
@@ -1023,7 +1202,10 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                         ) : (
                           <div className="tpsc-price-quantity">
                             <p className="tpsc-price">
-                              {priceTypes[item.id] === "single" ? item.discountedPrice : item.discountwholesalePrice} تومان
+                              {priceTypes[item.id] === "single"
+                                ? item.discountedPrice
+                                : item.discountwholesalePrice}{" "}
+                              تومان
                             </p>
                             <div className="tpsc-quantity-selector-mobile relative">
                               {cartQuantities[item.id] > 0 && (
@@ -1049,7 +1231,9 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                                 aria-label="تعداد محصول"
                               />
                               <button
-                                onClick={() => handleQuantityChange(item.id, -1)}
+                                onClick={() =>
+                                  handleQuantityChange(item.id, -1)
+                                }
                                 aria-label="کاهش تعداد"
                               >
                                 <RemoveCircleOutline fontSize="small" />
@@ -1057,15 +1241,22 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                             </div>
                             <button
                               className="tpsc-add-to-cart"
-                              onClick={() => handleShowQuantitySelector(item.id)}
+                              onClick={() =>
+                                handleShowQuantitySelector(item.id)
+                              }
                               aria-label="نمایش انتخابگر تعداد"
                             >
                               <AddShoppingCart fontSize="small" />
                             </button>
                             {showQuantitySelector === item.id && (
-                              <div className="tpsc-quantity-selector relative" onClick={(e) => e.stopPropagation()}>
+                              <div
+                                className="tpsc-quantity-selector relative"
+                                onClick={(e) => e.stopPropagation()}
+                              >
                                 <button
-                                  onClick={() => handleQuantityChange(item.id, 1)}
+                                  onClick={() =>
+                                    handleQuantityChange(item.id, 1)
+                                  }
                                   aria-label="افزایش تعداد"
                                 >
                                   <AddCircleOutline fontSize="small" />
@@ -1078,7 +1269,9 @@ export default function SearchPageContainer({ queryParams }: { queryParams: Quer
                                   aria-label="تعداد محصول"
                                 />
                                 <button
-                                  onClick={() => handleQuantityChange(item.id, -1)}
+                                  onClick={() =>
+                                    handleQuantityChange(item.id, -1)
+                                  }
                                   aria-label="کاهش تعداد"
                                 >
                                   <RemoveCircleOutline fontSize="small" />

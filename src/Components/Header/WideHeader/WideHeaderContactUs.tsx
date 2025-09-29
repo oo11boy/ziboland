@@ -16,7 +16,7 @@ export default function WideHeaderContactUs() {
     <>
       {/* تزریق استایل‌های CSS */}
   
-      <section className="bg-[#EBEBEB] w-full h-auto py-2 relative overflow-hidden">
+      <section className="bg-[#EBEBEB] yekan w-full h-auto py-2 relative overflow-hidden">
         <div className="w-[95%] flex justify-between m-auto items-center flex-row-reverse relative z-10">
           {/* تماس با کارشناسان */}
           <div className="flex w-[33%] justify-end items-center gap-4">

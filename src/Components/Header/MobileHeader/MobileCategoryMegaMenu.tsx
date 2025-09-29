@@ -2,31 +2,31 @@
 import React, { useState, useCallback, useEffect, JSX } from "react";
 import { ArrowBack } from "@mui/icons-material";
 import { ToastContainer, toast } from "react-toastify";
+import { PulseLoader } from "react-spinners";
+import { motion, AnimatePresence } from "framer-motion";
 import "react-toastify/dist/ReactToastify.css";
-import "./MobileHeader.css";
 import { Categoryapi } from "@/types/types";
 
-
-// Function to get Google Material Icon
-const getIconComponent = (iconName: string): JSX.Element => {
-  const formattedIconName = iconName
-    .replace(/([A-Z])/g, "_$1")
-    .toLowerCase()
-    .slice(1);
-
-  return (
-    <span className="material-icons h-8 w-8 text-[#805B99]" aria-label={formattedIconName}>
-      {formattedIconName}
-    </span>
-  );
-};
-
 export default function MobileCategoryMegaMenu() {
-  const [openCategory, setOpenCategory] = useState<number | null>(null);
+  const [openCategory, setOpenCategory] = useState<Categoryapi | null>(null);
   const [openSubCategory, setOpenSubCategory] = useState<number | null>(null);
   const [categories, setCategories] = useState<Categoryapi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Function to get Google Material Icon
+  const getIconComponent = (iconName: string): JSX.Element => {
+    const formattedIconName = iconName
+      .replace(/([A-Z])/g, "_$1")
+      .toLowerCase()
+      .slice(1);
+
+    return (
+      <span className="material-icons text-[#805B99] text-4xl">
+        {formattedIconName}
+      </span>
+    );
+  };
 
   // Fetch categories from API
   useEffect(() => {
@@ -34,26 +34,19 @@ export default function MobileCategoryMegaMenu() {
       try {
         setLoading(true);
         const response = await fetch("/api/categories");
-        if (!response.ok) {
-          throw new Error("Failed to fetch categories");
-        }
+        if (!response.ok) throw new Error("Failed to fetch categories");
+
         const categoriesData: Categoryapi[] = await response.json();
         setCategories(categoriesData);
-        setLoading(false);
       } catch (err) {
-      
         setError("خطا در بارگذاری دسته‌بندی‌ها. لطفاً دوباره تلاش کنید.");
-          console.log(err)
-        setLoading(false);
         toast.error("خطا در بارگذاری دسته‌بندی‌ها", {
           position: "top-center",
           autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
           theme: "colored",
         });
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -61,13 +54,10 @@ export default function MobileCategoryMegaMenu() {
   }, []);
 
   // Toggle category
-  const toggleCategory = useCallback(
-    (id: number) => {
-      setOpenCategory(openCategory === id ? null : id);
-      setOpenSubCategory(null);
-    },
-    [openCategory]
-  );
+  const toggleCategory = useCallback((cat: Categoryapi) => {
+    setOpenCategory(cat);
+    setOpenSubCategory(null);
+  }, []);
 
   // Toggle subcategory
   const toggleSubCategory = useCallback(
@@ -80,7 +70,7 @@ export default function MobileCategoryMegaMenu() {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-white">
-        <p className="text-[#374151] text-lg">در حال بارگذاری...</p>
+        <PulseLoader color="#805B99" size={12} />
       </div>
     );
   }
@@ -94,116 +84,97 @@ export default function MobileCategoryMegaMenu() {
   }
 
   return (
-    <div className="relative lg:mt-4 flex h-screen flex-col bg-white">
-      <ToastContainer
-        position="top-center"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick
-        rtl={true}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-        style={{ zIndex: 99999, top: 0, width: "100%", padding: "10px" }}
-      />
+    <div className="relative flex h-screen flex-col bg-white" dir="rtl">
+      {/* Toast */}
+      <ToastContainer rtl position="top-center" theme="colored" />
+
       {/* Header */}
-      <div className="flex h-14 items-center yekan justify-between px-4 text-gray-900 shadow-sm bg-white">
-        <div></div>
-        <span className="header-title yekan text-center w-full">دسته‌بندی‌ها</span>
+      <div className="fixed top-[60px] z-20 flex h-14 w-full items-center justify-center bg-[#805B99] text-white shadow-md">
+        {openCategory ? (
+          <button
+            onClick={() => setOpenCategory(null)}
+            className="absolute right-4 p-1 rounded-full hover:bg-white/20"
+            aria-label="بازگشت"
+          >
+            <ArrowBack />
+          </button>
+        ) : null}
+        <span className="yekanh text-lg">
+          {openCategory ? openCategory.name : "دسته‌بندی‌ها"}
+        </span>
       </div>
 
       {/* Category Grid */}
-      <div className="grid font-semibold grid-cols-2 lg:grid-cols-4 gap-2 px-3 pt-6">
-        {categories.map(
-          (item: Categoryapi) =>
-            item.mothercat === 1 && (
-              <div key={item.id} className="relative">
-                <label
-                  htmlFor={`category-${item.id}`}
-                  className="flex flex-col items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white p-3 text-gray-900 hover:bg-gray-50 cursor-pointer category-card"
-                >
-                  {getIconComponent(item.icon)}
-                  <span className="text-primary text-center font-semibold">{item.name}</span>
-                </label>
-                <input
-                  id={`category-${item.id}`}
-                  type="checkbox"
-                  className="peer hidden"
-                  checked={openCategory === item.id}
-                  onChange={() => toggleCategory(item.id)}
-                />
-                <div
-                  className={`fixed inset-0 z-10 flex flex-col bg-white overflow-auto sub-menu ${
-                    openCategory === item.id ? "open" : ""
-                  }`}
-                >
-                  {/* Sub-Menu Header */}
-                  <div className="flex h-14 items-center justify-between px-4 text-gray-900 shadow-sm bg-white">
-                    <span className="text-primary">
-                      همه محصولات{" "}
-                      <a href={`/search?mothercatId=${item.id}`} className="text-[#805B99] hover:underline">
-                        {item.name}
-                      </a>
+      <div className="mt-16 flex-1 overflow-auto yekan px-3 pb-20">
+        <AnimatePresence initial={false} mode="wait">
+          {!openCategory ? (
+            <motion.div
+              key="categories"
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -100, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="grid grid-cols-2 gap-4"
+            >
+              {categories
+                .filter((item) => item.mothercat === 1)
+                .map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => toggleCategory(item)}
+                    className="flex flex-col items-center justify-center gap-2 rounded-xl bg-white p-4 shadow hover:shadow-md transition"
+                  >
+                    {getIconComponent(item.icon)}
+                    <span className="text-sm font-semibold">{item.name}</span>
+                  </button>
+                ))}
+            </motion.div>
+          ) : (
+            <motion.div
+              key="subcategories"
+              initial={{ x: 100, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -100, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col gap-2"
+            >
+              {openCategory.subcat.map((sub) => (
+                <div key={sub.id} className="rounded-lg bg-white shadow">
+                  <button
+                    onClick={() => toggleSubCategory(sub.id)}
+                    className="flex w-full items-center justify-between px-4 py-3 text-right text-gray-900"
+                  >
+                    <span>{sub.name}</span>
+                    <span className="material-icons">
+                      {openSubCategory === sub.id ? "expand_less" : "expand_more"}
                     </span>
-                    <button
-                      onClick={() => setOpenCategory(null)}
-                      aria-label="بازگشت به دسته‌بندی‌های اصلی"
-                      className="p-1 rounded hover:bg-gray-100"
-                    >
-                      <ArrowBack />
-                    </button>
-                  </div>
-                  {/* Sub-Menu Content */}
-                  <div className="flex w-full flex-col bg-white p-3">
-                    {item.subcat.map((sub) => (
-                      <div
-                        key={sub.id}
-                        className={`sub-item ${openCategory === item.id ? "open" : ""}`}
+                  </button>
+                  <AnimatePresence>
+                    {openSubCategory === sub.id && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25 }}
+                        className="px-4 pb-3"
                       >
-                        <button
-                          onClick={() => toggleSubCategory(sub.id)}
-                          className="flex w-full items-center justify-between px-3 py-3 text-gray-900 border-b border-gray-200"
-                          aria-expanded={openSubCategory === sub.id}
-                        >
-                          <span className="text-primary">
-                            <a
-                              href={`/search?mothercatId=${item.id}&subcatId=${sub.id}`}
-                              className="text-gray-900 hover:text-[#805B99]"
-                            >
-                              {sub.name}
-                            </a>
-                          </span>
-                          <span
-                            className={`material-icons h-5 w-5 arrow ${
-                              openSubCategory === sub.id ? "open" : ""
-                            }`}
+                        {sub.items.map((subItem) => (
+                          <a
+                            key={subItem.id}
+                            href={`/search?mothercatId=${openCategory.id}&subcatId=${sub.id}`}
+                            className="block rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-[#805B99]"
                           >
-                            expand_more
-                          </span>
-                        </button>
-                        {openSubCategory === sub.id && (
-                          <div className="pl-4">
-                            {sub.items.map((subItem) => (
-                              <div key={subItem.id} className="py-1">
-                                <a
-                                  href={`/search?mothercatId=${item.id}&subcatId=${sub.id}`}
-                                  className="block px-3 py-2 text-secondary hover:text-[#805B99] hover:bg-indigo-50 rounded-md"
-                                >
-                                  {subItem.name}
-                                </a>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                            {subItem.name}
+                          </a>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              </div>
-            )
-        )}
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

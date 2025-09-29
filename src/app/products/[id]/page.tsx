@@ -1,7 +1,3 @@
-import WideHeaderContainer from '@/Components/Header/WideHeader/WideHeaderContainer';
-import MoblieHeaderTopTab from '@/Components/Header/MobileHeader/MoblieHeaderTopTab';
-import MobileBottomNavigation from '@/Components/Header/MobileHeader/MobileBottomNavigation';
-import FooterContainer from '@/Components/Footer/FooterContainer';
 import BreadCrumbs from '@/Components/Utils/BreadCrumbs';
 import { SingleProductContainer } from '@/Components/SingleProductComponents/SingleProductContainer';
 import { Product } from '@/types/types';
@@ -26,12 +22,10 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   return (
     <>
-      <WideHeaderContainer />
-      <MoblieHeaderTopTab />
+
       <BreadCrumbs />
       <SingleProductContainer infoproduct={product} />
-      <FooterContainer />
-      <MobileBottomNavigation />
+    
     </>
   );
 }
