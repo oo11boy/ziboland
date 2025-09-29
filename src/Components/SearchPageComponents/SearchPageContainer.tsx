@@ -43,7 +43,6 @@ export default function SearchPageContainer({
   const { dispatch } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Categoryapi[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBrands, setSelectedBrands] = useState<string[]>(
@@ -80,7 +79,7 @@ export default function SearchPageContainer({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
+    
 
         // Fetch products
         const productsResponse = await fetch("/api/products");
@@ -98,11 +97,10 @@ export default function SearchPageContainer({
         const categoriesData: Categoryapi[] = await categoriesResponse.json();
         setCategories(categoriesData);
 
-        setLoading(false);
       } catch (err) {
         setError("خطا در بارگذاری داده‌ها. لطفاً دوباره تلاش کنید.");
         console.log(err);
-        setLoading(false);
+    
         toast.error("خطا در بارگذاری داده‌ها", {
           position: "top-center",
           autoClose: 3000,

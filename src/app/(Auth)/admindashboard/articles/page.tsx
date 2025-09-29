@@ -18,18 +18,17 @@ interface Article {
 
 export default function ArticlesPage() {
   const [articles, setArticles] = useState<Article[]>([]);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch(`${API}/articles`)
       .then(res => res.json())
       .then(data => {
         setArticles(data);
-        setLoading(false);
+   
       })
       .catch(err => {
         console.error("Error fetching articles:", err);
-        setLoading(false);
+  
       });
   }, []);
 

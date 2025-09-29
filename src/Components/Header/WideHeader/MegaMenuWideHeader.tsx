@@ -11,7 +11,7 @@ import { Categoryapi } from "@/types/types";
 export default function MegaMenuWideHeader() {
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const [categories, setCategories] = useState<Categoryapi[]>([]);
-  const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -20,18 +20,18 @@ export default function MegaMenuWideHeader() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        setLoading(true);
+      
         const response = await fetch("/api/categories");
         if (!response.ok) {
           throw new Error("Failed to fetch categories");
         }
         const categoriesData: Categoryapi[] = await response.json();
         setCategories(categoriesData);
-        setLoading(false);
+  
       } catch (err) {
         setError("خطا در بارگذاری دسته‌بندی‌ها. لطفاً دوباره تلاش کنید.");
         console.log(err)
-        setLoading(false);
+      
         toast.error("خطا در بارگذاری دسته‌بندی‌ها", {
           position: "top-center",
           autoClose: 3000,

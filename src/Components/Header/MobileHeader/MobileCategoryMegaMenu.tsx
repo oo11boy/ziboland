@@ -39,7 +39,8 @@ export default function MobileCategoryMegaMenu() {
         const categoriesData: Categoryapi[] = await response.json();
         setCategories(categoriesData);
       } catch (err) {
-        setError("خطا در بارگذاری دسته‌بندی‌ها. لطفاً دوباره تلاش کنید.");
+        
+        setError("خطا در بارگذاری دسته‌بندی‌ها. لطفاً دوباره تلاش کنید."+err);
         toast.error("خطا در بارگذاری دسته‌بندی‌ها", {
           position: "top-center",
           autoClose: 3000,

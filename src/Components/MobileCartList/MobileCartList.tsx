@@ -8,7 +8,7 @@ import {
   RemoveCircleOutline,
   Close,
   ShoppingCart,
-  ArrowUpward,
+
 } from "@mui/icons-material";
 import Link from "next/link";
 import { API } from "@/lib/MainRoutes";
@@ -23,7 +23,6 @@ export default function MobileCartList() {
 
   // نگهداری محصولات کش‌شده
   const [productsMap, setProductsMap] = useState<Record<number, Product>>({});
-  const [loadingIds, setLoadingIds] = useState<Record<number, boolean>>({});
 
   // رفرنس‌ها برای اسکرول و اندازه‌گیری هدر
   const headerRef = useRef<HTMLDivElement | null>(null);
@@ -53,7 +52,7 @@ export default function MobileCartList() {
   const fetchProduct = async (id: number) => {
     if (productsMap[id]) return productsMap[id];
     try {
-      setLoadingIds((s) => ({ ...s, [id]: true }));
+  
       const res = await fetch(`${API}/products/${id}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`Failed to fetch product ${id}`);
       const product: Product = await res.json();
@@ -63,11 +62,7 @@ export default function MobileCartList() {
       console.error(err);
       return null;
     } finally {
-      setLoadingIds((s) => {
-        const copy = { ...s };
-        delete copy[id];
-        return copy;
-      });
+
     }
   };
 
