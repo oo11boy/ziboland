@@ -15,7 +15,7 @@ export default function page() {
       <CategoriesContainer />
       <BenefitsContainer />
       <ProductSliderContainer vip={true} />
-      <TabProductsSliderContainer title="پرفروشترین ها" />
+      <TabProductsSliderContainer title="محبوبترین ها" />
       <Banners />
       <TabProductsSliderContainer title="ارزانترین ها" />
       <Banners />

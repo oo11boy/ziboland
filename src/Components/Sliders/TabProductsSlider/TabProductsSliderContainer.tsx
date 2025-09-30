@@ -19,6 +19,10 @@ import {
   VisibilitySharp,
 } from "@mui/icons-material";
 import Link from "next/link";
+import { Product } from "@/types/types";
+import { useCart } from "@/ContextApi/CartContext";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -28,7 +32,6 @@ interface TabPanelProps {
 
 function CustomTabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
-
   return (
     <div
       role="tabpanel"
@@ -53,326 +56,50 @@ function a11yProps(index: number) {
   };
 }
 
-export const productdata = [
-  {
-    id: 1,
-    brand: "پیکسل",
-    title: "ضد آفتاب بدون رنگ مناسب پوست های جوش دار و چرب حجم 50 میلی لیتر",
-    image:
-      "https://storage.khanoumi.com/ProductImages/5666500020-202491110947692.jpg?w=104",
-    originalPrice: "479,000",
-    discountedPrice: "431,100",
-    wholesalePrice: "400,000",
-    discountwholesalePrice: "340,000",
-    minwholesale: 2,
-    discount: "10%",
-    discountwholesale: "15%",
-    category: "مراقبت پوست",
-  },
-  {
-    id: 2,
-    brand: "مورینگا",
-    title: "سرم ضد چروک صورت حجم 55 میلی لیتر",
-    image:
-      "https://storage.khanoumi.com/ProductImages/49631-2024619172532356.jpg?w=104",
-    originalPrice: "389,400",
-    discountedPrice: "298,900",
-    wholesalePrice: "270,000",
-    discountwholesalePrice: "229,500",
-    discount: "23%",
-    minwholesale: 6,
-    discountwholesale: "15%",
-    category: "مراقبت پوست",
-  },
-  {
-    id: 3,
-    brand: "پرایم",
-    title: "کرم مرطوب کننده 24 ساعته",
-    image:
-      "https://storage.khanoumi.com/ProductImages/00-2024415162411605.jpg?w=104",
-    originalPrice: "597,000",
-    discountedPrice: "537,300",
-    wholesalePrice: "500,000",
-    discountwholesalePrice: "450,000",
-    minwholesale: 2,
-    discount: "10%",
-    discountwholesale: "10%",
-    category: "مراقبت پوست",
-  },
-  {
-    id: 4,
-    brand: "لافارر",
-    title:
-      "ژل شستشو صورت مدل لایه بردار شماره 1 مناسب پوست چرب و مستعد آکنه حجم 150 میلی لیتر",
-    image:
-      "https://storage.khanoumi.com/ProductImages/ییث-2024123184526759.jpg?w=104",
-    originalPrice: "631,900",
-    discountedPrice: "568,710",
-    wholesalePrice: "530,000",
-    discountwholesalePrice: "450,500",
-    minwholesale: 2,
-    discount: "10%",
-    discountwholesale: "15%",
-    category: "مراقبت پوست",
-  },
-  {
-    id: 5,
-    brand: "تکنو درای",
-    title: "سشوار حرفه ای مدل Tornado 6000",
-    image:
-      "https://storage.khanoumi.com/ProductImages/82911-2024122215532624.jpg?w=104",
-    originalPrice: "4,510,000",
-    discountedPrice: "4,370,000",
-    minwholesale: 2,
-    wholesalePrice: "4,100,000",
-    discountwholesalePrice: "3,280,000",
-    discount: "3%",
-    discountwholesale: "20%",
-    category: "مراقبت مو",
-  },
-  {
-    id: 6,
-    brand: "دیفکتو",
-    title: "ژل ابرو ژلی کاسه ای 25ml",
-    image:
-      "https://storage.khanoumi.com/ProductImages/71279-2025414155838450.jpg?w=104",
-    originalPrice: "177,000",
-    discountedPrice: "123,900",
-    wholesalePrice: "110,000",
-    minwholesale: 2,
-    discountwholesalePrice: "99,000",
-    discount: "30%",
-    discountwholesale: "10%",
-    category: "مراقبت مو",
-  },
-  {
-    id: 7,
-    brand: "کلاژینو",
-    title: "ساشه Collagen Beauty بسته 30 عددی",
-    image:
-      "https://storage.khanoumi.com/ProductImages/77211-2025414161656479.jpg?w=104",
-    originalPrice: "1,081,800",
-    discountedPrice: "749,000",
-    wholesalePrice: "700,000",
-    minwholesale: 2,
-    discountwholesalePrice: "560,000",
-    discount: "31%",
-    discountwholesale: "20%",
-    category: "مراقبت پوست",
-  },
-  {
-    id: 8,
-    brand: "تاپ شاپ",
-    title: "ماسک مو با آب کشی حاوی روغن آرگان حجم 500 میلی لیتر",
-    image:
-      "https://storage.khanoumi.com/ProductImages/DSC00012-202469163231910.jpg?w=104",
-    originalPrice: "557,900",
-    discountedPrice: "502,110",
-    minwholesale: 2,
-    wholesalePrice: "470,000",
-    discountwholesalePrice: "423,000",
-    discount: "10%",
-    discountwholesale: "10%",
-    category: "مراقبت مو",
-  },
-  {
-    id: 9,
-    brand: "هات لاو",
-    title: "ادو پرفیوم زنانه مدل Victoria Secret Bombshell حجم 100 میلی لیتر",
-    image:
-      "https://storage.khanoumi.com/ProductImages/Birsen-3P-Retinol-Serum-30-ml-2024115141356583.jpg?w=130",
-    originalPrice: "990,000",
-    discountedPrice: "689,000",
-    wholesalePrice: "650,000",
-    discountwholesalePrice: "520,000",
-    minwholesale: 2,
-    discount: "30%",
-    discountwholesale: "20%",
-    category: "عطر و ادکلن",
-  },
-  {
-    id: 10,
-    brand: "نیوآ",
-    title: "کرم ضد آفتاب SPF 50+ حجم 50 میلی لیتر",
-    image:
-      "https://storage.khanoumi.com/ProductImages/LSNL100006-2024622124819951.jpg?w=130",
-    originalPrice: "250,000",
-    discountedPrice: "200,000",
-    wholesalePrice: "180,000",
-    discountwholesalePrice: "171,000",
-    discount: "20%",
-    minwholesale: 4,
-    discountwholesale: "5%",
-    category: "مراقبت پوست",
-  },
-  {
-    id: 11,
-    brand: "گارنیر",
-    title: "شامپو تقویت کننده موهای ضعیف حجم 400 میلی لیتر",
-    image:
-      "https://storage.khanoumi.com/ProductImages/06c20775369143469e025270cb4c8c91.jpg?w=130",
-    originalPrice: "180,000",
-    discountedPrice: "144,000",
-    minwholesale: 3,
-    wholesalePrice: "130,000",
-    discountwholesalePrice: "123,500",
-    discount: "20%",
-    discountwholesale: "5%",
-    category: "مراقبت مو",
-  },
-  {
-    id: 12,
-    brand: "لورآل",
-    title: "رژ لب مات سری Rouge Signature",
-    image:
-      "https://storage.khanoumi.com/ProductImages/36317-(2)-2024818154254290.jpg?w=130",
-    originalPrice: "350,000",
-    discountedPrice: "280,000",
-    minwholesale: 3,
-    wholesalePrice: "260,000",
-    discountwholesalePrice: "221,000",
-    discount: "20%",
-    discountwholesale: "15%",
-    category: "آرایشی",
-  },
-  {
-    id: 13,
-    brand: "میبلین",
-    title: "ریمل حجم دهنده Lash Sensational",
-    image:
-      "https://storage.khanoumi.com/ProductImages/_DSC9896-202553145317830.jpg?w=130",
-    originalPrice: "290,000",
-    discountedPrice: "232,000",
-    minwholesale: 4,
-    wholesalePrice: "210,000",
-    discountwholesalePrice: "178,500",
-    discount: "20%",
-    discountwholesale: "15%",
-    category: "آرایشی",
-  },
-  {
-    id: 14,
-    brand: "اوریف لیم",
-    title: "عطر مردانه Eclat Homme حجم 75 میلی لیتر",
-    image:
-      "https://storage.khanoumi.com/ProductImages/1-2025423161754498.jpg?w=130",
-    originalPrice: "1,200,000",
-    discountedPrice: "960,000",
-    wholesalePrice: "900,000",
-    minwholesale: 5,
-    discountwholesalePrice: "675,000",
-    discount: "20%",
-    discountwholesale: "25%",
-    category: "عطر و ادکلن",
-  },
-  {
-    id: 15,
-    brand: "سفورا",
-    title: "پالت سایه چشم Urban Decay Naked3",
-    image:
-      "https://storage.khanoumi.com/ProductImages/8202400005-20241020143719448.jpg?w=130",
-    originalPrice: "2,500,000",
-    discountedPrice: "2,000,000",
-    wholesalePrice: "1,850,000",
-    discountwholesalePrice: "1,387,500",
-    minwholesale: 2,
-    discount: "20%",
-    discountwholesale: "25%",
-    category: "آرایشی",
-  },
-  {
-    id: 16,
-    brand: "دکتر ژیلا",
-    title: "کرم دور چشم ضد چروک حجم 20 میلی لیتر",
-    image:
-      "https://storage.khanoumi.com/ProductImages/1-20241211974877.jpg?w=130",
-    originalPrice: "320,000",
-    discountedPrice: "256,000",
-    minwholesale: 2,
-    wholesalePrice: "240,000",
-    discountwholesalePrice: "216,000",
-    discount: "20%",
-    discountwholesale: "10%",
-    category: "مراقبت پوست",
-  },
-  {
-    id: 17,
-    brand: "پنتن",
-    title: "شامپو ضد ریزش مو حجم 350 میلی لیتر",
-    image:
-      "https://storage.khanoumi.com/ProductImages/1-20241211974877.jpg?w=130",
-    originalPrice: "150,000",
-    minwholesale: 2,
-    discountedPrice: "120,000",
-    wholesalePrice: "110,000",
-    discountwholesalePrice: "99,000",
-    discount: "20%",
-    discountwholesale: "10%",
-    category: "مراقبت مو",
-  },
-  {
-    id: 18,
-    brand: "رولون",
-    title: "لاک ناخن سری ColorStay",
-    image:
-      "https://storage.khanoumi.com/ProductImages/76350-2024810143222929.jpg?w=130",
-    originalPrice: "200,000",
-    discountedPrice: "160,000",
-    wholesalePrice: "150,000",
-    discountwholesalePrice: "142,500",
-    minwholesale: 2,
-    discount: "20%",
-    discountwholesale: "5%",
-    category: "آرایشی",
-  },
-  {
-    id: 19,
-    brand: "کرید",
-    title: "عطر Aventus حجم 100 میلی لیتر",
-    image:
-      "https://storage.khanoumi.com/ProductImages/DSC00012-202469163231910.jpg?w=130",
-    originalPrice: "3,800,000",
-    discountedPrice: "3,040,000",
-    wholesalePrice: "2,800,000",
-    minwholesale: 2,
-    discountwholesalePrice: "2,100,000",
-    discount: "20%",
-    discountwholesale: "25%",
-    category: "عطر و ادکلن",
-  },
-  {
-    id: 20,
-    brand: "بیودرما",
-    title: "میسلار واتر پاک کننده آرایش حجم 250 میلی لیتر",
-    image:
-      "https://storage.khanoumi.com/ProductImages/5666500020-202491110947692.jpg?w=130",
-    originalPrice: "450,000",
-    discountedPrice: "360,000",
-    wholesalePrice: "330,000",
-    minwholesale: 2,
-    discountwholesalePrice: "297,000",
-    discount: "20%",
-    discountwholesale: "10%",
-    category: "مراقبت پوست",
-  },
-];
-
-interface CartItem {
-  id: number;
-  title: string;
-  quantity: number;
-  priceType: "single" | "wholesale";
-  price: string;
-}
-
 export default function TabProductsSliderContainer({ title }: { title: string }) {
   const [value, setValue] = useState(0);
+  const { dispatch } = useCart();
   const [cartQuantities, setCartQuantities] = useState<{ [key: number]: number }>({});
   const [priceTypes, setPriceTypes] = useState<{ [key: number]: "single" | "wholesale" }>({});
-  const [cart, setCart] = useState<CartItem[]>([]);
   const [showQuantitySelector, setShowQuantitySelector] = useState<number | null>(null);
   const swiperRefs = useRef<{ [key: number]: { swiper: SwiperCore } | null }>({});
   const [navStates, setNavStates] = useState<{ [key: number]: { showPrev: boolean; showNext: boolean; isBeginning: boolean } }>({});
+  const [products, setProducts] = useState<Product[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  // دریافت محصولات از API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("/api/products");
+        if (!response.ok) throw new Error("خطا در دریافت محصولات");
+        const data: Product[] = await response.json();
+
+        let sortedProducts = data;
+        if (title === "محبوبترین ها") {
+          sortedProducts = [...data].sort((a, b) => b.rating - a.rating);
+        } else if (title === "ارزانترین ها") {
+          sortedProducts = [...data].sort((a, b) => a.numericPrice - b.numericPrice);
+        } else if (title === "جدیدترین ها") {
+          sortedProducts = [...data].sort((a, b) => b.id - a.id);
+        }
+        setProducts(sortedProducts);
+      } catch (err) {
+        setError("خطا در بارگذاری محصولات. لطفاً دوباره تلاش کنید.");
+        console.error(err);
+      }
+    };
+    fetchProducts();
+  }, [title]);
+
+  // تنظیمات اولیه برای priceTypes
+  useEffect(() => {
+    const initialPriceTypes = products.reduce(
+      (acc, product) => ({ ...acc, [product.id]: "single" }),
+      {}
+    );
+    setPriceTypes(initialPriceTypes);
+  }, [products]);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -385,6 +112,17 @@ export default function TabProductsSliderContainer({ title }: { title: string })
   const handleQuantityChange = (productId: number, delta: number) => {
     setCartQuantities((prev) => {
       const newQuantity = (prev[productId] || 0) + delta;
+      const product = products.find((p) => p.id === productId);
+
+      if (!product) return prev;
+
+      // تنظیم خودکار نوع قیمت
+      if (newQuantity >= product.minwholesale) {
+        handlePriceTypeChange(productId, "wholesale");
+      } else {
+        handlePriceTypeChange(productId, "single");
+      }
+
       return { ...prev, [productId]: newQuantity < 0 ? 0 : newQuantity };
     });
   };
@@ -394,40 +132,89 @@ export default function TabProductsSliderContainer({ title }: { title: string })
   };
 
   const handleAddToCart = (productId: number) => {
-    console.log(cart)
-    const product = productdata.find((p) => p.id === productId);
-    if (!product || !cartQuantities[productId]) return;
-
-    const quantity = cartQuantities[productId];
-    const priceType = priceTypes[productId] || "single";
-
-    if (priceType === "wholesale" && quantity < product.minwholesale) {
-      alert(`حداقل تعداد برای قیمت عمده ${product.minwholesale} عدد است.`);
+    const product = products.find((p) => p.id === productId);
+    if (!product || !cartQuantities[productId] || cartQuantities[productId] < 1) {
+      toast.error("لطفاً تعداد محصول را انتخاب کنید", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "colored",
+      });
       return;
     }
 
-    const cartItem: CartItem = {
-      id: productId,
-      title: product.title,
-      quantity,
-      priceType,
-      price: priceType === "single" ? product.discountedPrice : product.discountwholesalePrice,
-    };
+    if (!product.inStock) {
+      toast.error("محصول موجود نیست", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "colored",
+      });
+      return;
+    }
 
-    setCart((prev) => {
-      const existingItem = prev.find((item) => item.id === productId && item.priceType === priceType);
-      if (existingItem) {
-        return prev.map((item) =>
-          item.id === productId && item.priceType === priceType
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      }
-      return [...prev, cartItem];
-    });
+    const quantity = cartQuantities[productId];
+    const priceType = priceTypes[productId] || "single";
+    const price = priceType === "single" ? product.discountedPrice : product.discountwholesalePrice;
+    const discount = priceType === "single" ? product.discount : product.discountwholesale;
 
-    setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
-    setShowQuantitySelector(null);
+    if (priceType === "wholesale" && quantity < product.minwholesale) {
+      toast.error(`حداقل تعداد برای قیمت عمده ${product.minwholesale} عدد است.`, {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "colored",
+      });
+      return;
+    }
+
+    try {
+      dispatch({
+        type: "ADD_ITEM",
+        payload: {
+          id: productId,
+          title: product.title,
+          quantity,
+          priceType,
+          price: price.toString(),
+          image: product.image || "/placeholder.jpg",
+          discount,
+        },
+      });
+
+      toast.success("محصول به سبد خرید اضافه شد!", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "colored",
+      });
+
+      setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
+      setShowQuantitySelector(null);
+    } catch (error) {
+      toast.error("خطا در اضافه کردن محصول به سبد خرید", {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "colored",
+      });
+      console.error("Error adding to cart:", error);
+    }
   };
 
   const updateNavigation = (index: number) => {
@@ -435,10 +222,10 @@ export default function TabProductsSliderContainer({ title }: { title: string })
       const swiper = swiperRefs.current[index].swiper;
       setNavStates((prev) => ({
         ...prev,
-        [index]: { 
-          showPrev: !swiper.isBeginning, 
-          showNext: !swiper.isEnd, 
-          isBeginning: swiper.isBeginning 
+        [index]: {
+          showPrev: !swiper.isBeginning,
+          showNext: !swiper.isEnd,
+          isBeginning: swiper.isBeginning,
         },
       }));
     }
@@ -457,12 +244,6 @@ export default function TabProductsSliderContainer({ title }: { title: string })
   };
 
   useEffect(() => {
-    const initialPriceTypes = productdata.reduce(
-      (acc, product) => ({ ...acc, [product.id]: "single" }),
-      {}
-    );
-    setPriceTypes(initialPriceTypes);
-
     categories.forEach((_, index) => {
       if (swiperRefs.current[index]?.swiper) {
         const swiper = swiperRefs.current[index].swiper;
@@ -478,16 +259,40 @@ export default function TabProductsSliderContainer({ title }: { title: string })
         }
       });
     };
-  }, []);
+  }, [products]);
 
-  const categories = Array.from(new Set(productdata.map((product) => product.category)));
-  const productsByCategory = categories.map((category) => productdata.filter((product) => product.category === category));
+  const categoryCounts = products.reduce((acc, product) => {
+    acc[product.category] = (acc[product.category] || 0) + 1;
+    return acc;
+  }, {} as { [key: string]: number });
+
+  const categories = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
+
+  const productsByCategory = categories.map((category) =>
+    products.filter((product) => product.category === category)
+  );
+
+  if (error) {
+    return <div className="text-red-500 text-center">{error}</div>;
+  }
 
   return (
     <div className="tpsc-container">
+      <ToastContainer
+        position="top-center"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={true}
+        closeOnClick
+        rtl={true}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
       <div className="tpsc-header">
         <p className="tpsc-title">{title}</p>
-        <Link href="/" className="tpsc-view-all">
+        <Link href="../search" className="tpsc-view-all">
           <VisibilitySharp fontSize="inherit" className="tpsc-view-all-icon" />
           مشاهده همه
         </Link>
@@ -548,17 +353,27 @@ export default function TabProductsSliderContainer({ title }: { title: string })
                         <p>{item.minwholesale} عدد</p>
                       </div>
                     )}
-                    <img src={item.image} className="tpsc-product-image" alt={item.title} />
-                    <h2 className="tpsc-product-title">{item.title}</h2>
+                    <img
+                      src={item.image || "/placeholder.jpg"}
+                      className="tpsc-product-image"
+                      alt={item.title}
+                    />
+                    <Link href={`../products/${item.id}`} className="tpsc-product-title">
+                      {item.title}
+                    </Link>
                     <div className="tpsc-price-buttons">
                       <button
-                        className={`tpsc-price-button ${priceTypes[item.id] === "wholesale" ? "tpsc-price-button-active" : ""}`}
+                        className={`tpsc-price-button ${
+                          priceTypes[item.id] === "wholesale" ? "tpsc-price-button-active" : ""
+                        }`}
                         onClick={() => handlePriceTypeChange(item.id, "wholesale")}
                       >
                         قیمت عمده
                       </button>
                       <button
-                        className={`tpsc-price-button ${priceTypes[item.id] === "single" ? "tpsc-price-button-active" : ""}`}
+                        className={`tpsc-price-button ${
+                          priceTypes[item.id] === "single" ? "tpsc-price-button-active" : ""
+                        }`}
                         onClick={() => handlePriceTypeChange(item.id, "single")}
                       >
                         قیمت تکی
@@ -598,11 +413,17 @@ export default function TabProductsSliderContainer({ title }: { title: string })
                           <RemoveCircleOutline fontSize="small" />
                         </button>
                       </div>
-                      <button className="tpsc-add-to-cart" onClick={() => handleShowQuantitySelector(item.id)}>
+                      <button
+                        className="tpsc-add-to-cart"
+                        onClick={() => handleShowQuantitySelector(item.id)}
+                      >
                         <AddShoppingCart fontSize="small" />
                       </button>
                       {showQuantitySelector === item.id && (
-                        <div className="tpsc-quantity-selector relative" onClick={(e) => e.stopPropagation()}>
+                        <div
+                          className="tpsc-quantity-selector relative"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <button onClick={() => handleQuantityChange(item.id, 1)}>
                             <AddCircleOutline fontSize="small" />
                           </button>
@@ -635,13 +456,11 @@ export default function TabProductsSliderContainer({ title }: { title: string })
             </Swiper>
           </CustomTabPanel>
         ))}
-        {/* دکمه بعدی فقط در موبایل وقتی در ابتدای اسلاید هستیم نمایش داده شود */}
         {navStates[value]?.isBeginning && (
           <button onClick={() => goNext(value)} className="tpsc-nav-button tpsc-next-button tpsc-next-button-mobile">
             <KeyboardArrowLeft fontSize="medium" />
           </button>
         )}
-        {/* دکمه قبلی و بعدی در دسکتاپ */}
         {navStates[value]?.showPrev && (
           <button onClick={() => goPrev(value)} className="tpsc-nav-button tpsc-prev-button tpsc-prev-button-desktop">
             <KeyboardArrowRight fontSize="medium" />
