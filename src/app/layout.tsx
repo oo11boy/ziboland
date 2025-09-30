@@ -6,6 +6,7 @@ import WideHeaderContainer from "@/Components/Header/WideHeader/WideHeaderContai
 import FooterContainer from "@/Components/Footer/FooterContainer";
 import MobileBottomNavigation from "@/Components/Header/MobileHeader/MobileBottomNavigation";
 import MoblieHeaderTopTab from "@/Components/Header/MobileHeader/MoblieHeaderTopTab";
+import { AuthProvider } from "@/ContextApi/AuthContext";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -22,6 +23,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         />
       </head>
       <body >
+        <AuthProvider>
+          
         <CartProvider>
           <WideHeaderContainer />
           <MoblieHeaderTopTab />
@@ -29,6 +32,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <FooterContainer />
           <MobileBottomNavigation />
         </CartProvider>
+        
+        </AuthProvider>
       </body>
     </html>
   );

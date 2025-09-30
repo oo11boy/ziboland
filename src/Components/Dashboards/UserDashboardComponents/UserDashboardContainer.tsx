@@ -9,8 +9,16 @@ import WishlistContent from "./WishlistContent";
 import TicketsContent from "./TicketsContent";
 import AddressesContent from "./AddressesContent";
 import AccountContent from "./AccountContent";
-import { AccountInfo, Address, Order, RecentActivity, SupportTicket, TrackingResult, WishlistItem } from "@/types/types";
-
+import {
+  AccountInfo,
+  Address,
+  Order,
+  RecentActivity,
+  SupportTicket,
+  TrackingResult,
+  WishlistItem,
+} from "@/types/types";
+import { useAuth } from "@/ContextApi/AuthContext";
 
 export default function UserDashboardContainer() {
   const [activeTab, setActiveTab] = useState<string>("dashboard");
@@ -66,6 +74,7 @@ export default function UserDashboardContainer() {
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>(
     []
   );
+  const { logout } = useAuth();
 
   const token = Cookies.get("authToken");
 
@@ -189,36 +198,36 @@ export default function UserDashboardContainer() {
     }
   };
 
-const handleTrackOrder = async () => {
-  setTrackingResult(null); // Clear previous result
-  setTrackingError(""); // Clear previous error
-  if (!orderTrackingId.trim()) {
-    setTrackingError("لطفاً شماره سفارش را وارد کنید.");
-    return;
-  }
-  if (!/^\d+$/.test(orderTrackingId)) {
-    setTrackingError("شماره سفارش باید فقط شامل اعداد باشد.");
-    return;
-  }
-  try {
-    const res = await fetch(`/api/orders/track/${orderTrackingId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (res.ok) {
-      const data = await res.json();
-      setTrackingResult(data);
-      setTrackingError("");
-    } else {
-      const errorData = await res.json();
-      setTrackingResult(null);
-      setTrackingError(errorData.error || "سفارش با این شماره یافت نشد.");
-    }
-  } catch (err) {
+  const handleTrackOrder = async () => {
     setTrackingResult(null);
-    setTrackingError("خطا در پیگیری سفارش.");
-    console.log(err)
-  }
-};
+    setTrackingError("");
+    if (!orderTrackingId.trim()) {
+      setTrackingError("لطفاً شماره سفارش را وارد کنید.");
+      return;
+    }
+    if (!/^\d+$/.test(orderTrackingId)) {
+      setTrackingError("شماره سفارش باید فقط شامل اعداد باشد.");
+      return;
+    }
+    try {
+      const res = await fetch(`/api/orders/track/${orderTrackingId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTrackingResult(data);
+        setTrackingError("");
+      } else {
+        const errorData = await res.json();
+        setTrackingResult(null);
+        setTrackingError(errorData.error || "سفارش با این شماره یافت نشد.");
+      }
+    } catch (err) {
+      setTrackingResult(null);
+      setTrackingError("خطا در پیگیری سفارش.");
+      console.log(err);
+    }
+  };
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
@@ -291,7 +300,7 @@ const handleTrackOrder = async () => {
       }
     } catch (err) {
       setAddressError("خطا در ارتباط با سرور");
-      console.log(err)
+      console.log(err);
     }
   };
 
@@ -348,7 +357,7 @@ const handleTrackOrder = async () => {
       }
     } catch (err) {
       setTicketError("خطا در ثبت تیکت");
-      console.log(err)
+      console.log(err);
     }
   };
 
@@ -374,8 +383,6 @@ const handleTrackOrder = async () => {
     setSelectedOrder(order);
     setIsOrderModalOpen(true);
   };
-
-
 
   const handleAddToCart = async (item: WishlistItem) => {
     try {
@@ -431,7 +438,7 @@ const handleTrackOrder = async () => {
       }
     } catch (err) {
       alert("خطا در ذخیره تغییرات");
-      console.log(err)
+      console.log(err);
     }
   };
 
@@ -457,7 +464,7 @@ const handleTrackOrder = async () => {
         isSidebarOpen={isSidebarOpen}
         toggleSidebar={toggleSidebar}
         accountInfo={accountInfo}
-        handleLogout={handleLogout}
+        handleLogout={logout} // استفاده از logout از Context
       />
       <main className="ud-main">
         {activeTab === "dashboard" && (
@@ -482,7 +489,6 @@ const handleTrackOrder = async () => {
             isOrderModalOpen={isOrderModalOpen}
             setIsOrderModalOpen={setIsOrderModalOpen}
             handleViewOrderDetails={handleViewOrderDetails}
-          
             modalStyle={modalStyle}
           />
         )}
@@ -539,9 +545,4 @@ const handleTrackOrder = async () => {
       </main>
     </div>
   );
-}
-
-function handleLogout() {
-  Cookies.remove("authToken");
-  window.location.href = "/myaccount";
 }

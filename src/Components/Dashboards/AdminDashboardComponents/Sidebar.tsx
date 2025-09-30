@@ -3,11 +3,11 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, ShoppingBag, Tag, Building, MessageCircle, BarChart3, Settings, Menu, X, LogOut, Ticket, Package } from "lucide-react";
-import Cookies from "js-cookie";
+import { useAuth } from "@/ContextApi/AuthContext";
 
 const Sidebar = () => {
   const pathname = usePathname();
-  const router = useRouter();
+const {logout}=useAuth()
   const [isOpen, setIsOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -24,15 +24,7 @@ const Sidebar = () => {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      Cookies.remove("authToken");
-      router.push("/myaccount");
-    } catch (err) {
-      console.error("Logout failed:", err);
-    }
-  };
+
 
   const navItems = [
     { href: "/admindashboard", label: "داشبورد", icon: Home },
@@ -117,7 +109,7 @@ const Sidebar = () => {
             })}
             <li>
               <button
-                onClick={handleLogout}
+                onClick={logout}
                 className="flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full"
               >
                 <LogOut size={20} className={`${isOpen ? "ml-3" : "mx-auto"} flex-shrink-0`} />

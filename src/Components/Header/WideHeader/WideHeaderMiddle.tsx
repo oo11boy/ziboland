@@ -7,6 +7,7 @@ import {
   Close,
   AddCircleOutline,
   RemoveCircleOutline,
+  AccountCircle,
 } from "@mui/icons-material";
 import Link from "next/link";
 import React, { useState } from "react";
@@ -15,9 +16,12 @@ import { toast } from "react-toastify";
 import { useCart } from "@/ContextApi/CartContext";
 import { Product } from "@/types/types";
 import { API } from "@/lib/MainRoutes";
+import { useAuth } from "@/ContextApi/AuthContext";
+import { User2Icon } from "lucide-react";
 
 export default function WideHeaderMiddle() {
-  const { state: { cartItems }, dispatch } = useCart();
+  const { state: { cartItems}, dispatch } = useCart();
+  const { isLoggedIn } = useAuth(); // استفاده از Context به‌جای state
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   const [productsMap, setProductsMap] = useState<Record<number, Product>>({});
 
@@ -25,7 +29,7 @@ export default function WideHeaderMiddle() {
 
   // دریافت داده‌های محصول از API
   const fetchProduct = async (id: number) => {
-    if (productsMap[id]) return productsMap[id]; // جلوگیری از fetch دوباره
+    if (productsMap[id]) return productsMap[id];
     try {
       const res = await fetch(`${API}/products/${id}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`Failed to fetch product ${id}`);
@@ -125,7 +129,6 @@ export default function WideHeaderMiddle() {
 
   return (
     <section className="bg-[#F9F9F9] w-full py-2">
-      {/* هدر اصلی */}
       <div className="flex justify-between h-auto items-center w-[90%] gap-2 m-auto">
         <div className="flex w-[33%] gap-3 items-center">
           <Link href={'../'} className="flex items-center">
@@ -150,8 +153,18 @@ export default function WideHeaderMiddle() {
             href={"../myaccount"}
             className="flex items-center gap-2 hover:bg-[#EBEBEB] hover:text-[black] p-2 rounded-lg border border-[#d9d6d6] text-base hover:border-[#C7C7C7]"
           >
-            <LoginOutlined fontSize="small" />
-            ورود | عضویت
+{isLoggedIn ? (
+              <>
+                <AccountCircle fontSize="small" />
+                <span>مدیریت حساب</span>
+              </>
+            ) : (
+              <>
+                <LoginOutlined fontSize="small" />
+                <span>ورود | عضویت</span>
+              </>
+            )}
+           
           </Link>
           <button className="relative flex items-center gap-2 p-2 hover:bg-[#EBEBEB] hover:text-[black] rounded-lg border border-[#d9d6d6] hover:border-[#C7C7C7]">
             <FavoriteBorderOutlined fontSize="medium" />
@@ -171,7 +184,6 @@ export default function WideHeaderMiddle() {
         </div>
       </div>
 
-      {/* مودال سبد خرید */}
       <AnimatePresence>
         {isCartModalOpen && (
           <>

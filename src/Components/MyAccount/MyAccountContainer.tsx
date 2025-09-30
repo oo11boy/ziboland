@@ -2,11 +2,10 @@
 import React, { useState } from "react";
 import { Email, Lock, Person, Phone, VpnKey } from "@mui/icons-material";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useAuth } from "@/ContextApi/AuthContext";
 
 export default function MyAccountContainer() {
-  const [formType, setFormType] = useState<"login" | "register" | "forgot">(
-    "login"
-  );
+  const [formType, setFormType] = useState<"login" | "register" | "forgot">("login");
   const [formData, setFormData] = useState({
     username: "",
     email: "",
@@ -17,10 +16,11 @@ export default function MyAccountContainer() {
     phoneNumber: "",
   });
   const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<string>(""); // پیام موفقیت
+  const [success, setSuccess] = useState<string>("");
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/userdashboard";
+  const { login } = useAuth(); // استفاده از login از Context
 
   const handleInputChange = (field: string, value: string) => {
     setFormData({ ...formData, [field]: value });
@@ -46,14 +46,15 @@ export default function MyAccountContainer() {
 
       const data = await res.json();
       if (res.ok) {
+        login(); // به‌روزرسانی وضعیت ورود در Context
         setSuccess("ورود با موفقیت انجام شد. در حال انتقال...");
-        setTimeout(() => router.push(redirectPath), 1500); // انتقال به مسیر اصلی
+        setTimeout(() => router.push(redirectPath), 1500);
       } else {
         setError(data.error || "خطا در ورود");
       }
     } catch (error) {
       setError("خطا در ارتباط با سرور");
-      console.log(error)
+      console.log(error);
     }
   };
 
@@ -91,13 +92,13 @@ export default function MyAccountContainer() {
       const data = await res.json();
       if (res.ok) {
         setSuccess("ثبت‌نام با موفقیت انجام شد. لطفاً وارد شوید.");
-        setFormType("login"); // تغییر به login
+        setFormType("login");
       } else {
         setError(data.error || "خطا در ثبت‌نام");
       }
     } catch (error) {
       setError("خطا در ارتباط با سرور");
-      console.log(error)
+      console.log(error);
     }
   };
 
@@ -124,7 +125,7 @@ export default function MyAccountContainer() {
       }
     } catch (error) {
       setError("خطا در ارتباط با سرور");
-      console.log(error)
+      console.log(error);
     }
   };
 
@@ -133,11 +134,7 @@ export default function MyAccountContainer() {
       <div className="bg-white shadow-xl overflow-hidden w-full max-w-lg animate-fade-in">
         <div className="bg-[#805B99] p-4 sm:p-6 text-center relative">
           <h2 className="text-xl sm:text-2xl font-bold text-white relative z-10">
-            {formType === "login"
-              ? "ورود به حساب"
-              : formType === "register"
-              ? "ثبت‌نام"
-              : "فراموشی رمز عبور"}
+            {formType === "login" ? "ورود به حساب" : formType === "register" ? "ثبت‌نام" : "فراموشی رمز عبور"}
           </h2>
           <p className="text-sm sm:text-base text-blue-100 mt-1 relative z-10">
             {formType === "login"
@@ -208,9 +205,7 @@ export default function MyAccountContainer() {
                   <input
                     type="text"
                     value={formData.firstName}
-                    onChange={(e) =>
-                      handleInputChange("firstName", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("firstName", e.target.value)}
                     className="w-full py-2.5 sm:py-3 pl-4 pr-4 border bg-gray-50 focus:ring-2 focus:ring-green-400 outline-none text-right text-sm sm:text-base"
                     placeholder="نام"
                     required
@@ -221,9 +216,7 @@ export default function MyAccountContainer() {
                   <input
                     type="text"
                     value={formData.lastName}
-                    onChange={(e) =>
-                      handleInputChange("lastName", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("lastName", e.target.value)}
                     className="w-full py-2.5 sm:py-3 pl-4 pr-4 border bg-gray-50 focus:ring-2 focus:ring-green-400 outline-none text-right text-sm sm:text-base"
                     placeholder="نام خانوادگی"
                     required
@@ -235,9 +228,7 @@ export default function MyAccountContainer() {
                 <input
                   type="text"
                   value={formData.username}
-                  onChange={(e) =>
-                    handleInputChange("username", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("username", e.target.value)}
                   className="w-full py-2.5 sm:py-3 pl-4 pr-4 border bg-gray-50 focus:ring-2 focus:ring-green-400 outline-none text-right text-sm sm:text-base"
                   placeholder="نام کاربری"
                   required
@@ -259,9 +250,7 @@ export default function MyAccountContainer() {
                 <input
                   type="tel"
                   value={formData.phoneNumber}
-                  onChange={(e) =>
-                    handleInputChange("phoneNumber", e.target.value)
-                  }
+                  onChange={(e) => handleInputChange("phoneNumber", e.target.value)}
                   className="w-full py-2.5 sm:py-3 pl-4 pr-4 border bg-gray-50 focus:ring-2 focus:ring-green-400 outline-none text-right text-sm sm:text-base"
                   placeholder="09xxxxxxxxx"
                 />
@@ -272,9 +261,7 @@ export default function MyAccountContainer() {
                   <input
                     type="password"
                     value={formData.password}
-                    onChange={(e) =>
-                      handleInputChange("password", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("password", e.target.value)}
                     className="w-full py-2.5 sm:py-3 pl-4 pr-4 border bg-gray-50 focus:ring-2 focus:ring-green-400 outline-none text-right text-sm sm:text-base"
                     placeholder="رمز عبور"
                     required
@@ -285,9 +272,7 @@ export default function MyAccountContainer() {
                   <input
                     type="password"
                     value={formData.confirmPassword}
-                    onChange={(e) =>
-                      handleInputChange("confirmPassword", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                     className="w-full py-2.5 sm:py-3 pl-4 pr-4 border bg-gray-50 focus:ring-2 focus:ring-green-400 outline-none text-right text-sm sm:text-base"
                     placeholder="تکرار رمز عبور"
                     required
