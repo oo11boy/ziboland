@@ -17,7 +17,6 @@ import { useCart } from "@/ContextApi/CartContext";
 import { Product } from "@/types/types";
 import { API } from "@/lib/MainRoutes";
 import { useAuth } from "@/ContextApi/AuthContext";
-import { User2Icon } from "lucide-react";
 
 export default function WideHeaderMiddle() {
   const { state: { cartItems}, dispatch } = useCart();

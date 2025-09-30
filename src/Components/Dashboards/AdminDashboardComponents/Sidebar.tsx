@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Home, ShoppingBag, Tag, Building, MessageCircle, BarChart3, Settings, Menu, X, LogOut, Ticket, Package } from "lucide-react";
 import { useAuth } from "@/ContextApi/AuthContext";
 
