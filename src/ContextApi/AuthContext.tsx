@@ -1,7 +1,7 @@
 "use client";
 import Cookies from "js-cookie";
 import { createContext, useContext, useState, useEffect } from "react";
-import { usePathname } from "next/navigation"; // اضافه کردن usePathname
+import { usePathname } from "next/navigation";
 
 interface AuthContextType {
   isLoggedIn: boolean;
@@ -14,18 +14,27 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    return sessionStorage.getItem("islogin") === "true";
-  });
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false); // Default to false
 
-  const pathname = usePathname(); // گرفتن مسیر فعلی
-  const isAdminDashboard = pathname === "/admindashboard"; // بررسی مسیر
-  const ismyaccount = pathname === "/myaccount"; // بررسی مسیر
+  const pathname = usePathname();
+  const isAdminDashboard = pathname === "/admindashboard";
+  const ismyaccount = pathname === "/myaccount";
 
-  // همگام‌سازی isLoggedIn با sessionStorage
+  // Initialize isLoggedIn from sessionStorage after mounting
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Only access sessionStorage in the browser
+      const loggedIn = sessionStorage.getItem("islogin") === "true";
+      setIsLoggedIn(loggedIn);
+    }
+  }, []);
+
+  // Sync isLoggedIn with sessionStorage changes
   useEffect(() => {
     const handleStorageChange = () => {
-      setIsLoggedIn(sessionStorage.getItem("islogin") === "true");
+      if (typeof window !== "undefined") {
+        setIsLoggedIn(sessionStorage.getItem("islogin") === "true");
+      }
     };
 
     window.addEventListener("storage", handleStorageChange);
@@ -36,15 +45,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = () => {
-    sessionStorage.setItem("islogin", "true");
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("islogin", "true");
+    }
     setIsLoggedIn(true);
   };
 
   const logout = () => {
-    sessionStorage.setItem("islogin", "false");
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("islogin", "false");
+      Cookies.remove("authToken");
+      window.location.href = "/myaccount";
+    }
     setIsLoggedIn(false);
-    Cookies.remove("authToken");
-    window.location.href = "/myaccount";
   };
 
   return (

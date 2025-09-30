@@ -6,21 +6,40 @@ import "swiper/css";
 import { KeyboardArrowLeft, KeyboardArrowRight, VisibilitySharp } from "@mui/icons-material";
 import Link from "next/link";
 
+interface Brand {
+  id: number;
+  title: string;
+  img: string;
+  link: string;
+}
+
 export default function BrandsContainer() {
   const swiperRef = useRef<SwiperCore | null>(null);
   const [showPrev, setShowPrev] = useState(false);
   const [showNext, setShowNext] = useState(true);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const data = [
-    { id: 1, img: "https://abzarreza.com/wp-content/uploads/2022/11/vivarex.png.webp", link: "#" },
-    { id: 2, img: "https://abzarreza.com/wp-content/uploads/2022/07/Rabin.png.webp", link: "#" },
-    { id: 3, img: "https://abzarreza.com/wp-content/uploads/2021/01/Pm.png.webp", link: "#" },
-    { id: 4, img: "https://abzarreza.com/wp-content/uploads/2022/07/Danlex.png.webp", link: "#" },
-    { id: 5, img: "https://abzarreza.com/wp-content/uploads/2022/07/AEG.png.webp", link: "#" },
-    { id: 6, img: "https://abzarreza.com/wp-content/uploads/2022/07/Metabo.png.webp", link: "#" },
-    { id: 7, img: "https://abzarreza.com/wp-content/uploads/2021/01/crown.png.webp", link: "#" },
-    { id: 8, img: "https://abzarreza.com/wp-content/uploads/2022/07/Ronix.png.webp", link: "#" },
-  ];
+  // دریافت داده‌ها از API
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const response = await fetch("/api/brands");
+        if (!response.ok) {
+          throw new Error("Failed to fetch brands");
+        }
+        const data: Brand[] = await response.json();
+        setBrands(data);
+        setLoading(false);
+      } catch (err) {
+        setError((err as Error).message);
+        setLoading(false);
+      }
+    };
+
+    fetchBrands();
+  }, []);
 
   // تابع برای به‌روزرسانی وضعیت دکمه‌ها
   const updateNavigation = () => {
@@ -58,14 +77,27 @@ export default function BrandsContainer() {
     };
   }, []);
 
+  // مدیریت حالت‌های لودینگ و خطا
+  if (loading) {
+    return <div className="w-[90%] yekan mx-auto my-8 text-center">در حال بارگذاری...</div>;
+  }
+
+  if (error) {
+    return <div className="w-[90%] yekan mx-auto my-8 text-center text-red-500">خطا: {error}</div>;
+  }
+
+  if (brands.length === 0) {
+    return <div className="w-[90%] yekan mx-auto my-8 text-center">هیچ برندی یافت نشد</div>;
+  }
+
   return (
     <div className="w-[90%] yekan mx-auto my-8 bg-white rounded-lg p-4 relative sm:p-6 md:p-8">
       <div className="w-full mb-6 mt-2 flex items-center justify-between">
-      <p className="font-semibold yekanh text-sm sm:text-base md:text-lg lg:text-xl">
-         برترین برندها
+        <p className="font-semibold yekan text-sm sm:text-base md:text-lg lg:text-xl">
+          برترین برندها
         </p>
         <Link
-          href="/"
+          href="../search"
           className="flex items-center text-xs sm:text-sm gap-1 sm:gap-2 px-2 sm:px-3 py-1 text-black bg-gray-200 border border-[#d1d5dc] rounded-full shadow-sm hover:bg-gray-300 hover:shadow-md transition-all duration-300"
           style={{
             backgroundImage: "linear-gradient(to right, #f3f4f6, #e5e7eb)",
@@ -95,26 +127,22 @@ export default function BrandsContainer() {
         )}
 
         <Swiper
-          slidesPerView={3} // تعداد اسلایدها برای موبایل
-          spaceBetween={10} // فاصله بین اسلایدها برای موبایل
+          slidesPerView={3}
+          spaceBetween={10}
           breakpoints={{
             640: {
-              // sm
               slidesPerView: 3,
               spaceBetween: 15,
             },
             768: {
-              // md
               slidesPerView: 4,
               spaceBetween: 20,
             },
             1024: {
-              // lg
               slidesPerView: 6,
               spaceBetween: 25,
             },
             1280: {
-              // xl
               slidesPerView: 7,
               spaceBetween: 30,
             },
@@ -125,12 +153,12 @@ export default function BrandsContainer() {
           }}
           dir="rtl"
         >
-          {data.map((item) => (
+          {brands.map((item) => (
             <SwiperSlide key={item.id}>
               <a href={item.link}>
                 <img
                   src={item.img}
-                  alt="brands"
+                  alt={item.title}
                   className="w-2/3 h-auto object-contain"
                 />
               </a>
