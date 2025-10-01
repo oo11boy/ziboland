@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "dev": "node setupUploads.js && next dev",
+  "start": "node setupUploads.js && next start",
     "lint": "next lint",
     "shadcn": "npx shadcn@latest add",
     "css": "npx tailwindcss -i ./src/app/globals.css -o ./public/style.css"
