@@ -32,21 +32,7 @@ const OrdersPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<{ [key: number]: boolean }>({});
 
-  const modalStyle = {
-    // eslint-disable-next-line prefer-const
-    position:  "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: "90%",
-    maxWidth: 600,
-    bgcolor: "background.paper",
-    boxShadow: 24,
-    p: 4,
-    borderRadius: 2,
-    maxHeight: "90vh",
-    overflowY: "auto",
-  };
+
 
   useEffect(() => {
     fetchOrders();

@@ -159,7 +159,7 @@ export async function GET(request: Request) {
        WHERE o.user_id = ?`,
       [userId]
     );
-
+// eslint-disable-next-line prefer-const
     for (let order of orders) {
       const [items]: any = await conn.query(
         `SELECT oi.*, p.title, p.image, oi.color_json, oi.price_type
