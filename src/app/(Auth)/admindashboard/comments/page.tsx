@@ -263,7 +263,7 @@ const CommentsPage = () => {
 
       <Dialog
         open={!!selectedParent}
-        onOpenChange={(open) => !open && setSelectedParent(null)}
+        onOpenChange={(open: any) => !open && setSelectedParent(null)}
       >
         <DialogContent className="rounded-2xl shadow-2xl max-w-md mx-auto">
           <DialogHeader>

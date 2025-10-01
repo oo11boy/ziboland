@@ -1,13 +1,15 @@
+// Update to Sidebar.tsx - Add the following import and navItem
+
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, Tag, Building, MessageCircle, BarChart3, Settings, Menu, X, LogOut, Ticket, Package } from "lucide-react";
+import { Home, ShoppingBag, Tag, Building, MessageCircle, BarChart3, Settings, Menu, X, LogOut, Ticket, Package, Image } from "lucide-react"; // Added Image
 import { useAuth } from "@/ContextApi/AuthContext";
 
 const Sidebar = () => {
   const pathname = usePathname();
-const {logout}=useAuth()
+  const { logout } = useAuth();
   const [isOpen, setIsOpen] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -24,15 +26,14 @@ const {logout}=useAuth()
     }
   };
 
-
-
   const navItems = [
     { href: "/admindashboard", label: "داشبورد", icon: Home },
-        { href: "/admindashboard/articles", label: "نوشته ها", icon: ShoppingBag },
+    { href: "/admindashboard/articles", label: "نوشته ها", icon: ShoppingBag },
     { href: "/admindashboard/products", label: "محصولات", icon: ShoppingBag },
     { href: "/admindashboard/orders", label: "سفارشات", icon: Package },
     { href: "/admindashboard/categories", label: "دسته‌بندی‌ها", icon: Tag },
     { href: "/admindashboard/brands", label: "برندها", icon: Building },
+    { href: "/admindashboard/media", label: "رسانه‌ها", icon: Image }, // Added media item
     { href: "/admindashboard/comments", label: "نظرات", icon: MessageCircle },
     { href: "/admindashboard/tickets", label: "تیکت‌ها", icon: Ticket },
     { href: "/admindashboard/analytics", label: "تحلیل‌ها", icon: BarChart3 },

@@ -70,7 +70,7 @@ export default function CategoriesContainer() {
           }`}
         >
           {categories.map((item) => (
-            <Link key={item.id} href={item.link} className="category-item">
+            <Link key={item.id} href={`./search?mothercatId=${item.id}`} className="category-item">
               {getIconComponent(item.icon)}
               <p className="category-text">{item.name}</p>
             </Link>
