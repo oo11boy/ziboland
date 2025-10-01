@@ -65,9 +65,9 @@ export async function POST(req: Request) {
         throw new Error('آیتم‌های سفارش نامعتبر است');
       }
       await conn.execute(
-        `INSERT INTO order_items (order_id, product_id, quantity, unit_price, price_type)
-         VALUES (?, ?, ?, ?, ?)`,
-        [orderId, item.product_id, item.quantity, item.price, item.price_type]
+        `INSERT INTO order_items (order_id, product_id, quantity, unit_price, price_type, color_json)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [orderId, item.product_id, item.quantity, item.price, item.price_type, JSON.stringify(item.color || null)]
       );
     }
 
@@ -159,16 +159,20 @@ export async function GET(request: Request) {
        WHERE o.user_id = ?`,
       [userId]
     );
-// eslint-disable-next-line prefer-const
+
     for (let order of orders) {
       const [items]: any = await conn.query(
-        `SELECT oi.*, p.title, p.image
+        `SELECT oi.*, p.title, p.image, oi.color_json, oi.price_type
          FROM order_items oi 
          JOIN products p ON oi.product_id = p.id 
          WHERE oi.order_id = ?`,
         [order.id]
       );
-      order.items = items;
+      // Parse color JSON
+      order.items = items.map((item: any) => ({
+        ...item,
+        color: item.color_json ? JSON.parse(item.color_json) : null,
+      }));
     }
 
     return NextResponse.json(orders);

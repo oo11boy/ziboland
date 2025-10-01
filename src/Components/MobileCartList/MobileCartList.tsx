@@ -8,7 +8,6 @@ import {
   RemoveCircleOutline,
   Close,
   ShoppingCart,
-
 } from "@mui/icons-material";
 import Link from "next/link";
 import { API } from "@/lib/MainRoutes";
@@ -219,7 +218,7 @@ export default function MobileCartList() {
             <div className="space-y-3 mt-2 pb-28" style={{ minHeight: `calc(100vh - ${headerHeight}px - env(safe-area-inset-bottom, 64px))` }}>
               {cartItems.map((item) => (
                 <motion.article
-                  key={`${item.id}-${item.priceType}`}
+                  key={`${item.id}-${item.priceType}-${item.color?.englishName || "default"}`}
                   variants={cardVariants}
                   initial="hidden"
                   animate="visible"
@@ -237,6 +236,11 @@ export default function MobileCartList() {
                     <h3 id={`cart-item-${item.id}`} className="text-sm font-semibold text-[#222] yekan line-clamp-2">
                       {item.title}
                     </h3>
+                    {item.color && (
+                      <p className="text-xs text-gray-500 yekan mt-1">
+                        رنگ: {item.color.persianName} ({item.color.englishName})
+                      </p>
+                    )}
                     <div className="flex items-center justify-between mt-1">
                       <p className="text-xs text-gray-500 yekan">
                         {item.priceType === "single" ? "تکی" : "عمده"} · {item.price} تومان

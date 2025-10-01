@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
-import { Upload, X, Image as ImageIcon, CheckCircle, Loader2, Trash2 } from "lucide-react";
+import { Upload, X, Image as CheckCircle, Loader2, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { SITE } from "@/lib/MainRoutes";
 
@@ -29,7 +29,7 @@ const MediaPage = () => {
         const data = await res.json();
         setUploadedFiles(data.files || []);
       } catch (err) {
-        toast.error("خطا در بارگذاری فایل‌ها");
+        toast.error("خطا در بارگذاری فایل‌ها"+err);
       }
     };
     fetchFiles();
@@ -69,7 +69,7 @@ const MediaPage = () => {
         const data = await res.json();
         return { url: data.url, name: file.name };
       } catch (error) {
-        toast.error(`خطا در آپلود ${file.name}`);
+        toast.error(`خطا در آپلود ${file.name} `+error);
         return null;
       }
     });

@@ -318,7 +318,7 @@ const AddProductPage = () => {
         const data = await res.json();
         return { url: SITE + data.url, name: file.name };
       } catch (error) {
-        toast.error(`خطا در آپلود ${file.name}`);
+        toast.error(`خطا در آپلود ${file.name} `+error);
         return null;
       }
     });

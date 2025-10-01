@@ -11,6 +11,19 @@ import Image from "next/image";
 import { API } from "@/lib/MainRoutes";
 import Cookies from "js-cookie";
 import { Order } from "@/types/types";
+const InfoItem = ({ label, value }: { label: string; value: string | number }) => (
+  <p>
+    <span className="font-semibold text-gray-700 dark:text-gray-300">{label}:</span>{" "}
+    <span className="text-gray-800 dark:text-gray-100">{value}</span>
+  </p>
+);
+
+const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="space-y-2">
+    <h3 className="font-bold text-gray-800 dark:text-gray-200">{title}</h3>
+    <div className="text-gray-700 dark:text-gray-300">{children}</div>
+  </div>
+);
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -214,111 +227,119 @@ const OrdersPage = () => {
         </CardContent>
       </Card>
 
-      <Modal
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        aria-labelledby="order-modal-title"
-        aria-describedby="order-modal-description"
+<Modal
+  open={isModalOpen}
+  onClose={() => setIsModalOpen(false)}
+  aria-labelledby="order-modal-title"
+  aria-describedby="order-modal-description"
+  closeAfterTransition
+  sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+>
+  <Box
+    sx={{
+      width: "90%",
+      maxWidth: 720,
+      bgcolor: "background.paper",
+      borderRadius: 3,
+      boxShadow: 30,
+      maxHeight: "90vh",
+      overflowY: "auto",
+      p: 4,
+      outline: "none",
+      fontFamily: "yekannew",
+      position: "relative",
+    }}
+  >
+    {/* Header */}
+    <Box
+      sx={{
+        position: "sticky",
+        top: 0,
+        bgcolor: "background.paper",
+        zIndex: 10,
+        borderBottom: "1px solid #e5e7eb",
+        pb: 2,
+        mb: 4,
+      }}
+    >
+      <Typography
+        id="order-modal-title"
+        variant="h5"
+        component="h2"
+        className="text-right font-bold text-gray-800 dark:text-white"
       >
-        <Box sx={modalStyle}>
-          <Typography
-            sx={{ fontFamily: "yekannew" }}
-            id="order-modal-title"
-            variant="h6"
-            component="h2"
-            className="text-right"
-          >
-            جزئیات سفارش #{selectedOrder?.order_code}
-          </Typography>
-          {selectedOrder && (
-            <div className="space-y-4 text-right">
-              <p>
-                <strong>کاربر:</strong> {selectedOrder.first_name} {selectedOrder.last_name} ({selectedOrder.username})
-              </p>
-              <p>
-                <strong>ایمیل:</strong> {selectedOrder.email}
-              </p>
-              <p>
-                <strong>شماره تلفن:</strong> {selectedOrder.phone_number}
-              </p>
-              <p>
-                <strong>شماره سفارش:</strong> {selectedOrder.order_code}
-              </p>
-              <p>
-                <strong>تاریخ:</strong>{" "}
-                {new Date(selectedOrder.created_at).toLocaleDateString("fa-IR")}
-              </p>
-              <p>
-                <strong>مبلغ کل:</strong>{" "}
-                {(selectedOrder.total_amount / 10).toLocaleString()} تومان
-              </p>
-              <p>
-                <strong>وضعیت:</strong> {translateStatus(selectedOrder.status)}
-              </p>
-              <p>
-                <strong>وضعیت پرداخت:</strong>{" "}
-                {translatePaymentStatus(selectedOrder.payment_status)}
-              </p>
-              <p>
-                <strong>روش ارسال:</strong>{" "}
-                {selectedOrder.shipping_method === "express" ? "اکسپرس" : "عادی"}
-              </p>
-              <p>
-                <strong>آدرس:</strong>{" "}
-                {`${selectedOrder.province}، ${selectedOrder.city}، ${selectedOrder.street}${
-                  selectedOrder.alley ? `، ${selectedOrder.alley}` : ""
-                }${selectedOrder.building_number ? `، پلاک ${selectedOrder.building_number}` : ""}${
-                  selectedOrder.unit ? `، واحد ${selectedOrder.unit}` : ""
-                }، کدپستی: ${selectedOrder.postal_code}`}
-              </p>
-              <h3 className="font-semibold">محصولات:</h3>
-              <ul className="space-y-2">
-                {selectedOrder.items.map((item) => (
-                  <li key={item.id} className="border-b py-2">
-                    <div className="flex items-center gap-4">
-                      {item.image ? (
-                        <Image
-                          src={item.image}
-                          alt={item.title}
-                          width={48}
-                          height={48}
-                          className="object-cover rounded"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 bg-gray-200 flex items-center justify-center rounded">
-                          بدون تصویر
-                        </div>
-                      )}
-                      <div>
-                        <p>
-                          <strong>محصول:</strong> {item.title}
-                        </p>
-                        <p>
-                          <strong>تعداد:</strong> {item.quantity}
-                        </p>
-                        <p>
-                          <strong>قیمت واحد:</strong>{" "}
-                          {(item.unit_price / 10).toLocaleString()} تومان
-                        </p>
-                        <p>
-                          <strong>نوع قیمت:</strong>{" "}
-                          {item.price_type === "single" ? "تکی" : "عمده"}
-                        </p>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-              <Button
-                onClick={() => setIsModalOpen(false)}
-                className="mt-4 bg-gray-500 hover:bg-gray-600 text-white"
-              >
-                بستن
-              </Button>
-            </div>
-          )}
-        </Box>
-      </Modal>
+        جزئیات سفارش #{selectedOrder?.order_code}
+      </Typography>
+      <Button
+        onClick={() => setIsModalOpen(false)}
+        className="absolute top-2 left-2 text-gray-500 hover:text-gray-700 text-xl font-bold"
+      >
+        ✕
+      </Button>
+    </Box>
+
+    {selectedOrder && (
+      <div className="space-y-6 text-right">
+        {/* کاربر و اطلاعات پایه */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <InfoItem label="کاربر" value={`${selectedOrder.first_name} ${selectedOrder.last_name} (${selectedOrder.username})`} />
+          <InfoItem label="ایمیل" value={selectedOrder.email ?? '-'} />
+          <InfoItem label="شماره تلفن" value={selectedOrder.phone_number ?? '-'} />
+          <InfoItem label="شماره سفارش" value={selectedOrder.order_code} />
+          <InfoItem label="تاریخ" value={new Date(selectedOrder.created_at).toLocaleDateString("fa-IR")} />
+          <InfoItem label="مبلغ کل" value={`${(selectedOrder.total_amount / 10).toLocaleString()} تومان`} />
+          <InfoItem label="وضعیت" value={translateStatus(selectedOrder.status)} />
+          <InfoItem label="وضعیت پرداخت" value={translatePaymentStatus(selectedOrder.payment_status)} />
+          <InfoItem label="روش ارسال" value={selectedOrder.shipping_method === "express" ? "اکسپرس" : "عادی"} />
+        </div>
+
+        {/* آدرس */}
+        <Section title="آدرس">
+          {`${selectedOrder.province}، ${selectedOrder.city}، ${selectedOrder.street}${selectedOrder.alley ? `، ${selectedOrder.alley}` : ""}${selectedOrder.building_number ? `، پلاک ${selectedOrder.building_number}` : ""}${selectedOrder.unit ? `، واحد ${selectedOrder.unit}` : ""}، کدپستی: ${selectedOrder.postal_code}`}
+        </Section>
+
+        {/* محصولات */}
+        <Section title="محصولات">
+          <ul className="space-y-3">
+            {selectedOrder.items.map((item) => (
+              <li key={item.id} className="border p-3 rounded-lg flex gap-4 items-start hover:shadow-md transition-shadow duration-200">
+                {item.image ? (
+                  <Image
+                    src={item.image}
+                    alt={item.title}
+                    width={64}
+                    height={64}
+                    className="object-cover rounded"
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-gray-200 flex items-center justify-center rounded text-sm text-gray-500">
+                    بدون تصویر
+                  </div>
+                )}
+                <div className="flex-1 space-y-1">
+                  <InfoItem label="محصول" value={item.title} />
+                  {item.color && <InfoItem label="رنگ" value={`${item.color.persianName} (${item.color.englishName})`} />}
+                  <InfoItem label="تعداد" value={item.quantity} />
+                  <InfoItem label="قیمت واحد" value={`${(item.unit_price / 10).toLocaleString()} تومان`} />
+                  <InfoItem label="نوع قیمت" value={item.price_type === "single" ? "تکی" : "عمده"} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Section>
+
+        {/* دکمه بستن */}
+        <div className="flex justify-end mt-6">
+          <Button className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md" onClick={() => setIsModalOpen(false)}>
+            بستن
+          </Button>
+        </div>
+      </div>
+    )}
+  </Box>
+</Modal>
+
+
     </div>
   );
 };

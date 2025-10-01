@@ -17,8 +17,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false); // Default to false
 
   const pathname = usePathname();
-  const isAdminDashboard = pathname === "/admindashboard";
-  const ismyaccount = pathname === "/myaccount";
+  const isAdminDashboard = pathname.startsWith("/admindashboard");
+  const ismyaccount = pathname.startsWith("/myaccount");
 
   // Initialize isLoggedIn from sessionStorage after mounting
   useEffect(() => {

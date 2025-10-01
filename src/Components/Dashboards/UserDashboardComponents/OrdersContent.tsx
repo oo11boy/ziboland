@@ -187,6 +187,11 @@ export default function OrdersContent({
                       <p>
                         <strong>محصول:</strong> {item.title}
                       </p>
+                      {item.color && (
+                        <p>
+                          <strong>رنگ:</strong> {item.color.persianName} ({item.color.englishName})
+                        </p>
+                      )}
                       <p>
                         <strong>تعداد:</strong> {item.quantity}
                       </p>

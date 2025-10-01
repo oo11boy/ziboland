@@ -1,4 +1,3 @@
-//src\app\api\orders\[id]\route.ts
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
@@ -21,14 +20,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const [items]: any = await conn.query(
-      `SELECT oi.*, p.title 
+      `SELECT oi.*, p.title, p.image, oi.color_json, oi.price_type
        FROM order_items oi 
        JOIN products p ON oi.product_id = p.id 
        WHERE oi.order_id = ?`,
       [orders[0].id]
     );
 
-    return NextResponse.json({ ...orders[0], items });
+    // Parse JSON برای color
+    const parsedItems = items.map((item: any) => ({
+      ...item,
+      color: item.color_json ? JSON.parse(item.color_json) : null,
+    }));
+
+    return NextResponse.json({ ...orders[0], items: parsedItems });
   } catch (error: any) {
     console.error("Error fetching order:", error);
     return NextResponse.json(

@@ -1,5 +1,6 @@
 "use client";
 import React, { createContext, useContext, useReducer, useEffect } from "react";
+import { Color } from "@/types/types";
 
 interface CartItem {
   id: number;
@@ -9,6 +10,7 @@ interface CartItem {
   price: string;
   image: string;
   discount: string;
+  color?: Color | null;
   addedAt: number;
 }
 
@@ -46,7 +48,8 @@ const getCartFromStorage = (): CartItem[] => {
         "priceType" in item &&
         "price" in item &&
         "image" in item &&
-        "discount" in item
+        "discount" in item &&
+        ("color" in item ? typeof item.color === "object" : true)
       )) {
         return parsedCart.map(item => ({
           ...item,
@@ -61,11 +64,14 @@ const getCartFromStorage = (): CartItem[] => {
   }
 };
 
+const getItemKey = (itemOrPayload: { id: number; priceType: string; color?: Color | null }) =>
+  `${itemOrPayload.id}-${itemOrPayload.priceType}-${itemOrPayload.color?.englishName || "default"}`;
+
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
     case "ADD_ITEM":
       const existingItemIndex = state.cartItems.findIndex(
-        (item) => item.id === action.payload.id && item.priceType === action.payload.priceType
+        (item) => getItemKey(item) === getItemKey(action.payload)
       );
       
       if (existingItemIndex >= 0) {
@@ -104,7 +110,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
     case "UPDATE_QUANTITY":
       const itemIndex = state.cartItems.findIndex(
-        (item) => item.id === action.payload.id && item.priceType === action.payload.priceType
+        (item) => getItemKey(item) === getItemKey(action.payload)
       );
       
       if (itemIndex >= 0) {

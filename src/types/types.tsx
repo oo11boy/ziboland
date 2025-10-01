@@ -260,7 +260,9 @@ export interface Order {
     discount: string | null;
     title: string;
     image: string | null;
+      color?: Color;
   }[];
+
 }
 
 export interface OrdersContentProps {

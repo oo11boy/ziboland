@@ -1,5 +1,15 @@
 "use client";
 import { useEffect, useState } from "react";
+import { Color } from "@/types/types";
+
+interface OrderItem {
+  id: number;
+  product_id: number;
+  quantity: number;
+  unit_price: number;
+  title: string;
+  color?: Color | null;
+}
 
 interface Order {
   id: number;
@@ -13,13 +23,7 @@ interface Order {
   building_number?: string;
   unit?: string;
   postal_code?: string;
-  items: Array<{
-    id: number;
-    product_id: number;
-    quantity: number;
-    unit_price: number;
-    title: string;
-  }>;
+  items: OrderItem[];
 }
 
 const formatAddress = (order: Order): string => {
@@ -72,7 +76,7 @@ export default function PaymentDone() {
 
   if (!order) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="flex items-center my-16 justify-center min-h-screen bg-gray-50">
         <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center">
           <p className="text-red-600 mb-4">سفارش یافت نشد</p>
           <p className="text-gray-600">
@@ -88,7 +92,7 @@ export default function PaymentDone() {
   }
 
   return (
-    <div className="bg-gray-100 flex items-center justify-center min-h-screen px-4">
+    <div className="bg-gray-100 flex my-16 items-center justify-center min-h-screen px-4">
       <div className="bg-white p-8 sm:p-12 rounded-xl shadow-2xl max-w-2xl w-full text-right animate-fade-in-scale">
         <div className="mx-auto flex items-center justify-center h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-green-100 mb-6">
           <svg
@@ -102,7 +106,7 @@ export default function PaymentDone() {
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 text-center">
-          پرداخت با موفقیت انجام شد 🎉
+          پرداخت با موفقیت انجام شد 
         </h1>
 
         <div className="space-y-4 text-sm sm:text-base">
@@ -126,11 +130,18 @@ export default function PaymentDone() {
           <h2 className="font-semibold text-lg mb-2">محصولات سفارش</h2>
           <ul className="divide-y divide-gray-200">
             {order.items.map((item) => (
-              <li key={item.id} className="py-2 flex justify-between">
-                <span>
-                  {item.title} × {item.quantity}
-                </span>
-                <span>{(item.unit_price ).toLocaleString("fa-IR")} تومان</span>
+              <li key={item.id} className="py-2">
+                <div className="flex justify-between items-center">
+                  <span>
+                    {item.title} × {item.quantity}
+                    {item.color && (
+                      <span className="text-sm text-gray-500 ml-2">
+                        (رنگ: {item.color.persianName})
+                      </span>
+                    )}
+                  </span>
+                  <span>{(item.unit_price ).toLocaleString("fa-IR")} تومان</span>
+                </div>
               </li>
             ))}
           </ul>

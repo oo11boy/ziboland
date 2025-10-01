@@ -24,8 +24,8 @@ export async function POST(req: Request) {
     // 2. ذخیره آیتم‌ها
     for (const item of items) {
       await conn.execute(
-        "INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)",
-        [orderId, item.product_id, item.quantity, item.price]
+        "INSERT INTO order_items (order_id, product_id, quantity, unit_price, color_json) VALUES (?, ?, ?, ?, ?)",
+        [orderId, item.product_id, item.quantity, item.price, JSON.stringify(item.color || null)]
       );
     }
 

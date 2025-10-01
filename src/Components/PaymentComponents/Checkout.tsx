@@ -228,6 +228,7 @@ export default function Checkout() {
         quantity: item.quantity,
         price: parseInt(item.price.replace(/,/g, "")),
         price_type: item.priceType || "single",
+        color: item.color,
       })),
       deliveryType,
       amount: total * 10,
@@ -552,7 +553,7 @@ export default function Checkout() {
                 <>
                   {cartItems.map((item) => (
                     <div
-                      key={`${item.id}-${item.priceType}`}
+                      key={`${item.id}-${item.priceType}-${item.color?.englishName || "default"}`}
                       className="flex items-start space-x-3 sm:space-x-4 mb-4 pb-4 border-b space-x-reverse"
                     >
                       <img
@@ -562,6 +563,11 @@ export default function Checkout() {
                       />
                       <div className="flex-1">
                         <h3 className="font-medium text-sm sm:text-base">{item.title}</h3>
+                        {item.color && (
+                          <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                            رنگ: {item.color.persianName} ({item.color.englishName})
+                          </p>
+                        )}
                         <p className="text-xs sm:text-sm text-gray-600">تعداد: {item.quantity}</p>
                         <p className="text-xs sm:text-sm text-gray-600">
                           قیمت واحد: {item.price} تومان
