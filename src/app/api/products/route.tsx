@@ -14,7 +14,7 @@ export async function GET() {
         m.type AS media_type, m.src AS media_src, m.thumbnail AS media_thumbnail, m.alt AS media_alt,
         col.englishName, col.persianName, col.hexCode,
         it.id AS infotable_id, it.name AS infotable_name, it.value AS infotable_value,
-        com.id AS comment_id, com.name AS comment_name, com.rating AS comment_rating, 
+        com.id AS comment_id, com.product_id AS comment_product_id, com.name AS comment_name, com.rating AS comment_rating, 
         com.text AS comment_text, com.date AS comment_date,
         b.id AS brand_id, b.title AS brand_title, b.img AS brand_img, b.link AS brand_link
       FROM products p
@@ -164,6 +164,7 @@ export async function POST(request: Request) {
       content,
       infotable,
       media,
+      colors,
     } = data;
 
     // Validate required fields
@@ -220,6 +221,20 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         { error: "All media entries must have valid type, src, and alt" },
+        { status: 400 }
+      );
+    }
+
+    // Validate colors entries
+    if (colors && !Array.isArray(colors)) {
+      return NextResponse.json(
+        { error: "colors must be an array" },
+        { status: 400 }
+      );
+    }
+    if (colors && colors.some((item: any) => !item.englishName || !item.hexCode)) {
+      return NextResponse.json(
+        { error: "All colors entries must have englishName and hexCode" },
         { status: 400 }
       );
     }
@@ -310,6 +325,16 @@ export async function POST(request: Request) {
           await connection.query(
             "INSERT INTO media (product_id, type, src, thumbnail, alt) VALUES (?, ?, ?, ?, ?)",
             [productId, item.type, item.src, item.thumbnail || null, item.alt]
+          );
+        }
+      }
+
+      // Insert colors entries
+      if (colors && colors.length > 0) {
+        for (const item of colors) {
+          await connection.query(
+            "INSERT INTO colors (product_id, englishName, persianName, hexCode) VALUES (?, ?, ?, ?)",
+            [productId, item.englishName, item.persianName || null, item.hexCode]
           );
         }
       }

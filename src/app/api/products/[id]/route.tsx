@@ -181,11 +181,63 @@ export async function PUT(request: NextRequest) {
       content,
       infotable,
       media,
+      colors,
     } = data;
 
     // validate fields...
     if (!title || !image || !originalPrice || !discountedPrice || !wholesalePrice || !discountwholesalePrice || !minwholesale || !discount || !discountwholesale || !category || !mothercatId || !subcatId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    // Validate infotable entries
+    if (infotable && !Array.isArray(infotable)) {
+      return NextResponse.json(
+        { error: "infotable must be an array" },
+        { status: 400 }
+      );
+    }
+    if (infotable && infotable.some((item: any) => !item.name || !item.value)) {
+      return NextResponse.json(
+        { error: "All infotable entries must have name and value" },
+        { status: 400 }
+      );
+    }
+
+    // Validate media entries
+    if (media && !Array.isArray(media)) {
+      return NextResponse.json(
+        { error: "media must be an array" },
+        { status: 400 }
+      );
+    }
+    if (
+      media &&
+      media.some(
+        (item: any) =>
+          !item.type ||
+          !item.src ||
+          !item.alt ||
+          !["image", "video"].includes(item.type)
+      )
+    ) {
+      return NextResponse.json(
+        { error: "All media entries must have valid type, src, and alt" },
+        { status: 400 }
+      );
+    }
+
+    // Validate colors entries
+    if (colors && !Array.isArray(colors)) {
+      return NextResponse.json(
+        { error: "colors must be an array" },
+        { status: 400 }
+      );
+    }
+    if (colors && colors.some((item: any) => !item.englishName || !item.hexCode)) {
+      return NextResponse.json(
+        { error: "All colors entries must have englishName and hexCode" },
+        { status: 400 }
+      );
     }
 
     const connection = await pool.getConnection();
@@ -249,6 +301,17 @@ export async function PUT(request: NextRequest) {
         }
       }
 
+      // Replace colors
+      await connection.query("DELETE FROM colors WHERE product_id = ?", [productId]);
+      if (colors && colors.length > 0) {
+        for (const item of colors) {
+          await connection.query(
+            "INSERT INTO colors (product_id, englishName, persianName, hexCode) VALUES (?, ?, ?, ?)",
+            [productId, item.englishName, item.persianName || null, item.hexCode]
+          );
+        }
+      }
+
       await connection.commit();
       return NextResponse.json({ message: "Product updated successfully" });
     } catch (error) {
@@ -280,6 +343,7 @@ export async function DELETE(request: NextRequest) {
 
     await connection.query("DELETE FROM infotable WHERE product_id = ?", [productId]);
     await connection.query("DELETE FROM media WHERE product_id = ?", [productId]);
+    await connection.query("DELETE FROM colors WHERE product_id = ?", [productId]);
 
     const [result] = await connection.query("DELETE FROM products WHERE id = ?", [productId]);
     if ((result as any).affectedRows === 0) throw new Error("Product not found");

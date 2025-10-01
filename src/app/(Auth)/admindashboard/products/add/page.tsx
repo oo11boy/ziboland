@@ -37,6 +37,7 @@ interface ProductFormData {
   content: string;
   infotable: { name: string; value: string }[];
   media: { type: string; src: string; thumbnail: string; alt: string }[];
+  colors: { englishName: string; persianName: string; hexCode: string }[];
   hasDiscount: boolean;
   hasWholesaleDiscount: boolean;
 }
@@ -70,6 +71,7 @@ const AddProductPage = () => {
     content: "",
     infotable: [],
     media: [],
+    colors: [],
     hasDiscount: false,
     hasWholesaleDiscount: false,
   });
@@ -84,6 +86,7 @@ const AddProductPage = () => {
     category: true,
     media: true,
     specs: true,
+    colors: true,
     additional: true
   });
   // Modal state
@@ -119,6 +122,9 @@ const AddProductPage = () => {
       )
     ) {
       newErrors.media = "تمامی فیلدهای مدیا باید معتبر باشند";
+    }
+    if (formData.colors.some((item) => !item.englishName || !item.hexCode)) {
+      newErrors.colors = "تمامی رنگ‌ها باید نام انگلیسی و کد هگز داشته باشند";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -232,6 +238,30 @@ const AddProductPage = () => {
     setFormData({
       ...formData,
       media: formData.media.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleAddColor = () => {
+    setFormData({
+      ...formData,
+      colors: [...formData.colors, { englishName: "", persianName: "", hexCode: "" }],
+    });
+  };
+
+  const handleColorChange = (
+    index: number,
+    field: "englishName" | "persianName" | "hexCode",
+    value: string
+  ) => {
+    const newColors = [...formData.colors];
+    newColors[index][field] = value;
+    setFormData({ ...formData, colors: newColors });
+  };
+
+  const handleRemoveColor = (index: number) => {
+    setFormData({
+      ...formData,
+      colors: formData.colors.filter((_, i) => i !== index),
     });
   };
 
@@ -364,6 +394,7 @@ const AddProductPage = () => {
           content: formData.content || null,
           infotable: formData.infotable.length > 0 ? formData.infotable : null,
           media: formData.media.length > 0 ? formData.media : null,
+          colors: formData.colors.length > 0 ? formData.colors : null,
         }),
       });
       if (!response.ok) {
@@ -863,6 +894,83 @@ const AddProductPage = () => {
                   >
                     <Plus className="h-4 w-4 ml-2" />
                     افزودن مشخصه
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* رنگ‌ها */}
+            <div className="border rounded-lg overflow-hidden">
+              <div 
+                className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 cursor-pointer"
+                onClick={() => toggleSection('colors')}
+              >
+                <h3 className="text-lg font-semibold">رنگ‌ها</h3>
+                {expandedSections.colors ? <ChevronUp /> : <ChevronDown />}
+              </div>
+              {expandedSections.colors && (
+                <div className="p-4 space-y-4">
+                  {formData.colors.map((item, index) => (
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center p-3 border rounded-md">
+                      <div className="md:col-span-3">
+                        <Input
+                          placeholder="نام انگلیسی (مثال: red)"
+                          value={item.englishName}
+                          onChange={(e) => handleColorChange(index, "englishName", e.target.value)}
+                          required
+                          className="text-sm"
+                        />
+                      </div>
+                      <div className="md:col-span-3">
+                        <Input
+                          placeholder="نام فارسی (مثال: قرمز)"
+                          value={item.persianName}
+                          onChange={(e) => handleColorChange(index, "persianName", e.target.value)}
+                          className="text-sm"
+                        />
+                      </div>
+                      <div className="md:col-span-3">
+                        <Input
+                          type="color"
+                          value={item.hexCode}
+                          onChange={(e) => handleColorChange(index, "hexCode", e.target.value)}
+                          required
+                          className="h-10 w-full"
+                        />
+                        <Input
+                          placeholder="#FF0000"
+                          value={item.hexCode}
+                          onChange={(e) => handleColorChange(index, "hexCode", e.target.value)}
+                          className="mt-1 text-sm"
+                        />
+                      </div>
+                      <div className="md:col-span-3 flex justify-center">
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => handleRemoveColor(index)}
+                          className="h-8 w-8"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {errors.colors && (
+                    <p className="text-red-500 text-sm mt-1 flex items-center">
+                      <AlertCircle className="h-4 w-4 ml-1" />
+                      {errors.colors}
+                    </p>
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleAddColor}
+                    className="flex items-center"
+                  >
+                    <Plus className="h-4 w-4 ml-2" />
+                    افزودن رنگ
                   </Button>
                 </div>
               )}
