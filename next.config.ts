@@ -34,7 +34,12 @@ const nextConfig = {
           hostname: 'encrypted-tbn1.gstatic.com',
           pathname: '/**',
         },
-    
+          {
+          protocol: 'http',
+          hostname: '91.107.132.39',
+          pathname: '/**',
+        },
+  
     ],
   },
 };
