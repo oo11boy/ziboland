@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir, unlink, readdir, stat } from "fs/promises";
 import path from "path";
 
-const uploadBase = path.join(process.cwd(), "public", "uploads");
+const uploadBase = path.join(process.cwd(), "uploads");
 
 // 📌 آپلود فایل جدید
 export async function POST(request: NextRequest) {
@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "هیچ فایلی ارسال نشده است" }, { status: 400 });
     }
 
-    // پسوند فایل از MIME
+    // گرفتن پسوند فایل از MIME type
     const mime = blob.type;
     const extension = mime ? `.${mime.split("/")[1]}` : "";
 
@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
     const filePath = path.join(uploadDir, uniqueName);
     await writeFile(filePath, buffer);
 
-    const url = `/uploads/${year}/${month}/${uniqueName}`;
+    // URL برای دسترسی به فایل از طریق API Route
+    const url = `/api/files/${year}/${month}/${uniqueName}`;
     return NextResponse.json({ url });
   } catch (error) {
     console.error("Upload error:", error);
@@ -56,7 +57,7 @@ export async function GET() {
           const filePath = path.join(dir, file);
           const stats = await stat(filePath);
           files.push({
-            url: `/uploads/${year}/${month}/${file}`,
+            url: `/api/files/${year}/${month}/${file}`,
             name: file,
             time: stats.mtimeMs,
           });
@@ -83,7 +84,15 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "آدرس فایل ارسال نشده است" }, { status: 400 });
     }
 
-    const filePath = path.join(process.cwd(), "public", url);
+    // استخراج مسیر فایل از URL
+    const relativePath = url.replace("/api/files/", "");
+    const filePath = path.join(uploadBase, relativePath);
+
+    // اعتبارسنجی مسیر برای جلوگیری از path traversal
+    if (!filePath.startsWith(uploadBase)) {
+      return NextResponse.json({ error: "دسترسی غیرمجاز به فایل" }, { status: 403 });
+    }
+
     await unlink(filePath);
 
     return NextResponse.json({ success: true, message: "فایل با موفقیت حذف شد" });
