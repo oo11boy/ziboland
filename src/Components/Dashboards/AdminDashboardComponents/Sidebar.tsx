@@ -4,7 +4,21 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, ShoppingBag, Tag, Building, MessageCircle, BarChart3, Settings, Menu, X, LogOut, Ticket, Package, Image } from "lucide-react"; // Added Image
+import {
+  Home,
+  ShoppingBag,
+  Tag,
+  Building,
+  MessageCircle,
+  BarChart3,
+  Settings,
+  Menu,
+  X,
+  LogOut,
+  Ticket,
+  Package,
+  Image,
+} from "lucide-react"; // Added Image
 import { useAuth } from "@/ContextApi/AuthContext";
 
 const Sidebar = () => {
@@ -28,15 +42,14 @@ const Sidebar = () => {
 
   const navItems = [
     { href: "/admindashboard", label: "داشبورد", icon: Home },
+    { href: "/admindashboard/media", label: "رسانه‌ها", icon: Image },
     { href: "/admindashboard/articles", label: "نوشته ها", icon: ShoppingBag },
     { href: "/admindashboard/products", label: "محصولات", icon: ShoppingBag },
     { href: "/admindashboard/orders", label: "سفارشات", icon: Package },
     { href: "/admindashboard/categories", label: "دسته‌بندی‌ها", icon: Tag },
     { href: "/admindashboard/brands", label: "برندها", icon: Building },
-    { href: "/admindashboard/media", label: "رسانه‌ها", icon: Image }, // Added media item
     { href: "/admindashboard/comments", label: "نظرات", icon: MessageCircle },
     { href: "/admindashboard/tickets", label: "تیکت‌ها", icon: Ticket },
-    { href: "/admindashboard/analytics", label: "تحلیل‌ها", icon: BarChart3 },
     { href: "/admindashboard/settings", label: "تنظیمات", icon: Settings },
   ];
 
@@ -71,7 +84,9 @@ const Sidebar = () => {
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
           {isOpen ? (
-            <h1 className="text-xl font-bold text-gray-800 dark:text-white">پنل مدیریت</h1>
+            <h1 className="text-xl font-bold text-gray-800 dark:text-white">
+              پنل مدیریت
+            </h1>
           ) : (
             <button
               className="hidden md:flex items-center justify-center p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -84,7 +99,11 @@ const Sidebar = () => {
             className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
             onClick={toggleMenu}
           >
-            {isOpen ? <X size={20} /> : <Menu size={20} className="md:hidden" />}
+            {isOpen ? (
+              <X size={20} />
+            ) : (
+              <Menu size={20} className="md:hidden" />
+            )}
           </button>
         </div>
         <nav className="mt-6">
@@ -97,12 +116,16 @@ const Sidebar = () => {
                   <Link
                     href={item.href}
                     className={`flex items-center px-3 py-2 rounded-lg transition-colors duration-200
-                      ${isActive
-                        ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                        : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      ${
+                        isActive
+                          ? "bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                          : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                       }`}
                   >
-                    <Icon size={20} className={`${isOpen ? "ml-3" : "mx-auto"} flex-shrink-0`} />
+                    <Icon
+                      size={20}
+                      className={`${isOpen ? "ml-3" : "mx-auto"} flex-shrink-0`}
+                    />
                     {isOpen && <span className="text-sm">{item.label}</span>}
                   </Link>
                 </li>
@@ -113,7 +136,10 @@ const Sidebar = () => {
                 onClick={logout}
                 className="flex items-center px-3 py-2 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 w-full"
               >
-                <LogOut size={20} className={`${isOpen ? "ml-3" : "mx-auto"} flex-shrink-0`} />
+                <LogOut
+                  size={20}
+                  className={`${isOpen ? "ml-3" : "mx-auto"} flex-shrink-0`}
+                />
                 {isOpen && <span className="text-sm">خروج</span>}
               </button>
             </li>

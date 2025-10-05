@@ -54,11 +54,19 @@ const Header = () => {
       const res = await fetch(`${API}/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok)
-        throw new Error(`Failed to fetch notifications: ${res.status}`);
-      const data: Notification[] = await res.json();
-      setNotifications(data);
-      setUnreadCount(data.filter((n) => !n.read).length);
+      if (!res.ok) throw new Error(`Failed to fetch notifications: ${res.status}`);
+      const data = await res.json();
+      const normalized: Notification[] = data.map((n: any) => ({
+        id: n.id,
+        type: n.type,
+        message: n.message,
+        created_at: n.created_at,
+        read: Boolean(n.read),
+        related_id: n.related_id ?? null,
+        related_data: n.related_data ?? null,
+      }));
+      setNotifications(normalized);
+      setUnreadCount(normalized.filter((n) => !n.read).length);
     } catch {
       toast.error("خطا در دریافت اعلان‌ها");
     } finally {
@@ -88,26 +96,37 @@ const Header = () => {
         setUnreadCount((prev) => Math.max(0, prev - 1));
         return;
       }
-      if (!res.ok)
-        throw new Error(`Failed to mark notification as read: ${res.status}`);
+      if (!res.ok) throw new Error(`Failed: ${res.status}`);
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: true } : n))
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
-      toast.success("اعلان به عنوان خوانده شده علامت‌گذاری شد");
     } catch {
       toast.error("خطا در به‌روزرسانی اعلان");
     }
   };
 
   const markAllAsRead = async () => {
-    const unreadNotifications = notifications.filter((n) => !n.read);
-    if (unreadNotifications.length === 0)
+    if (!token) return toast.error("لطفاً دوباره وارد شوید");
+    const unread = notifications.filter((n) => !n.read);
+    if (unread.length === 0)
       return toast.success("هیچ اعلان خوانده‌نشده‌ای وجود ندارد");
-    for (const notification of unreadNotifications) {
-      await markAsRead(notification.id);
+
+    try {
+      const res = await fetch(`${API}/notifications`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      setUnreadCount(0);
+      toast.success("تمام اعلان‌ها خوانده شده علامت‌گذاری شدند");
+    } catch {
+      toast.error("خطا در به‌روزرسانی اعلان‌ها");
     }
-    toast.success("تمام اعلان‌ها خوانده شده علامت‌گذاری شدند");
   };
 
   const getNotificationIcon = (type: Notification["type"]) => {
@@ -169,9 +188,10 @@ const Header = () => {
               )}
             </button>
           </DropdownMenuTrigger>
+
           <DropdownMenuContent
             style={{ direction: "rtl" }}
-            className=" w-96 max-h-96 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700"
+            className="w-96 max-h-96 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700"
           >
             <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
               <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
@@ -210,10 +230,7 @@ const Header = () => {
                     !notification.read && markAsRead(notification.id)
                   }
                 >
-                  <div
-                    className="flex items-start space-x-3 space-x-reverse text-right"
-                    dir="rtl"
-                  >
+                  <div className="flex items-start space-x-3 space-x-reverse text-right" dir="rtl">
                     <span
                       className={`text-lg flex-shrink-0 ${getNotificationColor(
                         notification.type
@@ -249,16 +266,13 @@ const Header = () => {
                         )}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        {new Date(notification.created_at).toLocaleString(
-                          "fa-IR",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )}
+                        {new Date(notification.created_at).toLocaleString("fa-IR", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </p>
                     </div>
                   </div>

@@ -34,7 +34,14 @@ export const CommentsSection: React.FC<{ infoproduct: Product; isAdmin?: boolean
         const response = await fetch(`/api/comments?product_id=${infoproduct.id}`);
         if (!response.ok) throw new Error("Failed to fetch comments");
         const data = await response.json();
-        setComments(data.filter((comment: Comment) => comment.product_id === infoproduct.id));
+        // Filter comments to ensure only approved comments (status = 1) are displayed
+        const approvedComments = data
+          .filter((comment: Comment) => comment.product_id === infoproduct.id && comment.status === 1)
+          .map((comment: Comment) => ({
+            ...comment,
+            replies: comment.replies?.filter((reply: Comment) => reply.status === 1) || [],
+          }));
+        setComments(approvedComments);
       } catch (error) {
         console.error("Error fetching comments:", error);
         toast.error("خطا در بارگذاری نظرات", { position: "top-center", className: "yekan" });
@@ -52,7 +59,7 @@ export const CommentsSection: React.FC<{ infoproduct: Product; isAdmin?: boolean
       rating: isAdmin ? null : rating,
       text: parentId ? replyText : text,
       is_admin: isAdmin ? 1 : 0,
-      status: isAdmin ? 1 : 0,
+      status: isAdmin ? 1 : 0, // Admin comments are auto-approved
     };
 
     try {
@@ -80,16 +87,19 @@ export const CommentsSection: React.FC<{ infoproduct: Product; isAdmin?: boolean
         replies: [],
       };
 
-      if (parentId) {
-        setComments((prev) =>
-          prev.map((comment) =>
-            comment.id === parentId
-              ? { ...comment, replies: [...(comment.replies || []), newComment] }
-              : comment
-          )
-        );
-      } else {
-        setComments([newComment, ...comments]);
+      // Only add the comment to state if it's approved (status = 1)
+      if (newComment.status === 1) {
+        if (parentId) {
+          setComments((prev) =>
+            prev.map((comment) =>
+              comment.id === parentId
+                ? { ...comment, replies: [...(comment.replies || []), newComment] }
+                : comment
+            )
+          );
+        } else {
+          setComments([newComment, ...comments]);
+        }
       }
 
       setName("");
@@ -97,7 +107,7 @@ export const CommentsSection: React.FC<{ infoproduct: Product; isAdmin?: boolean
       setText("");
       setReplyText("");
       setReplyTo(null);
-      toast.success(isAdmin ? "پاسخ شما ثبت شد!" : "نظر شما با موفقیت ثبت شد!", {
+      toast.success(isAdmin ? "پاسخ شما ثبت شد!" : "نظر شما با موفقیت ثبت شد و پس از تأیید نمایش داده خواهد شد!", {
         position: "top-center",
         className: "yekan",
         autoClose: 3000,
@@ -115,10 +125,10 @@ export const CommentsSection: React.FC<{ infoproduct: Product; isAdmin?: boolean
   const renderComment = (comment: Comment, depth = 0) => (
     <Card
       key={comment.id}
-      className={`sp-comment-card  ${comment.is_admin ? "sp-comment-card-admin" : ""}`}
+      className={`sp-comment-card ${comment.is_admin ? "sp-comment-card-admin" : ""}`}
       style={{ marginLeft: depth * 20 }}
     >
-      <CardContent className="sp-comment-card-content ">
+      <CardContent className="sp-comment-card-content">
         <div className="sp-comment-header">
           <Avatar className="sp-comment-avatar">{comment.name[0]}</Avatar>
           <div className="sp-comment-info">
@@ -191,7 +201,7 @@ export const CommentsSection: React.FC<{ infoproduct: Product; isAdmin?: boolean
   return (
     <Box sx={{ p: 2 }} className="sp-comment-container">
       {comments.length === 0 ? (
-        <Typography variant="body1" className="sp-comment-typography-empty ">
+        <Typography variant="body1" className="sp-comment-typography-empty">
           هنوز نظری ثبت نشده است.
         </Typography>
       ) : (
@@ -200,7 +210,7 @@ export const CommentsSection: React.FC<{ infoproduct: Product; isAdmin?: boolean
 
       {!isAdmin && (
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
-          <Typography variant="h6" className="sp-comment-typography-title ">
+          <Typography variant="h6" className="sp-comment-typography-title">
             ثبت نظر جدید
           </Typography>
           <TextField
