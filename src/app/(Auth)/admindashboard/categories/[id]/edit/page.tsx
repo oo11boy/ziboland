@@ -211,8 +211,16 @@ const EditCategoryPage = () => {
                 )}
               </div>
               <div>
-                <Label htmlFor="icon" className="mb-2 block">
-                  آیکون <span className="text-red-500">*</span>
+               <Label
+                  htmlFor="icon"
+                  className="mb-2 justify-between items-center flex"
+                >
+                  <div>
+                    آیکون <span className="text-red-500">*</span>
+                  </div>
+                  <div>
+                    <a target="_blank" className="bg-gray-800 text-white text-sm p-1 px-2 rounded-3xl" href="https://fonts.google.com/icons">مشاهده آیکون ها</a>
+                  </div>
                 </Label>
                 <Input
                   id="icon"

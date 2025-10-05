@@ -28,7 +28,9 @@ const AddCategoryPage = () => {
     icon: "",
     subcat: [],
   });
-  const [errors, setErrors] = useState<Partial<Record<keyof CategoryFormData, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof CategoryFormData, string>>
+  >({});
   const [loading, setLoading] = useState(false);
 
   const validateForm = () => {
@@ -39,11 +41,7 @@ const AddCategoryPage = () => {
     if (formData.subcat.some((sub) => !sub.name)) {
       newErrors.subcat = "تمامی زیرمجموعه‌ها باید نام داشته باشند";
     }
-    if (
-      formData.subcat.some((sub) =>
-        sub.items.some((item) => !item.name)
-      )
-    ) {
+    if (formData.subcat.some((sub) => sub.items.some((item) => !item.name))) {
       newErrors.subcat = "تمامی آیتم‌های زیرمجموعه باید نام داشته باشند";
     }
     setErrors(newErrors);
@@ -86,7 +84,10 @@ const AddCategoryPage = () => {
     setFormData({ ...formData, subcat: newSubcat });
   };
 
-  const handleRemoveSubcategoryItem = (subcatIndex: number, itemIndex: number) => {
+  const handleRemoveSubcategoryItem = (
+    subcatIndex: number,
+    itemIndex: number
+  ) => {
     const newSubcat = [...formData.subcat];
     newSubcat[subcatIndex].items = newSubcat[subcatIndex].items.filter(
       (_, i) => i !== itemIndex
@@ -124,7 +125,9 @@ const AddCategoryPage = () => {
     <div className="container mx-auto p-4 yekan">
       <Card className="bg-white dark:bg-gray-800 shadow-lg">
         <CardHeader className="pb-3">
-          <CardTitle className="text-2xl font-bold text-center">افزودن دسته‌بندی جدید</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            افزودن دسته‌بندی جدید
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -137,7 +140,9 @@ const AddCategoryPage = () => {
                   id="name"
                   placeholder="نام دسته‌بندی را وارد کنید"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   required
                   aria-invalid={!!errors.name}
                   className={errors.name ? "border-red-500" : ""}
@@ -157,7 +162,9 @@ const AddCategoryPage = () => {
                   id="link"
                   placeholder="لینک دسته‌بندی را وارد کنید"
                   value={formData.link}
-                  onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, link: e.target.value })
+                  }
                   required
                   aria-invalid={!!errors.link}
                   className={errors.link ? "border-red-500" : ""}
@@ -170,14 +177,25 @@ const AddCategoryPage = () => {
                 )}
               </div>
               <div>
-                <Label htmlFor="icon" className="mb-2 block">
-                  آیکون <span className="text-red-500">*</span>
+                <Label
+                  htmlFor="icon"
+                  className="mb-2 justify-between items-center flex"
+                >
+                  <div>
+                    آیکون <span className="text-red-500">*</span>
+                  </div>
+                  <div>
+                    <a target="_blank" className="bg-gray-800 text-white text-sm p-1 px-2 rounded-3xl" href="https://fonts.google.com/icons">مشاهده آیکون ها</a>
+                  </div>
                 </Label>
+
                 <Input
                   id="icon"
                   placeholder="آدرس آیکون را وارد کنید"
                   value={formData.icon}
-                  onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, icon: e.target.value })
+                  }
                   required
                   aria-invalid={!!errors.icon}
                   className={errors.icon ? "border-red-500" : ""}
@@ -189,6 +207,7 @@ const AddCategoryPage = () => {
                   </p>
                 )}
               </div>
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="mothercat"
@@ -229,10 +248,7 @@ const AddCategoryPage = () => {
                   <div className="space-y-2">
                     <Label>آیتم‌های زیرمجموعه</Label>
                     {subcat.items.map((item, itemIndex) => (
-                      <div
-                        key={itemIndex}
-                        className="flex gap-2 items-center"
-                      >
+                      <div key={itemIndex} className="flex gap-2 items-center">
                         <Input
                           placeholder="نام آیتم"
                           value={item.name}
