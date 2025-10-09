@@ -2,6 +2,7 @@
 import Link from "next/link";
 import React, { useState, useEffect, JSX } from "react";
 import "./CategoriesContainer.css";
+import { PulseLoader } from "react-spinners";
 
 interface Category {
   id: number;
@@ -49,7 +50,10 @@ export default function CategoriesContainer() {
   }, []);
 
   if (loading) {
-    return <div className="categories-container">در حال بارگذاری...</div>;
+    return <div className="categories-container">
+       <PulseLoader color="#b7adad" speedMultiplier={1} size={10} />
+     
+    </div>;
   }
 
   if (error) {

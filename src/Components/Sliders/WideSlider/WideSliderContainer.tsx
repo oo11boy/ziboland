@@ -1,12 +1,8 @@
+// app/Components/WideSlider.tsx
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Swiper, SwiperSlide, SwiperRef } from "swiper/react";
-import {
-  Navigation,
-  Pagination,
-  EffectCoverflow,
-  Autoplay,
-} from "swiper/modules";
+import { Navigation, Pagination, EffectCoverflow, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -14,79 +10,44 @@ import "swiper/css/effect-coverflow";
 import "./WideSlider.css";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
+import { API } from "@/lib/MainRoutes";
+import Link from "next/link";
 
 interface Slide {
   id: number;
   imagewide: string;
   imagemin: string;
   alt: string;
+  link: string; // Added link field
 }
 
-const slides: Slide[] = [
-  {
-    id: 1,
-    imagemin:
-      "https://cdn.khanoumi.com/cml/carousel-big/d6/f0/d6f0fcda345b4cd0ae7ffbe8b1dd8061.jpeg",
-    imagewide:
-      "https://cdn.khanoumi.com/cml/carousel-big/db/b7/dbb7a7acf6884a2096a814df6739ee20.jpeg",
-    alt: "Slide 1",
-  },
-  {
-    id: 2,
-    imagemin:
-      "https://cdn.khanoumi.com/cml/carousel-big/1c/02/1c029045ba5c4413a870c7dfab8cb70b.jpeg",
-    imagewide:
-      "https://cdn.khanoumi.com/cml/carousel-big/87/7b/877b4de4cefa474cb94bdd07a9d496e7.jpeg",
-    alt: "Slide 2",
-  },
-  {
-    id: 3,
-    imagemin:
-      "https://cdn.khanoumi.com/cml/carousel-big/a2/23/a2233746026244b79d2543258bfaad2d.jpeg",
-    imagewide:
-      "https://cdn.khanoumi.com/cml/carousel-big/b0/0b/b00ba640304d4493805cc09e7d342e8a.jpeg",
-    alt: "Slide 3",
-  },
-  {
-    id: 4,
-    imagemin:
-      "https://cdn.khanoumi.com/cml/carousel-big/1d/72/1d726429ea2349bda6263466bd8820ec.jpeg",
-    imagewide:
-      "https://cdn.khanoumi.com/cml/carousel-big/05/15/0515677f27fd49538bd86233a76bb159.jpeg",
-    alt: "Slide 4",
-  },
-  {
-    id: 5,
-    imagemin:
-      "https://cdn.khanoumi.com/cml/carousel-big/ca/9f/ca9fbbd4a74d4978bec8803c215e4e81.jpeg",
-    imagewide:
-      "https://cdn.khanoumi.com/cml/carousel-big/cc/a1/cca15a0f1e8243deb83aa0d3fe2c7211.jpeg",
-    alt: "Slide 5",
-  },
-];
-
 const WideSliderContainer: React.FC = () => {
+  const [slides, setSlides] = useState<Slide[]>([]);
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [startTime, setStartTime] = useState(Date.now());
-  const [windowWidth, setWindowWidth] = useState(0); // مقدار اولیه برای جلوگیری از خطا
+  const [windowWidth, setWindowWidth] = useState(0);
   const swiperRef = useRef<SwiperRef>(null);
 
-  // مدیریت عرض صفحه
   useEffect(() => {
-    if (typeof window === "undefined") return; // جلوگیری از اجرا در سمت سرور
+    fetch(`${API}/sliders`)
+      .then((res) => res.json())
+      .then(setSlides)
+      .catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
     };
 
-    handleResize(); // بررسی اولیه عرض صفحه
+    handleResize();
     window.addEventListener("resize", handleResize);
-
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // مدیریت پراگرس بار
   useEffect(() => {
     setStartTime(Date.now());
     setProgress(0);
@@ -133,7 +94,7 @@ const WideSliderContainer: React.FC = () => {
   return (
     <div className="w-full mx-auto py-5 relative">
       <Swiper
-        ref={swiperRef}
+          ref={swiperRef}
         modules={[Navigation, Pagination, EffectCoverflow, Autoplay]}
         effect="coverflow"
         grabCursor={true}
@@ -159,27 +120,30 @@ const WideSliderContainer: React.FC = () => {
         }}
         onSlideChange={handleSlideChange}
         className="py-5"
+    
       >
         {slides.map((slide) => (
           <SwiperSlide
             key={slide.id}
             className="flex justify-center items-center transition-all duration-300"
           >
-            <div className="w-full  flex justify-center items-center">
-              <img
-                src={windowWidth >= 993 ? slide.imagewide : slide.imagemin}
-                alt={slide.alt}
-                className="w-full h-full rounded-lg object-cover transition-all duration-300 
+            <div className="w-full flex justify-center items-center">
+              <Link href={slide.link}>
+                <img
+                  src={windowWidth >= 993 ? slide.imagewide : slide.imagemin}
+                  alt={slide.alt}
+                  className="w-full h-full rounded-lg object-cover transition-all duration-300 
                            swiper-slide-active:scale-110 swiper-slide-active:h-[550px]
                            swiper-slide-prev:scale-90 swiper-slide-prev:h-[450px]
                            swiper-slide-next:scale-90 swiper-slide-next:h-[450px]"
-              />
+                />
+              </Link>
             </div>
           </SwiperSlide>
         ))}
       </Swiper>
-      <div  style={{ display: windowWidth <= 993 ? "flex" : "none" }} className="absolute z-[20] w-10 h-10 bg-white rounded-full top-8 right-[10%]">
-      <div className="progress-circle" onClick={toggleAutoplay}>
+      <div style={{ display: windowWidth <= 993 ? "flex" : "none" }} className="absolute z-[20] w-10 h-10 bg-white rounded-full top-8 right-[10%]">
+        <div className="progress-circle" onClick={toggleAutoplay}>
           <CircularProgressbar
             value={progress}
             text={isPlaying ? "| |" : "▶"}

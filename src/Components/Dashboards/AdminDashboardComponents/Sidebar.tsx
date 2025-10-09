@@ -10,7 +10,6 @@ import {
   Tag,
   Building,
   MessageCircle,
-  BarChart3,
   Settings,
   Menu,
   X,
@@ -18,6 +17,7 @@ import {
   Ticket,
   Package,
   Image,
+  LucideSliders,
 } from "lucide-react"; // Added Image
 import { useAuth } from "@/ContextApi/AuthContext";
 
@@ -47,6 +47,7 @@ const Sidebar = () => {
     { href: "/admindashboard/products", label: "محصولات", icon: ShoppingBag },
     { href: "/admindashboard/orders", label: "سفارشات", icon: Package },
     { href: "/admindashboard/categories", label: "دسته‌بندی‌ها", icon: Tag },
+        { href: "/admindashboard/sliders", label: "اسلایدر اصلی", icon: LucideSliders },
     { href: "/admindashboard/brands", label: "برندها", icon: Building },
     { href: "/admindashboard/comments", label: "نظرات", icon: MessageCircle },
     { href: "/admindashboard/tickets", label: "تیکت‌ها", icon: Ticket },

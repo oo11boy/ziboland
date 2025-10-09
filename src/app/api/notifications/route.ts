@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import * as jose from "jose";
-import { RowDataPacket } from 'mysql2';
+import { RowDataPacket } from "mysql2";
 
 interface NotificationRow extends RowDataPacket {
   id: number;
@@ -12,17 +12,17 @@ interface NotificationRow extends RowDataPacket {
   related_id?: number | null;
   product_title?: string | null;
   order_code?: string | null;
-};
+}
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-// 🔒 اعتبارسنجی توکن ادمین
+// 🔒 بررسی توکن ادمین
 async function verifyAdminFromToken(req: Request) {
   const authHeader = req.headers.get("Authorization") || "";
   const token = authHeader.replace("Bearer ", "");
 
   if (!token) throw { status: 401, message: "توکن ارائه نشده است" };
-  if (!JWT_SECRET) throw { status: 500, message: "تنظیم JWT_SECRET یافت نشد" };
+  if (!JWT_SECRET) throw { status: 500, message: "JWT_SECRET تنظیم نشده است" };
 
   try {
     const secret = new TextEncoder().encode(JWT_SECRET);
@@ -39,15 +39,15 @@ async function verifyAdminFromToken(req: Request) {
 // 🟢 GET: دریافت همه اعلان‌ها
 export async function GET() {
   try {
-    const [rows] = await pool.query<NotificationRow[]>(
-      `SELECT n.*, 
-              p.title AS product_title, 
-              o.order_code AS order_code
-       FROM notifications n
-       LEFT JOIN products p ON n.type = 'comment' AND n.related_id = p.id
-       LEFT JOIN orders o ON n.type = 'order' AND n.related_id = o.id
-       ORDER BY n.created_at DESC`
-    );
+    const [rows] = await pool.query<NotificationRow[]>(`
+      SELECT n.*, 
+             p.title AS product_title, 
+             o.order_code AS order_code
+      FROM notifications n
+      LEFT JOIN products p ON n.type = 'comment' AND n.related_id = p.id
+      LEFT JOIN orders o ON n.type = 'order' AND n.related_id = o.id
+      ORDER BY n.created_at DESC
+    `);
 
     const notifications = rows.map((r) => ({
       id: r.id,
@@ -69,34 +69,6 @@ export async function GET() {
   }
 }
 
-// 🟡 PUT: علامت‌گذاری اعلان به عنوان خوانده‌شده (تک‌اعلان)
-export async function PUT(request: Request, { params }: { params: { id?: string } }) {
-  const id = params?.id;
-  if (!id) {
-    return NextResponse.json({ error: "شناسه اعلان الزامی است" }, { status: 400 });
-  }
-
-  try {
-    await verifyAdminFromToken(request);
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: err.status });
-  }
-
-  try {
-    const [result] = await pool.query(`UPDATE notifications SET \`read\` = 1 WHERE id = ?`, [id]);
-    if ((result as any).affectedRows === 0) {
-      return NextResponse.json({ error: "اعلان یافت نشد" }, { status: 404 });
-    }
-    return NextResponse.json({ message: "اعلان خوانده شد" }, { status: 200 });
-  } catch (error: any) {
-    console.error(`PUT /api/notifications/${id} error:`, error);
-    return NextResponse.json(
-      { error: "خطا در به‌روزرسانی اعلان", details: error.message },
-      { status: 500 }
-    );
-  }
-}
-
 // 🔵 PATCH: علامت‌گذاری تمام اعلان‌ها به عنوان خوانده‌شده
 export async function PATCH(request: Request) {
   try {
@@ -109,7 +81,7 @@ export async function PATCH(request: Request) {
     const [result] = await pool.query(`UPDATE notifications SET \`read\` = 1 WHERE \`read\` = 0`);
     return NextResponse.json(
       {
-        message: "تمام اعلان‌ها خوانده شده علامت‌گذاری شدند",
+        message: "تمام اعلان‌ها خوانده‌شده علامت‌گذاری شدند",
         affected: (result as any).affectedRows,
       },
       { status: 200 }

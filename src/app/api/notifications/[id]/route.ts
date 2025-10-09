@@ -1,50 +1,57 @@
-import { NextResponse } from 'next/server';
-import pool from '@/lib/db';
-import * as jose from 'jose';
+import { NextResponse } from "next/server";
+import pool from "@/lib/db";
+import * as jose from "jose";
 
-export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
-  const params = await context.params; // Await params to resolve the Promise
-  const id = params.id;
-  const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+const JWT_SECRET = process.env.JWT_SECRET;
 
-  if (!token) {
-    console.log(`PUT /api/notifications/${id}: No token provided`);
-    return NextResponse.json({ error: 'لطفاً توکن را ارائه دهید' }, { status: 401 });
-  }
+// 🔒 بررسی توکن ادمین
+async function verifyAdminFromToken(req: Request) {
+  const authHeader = req.headers.get("Authorization") || "";
+  const token = authHeader.replace("Bearer ", "");
 
-  const secretKey = process.env.JWT_SECRET;
-  if (!secretKey) {
-    console.error(`PUT /api/notifications/${id}: JWT_SECRET is not set`);
-    return NextResponse.json({ error: 'خطای سرور: تنظیمات نادرست' }, { status: 500 });
-  }
+  if (!token) throw { status: 401, message: "توکن ارائه نشده است" };
+  if (!JWT_SECRET) throw { status: 500, message: "JWT_SECRET تنظیم نشده است" };
 
-  let userRole;
   try {
-    const secret = new TextEncoder().encode(secretKey);
+    const secret = new TextEncoder().encode(JWT_SECRET);
     const { payload } = await jose.jwtVerify(token, secret);
-    userRole = payload.role;
-    if (userRole !== 'admin') {
-      console.log(`PUT /api/notifications/${id}: Unauthorized access, role: ${userRole}`);
-      return NextResponse.json({ error: 'دسترسی غیرمجاز' }, { status: 403 });
+    if ((payload as any).role !== "admin") {
+      throw { status: 403, message: "دسترسی غیرمجاز" };
     }
-  } catch (error: any) {
-    console.error(`PUT /api/notifications/${id}: JWT verification error:`, error.message);
-    return NextResponse.json({ error: 'توکن نامعتبر است', details: error.message }, { status: 401 });
+  } catch (err: any) {
+    throw { status: 401, message: err?.message || "توکن نامعتبر است" };
+  }
+}
+
+// 🟡 PUT: علامت‌گذاری اعلان خاص به عنوان خوانده‌شده
+export async function PUT(
+  request: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
+
+  try {
+    await verifyAdminFromToken(request);
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: err.status });
   }
 
   try {
     const [result] = await pool.query(
-      'UPDATE notifications SET `read` = 1 WHERE id = ?', // Escape `read` as it's a reserved keyword
+      "UPDATE notifications SET `read` = 1 WHERE id = ?",
       [id]
     );
+
     if ((result as any).affectedRows === 0) {
-      console.log(`PUT /api/notifications/${id}: Notification not found`);
-      return NextResponse.json({ error: 'Notification not found' }, { status: 404 });
+      return NextResponse.json({ error: "اعلان یافت نشد" }, { status: 404 });
     }
-    console.log(`PUT /api/notifications/${id}: Notification marked as read`);
-    return NextResponse.json({ message: 'Notification marked as read' }, { status: 200 });
+
+    return NextResponse.json({ message: "اعلان خوانده شد" }, { status: 200 });
   } catch (error: any) {
-    console.error(`PUT /api/notifications/${id}: Error marking notification as read:`, error.message);
-    return NextResponse.json({ error: 'Failed to mark notification as read', details: error.message }, { status: 500 });
+    console.error(`PUT /api/notifications/${id} error:`, error);
+    return NextResponse.json(
+      { error: "خطا در به‌روزرسانی اعلان", details: error.message },
+      { status: 500 }
+    );
   }
 }
