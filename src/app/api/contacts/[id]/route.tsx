@@ -14,8 +14,12 @@ interface Contact extends RowDataPacket {
 }
 
 // GET: دریافت یک پیام خاص
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
-  const contactId = parseInt(params.id);
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }  // ⚠ اینجا به صورت Promise
+) {
+  const { id } = await params;   // ⚠ باید await شود
+  const contactId = parseInt(id);
   if (isNaN(contactId)) {
     return NextResponse.json({ error: "شناسه پیام نامعتبر است" }, { status: 400 });
   }
@@ -41,8 +45,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PUT: به‌روزرسانی پیام (وضعیت یا اطلاعات)
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
-  const contactId = parseInt(params.id);
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const contactId = parseInt(id);
   if (isNaN(contactId)) {
     return NextResponse.json({ error: "شناسه پیام نامعتبر است" }, { status: 400 });
   }
@@ -90,8 +98,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 }
 
 // DELETE: حذف یک پیام
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
-  const contactId = parseInt(params.id);
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const contactId = parseInt(id);
   if (isNaN(contactId)) {
     return NextResponse.json({ error: "شناسه پیام نامعتبر است" }, { status: 400 });
   }

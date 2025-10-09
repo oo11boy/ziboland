@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ذخیره در دیتابیس
-    const [result] = await pool.query(
+    const [] = await pool.query(
       "INSERT INTO contacts (name, email, phone, subject, message, created_at, status) VALUES (?, ?, ?, ?, ?, NOW(), 'pending')",
       [name, email, phone || null, subject, message]
     );

@@ -60,8 +60,8 @@ export default function FooterContainer() {
           <div className="ziboland-links">
             <h3 className="yekanh">زیبولند</h3>
             <div className="flex flex-col gap-y-2">
-              <a href="/articles">مجله زیبولند</a>
-              <a href="../contactus">تماس با ما</a>
+              <Link href="../articles">مجله زیبولند</Link>
+              <Link href="../contactus">تماس با ما</Link>
            
             </div>
           </div>
