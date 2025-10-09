@@ -43,8 +43,7 @@ export default function FooterContainer() {
             <div className="flex flex-col gap-y-2">
               <a href="/faq">سوالات متداول</a>
               <a href="/faq">رویه‌های بازگشت کالا</a>
-              <a href="/faq">شرایط استفاده</a>
-              <a href="/faq">سیاست حفظ حریم خصوصی</a>
+           
             </div>
           </div>
 
@@ -61,9 +60,9 @@ export default function FooterContainer() {
           <div className="ziboland-links">
             <h3 className="yekanh">زیبولند</h3>
             <div className="flex flex-col gap-y-2">
-              <a href="/faq">مجله زیبولند</a>
-              <a href="/faq">تماس با ما</a>
-              <a href="/faq">درباره ما</a>
+              <a href="/articles">مجله زیبولند</a>
+              <a href="../contactus">تماس با ما</a>
+           
             </div>
           </div>
 
