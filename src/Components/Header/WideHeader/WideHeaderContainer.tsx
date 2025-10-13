@@ -1,25 +1,30 @@
-"use client"
+"use client";
 import React from "react";
 import "./WideHeader.css";
 import WideHeaderContactUs from "./WideHeaderContactUs";
 import WideHeaderMiddle from "./WideHeaderMiddle";
 import MegaMenuWideHeader from "./MegaMenuWideHeader";
 import { useAuth } from "@/ContextApi/AuthContext";
+import { Categoryapi } from "@/types/types";
 
-export default function WideHeaderContainer() {
+interface WideHeaderContainerProps {
+  categories: Categoryapi[];
+}
+
+export default function WideHeaderContainer({
+  categories,
+}: WideHeaderContainerProps) {
   const { isAdminDashboard } = useAuth();
 
-  // اگر isAdminDashboard true باشد، چیزی رندر نشود
   if (isAdminDashboard) {
     return null;
   }
 
-  // در غیر این صورت، کامپوننت رندر شود
   return (
     <section className="max-lg-none WideHeaderContactUs yekan">
       <WideHeaderContactUs />
       <WideHeaderMiddle />
-      <MegaMenuWideHeader />
+      <MegaMenuWideHeader categories={categories} />
     </section>
   );
 }

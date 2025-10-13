@@ -1,4 +1,3 @@
-// app/Components/WideSlider.tsx
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { Swiper, SwiperSlide, SwiperRef } from "swiper/react";
@@ -10,7 +9,6 @@ import "swiper/css/effect-coverflow";
 import "./WideSlider.css";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
-import { API } from "@/lib/MainRoutes";
 import Link from "next/link";
 
 interface Slide {
@@ -18,23 +16,21 @@ interface Slide {
   imagewide: string;
   imagemin: string;
   alt: string;
-  link: string; // Added link field
+  link: string;
 }
 
-const WideSliderContainer: React.FC = () => {
-  const [slides, setSlides] = useState<Slide[]>([]);
+interface WideSliderContainerProps {
+  slides: Slide[]; // prop جدید برای داده‌ها
+}
+
+const WideSliderContainer: React.FC<WideSliderContainerProps> = ({ slides }) => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [startTime, setStartTime] = useState(Date.now());
   const [windowWidth, setWindowWidth] = useState(0);
   const swiperRef = useRef<SwiperRef>(null);
 
-  useEffect(() => {
-    fetch(`${API}/sliders`)
-      .then((res) => res.json())
-      .then(setSlides)
-      .catch(console.error);
-  }, []);
+  // useEffect برای fetch حذف شد، چون داده‌ها از props می‌آیند
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -91,10 +87,15 @@ const WideSliderContainer: React.FC = () => {
     }
   };
 
+  // اگر slides خالی باشد، می‌توانید یک پیام یا loading نشان دهید
+  if (slides.length === 0) {
+    return <div className="w-full py-5 text-center">در حال بارگذاری اسلایدرها...</div>;
+  }
+
   return (
     <div className="w-full mx-auto py-5 relative">
       <Swiper
-          ref={swiperRef}
+        ref={swiperRef}
         modules={[Navigation, Pagination, EffectCoverflow, Autoplay]}
         effect="coverflow"
         grabCursor={true}
@@ -120,7 +121,6 @@ const WideSliderContainer: React.FC = () => {
         }}
         onSlideChange={handleSlideChange}
         className="py-5"
-    
       >
         {slides.map((slide) => (
           <SwiperSlide

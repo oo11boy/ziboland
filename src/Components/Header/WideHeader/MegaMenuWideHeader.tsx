@@ -2,50 +2,18 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ArrowDropDown, ArrowLeft, Close } from "@mui/icons-material";
 import Link from "next/link";
-import { ToastContainer, toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Categoryapi } from "@/types/types";
 
+interface MegaMenuWideHeaderProps {
+  categories: Categoryapi[];
+}
 
-
-export default function MegaMenuWideHeader() {
+export default function MegaMenuWideHeader({ categories }: MegaMenuWideHeaderProps) {
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
-  const [categories, setCategories] = useState<Categoryapi[]>([]);
-
-  const [error, setError] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Fetch categories from API
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-      
-        const response = await fetch("/api/categories");
-        if (!response.ok) {
-          throw new Error("Failed to fetch categories");
-        }
-        const categoriesData: Categoryapi[] = await response.json();
-        setCategories(categoriesData);
-  
-      } catch (err) {
-        setError("خطا در بارگذاری دسته‌بندی‌ها. لطفاً دوباره تلاش کنید.");
-        console.log(err)
-      
-        toast.error("خطا در بارگذاری دسته‌بندی‌ها", {
-          position: "top-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          theme: "colored",
-        });
-      }
-    };
-
-    fetchCategories();
-  }, []);
 
   const handleMenuClick = (id: number) => {
     if (activeMenu === id) {
@@ -84,12 +52,11 @@ export default function MegaMenuWideHeader() {
     };
   }, []);
 
-
-
-  if (error) {
+  // در صورت خالی بودن دسته‌بندی‌ها، پیام خطا نمایش داده شود
+  if (categories.length === 0) {
     return (
       <div className="flex h-[35px] items-center justify-center bg-black text-white">
-        <p className="text-lg">{error}</p>
+        <p className="text-lg">خطا در بارگذاری دسته‌بندی‌ها. لطفاً دوباره تلاش کنید.</p>
       </div>
     );
   }
