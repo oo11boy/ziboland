@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Cookies from "js-cookie";
 import "./UserDashboard.css";
 import Sidebar from "./Sidebar";
@@ -20,7 +20,23 @@ import {
 } from "@/types/types";
 import { useAuth } from "@/ContextApi/AuthContext";
 
-export default function UserDashboardContainer() {
+interface UserDashboardContainerProps {
+  initialAddresses: Address[];
+  initialAccountInfo: AccountInfo & { userId?: string };
+  initialOrders: Order[];
+  initialWishlist: WishlistItem[];
+  initialSupportTickets: SupportTicket[];
+  initialRecentActivities: RecentActivity[];
+}
+
+export default function UserDashboardContainer({
+  initialAddresses,
+  initialAccountInfo,
+  initialOrders,
+  initialWishlist,
+  initialSupportTickets,
+  initialRecentActivities,
+}: UserDashboardContainerProps) {
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [orderTrackingId, setOrderTrackingId] = useState<string>("");
   const [trackingResult, setTrackingResult] = useState<TrackingResult | null>(
@@ -28,10 +44,10 @@ export default function UserDashboardContainer() {
   );
   const [trackingError, setTrackingError] = useState<string>("");
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
-  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>(initialAddresses);
   const [newAddress, setNewAddress] = useState<Address>({
     id: "",
-    userId: "",
+    userId: initialAccountInfo.userId || "",
     first_name: "",
     last_name: "",
     phone_number: "",
@@ -46,15 +62,9 @@ export default function UserDashboardContainer() {
     is_default: false,
   });
   const [addressError, setAddressError] = useState<string>("");
-  const [accountInfo, setAccountInfo] = useState<AccountInfo>({
-    username: "",
-    email: "",
-    phone_number: "",
-    first_name: "",
-    last_name: "",
-    role: "customer",
-    isActive: false,
-  });
+  const [accountInfo, setAccountInfo] = useState<AccountInfo>(
+    initialAccountInfo
+  );
   const [showAddressForm, setShowAddressForm] = useState<boolean>(false);
   const [expandedAccordion, setExpandedAccordion] = useState<string | false>(
     false
@@ -68,11 +78,13 @@ export default function UserDashboardContainer() {
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isOrderModalOpen, setIsOrderModalOpen] = useState<boolean>(false);
-  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>(
-    []
+  const [supportTickets, setSupportTickets] = useState<SupportTicket[]>(
+    initialSupportTickets
+  );
+  const [orders] = useState<Order[]>(initialOrders);
+  const [wishlist, setWishlist] = useState<WishlistItem[]>(initialWishlist);
+  const [recentActivities] = useState<RecentActivity[]>(
+    initialRecentActivities
   );
   const { logout } = useAuth();
 
@@ -86,17 +98,7 @@ export default function UserDashboardContainer() {
     مشهد: ["مشهد", "نیشابور", "سبزوار"],
   };
 
-  useEffect(() => {
-    if (token) {
-      fetchAddresses();
-      fetchAccountInfo();
-      fetchOrders();
-      fetchWishlist();
-      fetchTickets();
-      fetchRecentActivities();
-    }
-  }, [token]);
-
+  // تابع برای به‌روزرسانی آدرس‌ها
   const fetchAddresses = async () => {
     try {
       const res = await fetch("/api/addresses", {
@@ -111,35 +113,9 @@ export default function UserDashboardContainer() {
     }
   };
 
-  const fetchAccountInfo = async () => {
-    try {
-      const res = await fetch("/api/users/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setAccountInfo(data);
-        setNewAddress((prev) => ({ ...prev, userId: data.id }));
-      }
-    } catch (err) {
-      console.error("Failed to fetch account info:", err);
-    }
-  };
 
-  const fetchOrders = async () => {
-    try {
-      const res = await fetch("/api/orders", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setOrders(data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch orders:", err);
-    }
-  };
 
+  // تابع برای به‌روزرسانی لیست علاقه‌مندی‌ها
   const fetchWishlist = async () => {
     try {
       const res = await fetch("/api/wishlist", {
@@ -154,6 +130,7 @@ export default function UserDashboardContainer() {
     }
   };
 
+  // تابع برای به‌روزرسانی تیکت‌ها
   const fetchTickets = async () => {
     try {
       const res = await fetch("/api/tickets", {
@@ -181,20 +158,6 @@ export default function UserDashboardContainer() {
       }
     } catch (err) {
       console.error("Failed to fetch tickets:", err);
-    }
-  };
-
-  const fetchRecentActivities = async () => {
-    try {
-      const res = await fetch("/api/activities", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setRecentActivities(data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch activities:", err);
     }
   };
 
@@ -464,7 +427,7 @@ export default function UserDashboardContainer() {
         isSidebarOpen={isSidebarOpen}
         toggleSidebar={toggleSidebar}
         accountInfo={accountInfo}
-        handleLogout={logout} // استفاده از logout از Context
+        handleLogout={logout}
       />
       <main className="ud-main">
         {activeTab === "dashboard" && (

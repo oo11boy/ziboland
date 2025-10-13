@@ -7,6 +7,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './SingleProduct.css';
 import { Product, Color } from '@/types/types';
+import { useCart } from '@/ContextApi/CartContext';
 
 interface BenefitItem {
   id: number;
@@ -22,6 +23,7 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
     infoproduct.colors && infoproduct.colors.length > 0 ? infoproduct.colors[0] : null
   );
   const [isWholesale, setIsWholesale] = useState<boolean>(false);
+  const { dispatch } = useCart();
 
   const retailPrice = parseInt(infoproduct.discountedPrice.replace(/[^\d]/g, '')) || 0;
   const wholesalePrice = parseInt(infoproduct.discountwholesalePrice.replace(/[^\d]/g, '')) || 0;
@@ -31,26 +33,26 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
   useEffect(() => {
     if (quantity >= infoproduct.minwholesale && !isWholesale) {
       toast.success(`قیمت عمده‌فروشی (${infoproduct.minwholesale} عدد به بالا) اعمال شد!`, {
-        position: "top-center",
-        className: "yekan",
+        position: 'top-center',
+        className: 'yekan',
         autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
-        theme: "colored",
+        theme: 'colored',
       });
       setIsWholesale(true);
     } else if (quantity < infoproduct.minwholesale && isWholesale) {
       toast.info('قیمت به حالت تک‌فروشی بازگشت.', {
-        position: "top-center",
-        className: "yekan",
+        position: 'top-center',
+        className: 'yekan',
         autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
         draggable: true,
-        theme: "colored",
+        theme: 'colored',
       });
       setIsWholesale(false);
     }
@@ -76,17 +78,92 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
   };
 
   const handleAddToCart = () => {
-    console.log(`محصول با رنگ ${selectedColor?.persianName || 'نامشخص'} (${selectedColor?.englishName || 'نامشخص'}) و تعداد ${quantity} به سبد خرید اضافه شد`);
-    toast.success('محصول به سبد خرید اضافه شد!', {
-      position: "top-center",
-      className: "yekan",
-      autoClose: 3000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-      theme: "colored",
-    });
+    if (!infoproduct.inStock) {
+      toast.error('محصول موجود نیست', {
+        position: 'top-center',
+        className: 'yekan',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'colored',
+      });
+      return;
+    }
+
+    if (quantity < 1) {
+      toast.error('لطفاً تعداد محصول را انتخاب کنید', {
+        position: 'top-center',
+        className: 'yekan',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'colored',
+      });
+      return;
+    }
+
+    const priceType = quantity >= infoproduct.minwholesale ? 'wholesale' : 'single';
+    const price = priceType === 'single' ? retailPrice : wholesalePrice;
+    const discount = priceType === 'single' ? infoproduct.discount : infoproduct.discountwholesale;
+
+    if (priceType === 'wholesale' && quantity < infoproduct.minwholesale) {
+      toast.error(`حداقل تعداد برای قیمت عمده ${infoproduct.minwholesale} عدد است.`, {
+        position: 'top-center',
+        className: 'yekan',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'colored',
+      });
+      return;
+    }
+
+    try {
+      dispatch({
+        type: 'ADD_ITEM',
+        payload: {
+          id: infoproduct.id,
+          title: infoproduct.title,
+          quantity,
+          priceType,
+          price: price.toString(),
+          image: infoproduct.image || '/placeholder.jpg',
+          discount,
+          color: selectedColor,
+        },
+      });
+
+      toast.success('محصول به سبد خرید اضافه شد!', {
+        position: 'top-center',
+        className: 'yekan',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'colored',
+      });
+
+      setQuantity(1); // ریست کردن تعداد پس از افزودن
+    } catch (error) {
+      toast.error('خطا در اضافه کردن محصول به سبد خرید', {
+        position: 'top-center',
+        className: 'yekan',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: 'colored',
+      });
+      console.error('Error adding to cart:', error);
+    }
   };
 
   const benefitdata: BenefitItem[] = [
@@ -171,7 +248,9 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
                   const g = parseInt(hex.substring(2, 4), 16);
                   const b = parseInt(hex.substring(4, 6), 16);
                   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-                  return luminance > 0.5 ? { tickColor: '#0000004d', borderColor: '#FFFFFF' } : { tickColor: '#FFFFFF', borderColor: '#0000004d' };
+                  return luminance > 0.5
+                    ? { tickColor: '#0000004d', borderColor: '#FFFFFF' }
+                    : { tickColor: '#FFFFFF', borderColor: '#0000004d' };
                 };
 
                 const { tickColor, borderColor } = getContrastColor(color.hexCode);
@@ -185,8 +264,12 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
                       width: '24px',
                       height: '24px',
                       borderRadius: '50%',
-                      border: selectedColor?.englishName === color.englishName ? '2px solid #805b99' : '1px solid #d1d5db',
-                      outline: selectedColor?.englishName === color.englishName ? '2px solid #e9d5ff' : 'none',
+                      border:
+                        selectedColor?.englishName === color.englishName
+                          ? '2px solid #805b99'
+                          : '1px solid #d1d5db',
+                      outline:
+                        selectedColor?.englishName === color.englishName ? '2px solid #e9d5ff' : 'none',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       position: 'relative',

@@ -11,7 +11,7 @@ import Link from "next/link";
 
 
 
-export default function WideHeaderContactUs() {
+export default function WideHeaderContactUs({ settings }: { settings: any }) {
   return (
     <>
       {/* تزریق استایل‌های CSS */}
@@ -25,7 +25,7 @@ export default function WideHeaderContactUs() {
               href="tel:02196520"
               className="text-black text-xl flex items-center gap-2 yekan"
             >
-              021-96520
+             {settings.phone}
               <PhoneInTalkOutlined
                 fontSize="medium"
                 className="text-black phoneicon"
@@ -55,19 +55,22 @@ export default function WideHeaderContactUs() {
           {/* شبکه‌های اجتماعی */}
           <div className="text-white  w-[33%]  flex items-center gap-3">
             <a
-              href=""
+             target="_blank"
+              href={`https://t.me/${settings.telegram_link}`}
               className="border-2 hover:border-[#C7C7C7] bg-black hover:bg-[#005B99] p-2 rounded-full flex justify-center items-center transition-all duration-300"
             >
               <Telegram className="!text-[20px]" />
             </a>
             <a
-              href=""
+               target="_blank"
+              href={`https://wa.me/${settings.whatsapp_link}`}
               className="border-2 hover:border-[#C7C7C7] bg-black hover:bg-[#005B99] p-2 rounded-full flex justify-center items-center transition-all duration-300"
             >
               <WhatsApp className="!text-[20px]" />
             </a>
             <a
-              href=""
+               target="_blank"
+            href={`https://instagram.com/${settings.instagram_link}`}
               className="border-2 hover:border-[#C7C7C7] bg-black hover:bg-[#005B99] p-2 rounded-full flex justify-center items-center transition-all duration-300"
             >
               <Instagram className="!text-[20px]" />

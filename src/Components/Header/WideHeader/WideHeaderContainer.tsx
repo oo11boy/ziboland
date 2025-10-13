@@ -9,11 +9,12 @@ import { Categoryapi } from "@/types/types";
 
 interface WideHeaderContainerProps {
   categories: Categoryapi[];
+  settings:any
 }
 
 export default function WideHeaderContainer({
-  categories,
-}: WideHeaderContainerProps) {
+  categories,settings
+}: WideHeaderContainerProps): React.JSX.Element | null {
   const { isAdminDashboard } = useAuth();
 
   if (isAdminDashboard) {
@@ -22,7 +23,7 @@ export default function WideHeaderContainer({
 
   return (
     <section className="max-lg-none WideHeaderContactUs yekan">
-      <WideHeaderContactUs />
+      <WideHeaderContactUs settings={settings}/>
       <WideHeaderMiddle />
       <MegaMenuWideHeader categories={categories} />
     </section>

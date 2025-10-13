@@ -4,7 +4,7 @@ import React from "react";
 import "./Footer.css";
 import Link from "next/link";
 import { useAuth } from "@/ContextApi/AuthContext";
-export default function FooterContainer() {
+export default function FooterContainer({ settings }: { settings: any }) {
   const { isAdminDashboard ,ismyaccount} = useAuth();
 
   if (isAdminDashboard) {
@@ -22,18 +22,17 @@ export default function FooterContainer() {
             </Link>
             <div className="flex flex-col gap-y-2 mt-4 text-justify">
               <p>
-                زیبولند یک فروشگاه برای خرید انواع وسایل مورد نیاز با قیمت و
-                کیفیت مناسب است که بسیار مقرون به صرفه است.
+               {settings.site_description}
               </p>
             </div>
             <div className="ziboland-contact">
               <p>شماره تماس:</p>
-              <p>02195452255</p>
+              <p>     {settings.phone}</p>
             </div>
             <h3 className="ziboland-hours-title">ساعت کاری</h3>
             <div className="ziboland-hours">
-              <p>شنبه تا جمعه</p>
-              <p>08:00 - 23:00</p>
+              <p>{settings.working_days}</p>
+              <p>{settings.working_hours}</p>
             </div>
           </div>
 

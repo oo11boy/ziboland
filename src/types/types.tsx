@@ -211,6 +211,7 @@ export interface Ticket {
 }
 
 export interface AccountInfo {
+  id: string | undefined;
   username: string;
   email: string;
   phone_number: string;

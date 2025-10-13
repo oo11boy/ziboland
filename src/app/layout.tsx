@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ReactNode } from "react";
 import { CartProvider } from "@/ContextApi/CartContext";
-import FooterContainer from "@/Components/Footer/FooterContainer";
+
 import MobileBottomNavigation from "@/Components/Header/MobileHeader/MobileBottomNavigation";
 import MoblieHeaderTopTab from "@/Components/Header/MobileHeader/MoblieHeaderTopTab";
 import { AuthProvider } from "@/ContextApi/AuthContext";
-import WideHeaderServer from "@/Components/Server/WideHeaderServer";
+import WideHeaderServer from "@/Components/Header/WideHeader/WideHeaderServer";
+import FooterServer from "@/Components/Footer/FooterServer";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -28,7 +29,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <WideHeaderServer />
             <MoblieHeaderTopTab />
             {children}
-            <FooterContainer />
+            <FooterServer />
             <MobileBottomNavigation />
           </CartProvider>
         </AuthProvider>
