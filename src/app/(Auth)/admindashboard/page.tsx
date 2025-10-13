@@ -16,6 +16,8 @@ import {
   DollarSign,
 } from "lucide-react";
 
+
+
 const DashboardPage = () => {
   const [stats, setStats] = useState<any>(null);
   const [recentProducts, setRecentProducts] = useState<any[]>([]);

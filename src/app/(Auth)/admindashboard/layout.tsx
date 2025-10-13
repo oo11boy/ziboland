@@ -1,6 +1,11 @@
 import Sidebar from '@/Components/Dashboards/AdminDashboardComponents/Sidebar';
 import Header from '@/Components/Dashboards/AdminDashboardComponents/Header';
+import { Metadata } from 'next';
+export const metadata: Metadata = {
+  title: "داشبورد مدیریت | زیبولند",
+  description: "داشبورد مدیریت",
 
+};
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
 
   return (

@@ -9,6 +9,7 @@ import {
   SupportTicket,
   WishlistItem,
 } from "@/types/types";
+import { Metadata } from "next";
 
 // تابع کمکی برای دریافت داده‌ها با مدیریت خطا
 async function fetchData<T>(
@@ -32,7 +33,11 @@ async function fetchData<T>(
     return [] as T; // در صورت خطا، آرایه خالی یا مقدار پیش‌فرض
   }
 }
+export const metadata: Metadata = {
+  title: "داشبورد کاربر | زیبولند",
+  description: "داشبورد کاربر",
 
+};
 export default async function page() {
   // دریافت توکن از کوکی‌ها در سمت سرور
   const cookieStore = cookies();

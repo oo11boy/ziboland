@@ -1,0 +1,23 @@
+# robots.txt - کنترل دسترسی خزنده‌ها
+
+User-agent: *
+# 🔒 مسیرهایی که نباید ایندکس شوند
+Disallow: /api/
+Disallow: /admindashboard/
+Disallow: /userdashboard/
+Disallow: /paymentdone/
+Disallow: /paymentfailed/
+Disallow: /cartlist/
+Disallow: /checkout/
+
+
+# ✅ مسیرهایی که مجاز به ایندکس شدن هستند
+Allow: /
+Allow: /products
+Allow: /products/
+Allow: /products/*
+Allow: /articles
+Allow: /articles/
+Allow: /articles/*
+
+
