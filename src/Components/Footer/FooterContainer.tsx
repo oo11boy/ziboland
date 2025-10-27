@@ -69,13 +69,10 @@ export default function FooterContainer({ settings }: { settings: any }) {
           <div className="trust-badge">
             <h3 className="yekanh">نماد اعتماد</h3>
             <div className="flex w-full justify-center items-center">
-              <a href="/namad" className="trust-badge-link">
-                <img
-                  src="https://unicodewebdesign.com/image/enmad.png"
-                  alt="نماد اعتماد"
-                  className="w-full h-auto object-contain"
-                />
-              </a>
+    
+
+       
+              <a className="trust-badge-link" referrerPolicy="origin" target="_blank" href="https://trustseal.enamad.ir/?id=467521&Code=8RJb5Bl8uzBsckWVX7RfaZnom53ODxSQ" rel="noopener"><img className="w-full h-auto object-contain" referrerPolicy="origin" src="../images/enmad.png" alt=""  id="8RJb5Bl8uzBsckWVX7RfaZnom53ODxSQ"/></a>
             </div>
           </div>
         </div>
