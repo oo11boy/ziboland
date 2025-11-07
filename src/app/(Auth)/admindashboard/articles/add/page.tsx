@@ -265,7 +265,7 @@ export default function AddArticlePage() {
                 محتوا <span className="text-red-500">*</span>
               </Label>
               <Editor
-                apiKey="5kozx5x8g9baw4r6kzplxy823yuwnq80gb7coiu263qxf6j8"
+                apiKey={process.env.TINY_KEY ? process.env.TINY_KEY  : "0nmwzbfoumioikgwvlx61cm3wkm7jzcko2c54ui40nc4850o"}
                 value={form.content}
                 onEditorChange={(newValue) => setForm({ ...form, content: newValue })}
              init={{

@@ -5,14 +5,18 @@ import "./Footer.css";
 import Link from "next/link";
 import { useAuth } from "@/ContextApi/AuthContext";
 export default function FooterContainer({ settings }: { settings: any }) {
-  const { isAdminDashboard ,ismyaccount} = useAuth();
+  const { isAdminDashboard, ismyaccount } = useAuth();
 
   if (isAdminDashboard) {
     return null;
   }
 
+  const enamadCode = `<img src="../images/enmad.png" width="100" height="110"
+  onclick="window.open('https://trustseal.enamad.ir/?id=665010&Code=8bOVpOazCIn6m25LT9ROgYztLP5dWra2', 'Popup', 'toolbar=no, scrollbars=no, location=no, statusbar=no, menubar=no, resizable=0, width=450, height=630, top=30')"
+  alt="enamad">`;
+
   return (
-    <div className={`footer-container ${ismyaccount &&"max-lg:hidden"}`}>
+    <div className={`footer-container ${ismyaccount && "max-lg:hidden"}`}>
       <div className="footer-inner">
         <div className="footer-content">
           {/* Ziboland info section */}
@@ -21,13 +25,11 @@ export default function FooterContainer({ settings }: { settings: any }) {
               ZIBOLAND
             </Link>
             <div className="flex flex-col gap-y-2 mt-4 text-justify">
-              <p>
-               {settings.site_description}
-              </p>
+              <p>{settings.site_description}</p>
             </div>
             <div className="ziboland-contact">
               <p>شماره تماس:</p>
-              <p>     {settings.phone}</p>
+              <p> {settings.phone}</p>
             </div>
             <h3 className="ziboland-hours-title">ساعت کاری</h3>
             <div className="ziboland-hours">
@@ -42,7 +44,6 @@ export default function FooterContainer({ settings }: { settings: any }) {
             <div className="flex flex-col gap-y-2">
               <a href="/faq">سوالات متداول</a>
               <a href="/faq">رویه‌های بازگشت کالا</a>
-           
             </div>
           </div>
 
@@ -61,19 +62,15 @@ export default function FooterContainer({ settings }: { settings: any }) {
             <div className="flex flex-col gap-y-2">
               <Link href="../articles">مجله زیبولند</Link>
               <Link href="../contactus">تماس با ما</Link>
-           
             </div>
           </div>
 
           {/* Trust badge section */}
           <div className="trust-badge">
             <h3 className="yekanh">نماد اعتماد</h3>
-            <div className="flex w-full justify-center items-center">
-    
 
-       
-              <a className="trust-badge-link" referrerPolicy="origin" target="_blank" href="https://trustseal.enamad.ir/?id=467521&Code=8RJb5Bl8uzBsckWVX7RfaZnom53ODxSQ" rel="noopener"><img className="w-full h-auto object-contain" referrerPolicy="origin" src="../images/enmad.png" alt=""  id="8RJb5Bl8uzBsckWVX7RfaZnom53ODxSQ"/></a>
-            </div>
+            <div className="flex w-full justify-center items-center" dangerouslySetInnerHTML={{ __html: enamadCode }} />
+      
           </div>
         </div>
 

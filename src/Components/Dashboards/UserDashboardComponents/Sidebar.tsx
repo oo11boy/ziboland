@@ -42,7 +42,7 @@ export default function Sidebar({
           {[
             { tab: "dashboard", label: "پیشخوان", Icon: Home },
             { tab: "orders", label: "سفارش‌ها", Icon: ShoppingBag },
-            { tab: "wishlist", label: "لیست‌ها", Icon: Favorite },
+            // { tab: "wishlist", label: "لیست‌ها", Icon: Favorite },
             { tab: "tickets", label: "تیکت پشتیبانی", Icon: FireTruck },
             { tab: "addresses", label: "آدرس", Icon: Settings },
             { tab: "account", label: "اطلاعات حساب کاربری", Icon: Settings },

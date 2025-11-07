@@ -7,7 +7,7 @@ import {
   Order,
   RecentActivity,
   SupportTicket,
-  WishlistItem,
+  // WishlistItem,
 } from "@/types/types";
 import { Metadata } from "next";
 
@@ -50,18 +50,18 @@ export default async function page() {
     token
   );
   const orders: Order[] = await fetchData<Order[]>("/orders", token);
-  const wishlist: WishlistItem[] = await fetchData<WishlistItem[]>(
-    "/wishlist",
-    token
-  );
+  // const wishlist: WishlistItem[] = await fetchData<WishlistItem[]>(
+  //   "/wishlist",
+  //   token
+  // );
   const supportTickets: SupportTicket[] = await fetchData<SupportTicket[]>(
     "/tickets",
     token
   );
-  const recentActivities: RecentActivity[] = await fetchData<RecentActivity[]>(
-    "/activities",
-    token
-  );
+  // const recentActivities: RecentActivity[] = await fetchData<RecentActivity[]>(
+  //   "/activities",
+  //   token
+  // );
 
   // تبدیل فرمت تیکت‌ها (مشابه کد اصلی)
   const formattedTickets = supportTickets.map((ticket) => ({
@@ -84,9 +84,9 @@ export default async function page() {
         userId: accountInfo.id, // برای استفاده در newAddress
       }}
       initialOrders={orders}
-      initialWishlist={wishlist}
+      // initialWishlist={wishlist}
       initialSupportTickets={formattedTickets}
-      initialRecentActivities={recentActivities}
+      // initialRecentActivities={recentActivities}
     />
   );
 }

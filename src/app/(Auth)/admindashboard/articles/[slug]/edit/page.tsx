@@ -6,7 +6,13 @@ import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Label } from "@/Components/ui/label";
-import { Upload, X, Image as ImageIcon, CheckCircle, Loader2 } from "lucide-react";
+import {
+  Upload,
+  X,
+  Image as ImageIcon,
+  CheckCircle,
+  Loader2,
+} from "lucide-react";
 import { Editor } from "@tinymce/tinymce-react";
 import { toast } from "react-hot-toast";
 import { API, SITE } from "@/lib/MainRoutes";
@@ -61,7 +67,9 @@ export default function EditArticlePage() {
             content: data.content || "",
             image: data.image || "",
             author: data.author || "",
-            tags: Array.isArray(data.tags) ? data.tags.join(", ") : data.tags || "",
+            tags: Array.isArray(data.tags)
+              ? data.tags.join(", ")
+              : data.tags || "",
           });
           setLoadingArticle(false);
         })
@@ -91,14 +99,17 @@ export default function EditArticlePage() {
     setUploadedFiles([]);
   };
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    setFiles((prev) => [...prev, ...selectedFiles]);
-    selectedFiles.forEach((file) => {
-      const previewUrl = URL.createObjectURL(file);
-      setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
-    });
-  }, []);
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = Array.from(e.target.files || []);
+      setFiles((prev) => [...prev, ...selectedFiles]);
+      selectedFiles.forEach((file) => {
+        const previewUrl = URL.createObjectURL(file);
+        setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
+      });
+    },
+    []
+  );
 
   const removeFile = useCallback(
     (fileName: string) => {
@@ -177,7 +188,9 @@ export default function EditArticlePage() {
         router.push("/admindashboard/articles");
       } else {
         const errorData = await res.json();
-        toast.error(`خطا در به‌روزرسانی مقاله: ${errorData.message || "خطای ناشناخته"}`);
+        toast.error(
+          `خطا در به‌روزرسانی مقاله: ${errorData.message || "خطای ناشناخته"}`
+        );
       }
     } catch (error) {
       toast.error("خطایی در ارتباط با سرور رخ داد.");
@@ -204,12 +217,17 @@ export default function EditArticlePage() {
     <div className="container mx-auto p-4 yekan">
       <Card className="max-w-4xl mx-auto">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold text-center">ویرایش مقاله</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            ویرایش مقاله
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <Label htmlFor="title" className="block text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="title"
+                className="block text-sm font-medium text-gray-700"
+              >
                 تیتر مقاله <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -224,7 +242,10 @@ export default function EditArticlePage() {
             </div>
 
             <div>
-              <Label htmlFor="slug" className="block text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="slug"
+                className="block text-sm font-medium text-gray-700"
+              >
                 اسلاگ (URL) <span className="text-red-500">*</span>
               </Label>
               <Input
@@ -239,7 +260,10 @@ export default function EditArticlePage() {
             </div>
 
             <div>
-              <Label htmlFor="image" className="block text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="image"
+                className="block text-sm font-medium text-gray-700"
+              >
                 لینک تصویر
               </Label>
               <div className="flex flex-col md:flex-row gap-4 items-end">
@@ -276,7 +300,10 @@ export default function EditArticlePage() {
             </div>
 
             <div>
-              <Label htmlFor="author" className="block text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="author"
+                className="block text-sm font-medium text-gray-700"
+              >
                 نویسنده
               </Label>
               <Input
@@ -290,7 +317,10 @@ export default function EditArticlePage() {
             </div>
 
             <div>
-              <Label htmlFor="tags" className="block text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="tags"
+                className="block text-sm font-medium text-gray-700"
+              >
                 تگ‌ها (با کاما جدا شود)
               </Label>
               <Input
@@ -304,13 +334,18 @@ export default function EditArticlePage() {
             </div>
 
             <div>
-              <Label htmlFor="content" className="block text-sm font-medium text-gray-700">
+              <Label
+                htmlFor="content"
+                className="block text-sm font-medium text-gray-700"
+              >
                 محتوا <span className="text-red-500">*</span>
               </Label>
               <Editor
-                apiKey="5kozx5x8g9baw4r6kzplxy823yuwnq80gb7coiu263qxf6j8"
-                value={form.content}
-                onEditorChange={(newValue) => setForm({ ...form, content: newValue })}
+                apiKey={process.env.TINY_KEY ? process.env.TINY_KEY  : "0nmwzbfoumioikgwvlx61cm3wkm7jzcko2c54ui40nc4850o"}
+               value={form.content}
+                onEditorChange={(newValue) =>
+                  setForm({ ...form, content: newValue })
+                }
                 init={{
                   height: 500,
                   menubar: true,
@@ -341,7 +376,8 @@ export default function EditArticlePage() {
                     "bold italic forecolor | alignleft aligncenter " +
                     "alignright alignjustify | bullist numlist outdent indent | " +
                     "removeformat | help",
-                  content_style: "body { font-family: yekannew!important; font-size: 16px; direction: rtl; }",
+                  content_style:
+                    "body { font-family: yekannew!important; font-size: 16px; direction: rtl; }",
                 }}
               />
             </div>
@@ -377,7 +413,9 @@ export default function EditArticlePage() {
             <div className="p-6 space-y-4">
               <div
                 className="border-2 border-dashed border-purple-300 dark:border-purple-600 rounded-lg p-6 text-center hover:border-purple-400 dark:hover:border-purple-500 transition-colors cursor-pointer bg-gray-50 dark:bg-gray-700"
-                onClick={() => document.getElementById("file-input-modal")?.click()}
+                onClick={() =>
+                  document.getElementById("file-input-modal")?.click()
+                }
               >
                 <Upload className="mx-auto h-8 w-8 text-purple-500 mb-2" />
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">

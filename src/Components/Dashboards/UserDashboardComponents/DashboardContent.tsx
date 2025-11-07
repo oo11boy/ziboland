@@ -4,10 +4,10 @@ import { Order, WishlistItem, AccountInfo, SupportTicket, RecentActivity, Tracki
 
 interface DashboardContentProps {
   orders: Order[];
-  wishlist: WishlistItem[];
+  // wishlist: WishlistItem[];
   accountInfo: AccountInfo;
   supportTickets: SupportTicket[];
-  recentActivities: RecentActivity[];
+  // recentActivities: RecentActivity[];
   orderTrackingId: string;
   setOrderTrackingId: (id: string) => void;
   trackingResult: TrackingResult | null;
@@ -18,10 +18,10 @@ interface DashboardContentProps {
 
 export default function DashboardContent({
   orders,
-  wishlist,
+  // wishlist,
   accountInfo,
   supportTickets,
-  recentActivities,
+  // recentActivities,
   orderTrackingId,
   setOrderTrackingId,
   trackingResult,
@@ -62,8 +62,12 @@ export default function DashboardContent({
         <div className="ud-card" role="region" aria-label="تعداد علاقه‌مندی‌ها">
           <div className="ud-card-dot ud-card-dot-yellow"></div>
           <h3 className="ud-card-title">تعداد علاقه‌مندی‌ها</h3>
-          <p className="ud-card-value">{wishlist.length.toLocaleString("fa-IR")}</p>
-          <p className="ud-card-info">آخرین افزودن: {recentActivities[0]?.date ? new Date(recentActivities[0].date).toLocaleDateString("fa-IR") : "نامشخص"}</p>
+          <p className="ud-card-value">0</p>
+          <p className="ud-card-info">آخرین افزودن: 
+            {/* {recentActivities[0]?.date ? new Date(recentActivities[0].date).toLocaleDateString("fa-IR") : "نامشخص"}
+             */}
+            نامشخص
+            </p>
         </div>
         <div className="ud-card" role="region" aria-label="وضعیت پروفایل">
           <div className="ud-card-dot ud-card-dot-green"></div>
@@ -126,7 +130,7 @@ export default function DashboardContent({
       </div>
       <div className="ud-activities-container">
         <h3 className="ud-activities-title">فعالیت اخیر</h3>
-        {recentActivities.length === 0 ? (
+        {/* {recentActivities.length === 0 ? (
           <p className="ud-activities-empty">هیچ فعالیتی ثبت نشده است!</p>
         ) : (
           <ul className="ud-activities-list">
@@ -139,7 +143,9 @@ export default function DashboardContent({
               </li>
             ))}
           </ul>
-        )}
+        )} */}
+           <p className="ud-activities-empty">هیچ فعالیتی ثبت نشده است!</p>
+       
       </div>
       <div className="ud-shortcuts-container">
         <h3 className="ud-shortcuts-title">میانبرهای سریع</h3>
@@ -152,14 +158,14 @@ export default function DashboardContent({
             <ShoppingCart className="ud-shortcuts-icon" />
             مشاهده سفارش‌ها
           </button>
-          <button
+          {/* <button
             onClick={() => setActiveTab("wishlist")}
             className="ud-shortcuts-button"
             aria-label="مشاهده علاقه‌مندی‌ها"
           >
             <Favorite className="ud-shortcuts-icon" />
             مشاهده علاقه‌مندی‌ها
-          </button>
+          </button> */}
           <button
             onClick={() => setActiveTab("tickets")}
             className="ud-shortcuts-button"

@@ -5,7 +5,6 @@ import "./UserDashboard.css";
 import Sidebar from "./Sidebar";
 import DashboardContent from "./DashboardContent";
 import OrdersContent from "./OrdersContent";
-import WishlistContent from "./WishlistContent";
 import TicketsContent from "./TicketsContent";
 import AddressesContent from "./AddressesContent";
 import AccountContent from "./AccountContent";
@@ -24,18 +23,18 @@ interface UserDashboardContainerProps {
   initialAddresses: Address[];
   initialAccountInfo: AccountInfo & { userId?: string };
   initialOrders: Order[];
-  initialWishlist: WishlistItem[];
+  // initialWishlist: WishlistItem[];
   initialSupportTickets: SupportTicket[];
-  initialRecentActivities: RecentActivity[];
+  // initialRecentActivities: RecentActivity[];
 }
 
 export default function UserDashboardContainer({
   initialAddresses,
   initialAccountInfo,
   initialOrders,
-  initialWishlist,
+  // initialWishlist,
   initialSupportTickets,
-  initialRecentActivities,
+  // initialRecentActivities,
 }: UserDashboardContainerProps) {
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [orderTrackingId, setOrderTrackingId] = useState<string>("");
@@ -82,10 +81,10 @@ export default function UserDashboardContainer({
     initialSupportTickets
   );
   const [orders] = useState<Order[]>(initialOrders);
-  const [wishlist, setWishlist] = useState<WishlistItem[]>(initialWishlist);
-  const [recentActivities] = useState<RecentActivity[]>(
-    initialRecentActivities
-  );
+  // const [wishlist, setWishlist] = useState<WishlistItem[]>(initialWishlist);
+  // const [recentActivities] = useState<RecentActivity[]>(
+  //   initialRecentActivities
+  // );
   const { logout } = useAuth();
 
   const token = Cookies.get("authToken");
@@ -115,20 +114,20 @@ export default function UserDashboardContainer({
 
 
 
-  // تابع برای به‌روزرسانی لیست علاقه‌مندی‌ها
-  const fetchWishlist = async () => {
-    try {
-      const res = await fetch("/api/wishlist", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setWishlist(data);
-      }
-    } catch (err) {
-      console.error("Failed to fetch wishlist:", err);
-    }
-  };
+  // // تابع برای به‌روزرسانی لیست علاقه‌مندی‌ها
+  // const fetchWishlist = async () => {
+  //   try {
+  //     const res = await fetch("/api/wishlist", {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     if (res.ok) {
+  //       const data = await res.json();
+  //       setWishlist(data);
+  //     }
+  //   } catch (err) {
+  //     console.error("Failed to fetch wishlist:", err);
+  //   }
+  // };
 
   // تابع برای به‌روزرسانی تیکت‌ها
   const fetchTickets = async () => {
@@ -365,20 +364,20 @@ export default function UserDashboardContainer({
     }
   };
 
-  const handleRemoveFromWishlist = async (id: number) => {
-    try {
-      const res = await fetch(`/api/wishlist/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        fetchWishlist();
-        alert(`محصول با شناسه ${id} از لیست علاقه‌مندی‌ها حذف شد.`);
-      }
-    } catch (err) {
-      console.error("Failed to remove from wishlist:", err);
-    }
-  };
+  // const handleRemoveFromWishlist = async (id: number) => {
+  //   try {
+  //     const res = await fetch(`/api/wishlist/${id}`, {
+  //       method: "DELETE",
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //     if (res.ok) {
+  //       fetchWishlist();
+  //       alert(`محصول با شناسه ${id} از لیست علاقه‌مندی‌ها حذف شد.`);
+  //     }
+  //   } catch (err) {
+  //     console.error("Failed to remove from wishlist:", err);
+  //   }
+  // };
 
   const handleSaveAccountInfo = async () => {
     if (!accountInfo.first_name || !accountInfo.email) {
@@ -433,10 +432,10 @@ export default function UserDashboardContainer({
         {activeTab === "dashboard" && (
           <DashboardContent
             orders={orders}
-            wishlist={wishlist}
+            // wishlist={wishlist}
             accountInfo={accountInfo}
             supportTickets={supportTickets}
-            recentActivities={recentActivities}
+            // recentActivities={recentActivities}
             orderTrackingId={orderTrackingId}
             setOrderTrackingId={setOrderTrackingId}
             trackingResult={trackingResult}
@@ -455,13 +454,13 @@ export default function UserDashboardContainer({
             modalStyle={modalStyle}
           />
         )}
-        {activeTab === "wishlist" && (
+        {/* {activeTab === "wishlist" && (
           <WishlistContent
             wishlist={wishlist}
             handleAddToCart={handleAddToCart}
             handleRemoveFromWishlist={handleRemoveFromWishlist}
           />
-        )}
+        )} */}
         {activeTab === "tickets" && (
           <TicketsContent
             supportTickets={supportTickets}
