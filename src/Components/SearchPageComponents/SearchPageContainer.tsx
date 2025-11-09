@@ -17,6 +17,8 @@ import {
   Tune,
   Sort,
   NotificationAdd,
+  ExpandMore,
+  ExpandLess,
 } from "@mui/icons-material";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -54,8 +56,10 @@ export default function SearchPageContainer({
   const [selectedSubcatIds, setSelectedSubcatIds] = useState<number[]>(
     queryParams.subcatId ? [parseInt(queryParams.subcatId)] : []
   );
+  const [selectedItemIds, setSelectedItemIds] = useState<number[]>([]);
   const [categorySearch, setCategorySearch] = useState("");
-  const [subcatSearch, setSubcatSearch] = useState("");
+  const [expandedMothercats, setExpandedMothercats] = useState<number[]>([]);
+  const [expandedSubcats, setExpandedSubcats] = useState<number[]>([]);
   const [priceRange, setPriceRange] = useState([0, 5000000]);
   const [rating, setRating] = useState(0);
   const [discount, setDiscount] = useState(false);
@@ -72,15 +76,12 @@ export default function SearchPageContainer({
   >(null);
   const [showFilters, setShowFilters] = useState(false);
   const [sortOption, setSortOption] = useState<string>("جدیدترین");
-
   const productsRef = useRef<HTMLDivElement>(null);
 
   // Fetch products and categories from APIs
   useEffect(() => {
     const fetchData = async () => {
       try {
-    
-
         // Fetch products
         const productsResponse = await fetch("/api/products");
         if (!productsResponse.ok) {
@@ -88,7 +89,6 @@ export default function SearchPageContainer({
         }
         const productsData: Product[] = await productsResponse.json();
         setProducts(productsData);
-
         // Fetch categories
         const categoriesResponse = await fetch("/api/categories");
         if (!categoriesResponse.ok) {
@@ -96,11 +96,9 @@ export default function SearchPageContainer({
         }
         const categoriesData: Categoryapi[] = await categoriesResponse.json();
         setCategories(categoriesData);
-
       } catch (err) {
         setError("خطا در بارگذاری داده‌ها. لطفاً دوباره تلاش کنید.");
         console.log(err);
-    
         toast.error("خطا در بارگذاری داده‌ها", {
           position: "top-center",
           autoClose: 3000,
@@ -112,7 +110,6 @@ export default function SearchPageContainer({
         });
       }
     };
-
     fetchData();
   }, []);
 
@@ -121,7 +118,6 @@ export default function SearchPageContainer({
     const mothercatId = searchParams.get("mothercatId");
     const subcatId = searchParams.get("subcatId");
     const brands = searchParams.get("brands");
-
     setSelectedMothercatIds(mothercatId ? [parseInt(mothercatId)] : []);
     setSelectedSubcatIds(subcatId ? [parseInt(subcatId)] : []);
     setSelectedBrands(brands ? brands.split(",") : []);
@@ -138,6 +134,7 @@ export default function SearchPageContainer({
     selectedBrands,
     selectedMothercatIds,
     selectedSubcatIds,
+    selectedItemIds,
     priceRange,
     rating,
     discount,
@@ -164,9 +161,7 @@ export default function SearchPageContainer({
     setCartQuantities((prev) => {
       const newQuantity = (prev[productId] || 0) + delta;
       const product = products.find((p) => p.id === productId);
-
       if (!product) return prev;
-
       // If quantity meets or exceeds minwholesale, switch to wholesale price
       if (newQuantity >= product.minwholesale) {
         handlePriceTypeChange(productId, "wholesale");
@@ -175,7 +170,6 @@ export default function SearchPageContainer({
       else if (newQuantity < product.minwholesale) {
         handlePriceTypeChange(productId, "single");
       }
-
       return { ...prev, [productId]: newQuantity < 0 ? 0 : newQuantity };
     });
   };
@@ -205,7 +199,6 @@ export default function SearchPageContainer({
       });
       return;
     }
-
     const quantity = cartQuantities[productId];
     const priceType = priceTypes[productId];
     const price =
@@ -214,7 +207,6 @@ export default function SearchPageContainer({
         : product.discountwholesalePrice;
     const discount =
       priceType === "single" ? product.discount : product.discountwholesale;
-
     // Check minimum quantity for wholesale price
     if (priceType === "wholesale" && quantity < product.minwholesale) {
       toast.error(
@@ -231,7 +223,6 @@ export default function SearchPageContainer({
       );
       return;
     }
-
     try {
       dispatch({
         type: "ADD_ITEM",
@@ -248,7 +239,6 @@ export default function SearchPageContainer({
           discount: discount,
         },
       });
-
       toast.success("محصول به سبد خرید اضافه شد!", {
         position: "top-center",
         autoClose: 3000,
@@ -258,7 +248,6 @@ export default function SearchPageContainer({
         draggable: true,
         theme: "colored",
       });
-
       // Reset quantity after adding to cart
       setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
       setShowQuantitySelector(null);
@@ -293,8 +282,10 @@ export default function SearchPageContainer({
     setSelectedBrands([]);
     setSelectedMothercatIds([]);
     setSelectedSubcatIds([]);
+    setSelectedItemIds([]);
     setCategorySearch("");
-    setSubcatSearch("");
+    setExpandedMothercats([]);
+    setExpandedSubcats([]);
     setPriceRange([0, 5000000]);
     setRating(0);
     setDiscount(false);
@@ -306,19 +297,24 @@ export default function SearchPageContainer({
   const allBrands = Array.from(
     new Set(products.map((p) => p.brandDetails?.img || ""))
   );
+
   const allCategories = categories.filter((cat) => cat.mothercat === 1);
+
   const filteredCategories = allCategories.filter((cat) =>
     cat.name.toLowerCase().includes(categorySearch.toLowerCase())
   );
-  const filteredSubcats =
-    selectedMothercatIds.length > 0
-      ? categories
-          .filter((cat) => selectedMothercatIds.includes(cat.id))
-          .flatMap((cat) => cat.subcat || [])
-          .filter((subcat) =>
-            subcat.name.toLowerCase().includes(subcatSearch.toLowerCase())
-          )
-      : [];
+
+  const toggleMothercatExpansion = (id: number) => {
+    setExpandedMothercats((prev) =>
+      prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSubcatExpansion = (id: number) => {
+    setExpandedSubcats((prev) =>
+      prev.includes(id) ? prev.filter((cid) => cid !== id) : [...prev, id]
+    );
+  };
 
   const getSortedProducts = () => {
     const filtered = products.filter(
@@ -331,13 +327,14 @@ export default function SearchPageContainer({
           selectedMothercatIds.includes(product.mothercatId)) &&
         (selectedSubcatIds.length === 0 ||
           selectedSubcatIds.includes(product.subcatId)) &&
+        (selectedItemIds.length === 0 ||
+          selectedItemIds.includes(product.itemId ?? 0)) &&
         product.numericPrice >= priceRange[0] &&
         product.numericPrice <= priceRange[1] &&
         (!discount || product.discount !== "0%") &&
         (!inStock || product.inStock) &&
         product.rating >= rating
     );
-
     switch (sortOption) {
       case "جدیدترین":
         return filtered.sort((a, b) => b.id - a.id);
@@ -353,6 +350,7 @@ export default function SearchPageContainer({
         return filtered;
     }
   };
+
   const filteredProducts = getSortedProducts();
 
   const selectedCategoryNames = selectedMothercatIds
@@ -364,9 +362,19 @@ export default function SearchPageContainer({
     .map(
       (id) =>
         categories
-          .filter((cat) => selectedMothercatIds.includes(cat.id))
           .flatMap((cat) => cat.subcat || [])
           .find((sub) => sub.id === id)?.name
+    )
+    .filter(Boolean)
+    .join(", ");
+
+  const selectedItemNames = selectedItemIds
+    .map(
+      (id) =>
+        categories
+          .flatMap((cat) => cat.subcat || [])
+          .flatMap((sub) => sub.items || [])
+          .find((item) => item.id === id)?.name
     )
     .filter(Boolean)
     .join(", ");
@@ -492,99 +500,182 @@ export default function SearchPageContainer({
                     <div className="my-2">
                       <label
                         className="block text-sm font-medium mb-1 text-[#374151]"
-                        htmlFor="category-search"
+                        htmlFor="category-search-mobile"
                       >
                         <Category className="ml-2 text-[#805b99] yekan" />{" "}
-                        دسته‌بندی
+                        دسته‌بندی‌ها
                       </label>
                       <input
-                        id="category-search"
+                        id="category-search-mobile"
                         type="text"
                         value={categorySearch}
                         onChange={(e) => setCategorySearch(e.target.value)}
-                        placeholder="جستجوی دسته‌بندی..."
+                        placeholder="جستجو در دسته‌بندی‌ها..."
                         className="w-full p-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805b99] transition duration-200"
                         aria-label="جستجوی دسته‌بندی"
                       />
-                      <div className="mt-1 max-h-32 overflow-y-auto">
+                      <div className="mt-2 space-y-2 max-h-[50vh] overflow-y-auto">
                         {filteredCategories.map((cat) => (
-                          <label
-                            key={cat.id}
-                            className="flex items-center text-sm mb-1"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedMothercatIds.includes(cat.id)}
-                              onChange={() => {
-                                setSelectedMothercatIds((prev) =>
-                                  prev.includes(cat.id)
-                                    ? prev.filter((id) => id !== cat.id)
-                                    : [...prev, cat.id]
-                                );
-                                if (!selectedMothercatIds.includes(cat.id)) {
-                                  setSelectedSubcatIds([]);
-                                }
-                              }}
-                              className="ml-2 accent-[#805b99]"
-                              aria-label={`انتخاب دسته‌بندی ${cat.name}`}
-                            />
-                            {cat.name}
-                          </label>
+                          <div key={cat.id} className="border-b pb-2">
+                            <div className="flex items-center justify-between">
+                              <label className="flex items-center text-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedMothercatIds.includes(
+                                    cat.id
+                                  )}
+                                  onChange={() => {
+                                    setSelectedMothercatIds((prev) =>
+                                      prev.includes(cat.id)
+                                        ? prev.filter((id) => id !== cat.id)
+                                        : [...prev, cat.id]
+                                    );
+                                    if (
+                                      !selectedMothercatIds.includes(cat.id)
+                                    ) {
+                                      setSelectedSubcatIds([]);
+                                      setSelectedItemIds([]);
+                                    }
+                                  }}
+                                  className="ml-2 accent-[#805b99]"
+                                  aria-label={`انتخاب دسته‌بندی ${cat.name}`}
+                                />
+                                {cat.name}
+                              </label>
+                              {cat.subcat && cat.subcat.length > 0 && (
+                                <button
+                                  onClick={() =>
+                                    toggleMothercatExpansion(cat.id)
+                                  }
+                                  className="text-[#805b99]"
+                                >
+                                  {expandedMothercats.includes(cat.id) ? (
+                                    <ExpandLess fontSize="small" />
+                                  ) : (
+                                    <ExpandMore fontSize="small" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                            <AnimatePresence>
+                              {expandedMothercats.includes(cat.id) && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: "auto", opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  className="ml-4 mt-2 space-y-2 overflow-hidden"
+                                >
+                                  {cat.subcat?.map((subcat) => (
+                                    <div
+                                      key={subcat.id}
+                                      className="border-b pb-2"
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <label className="flex items-center text-sm">
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedSubcatIds.includes(
+                                              subcat.id
+                                            )}
+                                            onChange={() => {
+                                              setSelectedSubcatIds((prev) =>
+                                                prev.includes(subcat.id)
+                                                  ? prev.filter(
+                                                      (id) => id !== subcat.id
+                                                    )
+                                                  : [...prev, subcat.id]
+                                              );
+                                              if (
+                                                !selectedSubcatIds.includes(
+                                                  subcat.id
+                                                )
+                                              ) {
+                                                setSelectedItemIds([]);
+                                              }
+                                            }}
+                                            className="ml-2 accent-[#805b99]"
+                                            aria-label={`انتخاب زیرمجموعه ${subcat.name}`}
+                                          />
+                                          {subcat.name}
+                                        </label>
+                                        {subcat.items &&
+                                          subcat.items.length > 0 && (
+                                            <button
+                                              onClick={() =>
+                                                toggleSubcatExpansion(subcat.id)
+                                              }
+                                              className="text-[#805b99]"
+                                            >
+                                              {expandedSubcats.includes(
+                                                subcat.id
+                                              ) ? (
+                                                <ExpandLess fontSize="small" />
+                                              ) : (
+                                                <ExpandMore fontSize="small" />
+                                              )}
+                                            </button>
+                                          )}
+                                      </div>
+                                      <AnimatePresence>
+                                        {expandedSubcats.includes(
+                                          subcat.id
+                                        ) && (
+                                          <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{
+                                              height: "auto",
+                                              opacity: 1,
+                                            }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="ml-4 mt-2 space-y-1 overflow-hidden"
+                                          >
+                                            {subcat.items?.map((item) => (
+                                              <label
+                                                key={item.id}
+                                                className="flex items-center text-sm"
+                                              >
+                                                <input
+                                                  type="checkbox"
+                                                  checked={selectedItemIds.includes(
+                                                    item.id
+                                                  )}
+                                                  onChange={() => {
+                                                    setSelectedItemIds((prev) =>
+                                                      prev.includes(item.id)
+                                                        ? prev.filter(
+                                                            (id) =>
+                                                              id !== item.id
+                                                          )
+                                                        : [...prev, item.id]
+                                                    );
+                                                  }}
+                                                  className="ml-2 accent-[#805b99]"
+                                                  aria-label={`انتخاب زیرمجموعه زیرمجموعه ${item.name}`}
+                                                />
+                                                {item.name}
+                                              </label>
+                                            ))}
+                                          </motion.div>
+                                        )}
+                                      </AnimatePresence>
+                                    </div>
+                                  ))}
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         ))}
                       </div>
                     </div>
-                    {selectedMothercatIds.length > 0 && (
-                      <div className="my-2">
-                        <label
-                          className="block text-sm font-medium mb-1 text-[#374151]"
-                          htmlFor="subcat-search"
-                        >
-                          <Category className="ml-2 text-[#805b99] yekan" />{" "}
-                          زیرمجموعه
-                        </label>
-                        <input
-                          id="subcat-search"
-                          type="text"
-                          value={subcatSearch}
-                          onChange={(e) => setSubcatSearch(e.target.value)}
-                          placeholder="جستجوی زیرمجموعه..."
-                          className="w-full p-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805b99] transition duration-200"
-                          aria-label="جستجوی زیرمجموعه"
-                        />
-                        <div className="mt-1 max-h-32 overflow-y-auto">
-                          {filteredSubcats.map((subcat) => (
-                            <label
-                              key={subcat.id}
-                              className="flex items-center text-sm mb-1"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={selectedSubcatIds.includes(subcat.id)}
-                                onChange={() => {
-                                  setSelectedSubcatIds((prev) =>
-                                    prev.includes(subcat.id)
-                                      ? prev.filter((id) => id !== subcat.id)
-                                      : [...prev, subcat.id]
-                                  );
-                                }}
-                                className="ml-2 accent-[#805b99]"
-                                aria-label={`انتخاب زیرمجموعه ${subcat.name}`}
-                              />
-                              {subcat.name}
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                     <div className="my-2">
                       <label
                         className="block text-sm font-medium mb-1 text-[#374151]"
-                        htmlFor="brand-search"
+                        htmlFor="brand-search-mobile"
                       >
                         <Store className="ml-2 text-[#805b99]" /> برند
                       </label>
                       <input
-                        id="brand-search"
+                        id="brand-search-mobile"
                         type="text"
                         value={brandSearch}
                         onChange={(e) => setBrandSearch(e.target.value)}
@@ -625,7 +716,7 @@ export default function SearchPageContainer({
                     <div className="my-2">
                       <label
                         className="block text-sm font-medium mb-1 text-[#374151]"
-                        htmlFor="price-range"
+                        htmlFor="price-range-mobile"
                       >
                         <PriceChange className="ml-2 text-[#805b99]" /> محدوده
                         قیمت (تومان)
@@ -710,12 +801,12 @@ export default function SearchPageContainer({
                     <div className="my-2">
                       <label
                         className="block text-sm font-medium mb-1 text-[#374151]"
-                        htmlFor="rating-input"
+                        htmlFor="rating-input-mobile"
                       >
                         <Star className="ml-2 text-[#805b99]" /> حداقل امتیاز
                       </label>
                       <input
-                        id="rating-input"
+                        id="rating-input-mobile"
                         type="number"
                         min="0"
                         max="5"
@@ -799,86 +890,150 @@ export default function SearchPageContainer({
                   className="block text-sm font-medium mb-1 text-[#374151]"
                   htmlFor="category-search"
                 >
-                  <Category className="ml-2 text-[#805b99]" /> دسته‌بندی
+                  <Category className="ml-2 text-[#805b99]" /> دسته‌بندی‌ها
                 </label>
                 <input
                   id="category-search"
                   type="text"
                   value={categorySearch}
                   onChange={(e) => setCategorySearch(e.target.value)}
-                  placeholder="جستجوی دسته‌بندی..."
+                  placeholder="جستجو در دسته‌بندی‌ها..."
                   className="w-full p-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805b99] transition duration-200"
                   aria-label="جستجوی دسته‌بندی"
                 />
-                <div className="mt-1 max-h-32 overflow-y-auto">
+                <div className="mt-2 space-y-2 max-h-[50vh] overflow-y-auto">
                   {filteredCategories.map((cat) => (
-                    <label
-                      key={cat.id}
-                      className="flex items-center text-sm mb-1"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedMothercatIds.includes(cat.id)}
-                        onChange={() => {
-                          setSelectedMothercatIds((prev) =>
-                            prev.includes(cat.id)
-                              ? prev.filter((id) => id !== cat.id)
-                              : [...prev, cat.id]
-                          );
-                          if (!selectedMothercatIds.includes(cat.id)) {
-                            setSelectedSubcatIds([]);
-                          }
-                        }}
-                        className="ml-2 accent-[#805b99]"
-                        aria-label={`انتخاب دسته‌بندی ${cat.name}`}
-                      />
-                      {cat.name}
-                    </label>
+                    <div key={cat.id} className="border-b pb-2">
+                      <div className="flex items-center justify-between">
+                        <label className="flex items-center text-sm">
+                          <input
+                            type="checkbox"
+                            checked={selectedMothercatIds.includes(cat.id)}
+                            onChange={() => {
+                              setSelectedMothercatIds((prev) =>
+                                prev.includes(cat.id)
+                                  ? prev.filter((id) => id !== cat.id)
+                                  : [...prev, cat.id]
+                              );
+                              if (!selectedMothercatIds.includes(cat.id)) {
+                                setSelectedSubcatIds([]);
+                                setSelectedItemIds([]);
+                              }
+                            }}
+                            className="ml-2 accent-[#805b99]"
+                            aria-label={`انتخاب دسته‌بندی ${cat.name}`}
+                          />
+                          {cat.name}
+                        </label>
+                        {cat.subcat && cat.subcat.length > 0 && (
+                          <button
+                            onClick={() => toggleMothercatExpansion(cat.id)}
+                            className="text-[#805b99]"
+                          >
+                            {expandedMothercats.includes(cat.id) ? (
+                              <ExpandLess fontSize="small" />
+                            ) : (
+                              <ExpandMore fontSize="small" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                      <AnimatePresence>
+                        {expandedMothercats.includes(cat.id) && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: "auto", opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="ml-4 mt-2 space-y-2 overflow-hidden"
+                          >
+                            {cat.subcat?.map((subcat) => (
+                              <div key={subcat.id} className="border-b pb-2">
+                                <div className="flex items-center justify-between">
+                                  <label className="flex items-center text-sm">
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedSubcatIds.includes(
+                                        subcat.id
+                                      )}
+                                      onChange={() => {
+                                        setSelectedSubcatIds((prev) =>
+                                          prev.includes(subcat.id)
+                                            ? prev.filter(
+                                                (id) => id !== subcat.id
+                                              )
+                                            : [...prev, subcat.id]
+                                        );
+                                        if (
+                                          !selectedSubcatIds.includes(subcat.id)
+                                        ) {
+                                          setSelectedItemIds([]);
+                                        }
+                                      }}
+                                      className="ml-2 accent-[#805b99]"
+                                      aria-label={`انتخاب زیرمجموعه ${subcat.name}`}
+                                    />
+                                    {subcat.name}
+                                  </label>
+                                  {subcat.items && subcat.items.length > 0 && (
+                                    <button
+                                      onClick={() =>
+                                        toggleSubcatExpansion(subcat.id)
+                                      }
+                                      className="text-[#805b99]"
+                                    >
+                                      {expandedSubcats.includes(subcat.id) ? (
+                                        <ExpandLess fontSize="small" />
+                                      ) : (
+                                        <ExpandMore fontSize="small" />
+                                      )}
+                                    </button>
+                                  )}
+                                </div>
+                                <AnimatePresence>
+                                  {expandedSubcats.includes(subcat.id) && (
+                                    <motion.div
+                                      initial={{ height: 0, opacity: 0 }}
+                                      animate={{ height: "auto", opacity: 1 }}
+                                      exit={{ height: 0, opacity: 0 }}
+                                      className="ml-4 mt-2 space-y-1 overflow-hidden"
+                                    >
+                                      {subcat.items?.map((item) => (
+                                        <label
+                                          key={item.id}
+                                          className="flex items-center text-sm"
+                                        >
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedItemIds.includes(
+                                              item.id
+                                            )}
+                                            onChange={() => {
+                                              setSelectedItemIds((prev) =>
+                                                prev.includes(item.id)
+                                                  ? prev.filter(
+                                                      (id) => id !== item.id
+                                                    )
+                                                  : [...prev, item.id]
+                                              );
+                                            }}
+                                            className="ml-2 accent-[#805b99]"
+                                            aria-label={`انتخاب زیرمجموعه زیرمجموعه ${item.name}`}
+                                          />
+                                          {item.name}
+                                        </label>
+                                      ))}
+                                    </motion.div>
+                                  )}
+                                </AnimatePresence>
+                              </div>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   ))}
                 </div>
               </div>
-              {selectedMothercatIds.length > 0 && (
-                <div>
-                  <label
-                    className="block text-sm font-medium mb-1 text-[#374151]"
-                    htmlFor="subcat-search"
-                  >
-                    <Category className="ml-2 text-[#805b99]" /> زیرمجموعه
-                  </label>
-                  <input
-                    id="subcat-search"
-                    type="text"
-                    value={subcatSearch}
-                    onChange={(e) => setSubcatSearch(e.target.value)}
-                    placeholder="جستجوی زیرمجموعه..."
-                    className="w-full p-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805b99] transition duration-200"
-                    aria-label="جستجوی زیرمجموعه"
-                  />
-                  <div className="mt-1 max-h-32 overflow-y-auto">
-                    {filteredSubcats.map((subcat) => (
-                      <label
-                        key={subcat.id}
-                        className="flex items-center text-sm mb-1"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedSubcatIds.includes(subcat.id)}
-                          onChange={() => {
-                            setSelectedSubcatIds((prev) =>
-                              prev.includes(subcat.id)
-                                ? prev.filter((id) => id !== subcat.id)
-                                : [...prev, subcat.id]
-                            );
-                          }}
-                          className="ml-2 accent-[#805b99]"
-                          aria-label={`انتخاب زیرمجموعه ${subcat.name}`}
-                        />
-                        {subcat.name}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
               <div>
                 <label
                   className="block text-sm font-medium mb-1 text-[#374151]"
@@ -1089,9 +1244,15 @@ export default function SearchPageContainer({
                   </div>
                 </div>
               </div>
-              {(selectedSubcatNames || selectedCategoryNames) && (
+              {(selectedSubcatNames ||
+                selectedCategoryNames ||
+                selectedItemNames) && (
                 <div className="text-sm my-9 text-[#374151]">
-                  {selectedSubcatNames ? (
+                  {selectedItemNames ? (
+                    <span className="border-2 border-amber-600 p-4 my-4">
+                      {selectedItemNames}
+                    </span>
+                  ) : selectedSubcatNames ? (
                     <span className="border-2 border-amber-600 p-4 my-4">
                       {selectedSubcatNames}
                     </span>

@@ -95,6 +95,7 @@ export interface Categoryapi {
 }
 
 export interface Product {
+  itemId: number;
   id: number;
   brand_id: number | null;
   title: string;

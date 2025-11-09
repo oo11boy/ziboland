@@ -28,20 +28,28 @@ const CategoriesPage = () => {
       });
   }, []);
 
-  const handleDelete = async (id: number) => {
-    if (confirm("آیا مطمئن هستید که می‌خواهید این دسته‌بندی را حذف کنید؟")) {
-      try {
-        const res = await fetch(`${API}/categories/${id}`, {
-          method: "DELETE",
-        });
-        if (!res.ok) throw new Error("خطا در حذف دسته‌بندی");
-        setCategories(categories.filter((c) => c.id !== id));
-      } catch (err) {
-        console.error("Error deleting category:", err);
-        alert("خطا در حذف دسته‌بندی");
-      }
+const handleDelete = async (id: number) => {
+  if (!confirm("آیا مطمئن هستید که می‌خواهید این دسته‌بندی را حذف کنید؟")) return;
+
+  try {
+    const res = await fetch(`${API}/categories/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      // نمایش پیام دقیق
+      alert(errorData.details || errorData.error || "خطا در حذف دسته‌بندی");
+      return;
     }
-  };
+
+    setCategories(categories.filter((c) => c.id !== id));
+    alert("دسته‌بندی با موفقیت حذف شد");
+  } catch (err) {
+    console.error("Error deleting category:", err);
+    alert("خطا در ارتباط با سرور");
+  }
+};
 
   if (loading) return <div className="text-center py-8">در حال بارگذاری...</div>;
 

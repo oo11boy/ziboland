@@ -44,22 +44,30 @@ const BrandsPage = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm("آیا مطمئن هستید؟")) {
-      try {
-        const res = await fetch(`${API}/brands/${id}`, {
-          method: "DELETE",
-        });
-        if (!res.ok) throw new Error("خطا در حذف برند");
-        setBrands(brands.filter((b) => b.id !== id));
-        setFilteredBrands(filteredBrands.filter((b) => b.id !== id));
-        toast.success("برند با موفقیت حذف شد");
-      } catch (err) {
-        console.error("Error deleting brand:", err);
-        toast.error("خطا در حذف برند");
-      }
+const handleDelete = async (id: number) => {
+  if (!confirm("آیا مطمئن هستید که می‌خواهید این برند را حذف کنید؟")) return;
+
+  try {
+    const res = await fetch(`${API}/brands/${id}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      // نمایش پیام دقیق با نام محصولات
+      alert(errorData.details || errorData.error || "خطا در حذف برند");
+      return;
     }
-  };
+
+    setBrands(brands.filter((b) => b.id !== id));
+    setFilteredBrands(filteredBrands.filter((b) => b.id !== id));
+    toast.success("برند با موفقیت حذف شد");
+  } catch (err) {
+    console.error("Error deleting brand:", err);
+    toast.error("خطا در ارتباط با سرور");
+  }
+};
+
 
   if (loading) {
     return (

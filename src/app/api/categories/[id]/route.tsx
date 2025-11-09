@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { Categoryapi } from "@/types/types";
+import { Categoryapi, RowDataPacket } from "@/types/types";
 
 // ===================== GET CATEGORY BY ID =====================
 export async function GET(request: NextRequest) {
@@ -229,6 +229,7 @@ export async function PUT(request: NextRequest) {
 }
 
 // ===================== DELETE CATEGORY =====================
+
 export async function DELETE(request: NextRequest) {
   const idStr = request.nextUrl.pathname.split("/").pop();
   const categoryId = parseInt(idStr || "");
@@ -240,35 +241,117 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
+  const connection = await pool.getConnection();
   try {
-    const connection = await pool.getConnection();
-    try {
-      await connection.beginTransaction();
+    await connection.beginTransaction();
 
-      await connection.query(
-        "DELETE FROM subcategory_items WHERE subcategory_id IN (SELECT id FROM subcategories WHERE category_id = ?)",
-        [categoryId]
-      );
-      await connection.query("DELETE FROM subcategories WHERE category_id = ?", [categoryId]);
-      const [result] = await connection.query("DELETE FROM categories WHERE id = ?", [categoryId]);
+    // 1. دریافت زیرمجموعه‌های این دسته‌بندی
+    const [subcats] = await connection.query<RowDataPacket[]>(
+      "SELECT id, name FROM subcategories WHERE category_id = ?",
+      [categoryId]
+    );
 
-      if ((result as any).affectedRows === 0) {
-        throw new Error("دسته‌بندی یافت نشد");
+    const subcatIds = subcats.map((s: any) => s.id);
+    const subcatMap = new Map(subcats.map((s: any) => [s.id, s.name]));
+
+    if (subcatIds.length > 0) {
+      const placeholders = subcatIds.map(() => "?").join(",");
+
+      // 2. دریافت محصولاتی که از این زیرمجموعه‌ها استفاده می‌کنند + نام محصول
+const [usedProducts] = await connection.query<RowDataPacket[]>(
+  `
+  SELECT p.id, p.title AS product_name, p.subcatId 
+  FROM products p 
+  WHERE p.subcatId IN (${placeholders})
+  ORDER BY p.subcatId, p.title
+  `,
+  subcatIds
+);
+
+      if (usedProducts.length > 0) {
+        // گروه‌بندی محصولات بر اساس زیرمجموعه
+        const conflicts = new Map<number, { subcatName: string; products: string[] }>();
+
+        usedProducts.forEach((prod: any) => {
+          const subcatId = prod.subcatId;
+          const subcatName = subcatMap.get(subcatId) || `زیرمجموعه ${subcatId}`;
+          if (!conflicts.has(subcatId)) {
+            conflicts.set(subcatId, { subcatName, products: [] });
+          }
+          conflicts.get(subcatId)!.products.push(prod.product_name);
+        });
+
+        // ساخت پیام خطای خوانا
+        let message = "نمی‌توان دسته‌بندی را حذف کرد چون زیرمجموعه‌های آن در محصولات زیر استفاده شده‌اند:\n\n";
+        conflicts.forEach(({ subcatName, products }) => {
+          message += `زیرمجموعه "${subcatName}":\n`;
+          products.forEach((name, i) => {
+            message += `   ${i + 1}. ${name}\n`;
+          });
+          message += "\n";
+        });
+        message += "لطفاً ابتدا این محصولات را ویرایش کنید و زیرمجموعه را تغییر دهید.";
+
+        await connection.rollback();
+        return NextResponse.json(
+          {
+            error: "حذف ناموفق",
+            details: message.trim(),
+            conflictedProducts: Object.fromEntries(
+              Array.from(conflicts.entries()).map(([id, data]) => [
+                id,
+                { subcatName: data.subcatName, products: data.products },
+              ])
+            ),
+          },
+          { status: 400 }
+        );
       }
 
-      await connection.commit();
-      return NextResponse.json({ message: "دسته‌بندی با موفقیت حذف شد" });
-    } catch (error) {
-      await connection.rollback();
-      throw error;
-    } finally {
-      connection.release();
+      // 3. حالا امن است: حذف آیتم‌ها و زیرمجموعه‌ها
+      await connection.query(
+        `DELETE FROM subcategory_items WHERE subcategory_id IN (${placeholders})`,
+        subcatIds
+      );
+
+      await connection.query(
+        `DELETE FROM subcategories WHERE id IN (${placeholders})`,
+        subcatIds
+      );
     }
-  } catch (error) {
+
+    // 4. حذف دسته‌بندی
+    const [result] = await connection.query(
+      "DELETE FROM categories WHERE id = ?",
+      [categoryId]
+    );
+
+    if ((result as any).affectedRows === 0) {
+      await connection.rollback();
+      return NextResponse.json({ error: "دسته‌بندی یافت نشد" }, { status: 404 });
+    }
+
+    await connection.commit();
+    return NextResponse.json({ message: "دسته‌بندی با موفقیت حذف شد" });
+  } catch (error: any) {
+    await connection.rollback();
     console.error("خطا در حذف دسته‌بندی:", error);
+
+    if (error.code === "ER_ROW_IS_REFERENCED_2") {
+      return NextResponse.json(
+        {
+          error: "حذف ناموفق",
+          details: "این دسته‌بندی یا زیرمجموعه‌های آن در محصولات استفاده شده است. لطفاً ابتدا محصولات را بررسی کنید.",
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "خطا در حذف دسته‌بندی", details: (error as Error).message },
+      { error: "خطا در حذف دسته‌بندی", details: error.message },
       { status: 500 }
     );
+  } finally {
+    connection.release();
   }
 }
