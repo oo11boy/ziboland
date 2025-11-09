@@ -33,7 +33,8 @@ export default function CategoriesContainer() {
     const fetchCategories = async () => {
       try {
         setLoading(true);
-        const response = await fetch("/api/categories");
+     const response = await fetch("/api/categories", { next: { revalidate: 60 } });
+
         if (!response.ok) {
           throw new Error("خطا در دریافت دسته‌بندی‌ها");
         }

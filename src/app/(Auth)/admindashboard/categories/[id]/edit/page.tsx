@@ -47,8 +47,9 @@ const EditCategoryPage = () => {
           mothercat: !!data.mothercat, // Convert number to boolean
           icon: data.icon,
           subcat: data.subcat.map((sub) => ({
+            id: sub.id,        // اضافه شد
             name: sub.name,
-            items: sub.items.map((item) => ({ name: item.name })),
+            items: sub.items.map((item) => ({ id: item.id,name: item.name })),
           })),
         });
         setLoading(false);
@@ -136,7 +137,7 @@ const EditCategoryPage = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          mothercat: formData.mothercat ? 1 : 0, // Convert boolean to number for API
+       body: JSON.stringify(formData),
         }),
       });
       if (!response.ok) {
