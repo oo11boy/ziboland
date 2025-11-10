@@ -34,6 +34,7 @@ export async function GET() {
       if (!productsMap[pid]) {
         productsMap[pid] = {
           id: pid,
+          itemId: pid,
           brand_id: row.brand_id ?? null,
           title: row.title,
           image: row.image,

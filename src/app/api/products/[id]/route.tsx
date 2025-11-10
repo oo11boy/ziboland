@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
       if (!productsMap[pid]) {
         productsMap[pid] = {
           id: pid,
+          itemId: row.itemId ?? null,
           brand_id: row.brand_id ?? null,
           title: row.title,
           image: row.image,
