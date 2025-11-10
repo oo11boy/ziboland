@@ -12,21 +12,24 @@ const CategoriesPage = () => {
   const [categories, setCategories] = useState<Categoryapi[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetch(`${API}/categories`)
-      .then((res) => {
-        if (!res.ok) throw new Error("خطا در دریافت دسته‌بندی‌ها");
-        return res.json();
-      })
-      .then((data: Categoryapi[]) => {
-        setCategories(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching categories:", err);
-        setLoading(false);
-      });
-  }, []);
+useEffect(() => {
+  fetch(`${API}/categories`)
+    .then((res) => {
+      if (res.status >= 400) {
+        throw new Error("خطا در دریافت دسته‌بندی‌ها");
+      }
+      return res.json();
+    })
+    .then((data: Categoryapi[]) => {
+      setCategories(data);
+      setLoading(false);
+    })
+    .catch((err) => {
+      console.error("Error fetching categories:", err);
+      setCategories([]); // مهم: آرایه خالی بگذارید
+      setLoading(false);
+    });
+}, []);
 
 const handleDelete = async (id: number) => {
   if (!confirm("آیا مطمئن هستید که می‌خواهید این دسته‌بندی را حذف کنید؟")) return;

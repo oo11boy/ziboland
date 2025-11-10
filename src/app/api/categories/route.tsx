@@ -57,7 +57,9 @@ export async function GET(request: Request) {
 
       if (!categoriesMap[catId]) {
         if (!row.cat_name || !row.link || !row.icon) {
-          console.warn(`فیلدهای مورد نیاز برای دسته‌بندی با شناسه ${catId} وجود ندارد`);
+          console.warn(
+            `فیلدهای مورد نیاز برای دسته‌بندی با شناسه ${catId} وجود ندارد`
+          );
           return;
         }
         categoriesMap[catId] = {
@@ -94,11 +96,9 @@ export async function GET(request: Request) {
     });
 
     const categories = Object.values(categoriesMap);
+
     if (categories.length === 0) {
-      return NextResponse.json(
-        { error: "هیچ دسته‌بندی یافت نشد" },
-        { status: 404 }
-      );
+      return NextResponse.json([], { status: 200 }); // آرایه خالی
     }
 
     return NextResponse.json(categories);

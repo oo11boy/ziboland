@@ -71,12 +71,10 @@ export async function GET(request: NextRequest) {
         }
       }
     });
-
-    const category = Object.values(categoriesMap)[0];
-    if (!category) {
-      return NextResponse.json({ error: "دسته‌بندی یافت نشد" }, { status: 404 });
-    }
-
+const category = Object.values(categoriesMap)[0];
+if (!category) {
+  return NextResponse.json(null, { status: 200 }); // یا {}
+}
     return NextResponse.json(category);
   } catch (error) {
     console.error("خطا در دریافت دسته‌بندی:", error);
