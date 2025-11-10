@@ -7,7 +7,7 @@ export default async function WideHeaderServer() {
       // دریافت داده‌های دسته‌بندی‌ها
   const categoriesData: Categoryapi[] = await fetch(`${API}/categories`, {
     cache: "force-cache",
-    next: { revalidate: 3600 },
+    next: { revalidate: 60 },
   })
     .then((res) => {
       if (!res.ok) {

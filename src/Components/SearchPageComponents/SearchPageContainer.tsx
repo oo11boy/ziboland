@@ -281,7 +281,7 @@ const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000000]);
   };
 
   const allBrands = Array.from(
-    new Set(products.map((p) => p.brandDetails?.img || ""))
+    new Set(products.map((p) => p.brandDetails?.title || ""))
   );
 
   const allCategories = categories.filter((cat) => cat.mothercat === 1);
@@ -308,7 +308,7 @@ const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000000]);
         product.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
         (selectedBrands.length === 0 ||
           (product.brandDetails &&
-            selectedBrands.includes(product.brandDetails.img))) &&
+            selectedBrands.includes(product.brandDetails.title))) &&
         (selectedMothercatIds.length === 0 ||
           selectedMothercatIds.includes(product.mothercatId)) &&
         (selectedSubcatIds.length === 0 ||

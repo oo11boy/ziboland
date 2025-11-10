@@ -295,6 +295,7 @@ export default function MobileFilterPanel({
               )
               .map((brand) => (
                 <label
+                
                   key={brand}
                   className="flex items-center text-sm mb-1"
                 >
@@ -309,7 +310,7 @@ export default function MobileFilterPanel({
                       );
                     }}
                     className="ml-2 accent-[#805b99]"
-                    aria-label={`انتخاب برند ${brand}`}
+                    aria-label={`انتخاب برند ${console.log(selectedBrands)}`}
                   />
                   {brand}
                 </label>
