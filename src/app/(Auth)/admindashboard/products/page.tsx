@@ -9,22 +9,64 @@ import { toast } from "react-toastify";
 import { Product } from "@/types/types";
 import { API } from "@/lib/MainRoutes";
 
+// دیالوگ حذف محصول
+const DeleteDialog = ({
+  productTitle,
+  onCancel,
+  onForceDelete,
+}: {
+  productTitle: string;
+  onCancel: () => void;
+  onForceDelete: () => void;
+}) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-96 p-6 text-center">
+      <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
+        حذف محصول
+      </h2>
+      <p className="mb-6 text-gray-600 dark:text-gray-300">
+        محصول "{productTitle}" سفارش دارد. آیا می‌خواهید با سفارش‌ها حذف شود؟
+      </p>
+      <div className="flex justify-around">
+        <Button
+          variant="outline"
+          onClick={onCancel}
+          className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600"
+        >
+          لغو
+        </Button>
+        <Button
+          variant="destructive"
+          onClick={onForceDelete}
+          className="bg-red-500 hover:bg-red-600 text-white"
+        >
+          حذف با سفارش‌ها
+        </Button>
+      </div>
+    </div>
+  </div>
+);
+
 const ProductsPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [deleteDialog, setDeleteDialog] = useState<{
+    visible: boolean;
+    product: Product | null;
+  }>({ visible: false, product: null });
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
   useEffect(() => {
-    // فیلتر بر اساس جستجو
     const filtered = products.filter(
       (product) =>
         product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (product.brandDetails?.title && product.brandDetails.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (product.brandDetails?.title &&
+          product.brandDetails.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
         product.category.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredProducts(filtered);
@@ -45,22 +87,34 @@ const ProductsPage = () => {
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (confirm("آیا مطمئن هستید؟")) {
-      try {
-        const res = await fetch(`${API}/products/${id}`, {
-          method: "DELETE",
-        });
-        if (!res.ok) throw new Error("خطا در حذف محصول");
-        setProducts(products.filter((p) => p.id !== id));
-        setFilteredProducts(filteredProducts.filter((p) => p.id !== id));
-        toast.success("محصول با موفقیت حذف شد");
-      } catch (err) {
-        console.error("Error deleting product:", err);
-        toast.error("خطا در حذف محصول");
-      }
+  // کلیک روی دکمه حذف
+const handleDeleteClick = (product: Product) => {
+  setDeleteDialog({ visible: true, product });
+};
+  // حذف واقعی
+const handleDelete = async (id: number, force = false) => {
+  console.log("[DELETE] Product ID:", id, "Force:", force);
+
+  try {
+    const res = await fetch(`${API}/products/${id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ force }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error || "خطا در حذف محصول");
     }
-  };
+
+    setProducts(prev => prev.filter(p => p.id !== id));
+    setFilteredProducts(prev => prev.filter(p => p.id !== id));
+    setDeleteDialog({ visible: false, product: null });
+    toast.success("محصول با موفقیت حذف شد");
+  } catch (err: any) {
+    toast.error(err.message || "خطا در حذف محصول");
+  }
+};
 
   if (loading) {
     return (
@@ -72,6 +126,14 @@ const ProductsPage = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {deleteDialog.visible && deleteDialog.product && (
+        <DeleteDialog
+          productTitle={deleteDialog.product.title}
+          onCancel={() => setDeleteDialog({ visible: false, product: null })}
+          onForceDelete={() => handleDelete(deleteDialog.product!.id, true)}
+        />
+      )}
+
       <div className="flex justify-between items-center flex-wrap gap-2 mb-6">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
           محصولات
@@ -154,14 +216,19 @@ const ProductsPage = () => {
                       <td className="px-4 py-2 block md:table-cell">
                         <div className="flex space-x-2 space-x-reverse">
                           <Link href={`/admindashboard/products/${product.id}/edit`}>
-                            <Button variant="outline" size="sm" title="ویرایش محصول" className="hover:bg-blue-50 dark:hover:bg-blue-900">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title="ویرایش محصول"
+                              className="hover:bg-blue-50 dark:hover:bg-blue-900"
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDelete(product.id)}
+                            onClick={() => handleDeleteClick(product)}
                             title="حذف محصول"
                             className="hover:bg-red-50 dark:hover:bg-red-900"
                           >
@@ -172,7 +239,12 @@ const ProductsPage = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                           >
-                            <Button variant="outline" size="sm" title="مشاهده محصول" className="hover:bg-blue-50 dark:hover:bg-blue-900">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title="مشاهده محصول"
+                              className="hover:bg-blue-50 dark:hover:bg-blue-900"
+                            >
                               <View className="h-4 w-4" />
                             </Button>
                           </a>

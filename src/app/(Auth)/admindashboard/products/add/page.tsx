@@ -1,5 +1,5 @@
-"use client";
-
+// AddProductPage.tsx (updated)
+ "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/Components/ui/button";
@@ -9,12 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Label } from "@/Components/ui/label";
-import { AlertCircle, Plus, Trash2, Loader2, ChevronDown, ChevronUp, Upload, X, Image as ImageIcon, CheckCircle } from "lucide-react"; 
-import { Brand, Category, Subcategory } from "@/types/types";
+import { AlertCircle, Plus, Trash2, Loader2, ChevronDown, ChevronUp, Upload, X, Image as ImageIcon, CheckCircle } from "lucide-react";
+import { Brand, Category, Subcategory, SubcategoryItem } from "@/types/types";
 import { API } from "@/lib/MainRoutes";
-import { toast } from "react-hot-toast"; 
+import { toast } from "react-hot-toast";
 import { SITE } from "@/lib/MainRoutes";
-
 interface ProductFormData {
   brand_id: string;
   title: string;
@@ -29,6 +28,7 @@ interface ProductFormData {
   category: string;
   mothercatId: string;
   subcatId: string;
+  itemId: string;
   rating: string;
   inStock: string;
   numericPrice: string;
@@ -41,12 +41,10 @@ interface ProductFormData {
   hasDiscount: boolean;
   hasWholesaleDiscount: boolean;
 }
-
 interface UploadedFile {
   url: string;
   name: string;
 }
-
 const AddProductPage = () => {
   const router = useRouter();
   const [formData, setFormData] = useState<ProductFormData>({
@@ -63,6 +61,7 @@ const AddProductPage = () => {
     category: "",
     mothercatId: "",
     subcatId: "",
+    itemId: "",
     rating: "0",
     inStock: "1",
     numericPrice: "0",
@@ -78,6 +77,7 @@ const AddProductPage = () => {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [items, setItems] = useState<SubcategoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof ProductFormData, string>>>({});
   const [expandedSections, setExpandedSections] = useState({
@@ -97,12 +97,10 @@ const AddProductPage = () => {
   const [previews, setPreviews] = useState<{ [key: string]: string }>({});
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-
   // فرمت‌دهی اعداد
   const formatNumber = (value: string) => {
     return value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
-
   // اعتبارسنجی فرم
   const validateForm = () => {
     const newErrors: Partial<Record<keyof ProductFormData, string>> = {};
@@ -110,6 +108,7 @@ const AddProductPage = () => {
     if (!formData.brand_id) newErrors.brand_id = "انتخاب برند الزامی است";
     if (!formData.mothercatId) newErrors.mothercatId = "انتخاب دسته‌بندی اصلی الزامی است";
     if (!formData.subcatId) newErrors.subcatId = "انتخاب زیرمجموعه الزامی است";
+    if (!formData.itemId) newErrors.itemId = "انتخاب آیتم زیرمجموعه الزامی است";
     if (!formData.originalPrice) newErrors.originalPrice = "قیمت اصلی الزامی است";
     if (!formData.wholesalePrice) newErrors.wholesalePrice = "قیمت عمده الزامی است";
     if (!formData.image) newErrors.image = "آدرس تصویر الزامی است";
@@ -129,7 +128,6 @@ const AddProductPage = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
   useEffect(() => {
     fetch(`${API}/brands`)
       .then((res) => {
@@ -146,7 +144,6 @@ const AddProductPage = () => {
       .then((data: Category[]) => setCategories(data))
       .catch((err) => toast.error("خطا در دریافت دسته‌بندی‌ها"+err));
   }, []);
-
   useEffect(() => {
     if (formData.mothercatId) {
       fetch(`${API}/subcategories?category_id=${formData.mothercatId}`)
@@ -158,9 +155,23 @@ const AddProductPage = () => {
         .catch((err) => toast.error("خطا در دریافت زیرمجموعه‌ها"+err));
     } else {
       setSubcategories([]);
+      setFormData({ ...formData, subcatId: "", itemId: "" });
     }
   }, [formData.mothercatId]);
-
+  useEffect(() => {
+    if (formData.subcatId) {
+      fetch(`${API}/subcategory-items?subcategory_id=${formData.subcatId}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("خطا در دریافت آیتم‌ها");
+          return res.json();
+        })
+        .then((data: SubcategoryItem[]) => setItems(data))
+        .catch((err) => toast.error("خطا در دریافت آیتم‌ها"+err));
+    } else {
+      setItems([]);
+      setFormData({ ...formData, itemId: "" });
+    }
+  }, [formData.subcatId]);
   useEffect(() => {
     if (formData.originalPrice && formData.discount && formData.hasDiscount) {
       const original = parseFloat(formData.originalPrice.replace(/,/g, ""));
@@ -179,7 +190,6 @@ const AddProductPage = () => {
       });
     }
   }, [formData.originalPrice, formData.discount, formData.hasDiscount]);
-
   useEffect(() => {
     if (formData.wholesalePrice && formData.discountwholesale && formData.hasWholesaleDiscount) {
       const wholesale = parseFloat(formData.wholesalePrice.replace(/,/g, ""));
@@ -196,34 +206,29 @@ const AddProductPage = () => {
       });
     }
   }, [formData.wholesalePrice, formData.discountwholesale, formData.hasWholesaleDiscount]);
-
   const handleAddInfoTable = () => {
     setFormData({
       ...formData,
       infotable: [...formData.infotable, { name: "", value: "" }],
     });
   };
-
   const handleInfoTableChange = (index: number, field: "name" | "value", value: string) => {
     const newInfoTable = [...formData.infotable];
     newInfoTable[index][field] = value;
     setFormData({ ...formData, infotable: newInfoTable });
   };
-
   const handleRemoveInfoTable = (index: number) => {
     setFormData({
       ...formData,
       infotable: formData.infotable.filter((_, i) => i !== index),
     });
   };
-
   const handleAddMedia = () => {
     setFormData({
       ...formData,
       media: [...formData.media, { type: "image", src: "", thumbnail: "", alt: "" }],
     });
   };
-
   const handleMediaChange = (
     index: number,
     field: "type" | "src" | "thumbnail" | "alt",
@@ -233,21 +238,18 @@ const AddProductPage = () => {
     newMedia[index][field] = value;
     setFormData({ ...formData, media: newMedia });
   };
-
   const handleRemoveMedia = (index: number) => {
     setFormData({
       ...formData,
       media: formData.media.filter((_, i) => i !== index),
     });
   };
-
   const handleAddColor = () => {
     setFormData({
       ...formData,
       colors: [...formData.colors, { englishName: "", persianName: "", hexCode: "" }],
     });
   };
-
   const handleColorChange = (
     index: number,
     field: "englishName" | "persianName" | "hexCode",
@@ -257,14 +259,12 @@ const AddProductPage = () => {
     newColors[index][field] = value;
     setFormData({ ...formData, colors: newColors });
   };
-
   const handleRemoveColor = (index: number) => {
     setFormData({
       ...formData,
       colors: formData.colors.filter((_, i) => i !== index),
     });
   };
-
   // Upload modal handlers
   const openUploadModal = (type: 'image' | 'media') => {
     setUploadType(type);
@@ -273,7 +273,6 @@ const AddProductPage = () => {
     setUploadedFiles([]);
     setShowUploadModal(true);
   };
-
   const closeUploadModal = () => {
     setShowUploadModal(false);
     setUploadType(null);
@@ -281,7 +280,6 @@ const AddProductPage = () => {
     setPreviews({});
     setUploadedFiles([]);
   };
-
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
     setFiles((prev) => [...prev, ...selectedFiles]);
@@ -290,7 +288,6 @@ const AddProductPage = () => {
       setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
     });
   }, []);
-
   const removeFile = useCallback((fileName: string) => {
     setFiles((prev) => prev.filter((f) => f.name !== fileName));
     setPreviews((prev) => {
@@ -302,7 +299,6 @@ const AddProductPage = () => {
       URL.revokeObjectURL(previews[fileName]);
     }
   }, [previews]);
-
   const handleUpload = useCallback(async () => {
     if (files.length === 0) return;
     setUploading(true);
@@ -330,7 +326,6 @@ const AddProductPage = () => {
     setUploading(false);
     toast.success(`${successful.length} فایل با موفقیت آپلود شد`);
   }, [files]);
-
   const handleConfirmUpload = () => {
     if (uploadedFiles.length === 0) {
       toast.error("هیچ فایلی آپلود نشده است");
@@ -351,14 +346,12 @@ const AddProductPage = () => {
     }
     closeUploadModal();
   };
-
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section as keyof typeof prev]
     }));
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
@@ -385,6 +378,7 @@ const AddProductPage = () => {
           category: formData.category,
           mothercatId: parseInt(formData.mothercatId),
           subcatId: parseInt(formData.subcatId),
+          itemId: parseInt(formData.itemId) || null,
           rating: parseFloat(formData.rating) || 0,
           inStock: parseInt(formData.inStock),
           sales: parseInt(formData.sales) || 0,
@@ -409,7 +403,6 @@ const AddProductPage = () => {
       setLoading(false);
     }
   };
-
   return (
     <div className="container mx-auto p-4 yekan">
       <Card className="bg-white dark:bg-gray-800 shadow-lg">
@@ -420,7 +413,7 @@ const AddProductPage = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* اطلاعات پایه */}
             <div className="border rounded-lg overflow-hidden">
-              <div 
+              <div
                 className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 cursor-pointer"
                 onClick={() => toggleSection('basic')}
               >
@@ -472,10 +465,9 @@ const AddProductPage = () => {
                 </div>
               )}
             </div>
-
             {/* قیمت‌گذاری */}
             <div className="border rounded-lg overflow-hidden">
-              <div 
+              <div
                 className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 cursor-pointer"
                 onClick={() => toggleSection('pricing')}
               >
@@ -611,7 +603,7 @@ const AddProductPage = () => {
             </div>
             {/* تصویر و مدیا */}
             <div className="border rounded-lg overflow-hidden">
-              <div 
+              <div
                 className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 cursor-pointer"
                 onClick={() => toggleSection('media')}
               >
@@ -763,7 +755,7 @@ const AddProductPage = () => {
             </div>
             {/* دسته‌بندی */}
             <div className="border rounded-lg overflow-hidden">
-              <div 
+              <div
                 className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 cursor-pointer"
                 onClick={() => toggleSection('category')}
               >
@@ -771,7 +763,7 @@ const AddProductPage = () => {
                 {expandedSections.category ? <ChevronUp /> : <ChevronDown />}
               </div>
               {expandedSections.category && (
-                <div className="p-4 space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 space-y-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="mothercatId" className="mb-2 block">
                       دسته‌بندی اصلی <span className="text-red-500">*</span>
@@ -779,7 +771,7 @@ const AddProductPage = () => {
                     <Select
                       value={formData.mothercatId}
                       onValueChange={(value: any) =>
-                        setFormData({ ...formData, mothercatId: value, subcatId: "", category: "" })
+                        setFormData({ ...formData, mothercatId: value, subcatId: "", itemId: "", category: "" })
                       }
                       required
                     >
@@ -811,6 +803,7 @@ const AddProductPage = () => {
                         setFormData({
                           ...formData,
                           subcatId: value,
+                          itemId: "",
                           category: subcategories.find((s) => s.id === parseInt(value))?.name || "",
                         })
                       }
@@ -835,13 +828,42 @@ const AddProductPage = () => {
                       </p>
                     )}
                   </div>
+                  <div>
+                    <Label htmlFor="itemId" className="mb-2 block">
+                      آیتم زیرمجموعه <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={formData.itemId}
+                      onValueChange={(value: string) =>
+                        setFormData({ ...formData, itemId: value })
+                      }
+                      required
+                      disabled={!formData.subcatId}
+                    >
+                      <SelectTrigger id="itemId" className={errors.itemId ? "border-red-500" : ""}>
+                        <SelectValue placeholder="انتخاب آیتم" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {items.map((item) => (
+                          <SelectItem key={item.id} value={item.id.toString()}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.itemId && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center">
+                        <AlertCircle className="h-4 w-4 ml-1" />
+                        {errors.itemId}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
-
             {/* مشخصات فنی */}
             <div className="border rounded-lg overflow-hidden">
-              <div 
+              <div
                 className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 cursor-pointer"
                 onClick={() => toggleSection('specs')}
               >
@@ -898,10 +920,9 @@ const AddProductPage = () => {
                 </div>
               )}
             </div>
-
             {/* رنگ‌ها */}
             <div className="border rounded-lg overflow-hidden">
-              <div 
+              <div
                 className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 cursor-pointer"
                 onClick={() => toggleSection('colors')}
               >
@@ -975,10 +996,9 @@ const AddProductPage = () => {
                 </div>
               )}
             </div>
-
             {/* سایر اطلاعات */}
             <div className="border rounded-lg overflow-hidden">
-              <div 
+              <div
                 className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 cursor-pointer"
                 onClick={() => toggleSection('additional')}
               >
@@ -1046,7 +1066,6 @@ const AddProductPage = () => {
                 </div>
               )}
             </div>
-
             <div className="flex gap-4 pt-4">
               <Button
                 type="button"
@@ -1075,7 +1094,6 @@ const AddProductPage = () => {
           </form>
         </CardContent>
       </Card>
-
       {/* Upload Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
@@ -1107,7 +1125,6 @@ const AddProductPage = () => {
                   className="hidden"
                 />
               </div>
-
               {/* Selected Files Preview */}
               {files.length > 0 && (
                 <div className="space-y-3">
@@ -1155,7 +1172,6 @@ const AddProductPage = () => {
                   </Button>
                 </div>
               )}
-
               {/* Uploaded Files */}
               {uploadedFiles.length > 0 && (
                 <div className="space-y-3">
@@ -1193,5 +1209,4 @@ const AddProductPage = () => {
     </div>
   );
 };
-
 export default AddProductPage;

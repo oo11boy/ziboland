@@ -1,7 +1,7 @@
+// api/products/[id].ts (updated)
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { Product, ProductRow } from "@/types/types";
-
 // ===================== GET PRODUCT BY ID =====================
 export async function GET(request: NextRequest) {
   const idStr = request.nextUrl.pathname.split("/").pop();
@@ -9,19 +9,18 @@ export async function GET(request: NextRequest) {
   if (isNaN(productId)) {
     return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
   }
-
   try {
     const [rows] = await pool.query<ProductRow[]>(
       `
-      SELECT 
-        p.id AS product_id, p.title, p.image, p.originalPrice, p.discountedPrice, 
-        p.wholesalePrice, p.discountwholesalePrice, p.minwholesale, p.discount, 
-        p.discountwholesale, p.category, p.mothercatId, p.subcatId, p.rating, 
+      SELECT
+        p.id AS product_id, p.title, p.image, p.originalPrice, p.discountedPrice,
+        p.wholesalePrice, p.discountwholesalePrice, p.minwholesale, p.discount,
+        p.discountwholesale, p.category, p.mothercatId, p.subcatId, p.itemId, p.rating,
         p.inStock, p.numericPrice, p.sales, p.features, p.content,
         m.type AS media_type, m.src AS media_src, m.thumbnail AS media_thumbnail, m.alt AS media_alt,
         col.englishName, col.persianName, col.hexCode,
         it.id AS infotable_id, it.name AS infotable_name, it.value AS infotable_value,
-        com.id AS comment_id, com.product_id AS comment_product_id, com.name AS comment_name, 
+        com.id AS comment_id, com.product_id AS comment_product_id, com.name AS comment_name,
         com.rating AS comment_rating, com.text AS comment_text, com.date AS comment_date,
         com.status AS comment_status, com.is_admin AS comment_is_admin,
         b.id AS brand_id, b.title AS brand_title, b.img AS brand_img, b.link AS brand_link
@@ -36,54 +35,49 @@ export async function GET(request: NextRequest) {
       `,
       [productId]
     );
-
     if (rows.length === 0) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-
     const productsMap: Record<number, Product> = {};
-
     rows.forEach((row) => {
       const pid = row.product_id;
-
       if (!productsMap[pid]) {
         productsMap[pid] = {
-          id: pid,
-          itemId: row.itemId ?? null,
-          brand_id: row.brand_id ?? null,
-          title: row.title,
-          image: row.image,
-          originalPrice: row.originalPrice,
-          discountedPrice: row.discountedPrice,
-          wholesalePrice: row.wholesalePrice,
-          discountwholesalePrice: row.discountwholesalePrice,
-          minwholesale: row.minwholesale,
-          discount: row.discount,
-          discountwholesale: row.discountwholesale,
-          category: row.category,
-          mothercatId: row.mothercatId,
-          subcatId: row.subcatId,
-          rating: row.rating,
-          inStock: !!row.inStock,
-          numericPrice: row.numericPrice,
-          sales: row.sales,
-          features: row.features ? JSON.parse(row.features) : [],
-          content: row.content ?? undefined,
-          media: [],
-          colors: [],
-          infotable: [],
-          comments: [],
-          brandDetails: row.brand_id
-            ? {
-                id: row.brand_id,
-                title: row.brand_title ?? "",
-                img: row.brand_img ?? "",
-                link: row.brand_link ?? "",
-              }
-            : undefined,
-        };
+            id: pid,
+            brand_id: row.brand_id ?? null,
+            title: row.title,
+            image: row.image,
+            originalPrice: row.originalPrice,
+            discountedPrice: row.discountedPrice,
+            wholesalePrice: row.wholesalePrice,
+            discountwholesalePrice: row.discountwholesalePrice,
+            minwholesale: row.minwholesale,
+            discount: row.discount,
+            discountwholesale: row.discountwholesale,
+            category: row.category,
+            mothercatId: row.mothercatId,
+            subcatId: row.subcatId,
+            itemId: row.itemId as number,
+            rating: row.rating,
+            inStock: !!row.inStock,
+            numericPrice: row.numericPrice,
+            sales: row.sales,
+            features: row.features ? JSON.parse(row.features) : [],
+            content: row.content ?? undefined,
+            media: [],
+            colors: [],
+            infotable: [],
+            comments: [],
+            brandDetails: row.brand_id
+              ? {
+                  id: row.brand_id,
+                  title: row.brand_title ?? "",
+                  img: row.brand_img ?? "",
+                  link: row.brand_link ?? "",
+                }
+              : undefined,
+          };
       }
-
       if (
         row.media_type &&
         row.media_src &&
@@ -96,7 +90,6 @@ export async function GET(request: NextRequest) {
           alt: row.media_alt ?? "",
         });
       }
-
       if (
         row.englishName &&
         row.hexCode &&
@@ -108,7 +101,6 @@ export async function GET(request: NextRequest) {
           hexCode: row.hexCode,
         });
       }
-
       if (
         row.infotable_id &&
         !productsMap[pid].infotable!.some((it) => it.id === row.infotable_id)
@@ -119,7 +111,6 @@ export async function GET(request: NextRequest) {
           value: row.infotable_value ?? "",
         });
       }
-
       if (
         row.comment_id &&
         !productsMap[pid].comments!.some((c) => c.id === row.comment_id)
@@ -139,7 +130,6 @@ export async function GET(request: NextRequest) {
         });
       }
     });
-
     return NextResponse.json(Object.values(productsMap)[0]);
   } catch (error) {
     console.error("Error fetching product:", error);
@@ -149,7 +139,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
 // ===================== UPDATE PRODUCT =====================
 export async function PUT(request: NextRequest) {
   const idStr = request.nextUrl.pathname.split("/").pop();
@@ -157,7 +146,6 @@ export async function PUT(request: NextRequest) {
   if (isNaN(productId)) {
     return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
   }
-
   try {
     const data = await request.json();
     const {
@@ -174,6 +162,7 @@ export async function PUT(request: NextRequest) {
       category,
       mothercatId,
       subcatId,
+      itemId,
       rating,
       inStock,
       numericPrice,
@@ -184,12 +173,10 @@ export async function PUT(request: NextRequest) {
       media,
       colors,
     } = data;
-
     // validate fields...
-    if (!title || !image || !originalPrice || !discountedPrice || !wholesalePrice || !discountwholesalePrice || !minwholesale || !discount || !discountwholesale || !category || !mothercatId || !subcatId) {
+    if (!title || !image || !originalPrice || !discountedPrice || !wholesalePrice || !discountwholesalePrice || !minwholesale || !discount || !discountwholesale || !category || !mothercatId || !subcatId || !itemId) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
-
     // Validate infotable entries
     if (infotable && !Array.isArray(infotable)) {
       return NextResponse.json(
@@ -203,7 +190,6 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
-
     // Validate media entries
     if (media && !Array.isArray(media)) {
       return NextResponse.json(
@@ -226,7 +212,6 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
-
     // Validate colors entries
     if (colors && !Array.isArray(colors)) {
       return NextResponse.json(
@@ -240,18 +225,16 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
-
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-
       // Update product
       const [result] = await connection.query(
         `UPDATE products SET
           brand_id = ?, title = ?, image = ?, originalPrice = ?, discountedPrice = ?,
           wholesalePrice = ?, discountwholesalePrice = ?, minwholesale = ?,
           discount = ?, discountwholesale = ?, category = ?, mothercatId = ?,
-          subcatId = ?, rating = ?, inStock = ?, numericPrice = ?, sales = ?,
+          subcatId = ?, itemId = ?, rating = ?, inStock = ?, numericPrice = ?, sales = ?,
           features = ?, content = ?
         WHERE id = ?`,
         [
@@ -268,6 +251,7 @@ export async function PUT(request: NextRequest) {
           category,
           mothercatId,
           subcatId,
+          itemId || null,
           rating,
           inStock,
           numericPrice,
@@ -277,9 +261,7 @@ export async function PUT(request: NextRequest) {
           productId,
         ]
       );
-
       if ((result as any).affectedRows === 0) throw new Error("Product not found");
-
       // Replace infotable
       await connection.query("DELETE FROM infotable WHERE product_id = ?", [productId]);
       if (infotable && infotable.length > 0) {
@@ -290,7 +272,6 @@ export async function PUT(request: NextRequest) {
           );
         }
       }
-
       // Replace media
       await connection.query("DELETE FROM media WHERE product_id = ?", [productId]);
       if (media && media.length > 0) {
@@ -301,7 +282,6 @@ export async function PUT(request: NextRequest) {
           );
         }
       }
-
       // Replace colors
       await connection.query("DELETE FROM colors WHERE product_id = ?", [productId]);
       if (colors && colors.length > 0) {
@@ -312,7 +292,6 @@ export async function PUT(request: NextRequest) {
           );
         }
       }
-
       await connection.commit();
       return NextResponse.json({ message: "Product updated successfully" });
     } catch (error) {
@@ -338,16 +317,44 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
   }
 
+  const { force } = await request.json().catch(() => ({ force: false }));
+
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
 
+    // بررسی وجود سفارش
+    const [orders] = await connection.query(
+      "SELECT COUNT(*) as count FROM order_items WHERE product_id = ?",
+      [productId]
+    );
+    const orderCount = (orders as any)[0]?.count || 0;
+
+    // اگر سفارش دارد و force=false → خطا
+    if (orderCount > 0 && !force) {
+      await connection.rollback();
+      return NextResponse.json(
+        { error: "این محصول سفارش دارد. برای حذف آن از force=true استفاده کنید." },
+        { status: 400 }
+      );
+    }
+
+    // اگر force=true و سفارش دارد → order_items را حذف کن
+    if (force && orderCount > 0) {
+      await connection.query("DELETE FROM order_items WHERE product_id = ?", [productId]);
+    }
+
+    // حذف داده‌های وابسته
     await connection.query("DELETE FROM infotable WHERE product_id = ?", [productId]);
     await connection.query("DELETE FROM media WHERE product_id = ?", [productId]);
     await connection.query("DELETE FROM colors WHERE product_id = ?", [productId]);
+    await connection.query("DELETE FROM comments WHERE product_id = ?", [productId]); // اختیاری
 
+    // حذف محصول
     const [result] = await connection.query("DELETE FROM products WHERE id = ?", [productId]);
-    if ((result as any).affectedRows === 0) throw new Error("Product not found");
+    if ((result as any).affectedRows === 0) {
+      throw new Error("Product not found");
+    }
 
     await connection.commit();
     return NextResponse.json({ message: "Product deleted successfully" });

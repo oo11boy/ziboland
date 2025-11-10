@@ -1,5 +1,5 @@
-"use client";
-
+// EditProductPage.tsx (updated)
+ "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/Components/ui/button";
@@ -10,11 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Label } from "@/Components/ui/label";
 import { AlertCircle, Plus, Trash2, Loader2, ChevronDown, ChevronUp, Upload, X, Image as ImageIcon, CheckCircle } from "lucide-react";
-import { Product, Brand, Category, Subcategory } from "@/types/types";
+import { Product, Brand, Category, Subcategory, SubcategoryItem } from "@/types/types";
 import { API } from "@/lib/MainRoutes";
 import { toast } from "react-hot-toast";
 import { SITE } from "@/lib/MainRoutes";
-
 interface ProductFormData {
   id: number;
   brand_id: string;
@@ -30,6 +29,7 @@ interface ProductFormData {
   category: string;
   mothercatId: string;
   subcatId: string;
+  itemId: string;
   rating: string;
   inStock: string;
   numericPrice: string;
@@ -42,12 +42,10 @@ interface ProductFormData {
   hasDiscount: boolean;
   hasWholesaleDiscount: boolean;
 }
-
 interface UploadedFile {
   url: string;
   name: string;
 }
-
 const EditProductPage = () => {
   const router = useRouter();
   const params = useParams();
@@ -67,6 +65,7 @@ const EditProductPage = () => {
     category: "",
     mothercatId: "",
     subcatId: "",
+    itemId: "",
     rating: "0",
     inStock: "1",
     numericPrice: "0",
@@ -82,6 +81,7 @@ const EditProductPage = () => {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategory[]>([]);
+  const [items, setItems] = useState<SubcategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [errors, setErrors] = useState<Partial<Record<keyof ProductFormData, string>>>({});
   const [expandedSections, setExpandedSections] = useState({
@@ -101,12 +101,10 @@ const EditProductPage = () => {
   const [previews, setPreviews] = useState<{ [key: string]: string }>({});
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-
   // Format numbers with commas
   const formatNumber = (value: string) => {
     return value.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
-
   // Form validation
   const validateForm = () => {
     const newErrors: Partial<Record<keyof ProductFormData, string>> = {};
@@ -114,6 +112,7 @@ const EditProductPage = () => {
     if (!formData.brand_id) newErrors.brand_id = "انتخاب برند الزامی است";
     if (!formData.mothercatId) newErrors.mothercatId = "انتخاب دسته‌بندی اصلی الزامی است";
     if (!formData.subcatId) newErrors.subcatId = "انتخاب زیرمجموعه الزامی است";
+    if (!formData.itemId) newErrors.itemId = "انتخاب آیتم زیرمجموعه الزامی است";
     if (!formData.originalPrice) newErrors.originalPrice = "قیمت اصلی الزامی است";
     if (!formData.wholesalePrice) newErrors.wholesalePrice = "قیمت عمده الزامی است";
     if (!formData.image) newErrors.image = "آدرس تصویر الزامی است";
@@ -133,7 +132,6 @@ const EditProductPage = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
   useEffect(() => {
     // Fetch product
     fetch(`${API}/products/${id}`)
@@ -157,6 +155,7 @@ const EditProductPage = () => {
           category: data.category,
           mothercatId: data.mothercatId.toString(),
           subcatId: data.subcatId.toString(),
+          itemId: data.itemId?.toString() || "",
           rating: data.rating.toString(),
           inStock: data.inStock ? "1" : "0",
           numericPrice: data.numericPrice.toString(),
@@ -191,7 +190,6 @@ const EditProductPage = () => {
         console.log(err);
         setLoading(false);
       });
-
     // Fetch brands
     fetch(`${API}/brands`)
       .then((res) => {
@@ -200,7 +198,6 @@ const EditProductPage = () => {
       })
       .then((data: Brand[]) => setBrands(data))
       .catch((err) => toast.error("خطا در دریافت برندها " + (err as Error).message));
-
     // Fetch mother categories
     fetch(`${API}/categories?mothercat=1`)
       .then((res) => {
@@ -210,7 +207,6 @@ const EditProductPage = () => {
       .then((data: Category[]) => setCategories(data))
       .catch((err) => toast.error("خطا در دریافت دسته‌بندی‌ها " + (err as Error).message));
   }, [id]);
-
   useEffect(() => {
     if (formData.mothercatId) {
       fetch(`${API}/subcategories?category_id=${formData.mothercatId}`)
@@ -222,9 +218,23 @@ const EditProductPage = () => {
         .catch((err) => toast.error("خطا در دریافت زیرمجموعه‌ها " + (err as Error).message));
     } else {
       setSubcategories([]);
+      setFormData({ ...formData, subcatId: "", itemId: "" });
     }
   }, [formData.mothercatId]);
-
+  useEffect(() => {
+    if (formData.subcatId) {
+      fetch(`${API}/subcategory-items?subcategory_id=${formData.subcatId}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("خطا در دریافت آیتم‌ها");
+          return res.json();
+        })
+        .then((data: SubcategoryItem[]) => setItems(data))
+        .catch((err) => toast.error("خطا در دریافت آیتم‌ها " + (err as Error).message));
+    } else {
+      setItems([]);
+      setFormData({ ...formData, itemId: "" });
+    }
+  }, [formData.subcatId]);
   useEffect(() => {
     if (formData.originalPrice && formData.discount && formData.hasDiscount) {
       const original = parseFloat(formData.originalPrice.replace(/,/g, ""));
@@ -243,7 +253,6 @@ const EditProductPage = () => {
       });
     }
   }, [formData.originalPrice, formData.discount, formData.hasDiscount]);
-
   useEffect(() => {
     if (formData.wholesalePrice && formData.discountwholesale && formData.hasWholesaleDiscount) {
       const wholesale = parseFloat(formData.wholesalePrice.replace(/,/g, ""));
@@ -260,34 +269,29 @@ const EditProductPage = () => {
       });
     }
   }, [formData.wholesalePrice, formData.discountwholesale, formData.hasWholesaleDiscount]);
-
   const handleAddInfoTable = () => {
     setFormData({
       ...formData,
       infotable: [...formData.infotable, { name: "", value: "" }],
     });
   };
-
   const handleInfoTableChange = (index: number, field: "name" | "value", value: string) => {
     const newInfoTable = [...formData.infotable];
     newInfoTable[index][field] = value;
     setFormData({ ...formData, infotable: newInfoTable });
   };
-
   const handleRemoveInfoTable = (index: number) => {
     setFormData({
       ...formData,
       infotable: formData.infotable.filter((_, i) => i !== index),
     });
   };
-
   const handleAddMedia = () => {
     setFormData({
       ...formData,
       media: [...formData.media, { type: "image", src: "", thumbnail: "", alt: "" }],
     });
   };
-
   const handleMediaChange = (
     index: number,
     field: "type" | "src" | "thumbnail" | "alt",
@@ -297,21 +301,18 @@ const EditProductPage = () => {
     newMedia[index][field] = value;
     setFormData({ ...formData, media: newMedia });
   };
-
   const handleRemoveMedia = (index: number) => {
     setFormData({
       ...formData,
       media: formData.media.filter((_, i) => i !== index),
     });
   };
-
   const handleAddColor = () => {
     setFormData({
       ...formData,
       colors: [...formData.colors, { englishName: "", persianName: "", hexCode: "" }],
     });
   };
-
   const handleColorChange = (
     index: number,
     field: "englishName" | "persianName" | "hexCode",
@@ -321,14 +322,12 @@ const EditProductPage = () => {
     newColors[index][field] = value;
     setFormData({ ...formData, colors: newColors });
   };
-
   const handleRemoveColor = (index: number) => {
     setFormData({
       ...formData,
       colors: formData.colors.filter((_, i) => i !== index),
     });
   };
-
   // Upload modal handlers
   const openUploadModal = (type: 'image' | 'media') => {
     setUploadType(type);
@@ -337,7 +336,6 @@ const EditProductPage = () => {
     setUploadedFiles([]);
     setShowUploadModal(true);
   };
-
   const closeUploadModal = () => {
     setShowUploadModal(false);
     setUploadType(null);
@@ -345,7 +343,6 @@ const EditProductPage = () => {
     setPreviews({});
     setUploadedFiles([]);
   };
-
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
     setFiles((prev) => [...prev, ...selectedFiles]);
@@ -354,7 +351,6 @@ const EditProductPage = () => {
       setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
     });
   }, []);
-
   const removeFile = useCallback((fileName: string) => {
     setFiles((prev) => prev.filter((f) => f.name !== fileName));
     setPreviews((prev) => {
@@ -366,7 +362,6 @@ const EditProductPage = () => {
       URL.revokeObjectURL(previews[fileName]);
     }
   }, [previews]);
-
   const handleUpload = useCallback(async () => {
     if (files.length === 0) return;
     setUploading(true);
@@ -394,7 +389,6 @@ const EditProductPage = () => {
     setUploading(false);
     toast.success(`${successful.length} فایل با موفقیت آپلود شد`);
   }, [files]);
-
   const handleConfirmUpload = () => {
     if (uploadedFiles.length === 0) {
       toast.error("هیچ فایلی آپلود نشده است");
@@ -415,14 +409,12 @@ const EditProductPage = () => {
     }
     closeUploadModal();
   };
-
   const toggleSection = (section: string) => {
     setExpandedSections((prev) => ({
       ...prev,
-      [section]: !prev[section as keyof typeof prev],
+      [section]: !prev[section as keyof typeof prev]
     }));
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
@@ -449,6 +441,7 @@ const EditProductPage = () => {
           category: formData.category,
           mothercatId: parseInt(formData.mothercatId),
           subcatId: parseInt(formData.subcatId),
+          itemId: parseInt(formData.itemId) || null,
           rating: parseFloat(formData.rating) || 0,
           inStock: parseInt(formData.inStock),
           sales: parseInt(formData.sales) || 0,
@@ -473,7 +466,6 @@ const EditProductPage = () => {
       setLoading(false);
     }
   };
-
   if (loading) {
     return (
       <div className="container mx-auto p-4 yekan text-center py-8">
@@ -482,7 +474,6 @@ const EditProductPage = () => {
       </div>
     );
   }
-
   return (
     <div className="container mx-auto p-4 yekan">
       <Card className="bg-white dark:bg-gray-800 shadow-lg">
@@ -545,7 +536,6 @@ const EditProductPage = () => {
                 </div>
               )}
             </div>
-
             {/* قیمت‌گذاری */}
             <div className="border rounded-lg overflow-hidden">
               <div
@@ -694,7 +684,6 @@ const EditProductPage = () => {
                 </div>
               )}
             </div>
-
             {/* تصویر و مدیا */}
             <div className="border rounded-lg overflow-hidden">
               <div
@@ -850,7 +839,6 @@ const EditProductPage = () => {
                 </div>
               )}
             </div>
-
             {/* دسته‌بندی */}
             <div className="border rounded-lg overflow-hidden">
               <div
@@ -861,7 +849,7 @@ const EditProductPage = () => {
                 {expandedSections.category ? <ChevronUp /> : <ChevronDown />}
               </div>
               {expandedSections.category && (
-                <div className="p-4 space-y-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 space-y-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <Label htmlFor="mothercatId" className="mb-2 block">
                       دسته‌بندی اصلی <span className="text-red-500">*</span>
@@ -869,7 +857,7 @@ const EditProductPage = () => {
                     <Select
                       value={formData.mothercatId}
                       onValueChange={(value: any) =>
-                        setFormData({ ...formData, mothercatId: value, subcatId: "", category: "" })
+                        setFormData({ ...formData, mothercatId: value, subcatId: "", itemId: "", category: "" })
                       }
                       required
                     >
@@ -904,6 +892,7 @@ const EditProductPage = () => {
                         setFormData({
                           ...formData,
                           subcatId: value,
+                          itemId: "",
                           category: subcategories.find((s) => s.id === parseInt(value))?.name || "",
                         })
                       }
@@ -928,10 +917,39 @@ const EditProductPage = () => {
                       </p>
                     )}
                   </div>
+                  <div>
+                    <Label htmlFor="itemId" className="mb-2 block">
+                      آیتم زیرمجموعه <span className="text-red-500">*</span>
+                    </Label>
+                    <Select
+                      value={formData.itemId}
+                      onValueChange={(value: string) =>
+                        setFormData({ ...formData, itemId: value })
+                      }
+                      required
+                      disabled={!formData.subcatId}
+                    >
+                      <SelectTrigger id="itemId" className={errors.itemId ? "border-red-500" : ""}>
+                        <SelectValue placeholder="انتخاب آیتم" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {items.map((item) => (
+                          <SelectItem key={item.id} value={item.id.toString()}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {errors.itemId && (
+                      <p className="text-red-500 text-sm mt-1 flex items-center">
+                        <AlertCircle className="h-4 w-4 ml-1" />
+                        {errors.itemId}
+                      </p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
-
             {/* مشخصات فنی */}
             <div className="border rounded-lg overflow-hidden">
               <div
@@ -944,10 +962,7 @@ const EditProductPage = () => {
               {expandedSections.specs && (
                 <div className="p-4 space-y-4">
                   {formData.infotable.map((item, index) => (
-                    <div
-                      key={index}
-                      className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center"
-                    >
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center">
                       <div className="md:col-span-5">
                         <Input
                           placeholder="نام مشخصه"
@@ -994,7 +1009,6 @@ const EditProductPage = () => {
                 </div>
               )}
             </div>
-
             {/* رنگ‌ها */}
             <div className="border rounded-lg overflow-hidden">
               <div
@@ -1007,10 +1021,7 @@ const EditProductPage = () => {
               {expandedSections.colors && (
                 <div className="p-4 space-y-4">
                   {formData.colors.map((item, index) => (
-                    <div
-                      key={index}
-                      className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center p-3 border rounded-md"
-                    >
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center p-3 border rounded-md">
                       <div className="md:col-span-3">
                         <Input
                           placeholder="نام انگلیسی (مثال: red)"
@@ -1074,7 +1085,6 @@ const EditProductPage = () => {
                 </div>
               )}
             </div>
-
             {/* سایر اطلاعات */}
             <div className="border rounded-lg overflow-hidden">
               <div
@@ -1148,7 +1158,6 @@ const EditProductPage = () => {
                 </div>
               )}
             </div>
-
             <div className="flex gap-4 pt-4">
               <Button
                 type="button"
@@ -1177,7 +1186,6 @@ const EditProductPage = () => {
           </form>
         </CardContent>
       </Card>
-
       {/* Upload Modal */}
       {showUploadModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
@@ -1209,7 +1217,6 @@ const EditProductPage = () => {
                   className="hidden"
                 />
               </div>
-
               {/* Selected Files Preview */}
               {files.length > 0 && (
                 <div className="space-y-3">
@@ -1257,7 +1264,6 @@ const EditProductPage = () => {
                   </Button>
                 </div>
               )}
-
               {/* Uploaded Files */}
               {uploadedFiles.length > 0 && (
                 <div className="space-y-3">
@@ -1295,5 +1301,4 @@ const EditProductPage = () => {
     </div>
   );
 };
-
 export default EditProductPage;

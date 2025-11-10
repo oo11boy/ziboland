@@ -1,3 +1,4 @@
+// types.ts (updated)
 import { RowDataPacket } from 'mysql2/promise';
 
 export interface Comment {
@@ -56,6 +57,7 @@ export interface ProductRow extends RowDataPacket {
   category: string;
   mothercatId: number;
   subcatId: number;
+  itemId: number | null;
   rating: number;
   inStock: number;
   numericPrice: number;
@@ -95,7 +97,6 @@ export interface Categoryapi {
 }
 
 export interface Product {
-  itemId: number;
   id: number;
   brand_id: number | null;
   title: string;
@@ -110,6 +111,7 @@ export interface Product {
   category: string;
   mothercatId: number;
   subcatId: number;
+  itemId: number | null;
   rating: number;
   inStock: boolean;
   numericPrice: number;
@@ -160,6 +162,12 @@ export interface Category {
 export interface Subcategory {
   id: number;
   category_id: number;
+  name: string;
+}
+
+export interface SubcategoryItem {
+  id: number;
+  subcategory_id: number;
   name: string;
 }
 
@@ -248,9 +256,9 @@ export interface Order {
   province?: string;
   city?: string;
   street?: string;
-  alley?: string | null;
-  building_number?: string | null;
-  unit?: string | null;
+  alley?: string;
+  building_number?: string;
+  unit?: string;
   postal_code?: string;
   items: {
     id: number;
@@ -343,4 +351,4 @@ export interface WishlistContentProps {
   handleRemoveFromWishlist: (id: number) => void;
 }
 
-export type { RowDataPacket };
+export type { RowDataPacket }; 

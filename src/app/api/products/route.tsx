@@ -1,20 +1,20 @@
+// api/products/index.ts (updated)
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { Product, ProductRow } from "@/types/types";
 import { RowDataPacket } from "mysql2/promise";
-
 export async function GET() {
   try {
     const [rows] = await pool.query<ProductRow[]>(`
-      SELECT 
-        p.id AS product_id, p.title, p.image, p.originalPrice, p.discountedPrice, 
-        p.wholesalePrice, p.discountwholesalePrice, p.minwholesale, p.discount, 
-        p.discountwholesale, p.category, p.mothercatId, p.subcatId, p.rating, 
+      SELECT
+        p.id AS product_id, p.title, p.image, p.originalPrice, p.discountedPrice,
+        p.wholesalePrice, p.discountwholesalePrice, p.minwholesale, p.discount,
+        p.discountwholesale, p.category, p.mothercatId, p.subcatId, p.itemId, p.rating,
         p.inStock, p.numericPrice, p.sales, p.features, p.content,
         m.type AS media_type, m.src AS media_src, m.thumbnail AS media_thumbnail, m.alt AS media_alt,
         col.englishName, col.persianName, col.hexCode,
         it.id AS infotable_id, it.name AS infotable_name, it.value AS infotable_value,
-        com.id AS comment_id, com.product_id AS comment_product_id, com.name AS comment_name, com.rating AS comment_rating, 
+        com.id AS comment_id, com.product_id AS comment_product_id, com.name AS comment_name, com.rating AS comment_rating,
         com.text AS comment_text, com.date AS comment_date,
         b.id AS brand_id, b.title AS brand_title, b.img AS brand_img, b.link AS brand_link
       FROM products p
@@ -25,16 +25,13 @@ export async function GET() {
       LEFT JOIN brands b ON p.brand_id = b.id
       ORDER BY p.id, m.id, col.id, it.id, com.id, b.id
     `);
-
     const productsMap: Record<number, Product> = {};
-
     rows.forEach((row) => {
       const pid = row.product_id;
-
       if (!productsMap[pid]) {
         productsMap[pid] = {
           id: pid,
-          itemId: pid,
+          itemId: row.itemId ?? pid,
           brand_id: row.brand_id ?? null,
           title: row.title,
           image: row.image,
@@ -68,7 +65,6 @@ export async function GET() {
             : undefined,
         };
       }
-
       if (
         row.media_type &&
         row.media_src &&
@@ -81,7 +77,6 @@ export async function GET() {
           alt: row.media_alt ?? "",
         });
       }
-
       if (
         row.englishName &&
         row.hexCode &&
@@ -93,7 +88,6 @@ export async function GET() {
           hexCode: row.hexCode,
         });
       }
-
       if (
         row.infotable_id &&
         !productsMap[pid].infotable!.some((it) => it.id === row.infotable_id)
@@ -104,7 +98,6 @@ export async function GET() {
           value: row.infotable_value ?? "",
         });
       }
-
       if (
         row.comment_id &&
         !productsMap[pid].comments!.some((c) => c.id === row.comment_id)
@@ -124,12 +117,10 @@ export async function GET() {
         });
       }
     });
-
     const products = Object.values(productsMap);
     if (products.length === 0) {
       return NextResponse.json({ error: "No products found" }, { status: 404 });
     }
-
     return NextResponse.json(products);
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -139,7 +130,6 @@ export async function GET() {
     );
   }
 }
-
 export async function POST(request: Request) {
   try {
     const data = await request.json();
@@ -157,6 +147,7 @@ export async function POST(request: Request) {
       category,
       mothercatId,
       subcatId,
+      itemId,
       rating,
       inStock,
       numericPrice,
@@ -167,7 +158,6 @@ export async function POST(request: Request) {
       media,
       colors,
     } = data;
-
     // Validate required fields
     if (
       !title ||
@@ -181,14 +171,14 @@ export async function POST(request: Request) {
       !discountwholesale ||
       !category ||
       !mothercatId ||
-      !subcatId
+      !subcatId ||
+      !itemId
     ) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
       );
     }
-
     // Validate infotable entries
     if (infotable && !Array.isArray(infotable)) {
       return NextResponse.json(
@@ -202,7 +192,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
     // Validate media entries
     if (media && !Array.isArray(media)) {
       return NextResponse.json(
@@ -225,7 +214,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
     // Validate colors entries
     if (colors && !Array.isArray(colors)) {
       return NextResponse.json(
@@ -239,7 +227,6 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-
     // Validate foreign keys
     if (brand_id) {
       const [brandRows] = await pool.query<RowDataPacket[]>(
@@ -270,20 +257,28 @@ export async function POST(request: Request) {
     if (subcatRows.length === 0) {
       return NextResponse.json({ error: "Invalid subcatId" }, { status: 400 });
     }
-
+    const [itemRows] = await pool.query<RowDataPacket[]>(
+      "SELECT id FROM subcategory_items WHERE id = ? AND subcategory_id = ?",
+      [itemId, subcatId]
+    );
+    if (itemRows.length === 0) {
+      return NextResponse.json(
+        { error: "Invalid itemId" },
+        { status: 400 }
+      );
+    }
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-
       // Insert product
       const [result] = await connection.query(
         `
         INSERT INTO products (
           brand_id, title, image, originalPrice, discountedPrice, wholesalePrice,
           discountwholesalePrice, minwholesale, discount, discountwholesale,
-          category, mothercatId, subcatId, rating, inStock, numericPrice, sales,
+          category, mothercatId, subcatId, itemId, rating, inStock, numericPrice, sales,
           features, content
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `,
         [
           brand_id || null,
@@ -299,6 +294,7 @@ export async function POST(request: Request) {
           category,
           mothercatId,
           subcatId,
+          itemId || null,
           rating,
           inStock,
           numericPrice,
@@ -307,9 +303,7 @@ export async function POST(request: Request) {
           content || null,
         ]
       );
-
       const productId = (result as any).insertId;
-
       // Insert infotable entries
       if (infotable && infotable.length > 0) {
         for (const item of infotable) {
@@ -319,7 +313,6 @@ export async function POST(request: Request) {
           );
         }
       }
-
       // Insert media entries
       if (media && media.length > 0) {
         for (const item of media) {
@@ -329,7 +322,6 @@ export async function POST(request: Request) {
           );
         }
       }
-
       // Insert colors entries
       if (colors && colors.length > 0) {
         for (const item of colors) {
@@ -339,7 +331,6 @@ export async function POST(request: Request) {
           );
         }
       }
-
       await connection.commit();
       return NextResponse.json({ id: productId }, { status: 201 });
     } catch (error) {
