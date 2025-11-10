@@ -110,14 +110,8 @@
 }
 
 /* بهینه‌سازی لیست‌های برند و دسته‌بندی */
-.max-h-32 {
-  max-height: 7rem; /* کاهش ارتفاع برای جمع‌وجور شدن */
-  overflow-y: auto;
-}
 
-.max-h-32::-webkit-scrollbar {
-  width: 6px;
-}
+
 
 .max-h-32::-webkit-scrollbar-thumb {
   background: #805b99;
