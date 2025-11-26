@@ -46,6 +46,10 @@ const DeleteDialog = ({
     </div>
   </div>
 );
+const copyToClipboard = (text: string) => {
+  navigator.clipboard.writeText(text);
+  toast.success("نام محصول کپی شد");
+};
 
 const ProductsPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -66,7 +70,9 @@ const ProductsPage = () => {
       (product) =>
         product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (product.brandDetails?.title &&
-          product.brandDetails.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
+          product.brandDetails.title
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase())) ||
         product.category.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredProducts(filtered);
@@ -88,33 +94,33 @@ const ProductsPage = () => {
   };
 
   // کلیک روی دکمه حذف
-const handleDeleteClick = (product: Product) => {
-  setDeleteDialog({ visible: true, product });
-};
+  const handleDeleteClick = (product: Product) => {
+    setDeleteDialog({ visible: true, product });
+  };
   // حذف واقعی
-const handleDelete = async (id: number, force = false) => {
-  console.log("[DELETE] Product ID:", id, "Force:", force);
+  const handleDelete = async (id: number, force = false) => {
+    console.log("[DELETE] Product ID:", id, "Force:", force);
 
-  try {
-    const res = await fetch(`${API}/products/${id}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ force }),
-    });
+    try {
+      const res = await fetch(`${API}/products/${id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force }),
+      });
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.error || "خطا در حذف محصول");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "خطا در حذف محصول");
+      }
+
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+      setFilteredProducts((prev) => prev.filter((p) => p.id !== id));
+      setDeleteDialog({ visible: false, product: null });
+      toast.success("محصول با موفقیت حذف شد");
+    } catch (err: any) {
+      toast.error(err.message || "خطا در حذف محصول");
     }
-
-    setProducts(prev => prev.filter(p => p.id !== id));
-    setFilteredProducts(prev => prev.filter(p => p.id !== id));
-    setDeleteDialog({ visible: false, product: null });
-    toast.success("محصول با موفقیت حذف شد");
-  } catch (err: any) {
-    toast.error(err.message || "خطا در حذف محصول");
-  }
-};
+  };
 
   if (loading) {
     return (
@@ -189,10 +195,19 @@ const handleDelete = async (id: number, force = false) => {
                     >
                       <td className="px-4 py-2 text-right block md:table-cell">
                         <span className="font-medium md:hidden">نام: </span>
-                        {product.title.length > 20
-                          ? product.title.slice(0, 20) + "..."
-                          : product.title}
+
+                   <span
+  title="برای کپی کلیک کنید"
+  onClick={() => copyToClipboard(product.title)}
+  className="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
+>
+  {product.title.length > 20
+    ? product.title.slice(0, 20) + "..."
+    : product.title}
+</span>
+
                       </td>
+
                       <td className="px-4 py-2 text-right block md:table-cell">
                         <span className="font-medium md:hidden">برند: </span>
                         {product.brandDetails?.title || "نامشخص"}
@@ -202,11 +217,15 @@ const handleDelete = async (id: number, force = false) => {
                         {product.discountedPrice} تومان
                       </td>
                       <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">قیمت عمده: </span>
+                        <span className="font-medium md:hidden">
+                          قیمت عمده:{" "}
+                        </span>
                         {product.discountwholesalePrice} تومان
                       </td>
                       <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">دسته‌بندی: </span>
+                        <span className="font-medium md:hidden">
+                          دسته‌بندی:{" "}
+                        </span>
                         {product.category}
                       </td>
                       <td className="px-4 py-2 text-right block md:table-cell">
@@ -215,7 +234,9 @@ const handleDelete = async (id: number, force = false) => {
                       </td>
                       <td className="px-4 py-2 block md:table-cell">
                         <div className="flex space-x-2 space-x-reverse">
-                          <Link href={`/admindashboard/products/${product.id}/edit`}>
+                          <Link
+                            href={`/admindashboard/products/${product.id}/edit`}
+                          >
                             <Button
                               variant="outline"
                               size="sm"

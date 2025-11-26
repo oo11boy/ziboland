@@ -7,6 +7,7 @@ import {
 } from "@mui/icons-material";
 import Link from "next/link";
 import { Product } from "@/types/types";
+import { formatPrice } from "../Utils/formatPrice";
 
 interface ProductGridProps {
   filteredProducts: Product[];
@@ -60,11 +61,7 @@ export default function ProductGrid({
                 className="flex items-center flex-col"
               >
                 <img
-                  src={
-                    item.image.length > 0
-                      ? item.image
-                      : "/placeholder.jpg"
-                  }
+                  src={item.image.length > 0 ? item.image : "/placeholder.jpg"}
                   alt={
                     item.media && item.media.length > 0
                       ? item.media[0].alt
@@ -83,9 +80,7 @@ export default function ProductGrid({
                       ? "tpsc-price-button-active"
                       : ""
                   }`}
-                  onClick={() =>
-                    handlePriceTypeChange(item.id, "wholesale")
-                  }
+                  onClick={() => handlePriceTypeChange(item.id, "wholesale")}
                   aria-label="انتخاب قیمت عمده"
                 >
                   قیمت عمده
@@ -96,9 +91,7 @@ export default function ProductGrid({
                       ? "tpsc-price-button-active"
                       : ""
                   }`}
-                  onClick={() =>
-                    handlePriceTypeChange(item.id, "single")
-                  }
+                  onClick={() => handlePriceTypeChange(item.id, "single")}
                   aria-label="انتخاب قیمت تکی"
                 >
                   قیمت تکی
@@ -109,9 +102,11 @@ export default function ProductGrid({
               ) : (
                 <div className="tpsc-price-discount-container">
                   <p className="tpsc-price-strikethrough-text">
-                    {priceTypes[item.id] === "single"
-                      ? item.originalPrice
-                      : item.wholesalePrice}
+                    {formatPrice(
+                      priceTypes[item.id] === "single"
+                        ? item.originalPrice
+                        : item.wholesalePrice
+                    )}
                   </p>
                   <p className="tpsc-discount-badge">
                     {priceTypes[item.id] === "single"
@@ -163,9 +158,7 @@ export default function ProductGrid({
                       aria-label="تعداد محصول"
                     />
                     <button
-                      onClick={() =>
-                        handleQuantityChange(item.id, -1)
-                      }
+                      onClick={() => handleQuantityChange(item.id, -1)}
                       aria-label="کاهش تعداد"
                     >
                       <RemoveCircleOutline fontSize="small" />
@@ -173,9 +166,7 @@ export default function ProductGrid({
                   </div>
                   <button
                     className="tpsc-add-to-cart"
-                    onClick={() =>
-                      handleShowQuantitySelector(item.id)
-                    }
+                    onClick={() => handleShowQuantitySelector(item.id)}
                     aria-label="نمایش انتخابگر تعداد"
                   >
                     <AddShoppingCart fontSize="small" />
@@ -186,9 +177,7 @@ export default function ProductGrid({
                       onClick={(e) => e.stopPropagation()}
                     >
                       <button
-                        onClick={() =>
-                          handleQuantityChange(item.id, 1)
-                        }
+                        onClick={() => handleQuantityChange(item.id, 1)}
                         aria-label="افزایش تعداد"
                       >
                         <AddCircleOutline fontSize="small" />
@@ -201,9 +190,7 @@ export default function ProductGrid({
                         aria-label="تعداد محصول"
                       />
                       <button
-                        onClick={() =>
-                          handleQuantityChange(item.id, -1)
-                        }
+                        onClick={() => handleQuantityChange(item.id, -1)}
                         aria-label="کاهش تعداد"
                       >
                         <RemoveCircleOutline fontSize="small" />
