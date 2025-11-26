@@ -101,13 +101,14 @@ export interface Product {
   brand_id: number | null;
   title: string;
   image: string;
-  originalPrice: string;
-  discountedPrice: string;
-  wholesalePrice: string;
-  discountwholesalePrice: string;
-  minwholesale: number;
-  discount: string;
-  discountwholesale: string;
+
+  originalPrice: any;           // تغییر از string
+  discountedPrice: any;          // تغییر از string
+  wholesalePrice: any;           // تغییر از string
+  discountwholesalePrice: any;   // تغییر از string
+  minwholesale: any;
+  discount: any;                 // این یکی می‌تواند string بماند (مثل "15%")
+  discountwholesale:any;        // این هم string بماند
   category: string;
   mothercatId: number;
   subcatId: number;

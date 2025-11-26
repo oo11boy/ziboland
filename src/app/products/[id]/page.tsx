@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import BreadCrumbs from '@/Components/Utils/BreadCrumbs';
+
 import { SingleProductContainer } from '@/Components/SingleProductComponents/SingleProductContainer';
 import { Product } from '@/types/types';
 import { API } from '@/lib/MainRoutes';
@@ -50,7 +50,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   return (
     <>
-      <BreadCrumbs />
+     
       <SingleProductContainer infoproduct={product} />
     </>
   );

@@ -94,34 +94,31 @@ const WideSliderContainer: React.FC<WideSliderContainerProps> = ({ slides }) => 
 
   return (
     <div className="w-full mx-auto py-5 relative">
-      <Swiper
-        ref={swiperRef}
-        modules={[Navigation, Pagination, EffectCoverflow, Autoplay]}
-        effect="coverflow"
-        grabCursor={true}
-        centeredSlides={true}
-        slidesPerView={windowWidth >= 993 ? 1.1 : 1.13}
-        spaceBetween={windowWidth >= 993 ? 150 : 100}
-        loop={true}
-        autoplay={{
-          delay: 6000,
-          disableOnInteraction: false,
-        }}
-        coverflowEffect={{
-          rotate: 0,
-          stretch: 50,
-          depth: 100,
-          modifier: 1,
-          slideShadows: false,
-        }}
-        pagination={{ clickable: true }}
-        navigation={{
-          prevEl: ".swiper-button-prev",
-          nextEl: ".swiper-button-next",
-        }}
-        onSlideChange={handleSlideChange}
-        className="py-5"
-      >
+     <Swiper
+  ref={swiperRef}
+  modules={[Navigation, Pagination, EffectCoverflow, Autoplay]}
+  effect="coverflow"
+  grabCursor={true}
+  centeredSlides={true}
+  slidesPerView={windowWidth >= 993 ? 1.1 : 1.13}
+  spaceBetween={windowWidth >= 993 ? 150 : 100}
+  loop={slides.length > 2} // فقط وقتی اسلاید بیشتر از 2 باشد loop فعال شود
+  autoplay={slides.length > 2 ? { delay: 6000, disableOnInteraction: false } : false} // autoplay هم مشابه
+  coverflowEffect={{
+    rotate: 0,
+    stretch: 50,
+    depth: 100,
+    modifier: 1,
+    slideShadows: false,
+  }}
+  pagination={{ clickable: true }}
+  navigation={{
+    prevEl: ".swiper-button-prev",
+    nextEl: ".swiper-button-next",
+  }}
+  onSlideChange={handleSlideChange}
+  className="py-5"
+>
         {slides.map((slide) => (
           <SwiperSlide
             key={slide.id}

@@ -26,9 +26,9 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
   const { dispatch } = useCart();
 
   // تبدیل قیمت‌ها به عدد
-  const retailPrice = parseInt(infoproduct.discountedPrice.replace(/[^\d]/g, ''), 10) || 0;
+  const retailPrice = parseInt(String(infoproduct.discountedPrice).replace(/[^\d]/g, ''), 10) || 0;
 
-  const wholesalePriceRaw = infoproduct.discountwholesalePrice.replace(/[^\d]/g, '');
+  const wholesalePriceRaw = String(infoproduct.discountwholesalePrice).replace(/[^\d]/g, '');
   const wholesalePrice = wholesalePriceRaw ? parseInt(wholesalePriceRaw, 10) : 0;
 
   // آیا قیمت عمده وجود دارد و معتبر است؟

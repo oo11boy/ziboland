@@ -91,7 +91,7 @@ export default function BrandsContainer() {
   }
 
   return (
-    <div className="w-[90%] yekan mx-auto my-8 bg-white rounded-lg p-4 relative sm:p-6 md:p-8">
+    <div className="w-[95%] yekan mx-auto my-8 bg-white rounded-lg p-4 relative sm:p-6 md:p-8">
       <div className="w-full mb-6 mt-2 flex items-center justify-between">
         <p className="font-semibold yekan text-sm sm:text-base md:text-lg lg:text-xl">
           برترین برندها
@@ -154,15 +154,17 @@ export default function BrandsContainer() {
           dir="rtl"
         >
           {brands.map((item) => (
-            <SwiperSlide key={item.id}>
-              <a href={item.link}>
-                <img
-                  src={item.img}
-                  alt={item.title}
-                  className="w-2/3 h-auto object-contain"
-                />
-              </a>
-            </SwiperSlide>
+         <SwiperSlide key={item.id} className="flex flex-col items-center">
+  <a href={item.link} className="text-center flex justify-center items-center">
+    <img
+      src={item.img}
+      alt={item.title}
+      className="w-2/3 h-auto object-contain"
+    />
+  </a>
+  <p className="mt-2 text-sm sm:text-base text-center">{item.title}</p>
+</SwiperSlide>
+
           ))}
         </Swiper>
       </div>
