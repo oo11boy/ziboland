@@ -21,15 +21,12 @@ export async function middleware(request: NextRequest) {
   }
 
   let decoded: { userId: number; email: string; role: string } | null = null;
+
   if (token) {
     try {
       const secret = new TextEncoder().encode(SECRET_KEY);
       const { payload } = await jose.jwtVerify(token, secret);
-      decoded = payload as {
-        userId: number;
-        email: string;
-        role: string;
-      };
+      decoded = payload as { userId: number; email: string; role: string };
     } catch (error) {
       console.error("JWT verification error:", error);
       const response = NextResponse.redirect(
@@ -43,8 +40,9 @@ export async function middleware(request: NextRequest) {
   // مسیر checkout نیاز به لاگین دارد
   if (pathname.startsWith("/checkout")) {
     if (!decoded) {
+      // ذخیره مسیر مقصد برای بعد از لاگین
       const loginUrl = new URL("/myaccount", request.url);
-      loginUrl.searchParams.set("redirect", pathname); // ذخیره مقصد
+      loginUrl.searchParams.set("redirect", pathname + request.nextUrl.search);
       return NextResponse.redirect(loginUrl);
     }
   }
