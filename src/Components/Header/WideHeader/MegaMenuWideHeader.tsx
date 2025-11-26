@@ -10,7 +10,9 @@ interface MegaMenuWideHeaderProps {
   categories: Categoryapi[];
 }
 
-export default function MegaMenuWideHeader({ categories }: MegaMenuWideHeaderProps) {
+export default function MegaMenuWideHeader({
+  categories,
+}: MegaMenuWideHeaderProps) {
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -56,13 +58,18 @@ export default function MegaMenuWideHeader({ categories }: MegaMenuWideHeaderPro
   if (categories.length === 0) {
     return (
       <div className="flex h-[35px] items-center justify-center bg-black text-white">
-        <p className="text-lg">خطا در بارگذاری دسته‌بندی‌ها. لطفاً دوباره تلاش کنید.</p>
+        <p className="text-lg">
+          خطا در بارگذاری دسته‌بندی‌ها. لطفاً دوباره تلاش کنید.
+        </p>
       </div>
     );
   }
 
   return (
-    <section ref={menuRef} className="bg-black w-full shadow-lg z-[500] relative">
+    <section
+      ref={menuRef}
+      className="bg-black w-full shadow-lg z-[500] relative"
+    >
       <ToastContainer
         position="top-center"
         autoClose={3000}
@@ -128,7 +135,11 @@ export default function MegaMenuWideHeader({ categories }: MegaMenuWideHeaderPro
                 href={`/search?mothercatId=${activeMenu}`}
                 className="mb-2 text-lg text-[#805B99] inline-flex items-center gap-2"
               >
-                همه {categories.find((category) => category.id === activeMenu)?.name}
+                همه{" "}
+                {
+                  categories.find((category) => category.id === activeMenu)
+                    ?.name
+                }
                 <ArrowLeft />
               </Link>
 
@@ -140,17 +151,22 @@ export default function MegaMenuWideHeader({ categories }: MegaMenuWideHeaderPro
                       key={sub.id}
                       className="subcategory mb-8 md:supports-[not(display:grid)]:flex-1 md:supports-[not(display:grid)]:min-w-[25%]"
                     >
-                      <h3
+                        <Link
+                           href={`/search?mothercatId=${activeMenu}&subcatId=${sub.id}`}
+                            
                         className="font-bold text-md mb-4 flex items-center gap-2"
-                        style={{ borderRight: "3px solid #2f2a2a", paddingRight: "12px" }}
+                        style={{
+                          borderRight: "3px solid #2f2a2a",
+                          paddingRight: "12px",
+                        }}
                       >
                         {sub.name}
-                      </h3>
+                      </Link>
                       <ul className="space-y-3">
                         {sub.items.map((item) => (
                           <li key={item.id}>
                             <Link
-                              href={`/search?mothercatId=${activeMenu}&subcatId=${sub.id}`}
+                              href={`/search?mothercatId=${activeMenu}&subcatId=${sub.id}&itemId=${item.id}`}
                               className="text-base text-[#666] hover:text-[#c7c7c7] flex items-center gap-2"
                             >
                               {item.name}

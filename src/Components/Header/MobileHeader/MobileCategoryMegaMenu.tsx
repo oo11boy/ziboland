@@ -151,25 +151,26 @@ export default function MobileCategoryMegaMenu() {
                     </span>
                   </button>
                   <AnimatePresence>
-                    {openSubCategory === sub.id && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.25 }}
-                        className="px-4 pb-3"
-                      >
-                        {sub.items.map((subItem) => (
-                          <a
-                            key={subItem.id}
-                            href={`/search?mothercatId=${openCategory.id}&subcatId=${sub.id}`}
-                            className="block rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-[#805B99]"
-                          >
-                            {subItem.name}
-                          </a>
-                        ))}
-                      </motion.div>
-                    )}
+               {openSubCategory === sub.id && (
+  <motion.div
+    initial={{ height: 0, opacity: 0 }}
+    animate={{ height: "auto", opacity: 1 }}
+    exit={{ height: 0, opacity: 0 }}
+    transition={{ duration: 0.25 }}
+    className="px-4 pb-3"
+  >
+    {sub.items.map((subItem) => (
+      <a
+        key={subItem.id}
+        href={`/search?mothercatId=${openCategory.id}&subcatId=${sub.id}&itemId=${subItem.id}`}
+        className="block rounded-md px-3 py-2 text-sm text-gray-700 hover:bg-indigo-50 hover:text-[#805B99]"
+      >
+        {subItem.name}
+      </a>
+    ))}
+  </motion.div>
+)}
+
                   </AnimatePresence>
                 </div>
               ))}

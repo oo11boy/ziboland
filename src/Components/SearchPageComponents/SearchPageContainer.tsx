@@ -81,14 +81,19 @@ export default function SearchPageContainer({
   }, []);
 
   // Sync query params
-  useEffect(() => {
-    const mothercatId = searchParams.get("mothercatId");
-    const subcatId = searchParams.get("subcatId");
-    const brands = searchParams.get("brands");
-    setSelectedMothercatIds(mothercatId ? [parseInt(mothercatId)] : []);
-    setSelectedSubcatIds(subcatId ? [parseInt(subcatId)] : []);
-    setSelectedBrands(brands ? brands.split(",") : []);
-  }, [searchParams]);
+useEffect(() => {
+  const mothercatId = searchParams.get("mothercatId");
+  const subcatId = searchParams.get("subcatId");
+  const itemId = searchParams.get("itemId"); // اضافه شد
+  const brands = searchParams.get("brands");
+
+  setSelectedMothercatIds(mothercatId ? [parseInt(mothercatId)] : []);
+  setSelectedSubcatIds(subcatId ? [parseInt(subcatId)] : []);
+  setSelectedItemIds(itemId ? [parseInt(itemId)] : []); // اضافه شد
+  setSelectedBrands(brands ? brands.split(",") : []);
+}, [searchParams]);
+
+
 
   // Scroll to results on filter change
   useEffect(() => {
