@@ -632,6 +632,7 @@ const EditProductPage = () => {
                       </div>
                     </div>
                   )}
+                  
                   <div className="flex items-center space-x-2 md:col-span-2">
                     <Checkbox
                       id="hasWholesaleDiscount"

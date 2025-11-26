@@ -61,7 +61,7 @@ export default function ProductSliderContainer({
   // تنظیمات اولیه برای priceTypes و selectedColors
   useEffect(() => {
     const initialPriceTypes = products.reduce(
-      (acc, product) => ({ ...acc, [product.id]: "single" }),
+      (acc, product) => ({ ...acc, [product.id]: "single" }), // همیشه از تکی شروع شود
       {}
     );
     setPriceTypes(initialPriceTypes);
@@ -127,8 +127,11 @@ export default function ProductSliderContainer({
 
       if (!product) return prev;
 
-      // تنظیم خودکار نوع قیمت
-      if (newQuantity >= product.minwholesale) {
+      // **اصلاح مهم: اگر قیمت عمده صفر بود اصلا حالت عمده فعال نشود**
+      if (
+        product.discountwholesalePrice > 0 &&
+        newQuantity >= product.minwholesale
+      ) {
         handlePriceTypeChange(productId, "wholesale");
       } else {
         handlePriceTypeChange(productId, "single");
@@ -142,6 +145,13 @@ export default function ProductSliderContainer({
     productId: number,
     type: "single" | "wholesale"
   ) => {
+    const product = products.find((p) => p.id === productId);
+
+    // **جلوگیری از انتخاب عمده در صورتی که قیمت عمده = 0**
+    if (type === "wholesale" && product?.discountwholesalePrice === 0) {
+      return;
+    }
+
     setPriceTypes((prev) => ({ ...prev, [productId]: type }));
   };
 
@@ -170,10 +180,6 @@ export default function ProductSliderContainer({
       toast.error("لطفاً تعداد محصول را انتخاب کنید", {
         position: "top-center",
         autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
         theme: "colored",
       });
       return;
@@ -183,23 +189,29 @@ export default function ProductSliderContainer({
       toast.error("محصول موجود نیست", {
         position: "top-center",
         autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
         theme: "colored",
       });
       return;
     }
 
     const quantity = cartQuantities[productId];
-    const priceType = priceTypes[productId] || "single";
+
+    // **اینجا هم اصلاح کردیم: اگر عمده صفر بود => همیشه تکی**
+    const priceType =
+      product.discountwholesalePrice > 0
+        ? priceTypes[productId]
+        : "single";
+
     const price =
       priceType === "single"
         ? product.discountedPrice
         : product.discountwholesalePrice;
+
     const discount =
-      priceType === "single" ? product.discount : product.discountwholesale;
+      priceType === "single"
+        ? product.discount
+        : product.discountwholesale;
+
     const selectedColor = selectedColors[productId];
 
     if (priceType === "wholesale" && quantity < product.minwholesale) {
@@ -208,10 +220,6 @@ export default function ProductSliderContainer({
         {
           position: "top-center",
           autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
           theme: "colored",
         }
       );
@@ -229,17 +237,13 @@ export default function ProductSliderContainer({
           price: price.toString(),
           image: product.image || "/placeholder.jpg",
           discount,
-          color: selectedColor, // اضافه کردن رنگ انتخاب شده
+          color: selectedColor,
         },
       });
 
       toast.success("محصول به سبد خرید اضافه شد!", {
         position: "top-center",
         autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
         theme: "colored",
       });
 
@@ -249,10 +253,6 @@ export default function ProductSliderContainer({
       toast.error("خطا در اضافه کردن محصول به سبد خرید", {
         position: "top-center",
         autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
         theme: "colored",
       });
       console.error("Error adding to cart:", error);
@@ -268,14 +268,8 @@ export default function ProductSliderContainer({
       <ToastContainer
         position="top-center"
         autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick
-        rtl={true}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
         theme="colored"
+        rtl={true}
       />
       <div className={`psc-header ${vip ? "psc-header-vip" : ""}`}>
         {!vip && <p className="psc-title">پرفروش‌ترین‌ها</p>}
@@ -301,6 +295,7 @@ export default function ProductSliderContainer({
             </div>
           </div>
         )}
+
         <div className="psc-swiper-container">
           <Swiper
             slidesPerView="auto"
@@ -326,60 +321,82 @@ export default function ProductSliderContainer({
                 </div>
               </SwiperSlide>
             )}
+
             {products.map((item) => {
               const selectedColor = selectedColors[item.id];
+
+              // اگر عمده صفر بود، همیشه priceType = single
+              const effectivePriceType =
+                item.discountwholesalePrice > 0
+                  ? priceTypes[item.id]
+                  : "single";
+
+              // قیمت نهایی اصلاح‌شده
+              const finalPrice =
+                effectivePriceType === "single"
+                  ? item.discountedPrice
+                  : item.discountwholesalePrice;
+
               return (
                 <SwiperSlide key={item.id} className="psc-product-slide">
                   <div className="tpsc-product-card">
-                    {priceTypes[item.id] === "wholesale" && (
+                    {effectivePriceType === "wholesale" && (
                       <div className="absolute top-[2px] left-[2px] bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center">
                         <p className="ml-1">+</p>
                         <p>{item.minwholesale} عدد</p>
                       </div>
                     )}
+
                     <img
                       src={item.image || "/placeholder.jpg"}
                       className="tpsc-product-image"
                       alt={item.title}
                     />
+
                     <Link
                       href={`../products/${item.id}`}
                       className="tpsc-product-title"
                     >
                       {item.title}
                     </Link>
+
+                    {/* دکمه‌های قیمت (توجه: عمده فقط اگر >0 باشد) */}
                     <div className="tpsc-price-buttons">
+                      {item.discountwholesalePrice > 0 && (
+                        <button
+                          className={`tpsc-price-button ${
+                            effectivePriceType === "wholesale"
+                              ? "tpsc-price-button-active"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            handlePriceTypeChange(item.id, "wholesale")
+                          }
+                        >
+                          قیمت عمده
+                        </button>
+                      )}
+
                       <button
                         className={`tpsc-price-button ${
-                          priceTypes[item.id] === "wholesale"
+                          effectivePriceType === "single"
                             ? "tpsc-price-button-active"
                             : ""
                         }`}
                         onClick={() =>
-                          handlePriceTypeChange(item.id, "wholesale")
+                          handlePriceTypeChange(item.id, "single")
                         }
-                      >
-                        قیمت عمده
-                      </button>
-                      <button
-                        className={`tpsc-price-button ${
-                          priceTypes[item.id] === "single"
-                            ? "tpsc-price-button-active"
-                            : ""
-                        }`}
-                        onClick={() => handlePriceTypeChange(item.id, "single")}
                       >
                         قیمت تکی
                       </button>
                     </div>
 
                     {item.colors && item.colors.length > 0 && (
-                      <div className="inline-block bg-gray-500  justify-right p-1 rounded-3xl my-2 items-center">
-                        <div className=" flex gap-2 justify-center items-center ">
+                      <div className="inline-block bg-gray-500 p-1 rounded-3xl my-2">
+                        <div className="flex gap-2 justify-center items-center">
                           {item.colors.map((color) => {
-                            const { tickColor, borderColor } = getContrastColor(
-                              color.hexCode
-                            );
+                            const { tickColor, borderColor } =
+                              getContrastColor(color.hexCode);
                             return (
                               <button
                                 key={color.englishName}
@@ -401,16 +418,8 @@ export default function ProductSliderContainer({
                                     color.englishName
                                       ? "2px solid #e9d5ff"
                                       : "none",
-                                  cursor: "pointer",
-                                  transition: "all 0.2s ease",
                                   position: "relative",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  justifyContent: "center",
-                                  marginRight: "2px",
                                 }}
-                                className="sp-color-button tpsc-color-button-quick"
-                                aria-label={`انتخاب رنگ ${color.persianName} (${color.englishName})`}
                               >
                                 {selectedColor?.englishName ===
                                   color.englishName && (
@@ -438,34 +447,34 @@ export default function ProductSliderContainer({
                         </div>
                       </div>
                     )}
-                    {item.discount == "0" && item.discountwholesale == "0" ? (
+
+                    {/* تخفیف */}
+                    {item.discount == "0" &&
+                    item.discountwholesale == "0" ? (
                       ""
                     ) : (
                       <div className="tpsc-price-discount-container">
                         <p className="tpsc-price-strikethrough-text">
                           {formatPrice(
-                            priceTypes[item.id] === "single"
+                            effectivePriceType === "single"
                               ? item.originalPrice
                               : item.wholesalePrice
                           )}
                         </p>
                         <p className="tpsc-discount-badge">
-                          {priceTypes[item.id] === "single"
+                          {effectivePriceType === "single"
                             ? item.discount
                             : item.discountwholesale}
                         </p>
                       </div>
                     )}
 
+                    {/* قیمت */}
                     <div className="tpsc-price-quantity">
                       <p className="tpsc-price">
-                        {formatPrice(
-                          priceTypes[item.id] === "single"
-                            ? item.discountedPrice
-                            : item.discountwholesalePrice
-                        )}{" "}
-                        تومان
+                        {formatPrice(finalPrice)} تومان
                       </p>
+
                       <div className="tpsc-quantity-selector-mobile relative">
                         {cartQuantities[item.id] > 0 && (
                           <button
@@ -492,12 +501,14 @@ export default function ProductSliderContainer({
                           <RemoveCircleOutline fontSize="small" />
                         </button>
                       </div>
+
                       <button
                         className="tpsc-add-to-cart"
                         onClick={() => handleShowQuantitySelector(item.id)}
                       >
                         <AddShoppingCart fontSize="small" />
                       </button>
+
                       {showQuantitySelector === item.id && (
                         <div
                           className="tpsc-quantity-selector relative"
@@ -519,6 +530,7 @@ export default function ProductSliderContainer({
                           >
                             <RemoveCircleOutline fontSize="small" />
                           </button>
+
                           {cartQuantities[item.id] > 0 && (
                             <button
                               className="tpsc-confirm-button absolute w-[40px] text-[10px] -top-[25px] left-0 bg-black px-1 rounded-tr-lg text-white h-[30px]"

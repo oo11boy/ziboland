@@ -69,21 +69,11 @@ export default function TabProductsSliderContainer({
 }) {
   const [value, setValue] = useState(0);
   const { dispatch } = useCart();
-  const [cartQuantities, setCartQuantities] = useState<{
-    [key: number]: number;
-  }>({});
-  const [priceTypes, setPriceTypes] = useState<{
-    [key: number]: "single" | "wholesale";
-  }>({});
-  const [selectedColors, setSelectedColors] = useState<{
-    [key: number]: Color | null;
-  }>({});
-  const [showQuantitySelector, setShowQuantitySelector] = useState<
-    number | null
-  >(null);
-  const swiperRefs = useRef<{ [key: number]: { swiper: SwiperCore } | null }>(
-    {}
-  );
+  const [cartQuantities, setCartQuantities] = useState<{ [key: number]: number }>({});
+  const [priceTypes, setPriceTypes] = useState<{ [key: number]: "single" | "wholesale" }>({});
+  const [selectedColors, setSelectedColors] = useState<{ [key: number]: Color | null }>({});
+  const [showQuantitySelector, setShowQuantitySelector] = useState<number | null>(null);
+  const swiperRefs = useRef<{ [key: number]: { swiper: SwiperCore } | null }>({});
   const [navStates, setNavStates] = useState<{
     [key: number]: {
       showPrev: boolean;
@@ -94,7 +84,7 @@ export default function TabProductsSliderContainer({
   const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // دریافت محصولات از API
+  // دریافت محصولات
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -106,9 +96,7 @@ export default function TabProductsSliderContainer({
         if (title === "محبوبترین ها") {
           sortedProducts = [...data].sort((a, b) => b.rating - a.rating);
         } else if (title === "ارزانترین ها") {
-          sortedProducts = [...data].sort(
-            (a, b) => a.numericPrice - b.numericPrice
-          );
+          sortedProducts = [...data].sort((a, b) => a.numericPrice - b.numericPrice);
         } else if (title === "جدیدترین ها") {
           sortedProducts = [...data].sort((a, b) => b.id - a.id);
         }
@@ -121,7 +109,7 @@ export default function TabProductsSliderContainer({
     fetchProducts();
   }, [title]);
 
-  // تنظیمات اولیه برای priceTypes و selectedColors
+  // تنظیمات اولیه priceTypes و رنگ‌ها
   useEffect(() => {
     const initialPriceTypes = products.reduce(
       (acc, product) => ({ ...acc, [product.id]: "single" }),
@@ -132,10 +120,7 @@ export default function TabProductsSliderContainer({
     const initialSelectedColors = products.reduce(
       (acc, product) => ({
         ...acc,
-        [product.id]:
-          product.colors && product.colors.length > 0
-            ? product.colors[0]
-            : null,
+        [product.id]: product.colors && product.colors.length > 0 ? product.colors[0] : null,
       }),
       {}
     );
@@ -147,20 +132,20 @@ export default function TabProductsSliderContainer({
   };
 
   const handleShowQuantitySelector = (productId: number) => {
-    setShowQuantitySelector(
-      showQuantitySelector === productId ? null : productId
-    );
+    setShowQuantitySelector(showQuantitySelector === productId ? null : productId);
   };
 
   const handleQuantityChange = (productId: number, delta: number) => {
     setCartQuantities((prev) => {
       const newQuantity = (prev[productId] || 0) + delta;
       const product = products.find((p) => p.id === productId);
-
       if (!product) return prev;
 
-      // تنظیم خودکار نوع قیمت
-      if (newQuantity >= product.minwholesale) {
+      // فقط اگر قیمت عمده وجود داشته باشد و تعداد کافی باشد → عمده فعال شود
+      if (
+        product.discountwholesalePrice > 0 &&
+        newQuantity >= product.minwholesale
+      ) {
         handlePriceTypeChange(productId, "wholesale");
       } else {
         handlePriceTypeChange(productId, "single");
@@ -170,10 +155,14 @@ export default function TabProductsSliderContainer({
     });
   };
 
-  const handlePriceTypeChange = (
-    productId: number,
-    type: "single" | "wholesale"
-  ) => {
+  const handlePriceTypeChange = (productId: number, type: "single" | "wholesale") => {
+    const product = products.find((p) => p.id === productId);
+
+    // اگر قیمت عمده صفر بود → اجازه تغییر به عمده نده
+    if (type === "wholesale" && (!product || product.discountwholesalePrice <= 0)) {
+      return;
+    }
+
     setPriceTypes((prev) => ({ ...prev, [productId]: type }));
   };
 
@@ -194,101 +183,50 @@ export default function TabProductsSliderContainer({
 
   const handleAddToCart = (productId: number) => {
     const product = products.find((p) => p.id === productId);
-    if (
-      !product ||
-      !cartQuantities[productId] ||
-      cartQuantities[productId] < 1
-    ) {
-      toast.error("لطفاً تعداد محصول را انتخاب کنید", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "colored",
-      });
+    if (!product || !cartQuantities[productId] || cartQuantities[productId] < 1) {
+      toast.error("لطفاً تعداد محصول را انتخاب کنید");
       return;
     }
 
     if (!product.inStock) {
-      toast.error("محصول موجود نیست", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "colored",
-      });
+      toast.error("محصول موجود نیست");
       return;
     }
 
     const quantity = cartQuantities[productId];
-    const priceType = priceTypes[productId] || "single";
+
+    // اگر قیمت عمده صفر بود → همیشه تکی
+    const effectivePriceType =
+      product.discountwholesalePrice > 0 ? priceTypes[productId] || "single" : "single";
+
     const price =
-      priceType === "single"
-        ? product.discountedPrice
-        : product.discountwholesalePrice;
+      effectivePriceType === "single" ? product.discountedPrice : product.discountwholesalePrice;
     const discount =
-      priceType === "single" ? product.discount : product.discountwholesale;
+      effectivePriceType === "single" ? product.discount : product.discountwholesale;
     const selectedColor = selectedColors[productId];
 
-    if (priceType === "wholesale" && quantity < product.minwholesale) {
-      toast.error(
-        `حداقل تعداد برای قیمت عمده ${product.minwholesale} عدد است.`,
-        {
-          position: "top-center",
-          autoClose: 3000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          theme: "colored",
-        }
-      );
+    if (effectivePriceType === "wholesale" && quantity < product.minwholesale) {
+      toast.error(`حداقل تعداد برای قیمت عمده ${product.minwholesale} عدد است.`);
       return;
     }
 
-    try {
-      dispatch({
-        type: "ADD_ITEM",
-        payload: {
-          id: productId,
-          title: product.title,
-          quantity,
-          priceType,
-          price: price.toString(),
-          image: product.image || "/placeholder.jpg",
-          discount,
-          color: selectedColor, // اضافه کردن رنگ انتخاب شده
-        },
-      });
+    dispatch({
+      type: "ADD_ITEM",
+      payload: {
+        id: productId,
+        title: product.title,
+        quantity,
+        priceType: effectivePriceType,
+        price: price.toString(),
+        image: product.image || "/placeholder.jpg",
+        discount,
+        color: selectedColor,
+      },
+    });
 
-      toast.success("محصول به سبد خرید اضافه شد!", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "colored",
-      });
-
-      setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
-      setShowQuantitySelector(null);
-    } catch (error) {
-      toast.error("خطا در اضافه کردن محصول به سبد خرید", {
-        position: "top-center",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        theme: "colored",
-      });
-      console.error("Error adding to cart:", error);
-    }
+    toast.success("محصول به سبد خرید اضافه شد!");
+    setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
+    setShowQuantitySelector(null);
   };
 
   const updateNavigation = (index: number) => {
@@ -305,17 +243,8 @@ export default function TabProductsSliderContainer({
     }
   };
 
-  const goNext = (index: number) => {
-    if (swiperRefs.current[index]?.swiper) {
-      swiperRefs.current[index].swiper.slideNext();
-    }
-  };
-
-  const goPrev = (index: number) => {
-    if (swiperRefs.current[index]?.swiper) {
-      swiperRefs.current[index].swiper.slidePrev();
-    }
-  };
+  const goNext = (index: number) => swiperRefs.current[index]?.swiper?.slideNext();
+  const goPrev = (index: number) => swiperRefs.current[index]?.swiper?.slidePrev();
 
   useEffect(() => {
     categories.forEach((_, index) => {
@@ -328,11 +257,7 @@ export default function TabProductsSliderContainer({
 
     return () => {
       categories.forEach((_, index) => {
-        if (swiperRefs.current[index]?.swiper) {
-          swiperRefs.current[index].swiper.off("slideChange", () =>
-            updateNavigation(index)
-          );
-        }
+        swiperRefs.current[index]?.swiper?.off("slideChange");
       });
     };
   }, [products]);
@@ -350,24 +275,12 @@ export default function TabProductsSliderContainer({
     products.filter((product) => product.category === category)
   );
 
-  if (error) {
-    return <div className="text-red-500 text-center">{error}</div>;
-  }
+  if (error) return <div className="text-red-500 text-center">{error}</div>;
 
   return (
     <div className="tpsc-container">
-      <ToastContainer
-        position="top-center"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick
-        rtl={true}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-      />
+      <ToastContainer rtl={true} theme="colored" position="top-center" autoClose={3000} />
+
       <div className="tpsc-header">
         <p className="tpsc-title">{title}</p>
         <Link href="../search" className="tpsc-view-all">
@@ -375,38 +288,33 @@ export default function TabProductsSliderContainer({
           مشاهده همه
         </Link>
       </div>
+
       <Box sx={{ width: "100%", position: "relative" }}>
-        <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
-          <Tabs
-            value={value}
-            onChange={handleChange}
-            aria-label="product categories tabs"
-            variant="scrollable"
-            scrollButtons="auto"
-            sx={{
-              "& .MuiTabs-flexContainer": { gap: { xs: "0.5rem", sm: "1rem" } },
-              "& .MuiTab-root": {
-                fontSize: { xs: "0.65rem", sm: "0.75rem", md: "0.85rem" },
-                fontWeight: "bold",
-                color: "#555",
-                fontFamily: "yekannew",
-                padding: { xs: "4px 8px", sm: "6px 12px" },
-                minWidth: { xs: "60px", sm: "80px", md: "100px" },
-                minHeight: { xs: "24px", sm: "28px", md: "32px" },
-              },
-              "& .Mui-selected": {
-                color: "#000 !important",
-                borderRadius: 2,
-                backgroundColor: "#c7c7c7",
-              },
-              "& .MuiTabs-indicator": { display: "none" },
-            }}
-          >
-            {categories.map((category, index) => (
-              <Tab key={index} label={category} {...a11yProps(index)} />
-            ))}
-          </Tabs>
-        </Box>
+        <Tabs
+          value={value}
+          onChange={handleChange}
+          variant="scrollable"
+          scrollButtons="auto"
+          aria-label="product categories tabs"
+          sx={{
+            "& .MuiTabs-flexContainer": { gap: { xs: "0.5rem", sm: "1rem" } },
+            "& .MuiTab-root": {
+              fontSize: { xs: "0.65rem", sm: "0.75rem", md: "0.85rem" },
+              fontWeight: "bold",
+              color: "#555",
+              fontFamily: "yekannew",
+              padding: { xs: "4px 8px", sm: "6px 12px" },
+              minWidth: { xs: "60px", sm: "80px", md: "100px" },
+            },
+            "& .Mui-selected": { color: "#000 !important", backgroundColor: "#c7c7c7", borderRadius: 2 },
+            "& .MuiTabs-indicator": { display: "none" },
+          }}
+        >
+          {categories.map((category, index) => (
+            <Tab key={index} label={category} {...a11yProps(index)} />
+          ))}
+        </Tabs>
+
         {categories.map((category, index) => (
           <CustomTabPanel key={index} value={value} index={index}>
             <Swiper
@@ -428,92 +336,84 @@ export default function TabProductsSliderContainer({
             >
               {productsByCategory[index].map((item) => {
                 const selectedColor = selectedColors[item.id];
+
+                // تعیین نوع قیمت واقعی (اگر عمده صفر بود → همیشه تکی)
+                const effectivePriceType =
+                  item.discountwholesalePrice > 0 ? priceTypes[item.id] || "single" : "single";
+
+                const finalPrice =
+                  effectivePriceType === "single" ? item.discountedPrice : item.discountwholesalePrice;
+
                 return (
                   <SwiperSlide key={item.id} style={{ width: "auto" }}>
                     <div className="tpsc-product-card">
-                      {priceTypes[item.id] === "wholesale" && (
+                      {/* نشانگر حداقل تعداد عمده */}
+                      {effectivePriceType === "wholesale" && (
                         <div className="absolute top-[2px] left-[2px] bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center">
                           <p className="ml-1">+</p>
                           <p>{item.minwholesale} عدد</p>
                         </div>
                       )}
+
                       <img
                         src={item.image || "/placeholder.jpg"}
                         className="tpsc-product-image"
                         alt={item.title}
                       />
-                      <Link
-                        href={`../products/${item.id}`}
-                        className="tpsc-product-title"
-                      >
+
+                      <Link href={`../products/${item.id}`} className="tpsc-product-title">
                         {item.title}
                       </Link>
+
+                      {/* دکمه‌های قیمت — فقط اگر قیمت عمده وجود داشته باشد */}
                       <div className="tpsc-price-buttons">
+                        {item.discountwholesalePrice > 0 && (
+                          <button
+                            className={`tpsc-price-button ${
+                              effectivePriceType === "wholesale" ? "tpsc-price-button-active" : ""
+                            }`}
+                            onClick={() => handlePriceTypeChange(item.id, "wholesale")}
+                          >
+                            قیمت عمده
+                          </button>
+                        )}
                         <button
                           className={`tpsc-price-button ${
-                            priceTypes[item.id] === "wholesale"
-                              ? "tpsc-price-button-active"
-                              : ""
+                            effectivePriceType === "single" ? "tpsc-price-button-active" : ""
                           }`}
-                          onClick={() =>
-                            handlePriceTypeChange(item.id, "wholesale")
-                          }
-                        >
-                          قیمت عمده
-                        </button>
-                        <button
-                          className={`tpsc-price-button ${
-                            priceTypes[item.id] === "single"
-                              ? "tpsc-price-button-active"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            handlePriceTypeChange(item.id, "single")
-                          }
+                          onClick={() => handlePriceTypeChange(item.id, "single")}
                         >
                           قیمت تکی
                         </button>
                       </div>
+
+                      {/* انتخاب رنگ */}
                       {item.colors && item.colors.length > 0 && (
-                        <div className="inline-block bg-gray-500  justify-right p-1 rounded-3xl my-2 items-center">
-                          <div className=" flex gap-2 justify-center items-center ">
+                        <div className="inline-block bg-gray-500 p-1 rounded-3xl my-2">
+                          <div className="flex gap-2 justify-center items-center">
                             {item.colors.map((color) => {
-                              const { tickColor, borderColor } =
-                                getContrastColor(color.hexCode);
+                              const { tickColor, borderColor } = getContrastColor(color.hexCode);
                               return (
                                 <button
                                   key={color.englishName}
-                                  onClick={() =>
-                                    handleColorSelect(item.id, color)
-                                  }
+                                  onClick={() => handleColorSelect(item.id, color)}
                                   style={{
                                     backgroundColor: color.hexCode,
                                     width: "16px",
                                     height: "16px",
                                     borderRadius: "50%",
                                     border:
-                                      selectedColor?.englishName ===
-                                      color.englishName
+                                      selectedColor?.englishName === color.englishName
                                         ? "2px solid #805b99"
                                         : "1px solid #d1d5db",
                                     outline:
-                                      selectedColor?.englishName ===
-                                      color.englishName
+                                      selectedColor?.englishName === color.englishName
                                         ? "2px solid #e9d5ff"
                                         : "none",
-                                    cursor: "pointer",
-                                    transition: "all 0.2s ease",
                                     position: "relative",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    marginRight: "2px",
                                   }}
-                                  className="sp-color-button tpsc-color-button-quick"
-                                  aria-label={`انتخاب رنگ ${color.persianName} (${color.englishName})`}
                                 >
-                                  {selectedColor?.englishName ===
-                                    color.englishName && (
+                                  {selectedColor?.englishName === color.englishName && (
                                     <span
                                       style={{
                                         color: tickColor,
@@ -539,36 +439,24 @@ export default function TabProductsSliderContainer({
                         </div>
                       )}
 
-                      <div className="tpsc-price-discount-container">
-                        {item.discount == "0" &&
-                        item.discountwholesale == "0" ? (
-                          ""
-                        ) : (
-                          <div className="tpsc-price-discount-container">
-                            <p className="tpsc-price-strikethrough-text">
-                               {formatPrice(
-    priceTypes[item.id] === "single"
-      ? item.originalPrice
-      : item.wholesalePrice
-  )}
-                            </p>
-                            <p className="tpsc-discount-badge">
-                              {priceTypes[item.id] === "single"
-                                ? item.discount
-                                : item.discountwholesale}
-                            </p>
-                          </div>
-                        )}
-                      </div>
+                      {/* تخفیف */}
+                      {item.discount !== "0" || item.discountwholesale !== "0" ? (
+                        <div className="tpsc-price-discount-container">
+                          <p className="tpsc-price-strikethrough-text">
+                            {formatPrice(
+                              effectivePriceType === "single" ? item.originalPrice : item.wholesalePrice
+                            )}
+                          </p>
+                          <p className="tpsc-discount-badge">
+                            {effectivePriceType === "single" ? item.discount : item.discountwholesale}
+                          </p>
+                        </div>
+                      ) : null}
+
+                      {/* قیمت و تعداد */}
                       <div className="tpsc-price-quantity">
-                        <p className="tpsc-price">
-                          {formatPrice(
-                            priceTypes[item.id] === "single"
-                              ? item.discountedPrice
-                              : item.discountwholesalePrice
-                          )}{" "}
-                          تومان
-                        </p>
+                        <p className="tpsc-price">{formatPrice(finalPrice)} تومان</p>
+
                         <div className="tpsc-quantity-selector-mobile relative">
                           {cartQuantities[item.id] > 0 && (
                             <button
@@ -578,9 +466,7 @@ export default function TabProductsSliderContainer({
                               ثبت
                             </button>
                           )}
-                          <button
-                            onClick={() => handleQuantityChange(item.id, 1)}
-                          >
+                          <button onClick={() => handleQuantityChange(item.id, 1)}>
                             <AddCircleOutline fontSize="small" />
                           </button>
                           <input
@@ -589,26 +475,21 @@ export default function TabProductsSliderContainer({
                             value={cartQuantities[item.id] || 0}
                             readOnly
                           />
-                          <button
-                            onClick={() => handleQuantityChange(item.id, -1)}
-                          >
+                          <button onClick={() => handleQuantityChange(item.id, -1)}>
                             <RemoveCircleOutline fontSize="small" />
                           </button>
                         </div>
+
                         <button
                           className="tpsc-add-to-cart"
                           onClick={() => handleShowQuantitySelector(item.id)}
                         >
                           <AddShoppingCart fontSize="small" />
                         </button>
+
                         {showQuantitySelector === item.id && (
-                          <div
-                            className="tpsc-quantity-selector relative"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              onClick={() => handleQuantityChange(item.id, 1)}
-                            >
+                          <div className="tpsc-quantity-selector relative" onClick={(e) => e.stopPropagation()}>
+                            <button onClick={() => handleQuantityChange(item.id, 1)}>
                               <AddCircleOutline fontSize="small" />
                             </button>
                             <input
@@ -617,11 +498,10 @@ export default function TabProductsSliderContainer({
                               value={cartQuantities[item.id] || 0}
                               readOnly
                             />
-                            <button
-                              onClick={() => handleQuantityChange(item.id, -1)}
-                            >
+                            <button onClick={() => handleQuantityChange(item.id, -1)}>
                               <RemoveCircleOutline fontSize="small" />
                             </button>
+
                             {cartQuantities[item.id] > 0 && (
                               <button
                                 className="tpsc-confirm-button absolute w-[40px] text-[10px] -top-[25px] left-0 bg-black px-1 rounded-tr-lg text-white h-[30px]"
@@ -643,27 +523,20 @@ export default function TabProductsSliderContainer({
             </Swiper>
           </CustomTabPanel>
         ))}
+
+        {/* دکمه‌های ناوبری */}
         {navStates[value]?.isBeginning && (
-          <button
-            onClick={() => goNext(value)}
-            className="tpsc-nav-button tpsc-next-button tpsc-next-button-mobile"
-          >
+          <button onClick={() => goNext(value)} className="tpsc-nav-button tpsc-next-button tpsc-next-button-mobile">
             <KeyboardArrowLeft fontSize="medium" />
           </button>
         )}
         {navStates[value]?.showPrev && (
-          <button
-            onClick={() => goPrev(value)}
-            className="tpsc-nav-button tpsc-prev-button tpsc-prev-button-desktop"
-          >
+          <button onClick={() => goPrev(value)} className="tpsc-nav-button tpsc-prev-button tpsc-prev-button-desktop">
             <KeyboardArrowRight fontSize="medium" />
           </button>
         )}
         {navStates[value]?.showNext && (
-          <button
-            onClick={() => goNext(value)}
-            className="tpsc-nav-button tpsc-next-button tpsc-next-button-desktop"
-          >
+          <button onClick={() => goNext(value)} className="tpsc-nav-button tpsc-next-button tpsc-next-button-desktop">
             <KeyboardArrowLeft fontSize="medium" />
           </button>
         )}
