@@ -19,22 +19,30 @@ import Cookies from "js-cookie";
 import { Order } from "@/types/types";
 
 // کامپوننت‌های کمکی برای مودال
-const InfoItem = ({ 
-  label, 
-  value 
-}: { 
-  label: string; 
-  value: string | number | null | undefined   // این خط رو اضافه کن
+const InfoItem = ({
+  label,
+  value,
+}: {
+  label: string;
+  value: string | number | null | undefined; // این خط رو اضافه کن
 }) => (
   <p className="text-sm">
-    <span className="font-semibold text-gray-700 dark:text-gray-300">{label}:</span>{" "}
+    <span className="font-semibold text-gray-700 dark:text-gray-300">
+      {label}:
+    </span>{" "}
     <span className="text-gray-800 dark:text-gray-100">
-      {value != null ? value : "-"}   {/* این خط رو جایگزین کن */}
+      {value != null ? value : "-"} {/* این خط رو جایگزین کن */}
     </span>
   </p>
 );
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const Section = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
   <div className="space-y-3">
     <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-1">
       {title}
@@ -50,7 +58,9 @@ const OrdersPage = () => {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [statusUpdating, setStatusUpdating] = useState<{ [key: number]: boolean }>({});
+  const [statusUpdating, setStatusUpdating] = useState<{
+    [key: number]: boolean;
+  }>({});
 
   // دریافت سفارشات از سرور
   useEffect(() => {
@@ -80,7 +90,8 @@ const OrdersPage = () => {
 
       // مرتب‌سازی: جدیدترین‌ها اول
       const sortedData = data.sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
       setOrders(sortedData);
@@ -99,74 +110,93 @@ const OrdersPage = () => {
 
       const matchesSearch =
         order.order_code.toLowerCase().includes(searchLower) ||
-        `${order.first_name} ${order.last_name}`.toLowerCase().includes(searchLower) ||
+        `${order.first_name} ${order.last_name}`
+          .toLowerCase()
+          .includes(searchLower) ||
         order.username?.toLowerCase().includes(searchLower) ||
         order.email?.toLowerCase().includes(searchLower);
 
       const matchesPaymentStatus =
-        paymentStatusFilter === "all" || order.payment_status === paymentStatusFilter;
+        paymentStatusFilter === "all" ||
+        order.payment_status === paymentStatusFilter;
 
       return matchesSearch && matchesPaymentStatus;
     });
   }, [orders, searchTerm, paymentStatusFilter]);
 
-// تغییر وضعیت سفارش — نسخه جدید و حرفه‌ای
-const handleStatusChange = async (orderId: number, newStatus: Order["status"]) => {
-  const order = orders.find(o => o.id === orderId);
-  if (!order) return;
+  // تغییر وضعیت سفارش — نسخه جدید و حرفه‌ای
+  const handleStatusChange = async (
+    orderId: number,
+    newStatus: Order["status"]
+  ) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
 
-  // اگر پرداخت نشده و می‌خوای وضعیت رو به "ارسال شده" یا "تحویل داده شده" ببری → هشدار بده
-  if (order.payment_status !== "paid" && ["shipped", "delivered"].includes(newStatus)) {
-    if (!confirm(
-      `هشدار: این سفارش هنوز پرداخت نشده!\n` +
-      `وضعیت پرداخت: ${translatePaymentStatus(order.payment_status)}\n` +
-      `آیا مطمئن هستید که می‌خواهید وضعیت را به "${translateStatus(newStatus)}" تغییر دهید؟`
-    )) {
+    // اگر پرداخت نشده و می‌خوای وضعیت رو به "ارسال شده" یا "تحویل داده شده" ببری → هشدار بده
+    if (
+      order.payment_status !== "paid" &&
+      ["shipped", "delivered"].includes(newStatus)
+    ) {
+      if (
+        !confirm(
+          `هشدار: این سفارش هنوز پرداخت نشده!\n` +
+            `وضعیت پرداخت: ${translatePaymentStatus(order.payment_status)}\n` +
+            `آیا مطمئن هستید که می‌خواهید وضعیت را به "${translateStatus(
+              newStatus
+            )}" تغییر دهید؟`
+        )
+      ) {
+        return;
+      }
+    }
+
+    // اگر می‌خوای سفارش در انتظار پرداخت رو لغو کنی → اجازه بده
+    // اگر می‌خوای به "در حال پردازش" ببری → هم اجازه بده (مثلاً سفارش تلفنی)
+
+    if (
+      !confirm(
+        `آیا از تغییر وضعیت سفارش #${order.order_code} به "${translateStatus(
+          newStatus
+        )}" مطمئن هستید؟`
+      )
+    ) {
       return;
     }
-  }
 
-  // اگر می‌خوای سفارش در انتظار پرداخت رو لغو کنی → اجازه بده
-  // اگر می‌خوای به "در حال پردازش" ببری → هم اجازه بده (مثلاً سفارش تلفنی)
+    setStatusUpdating((prev) => ({ ...prev, [orderId]: true }));
 
-  if (!confirm(`آیا از تغییر وضعیت سفارش #${order.order_code} به "${translateStatus(newStatus)}" مطمئن هستید؟`)) {
-    return;
-  }
+    try {
+      const token = Cookies.get("authToken");
+      const res = await fetch(`${API}/admin/orders/${orderId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
 
-  setStatusUpdating((prev) => ({ ...prev, [orderId]: true }));
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "خطا در به‌روزرسانی");
+      }
 
-  try {
-    const token = Cookies.get("authToken");
-    const res = await fetch(`${API}/admin/orders/${orderId}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status: newStatus }),
-    });
+      // بروزرسانی محلی
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+      );
 
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || "خطا در به‌روزرسانی");
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder({ ...selectedOrder, status: newStatus });
+      }
+
+      toast.success("وضعیت سفارش با موفقیت تغییر کرد");
+    } catch (err: any) {
+      toast.error(err.message || "خطا در تغییر وضعیت");
+    } finally {
+      setStatusUpdating((prev) => ({ ...prev, [orderId]: false }));
     }
-
-    // بروزرسانی محلی
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-    );
-
-    if (selectedOrder?.id === orderId) {
-      setSelectedOrder({ ...selectedOrder, status: newStatus });
-    }
-
-    toast.success("وضعیت سفارش با موفقیت تغییر کرد");
-  } catch (err: any) {
-    toast.error(err.message || "خطا در تغییر وضعیت");
-  } finally {
-    setStatusUpdating((prev) => ({ ...prev, [orderId]: false }));
-  }
-};
+  };
   // ترجمه وضعیت‌ها
   const translateStatus = (status: string) => {
     const map: Record<string, string> = {
@@ -224,7 +254,10 @@ const handleStatusChange = async (orderId: number, newStatus: Order["status"]) =
         </div>
 
         {/* فیلتر وضعیت پرداخت */}
-        <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+        <Select
+          value={paymentStatusFilter}
+          onValueChange={setPaymentStatusFilter}
+        >
           <SelectTrigger className="bg-white dark:bg-gray-800">
             <Filter className="w-4 h-4 ml-2 text-gray-500" />
             <SelectValue placeholder="فیلتر وضعیت پرداخت" />
@@ -253,25 +286,32 @@ const handleStatusChange = async (orderId: number, newStatus: Order["status"]) =
           </Card>
         ) : (
           filteredOrders.map((order) => (
-            <Card key={order.id} className="shadow-lg hover:shadow-xl transition-shadow">
+            <Card
+              key={order.id}
+              className="shadow-lg hover:shadow-xl transition-shadow"
+            >
               <CardContent className="pt-6">
                 {/* هدر کارت */}
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <p className="text-lg font-bold text-purple-600">#{order.order_code}</p>
+                    <p className="text-lg font-bold text-purple-600">
+                      #{order.order_code}
+                    </p>
                     <p className="text-sm text-gray-600">
                       {order.first_name} {order.last_name}
                     </p>
                     <p className="text-xs text-gray-500">@{order.username}</p>
                   </div>
                   <div className="text-right">
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      order.payment_status === "paid"
-                        ? "bg-green-100 text-green-800"
-                        : order.payment_status === "pending"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : "bg-red-100 text-red-800"
-                    }`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-bold ${
+                        order.payment_status === "paid"
+                          ? "bg-green-100 text-green-800"
+                          : order.payment_status === "pending"
+                          ? "bg-yellow-100 text-yellow-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
                       {translatePaymentStatus(order.payment_status)}
                     </span>
                   </div>
@@ -280,7 +320,8 @@ const handleStatusChange = async (orderId: number, newStatus: Order["status"]) =
                 {/* اطلاعات اصلی */}
                 <div className="space-y-2 text-sm">
                   <p>
-                    <strong>مبلغ:</strong> {(order.total_amount / 10).toLocaleString()} تومان
+                    <strong>مبلغ:</strong>{" "}
+                    {(order.total_amount / 10).toLocaleString()} تومان
                   </p>
                   <p>
                     <strong>وضعیت:</strong> {translateStatus(order.status)}
@@ -294,11 +335,14 @@ const handleStatusChange = async (orderId: number, newStatus: Order["status"]) =
                 <div className="flex gap-3 mt-5">
                   <Select
                     value={order.status}
-                 onValueChange={(newValue) => {
-  if (newValue !== order.status) {
-    handleStatusChange(order.id, newValue as Order["status"]);
-  }
-}}
+                    onValueChange={(newValue) => {
+                      if (newValue !== order.status) {
+                        handleStatusChange(
+                          order.id,
+                          newValue as Order["status"]
+                        );
+                      }
+                    }}
                     disabled={statusUpdating[order.id]}
                   >
                     <SelectTrigger className="flex-1 text-xs h-10">
@@ -343,25 +387,46 @@ const handleStatusChange = async (orderId: number, newStatus: Order["status"]) =
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">شماره سفارش</th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">کاربر</th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">مبلغ</th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">وضعیت سفارش</th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">وضعیت پرداخت</th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">تاریخ</th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">عملیات</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        شماره سفارش
+                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        کاربر
+                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        مبلغ
+                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        وضعیت سفارش
+                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        وضعیت پرداخت
+                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        تاریخ
+                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        عملیات
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                     {filteredOrders.map((order) => (
-                      <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                      <tr
+                        key={order.id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
                         <td className="px-6 py-4 font-mono text-purple-600 font-bold">
                           #{order.order_code}
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-right">
-                            <p className="font-medium">{order.first_name} {order.last_name}</p>
-                            <p className="text-sm text-gray-500">@{order.username}</p>
+                            <p className="font-medium">
+                              {order.first_name} {order.last_name}
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              @{order.username}
+                            </p>
                           </div>
                         </td>
                         <td className="px-6 py-4 font-bold text-lg">
@@ -370,11 +435,14 @@ const handleStatusChange = async (orderId: number, newStatus: Order["status"]) =
                         <td className="px-6 py-4">
                           <Select
                             value={order.status}
-                        onValueChange={(newValue) => {
-  if (newValue !== order.status) {
-    handleStatusChange(order.id, newValue as Order["status"]);
-  }
-}}
+                            onValueChange={(newValue) => {
+                              if (newValue !== order.status) {
+                                handleStatusChange(
+                                  order.id,
+                                  newValue as Order["status"]
+                                );
+                              }
+                            }}
                             disabled={statusUpdating[order.id]}
                           >
                             <SelectTrigger className="w-44">
@@ -382,26 +450,34 @@ const handleStatusChange = async (orderId: number, newStatus: Order["status"]) =
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="pending">در انتظار</SelectItem>
-                              <SelectItem value="processing">در حال پردازش</SelectItem>
+                              <SelectItem value="processing">
+                                در حال پردازش
+                              </SelectItem>
                               <SelectItem value="shipped">ارسال شده</SelectItem>
-                              <SelectItem value="delivered">تحویل داده شده</SelectItem>
+                              <SelectItem value="delivered">
+                                تحویل داده شده
+                              </SelectItem>
                               <SelectItem value="cancelled">لغو شده</SelectItem>
                             </SelectContent>
                           </Select>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <span className={`px-4 py-2 rounded-full text-xs font-bold ${
-                            order.payment_status === "paid"
-                              ? "bg-green-100 text-green-800"
-                              : order.payment_status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
-                          }`}>
+                          <span
+                            className={`px-4 py-2 rounded-full text-xs font-bold ${
+                              order.payment_status === "paid"
+                                ? "bg-green-100 text-green-800"
+                                : order.payment_status === "pending"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
                             {translatePaymentStatus(order.payment_status)}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
-                          {new Date(order.created_at).toLocaleDateString("fa-IR")}
+                          {new Date(order.created_at).toLocaleDateString(
+                            "fa-IR"
+                          )}
                         </td>
                         <td className="px-6 py-4 text-center">
                           <Button
@@ -455,34 +531,74 @@ const handleStatusChange = async (orderId: number, newStatus: Order["status"]) =
                 ×
               </Button>
 
-              <Typography variant="h4" className="text-center font-bold text-purple-700 mb-8">
+              <Typography
+                variant="h4"
+                className="text-center font-bold text-purple-700 mb-8"
+              >
                 جزئیات سفارش #{selectedOrder.order_code}
               </Typography>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <InfoItem label="نام و نام خانوادگی" value={`${selectedOrder.first_name} ${selectedOrder.last_name}`} />
-                <InfoItem label="نام کاربری" value={`@${selectedOrder.username}`} />
+                <InfoItem
+                  label="نام و نام خانوادگی"
+                  value={`${selectedOrder.first_name} ${selectedOrder.last_name}`}
+                />
+                <InfoItem
+                  label="نام کاربری"
+                  value={`@${selectedOrder.username}`}
+                />
                 <InfoItem label="ایمیل" value={selectedOrder.email} />
-                <InfoItem label="شماره تلفن" value={selectedOrder.phone_number} />
-                <InfoItem label="تاریخ سفارش" value={new Date(selectedOrder.created_at).toLocaleDateString("fa-IR")} />
-                <InfoItem label="مبلغ کل" value={`${(selectedOrder.total_amount / 10).toLocaleString()} تومان`} />
-                <InfoItem label="وضعیت سفارش" value={translateStatus(selectedOrder.status)} />
-                <InfoItem label="وضعیت پرداخت" value={translatePaymentStatus(selectedOrder.payment_status)} />
-                <InfoItem label="روش ارسال" value={selectedOrder.shipping_method === "express" ? "اکسپرس" : "عادی"} />
+                <InfoItem
+                  label="شماره تلفن"
+                  value={selectedOrder.phone_number}
+                />
+                <InfoItem
+                  label="تاریخ سفارش"
+                  value={new Date(selectedOrder.created_at).toLocaleDateString(
+                    "fa-IR"
+                  )}
+                />
+                <InfoItem
+                  label="مبلغ کل"
+                  value={`${(
+                    selectedOrder.total_amount / 10
+                  ).toLocaleString()} تومان`}
+                />
+                <InfoItem
+                  label="وضعیت سفارش"
+                  value={translateStatus(selectedOrder.status)}
+                />
+                <InfoItem
+                  label="وضعیت پرداخت"
+                  value={translatePaymentStatus(selectedOrder.payment_status)}
+                />
+                <InfoItem
+                  label="روش ارسال"
+                  value={
+                    selectedOrder.shipping_method === "express"
+                      ? "اکسپرس"
+                      : "عادی"
+                  }
+                />
               </div>
 
               <Section title="آدرس تحویل">
                 {`${selectedOrder.province}، ${selectedOrder.city}، ${selectedOrder.street}`}
                 {selectedOrder.alley && `، کوچه ${selectedOrder.alley}`}
-                {selectedOrder.building_number && `، پلاک ${selectedOrder.building_number}`}
+                {selectedOrder.building_number &&
+                  `، پلاک ${selectedOrder.building_number}`}
                 {selectedOrder.unit && `، واحد ${selectedOrder.unit}`}
-                {selectedOrder.postal_code && `، کد پستی: ${selectedOrder.postal_code}`}
+                {selectedOrder.postal_code &&
+                  `، کد پستی: ${selectedOrder.postal_code}`}
               </Section>
 
               <Section title="محصولات سفارش داده شده">
                 <div className="grid gap-4">
                   {selectedOrder.items.map((item) => (
-                    <div key={item.id} className="flex gap-4 items-start p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <div
+                      key={item.id}
+                      className="flex gap-4 items-start p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                    >
                       {item.image ? (
                         <Image
                           src={item.image}
@@ -500,15 +616,18 @@ const handleStatusChange = async (orderId: number, newStatus: Order["status"]) =
                         <p className="font-semibold">{item.title}</p>
                         {item.color && (
                           <p className="text-sm text-gray-600">
-                            رنگ: {item.color.persianName} ({item.color.englishName})
+                            رنگ: {item.color.persianName} (
+                            {item.color.englishName})
                           </p>
                         )}
                         <p className="text-sm">تعداد: {item.quantity}</p>
                         <p className="text-sm font-medium">
-                          قیمت واحد: {(item.unit_price / 10).toLocaleString()} تومان
+                          قیمت واحد: {(item.unit_price / 10).toLocaleString()}{" "}
+                          تومان
                         </p>
                         <p className="text-xs text-gray-500">
-                          نوع قیمت: {item.price_type === "single" ? "تکی" : "عمده"}
+                          نوع قیمت:{" "}
+                          {item.price_type === "single" ? "تکی" : "عمده"}
                         </p>
                       </div>
                     </div>
