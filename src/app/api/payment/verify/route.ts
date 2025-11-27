@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
 const ZIBAL_MERCHANT = process.env.ZIBAL_MERCHANT || "zibal";
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);

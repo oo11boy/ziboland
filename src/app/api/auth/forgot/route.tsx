@@ -1,41 +1,46 @@
 // app/api/auth/forgot/route.ts
-import { NextResponse } from 'next/server';
-import pool from '@/lib/db';
-import nodemailer from 'nodemailer';
-import jwt from 'jsonwebtoken';
+import { NextResponse } from "next/server";
+import pool from "@/lib/db";
+import nodemailer from "nodemailer";
+import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export async function POST(request: Request) {
   try {
     const { email } = await request.json();
 
     if (!email) {
-      return NextResponse.json({ error: 'ایمیل الزامی است' }, { status: 400 });
+      return NextResponse.json({ error: "ایمیل الزامی است" }, { status: 400 });
     }
 
     // بررسی وجود کاربر
-    const [rows] = await pool.query('SELECT id, first_name FROM users WHERE email = ?', [email]);
+    const [rows] = await pool.query(
+      "SELECT id, first_name FROM users WHERE email = ?",
+      [email]
+    );
     const user = (rows as any[])[0];
 
     if (!user) {
       // حتی اگر کاربر وجود نداشته باشه، پیام موفقیت می‌دیم (امنیت در برابر enumeration attack)
-      return NextResponse.json({ message: 'اگر ایمیل ثبت شده باشد، لینک بازیابی ارسال شد.' });
+      return NextResponse.json({
+        message: "اگر ایمیل ثبت شده باشد، لینک بازیابی ارسال شد.",
+      });
     }
 
     // تولید توکن ریست پسورد (معتبر برای 15 دقیقه)
     const resetToken = jwt.sign(
-      { userId: user.id, purpose: 'password-reset' },
+      { userId: user.id, purpose: "password-reset" },
       JWT_SECRET,
-      { expiresIn: '15m' }
+      { expiresIn: "15m" }
     );
 
     const resetLink = `${BASE_URL}/reset-password?token=${resetToken}`;
 
     // تنظیمات Nodemailer
     const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
+      host: "smtp.gmail.com",
       port: 465,
       secure: true,
       auth: {
@@ -48,7 +53,7 @@ export async function POST(request: Request) {
     const mailOptions = {
       from: `"زیبولند" <${process.env.GOOGLE_EMAIL}>`,
       to: email,
-      subject: 'بازیابی رمز عبور زیبولند',
+      subject: "بازیابی رمز عبور زیبولند",
       html: `
         <!DOCTYPE html>
         <html lang="fa" dir="rtl">
@@ -84,7 +89,7 @@ export async function POST(request: Request) {
               <p>درخواست بازیابی رمز عبور</p>
             </div>
             <div class="content">
-              <p>سلام ${user.first_name || 'کاربر گرامی'}،</p>
+              <p>سلام ${user.first_name || "کاربر گرامی"}،</p>
               <p>درخواست بازیابی رمز عبور برای حساب شما دریافت شد.</p>
               <p>برای تنظیم رمز عبور جدید، روی دکمه زیر کلیک کنید:</p>
               <a href="${resetLink}" class="btn">تغییر رمز عبور</a>
@@ -103,14 +108,13 @@ export async function POST(request: Request) {
 
     await transporter.sendMail(mailOptions);
 
-    return NextResponse.json({ 
-      message: 'لینک بازیابی رمز عبور با موفقیت به ایمیل شما ارسال شد.' 
+    return NextResponse.json({
+      message: "لینک بازیابی رمز عبور با موفقیت به ایمیل شما ارسال شد.",
     });
-
   } catch (error: any) {
-    console.error('Forgot password email error:', error);
+    console.error("Forgot password email error:", error);
     return NextResponse.json(
-      { error: 'خطا در ارسال ایمیل. لطفاً دوباره تلاش کنید.' },
+      { error: "خطا در ارسال ایمیل. لطفاً دوباره تلاش کنید." },
       { status: 500 }
     );
   }
