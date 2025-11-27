@@ -1,6 +1,7 @@
 import Sidebar from '@/Components/Dashboards/AdminDashboardComponents/Sidebar';
 import Header from '@/Components/Dashboards/AdminDashboardComponents/Header';
 import { Metadata } from 'next';
+import { AuthProvider } from '@/ContextApi/AuthContext';
 export const metadata: Metadata = {
   title: "داشبورد مدیریت | زیبولند",
   description: "داشبورد مدیریت",
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
 
   return (
-    
+    <AuthProvider>  
     <div className="flex min-h-screen">
       <Sidebar />
       <div className="flex-1 flex flex-col">
@@ -19,5 +20,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </main>
       </div>
     </div>
+    </AuthProvider>
   );
 }

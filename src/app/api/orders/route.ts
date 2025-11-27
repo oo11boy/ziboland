@@ -2,30 +2,31 @@ import { NextResponse } from 'next/server';
 import pool from '@/lib/db';
 import * as jose from 'jose';
 
+
+const ZIBAL_MERCHANT = process.env.ZIBAL_MERCHANT || "zibal";
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
 export async function POST(req: Request) {
   const body = await req.json();
-  const { userId, address, items, deliveryType, amount, callbackUrl } = body;
+  const { userId, address, items, deliveryType, amount } = body;
 
-  if (!userId || !address?.id || !items?.length || !deliveryType || !amount || !callbackUrl) {
-    return NextResponse.json({ error: 'داده‌های ورودی نامعتبر است' }, { status: 400 });
+  if (!userId || !address?.id || !items?.length || !deliveryType || !amount) {
+    return NextResponse.json({ error: "داده‌های ورودی نامعتبر است" }, { status: 400 });
   }
 
-  const validDeliveryTypes = ['normal', 'express'];
+  const validDeliveryTypes = ["normal", "express"];
   if (!validDeliveryTypes.includes(deliveryType)) {
-    return NextResponse.json({ error: 'روش ارسال نامعتبر است' }, { status: 400 });
+    return NextResponse.json({ error: "روش ارسال نامعتبر است" }, { status: 400 });
   }
 
-  const deliveryCosts: { [key: string]: number } = {
-    normal: 0,
-    express: 129900,
-  };
+  const deliveryCosts: { [key: string]: number } = { normal: 0, express: 129900 };
   const itemsTotal = items.reduce(
     (sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity,
     0
   );
   const expectedAmount = (itemsTotal + deliveryCosts[deliveryType]) * 10;
   if (amount !== expectedAmount) {
-    return NextResponse.json({ error: 'مبلغ سفارش با آیتم‌ها مطابقت ندارد' }, { status: 400 });
+    return NextResponse.json({ error: "مبلغ سفارش با آیتم‌ها مطابقت ندارد" }, { status: 400 });
   }
 
   const conn = await pool.getConnection();
@@ -33,99 +34,102 @@ export async function POST(req: Request) {
   try {
     await conn.beginTransaction();
 
-    // Generate a 6-digit numeric order code
+    // تولید کد سفارش منحصر به فرد
     let orderCode = Math.floor(100000 + Math.random() * 900000).toString();
     let isUnique = false;
     let attempts = 0;
-    const maxAttempts = 5;
 
-    while (!isUnique && attempts < maxAttempts) {
-      const [existing]: any = await conn.query('SELECT id FROM orders WHERE order_code = ?', [orderCode]);
-      if (existing.length === 0) {
-        isUnique = true;
-      } else {
-        orderCode = Math.floor(100000 + Math.random() * 900000).toString();
-        attempts++;
-      }
+    while (!isUnique && attempts < 10) {
+      const [existing]: any = await conn.query("SELECT 1 FROM orders WHERE order_code = ?", [orderCode]);
+      if (existing.length === 0) isUnique = true;
+      else orderCode = Math.floor(100000 + Math.random() * 900000).toString();
+      attempts++;
     }
+    if (!isUnique) throw new Error("ناتوانی در تولید کد سفارش");
 
-    if (!isUnique) {
-      throw new Error('ناتوانی در تولید کد سفارش منحصربه‌فرد');
-    }
+    const shippingMethod = deliveryType === "express" ? "پیشتاز" : "عادی";
 
     const [orderResult]: any = await conn.execute(
-      `INSERT INTO orders (user_id, address_id, total_amount, shipping_method, status, payment_status, order_code)
+      `INSERT INTO orders 
+       (user_id, address_id, total_amount, shipping_method, status, payment_status, order_code)
        VALUES (?, ?, ?, ?, 'pending', 'pending', ?)`,
-      [userId, address.id, amount, deliveryType, orderCode]
+      [userId, address.id, amount, shippingMethod, orderCode]
     );
     const orderId = orderResult.insertId;
 
+    // درج آیتم‌ها
     for (const item of items) {
-      if (!item.product_id || !item.quantity || !item.price || !item.price_type) {
-        throw new Error('آیتم‌های سفارش نامعتبر است');
-      }
       await conn.execute(
-        `INSERT INTO order_items (order_id, product_id, quantity, unit_price, price_type, color_json)
+        `INSERT INTO order_items 
+         (order_id, product_id, quantity, unit_price, price_type, color_json)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [orderId, item.product_id, item.quantity, item.price, item.price_type, JSON.stringify(item.color || null)]
+        [
+          orderId,
+          item.product_id,
+          item.quantity,
+          item.price,
+          item.price_type || "single",
+          item.color ? JSON.stringify(item.color) : null,
+        ]
       );
     }
 
-    // Create notification
-    const notificationMessage = `سفارش جدید با کد ${orderCode} ثبت شد`;
+    // نوتیفیکیشن ادمین
     await conn.query(
-      'INSERT INTO notifications (type, message, related_id) VALUES (?, ?, ?)',
-      ['order', notificationMessage, orderId]
+      "INSERT INTO notifications (type, message, related_id) VALUES ('order', ?, ?)",
+      [`سفارش جدید با کد ${orderCode} ثبت شد`, orderId]
     );
 
-    const merchantKey = process.env.ZIBAL_MERCHANT;
-    if (!merchantKey) {
-      throw new Error('کلید درگاه پرداخت تنظیم نشده است');
-    }
+    // درخواست به زیبال — روش عادی
+    const callbackUrl = `${BASE_URL}/api/payment/verify`;
 
-    const res = await fetch('https://gateway.zibal.ir/request/lazy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const res = await fetch("https://gateway.zibal.ir/v1/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        merchant: merchantKey,
+        merchant: ZIBAL_MERCHANT,
         amount,
-        callbackUrl: `${callbackUrl}?orderId=${orderId}`,
-        description: `پرداخت سفارش ${orderCode}`,
+        callbackUrl,
+        description: `پرداخت سفارش ${orderCode} زیبولند`,
         orderId: orderCode,
       }),
     });
 
     const data = await res.json();
 
-    if (data.result === 100) {
-      await conn.execute(
-        `INSERT INTO payments (order_id, track_id, amount, status)
-         VALUES (?, ?, ?, 'pending')`,
-        [orderId, data.trackId, amount]
-      );
-
-      await conn.commit();
-
-      return NextResponse.json({
-        paymentUrl: `https://gateway.zibal.ir/start/${data.trackId}`,
-        orderCode,
-        orderId,
-      });
-    } else {
+    if (data.result !== 100 || !data.trackId) {
       await conn.rollback();
-      return NextResponse.json({ error: data.message, result: data.result }, { status: 400 });
+      return NextResponse.json(
+        { error: data.message || "خطا در اتصال به درگاه", result: data.result },
+        { status: 502 }
+      );
     }
+
+    const trackId = data.trackId.toString();
+
+    await conn.execute("UPDATE orders SET track_id = ? WHERE id = ?", [trackId, orderId]);
+
+    await conn.execute(
+      `INSERT INTO payments (order_id, track_id, amount, status) VALUES (?, ?, ?, 'pending')`,
+      [orderId, trackId, amount]
+    );
+
+    await conn.commit();
+
+    return NextResponse.json({
+      paymentUrl: `https://gateway.zibal.ir/start/${trackId}`,
+      orderCode,
+      orderId,
+    });
   } catch (error: any) {
     await conn.rollback();
-    console.error('Error creating order:', error);
-    return NextResponse.json(
-      { error: 'خطا در ثبت سفارش', details: error.message },
-      { status: 500 }
-    );
+    console.error("Error creating order:", error);
+    return NextResponse.json({ error: "خطا در ثبت سفارش", details: error.message }, { status: 500 });
   } finally {
     conn.release();
   }
 }
+
 
 export async function GET(request: Request) {
   const token = request.headers.get('Authorization')?.replace('Bearer ', '');

@@ -1,73 +1,192 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/Components/ui/select";
 import { Modal, Box, Typography } from "@mui/material";
-import { View, Search } from "lucide-react";
+import { View, Search, Filter } from "lucide-react";
 import { toast } from "react-toastify";
 import Image from "next/image";
 import { API } from "@/lib/MainRoutes";
 import Cookies from "js-cookie";
 import { Order } from "@/types/types";
 
-const InfoItem = ({ label, value }: { label: string; value: string | number }) => (
-  <p>
+// کامپوننت‌های کمکی برای مودال
+const InfoItem = ({ 
+  label, 
+  value 
+}: { 
+  label: string; 
+  value: string | number | null | undefined   // این خط رو اضافه کن
+}) => (
+  <p className="text-sm">
     <span className="font-semibold text-gray-700 dark:text-gray-300">{label}:</span>{" "}
-    <span className="text-gray-800 dark:text-gray-100">{value}</span>
+    <span className="text-gray-800 dark:text-gray-100">
+      {value != null ? value : "-"}   {/* این خط رو جایگزین کن */}
+    </span>
   </p>
 );
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div className="space-y-2">
-    <h3 className="font-bold text-gray-800 dark:text-gray-200">{title}</h3>
+  <div className="space-y-3">
+    <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-1">
+      {title}
+    </h3>
     <div className="text-gray-700 dark:text-gray-300">{children}</div>
   </div>
 );
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<{ [key: number]: boolean }>({});
 
+  // دریافت سفارشات از سرور
   useEffect(() => {
     fetchOrders();
   }, []);
 
-  useEffect(() => {
-    // فیلتر بر اساس جستجو
-    const filtered = orders.filter(
-      (order) =>
-        order.order_code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.first_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.last_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (order.email && order.email.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
-    setFilteredOrders(filtered);
-  }, [orders, searchTerm]);
-
   const fetchOrders = async () => {
     try {
       const token = Cookies.get("authToken");
+      if (!token) {
+        toast.error("لطفاً مجدداً وارد شوید");
+        return;
+      }
+
       const response = await fetch(`${API}/admin/orders`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        cache: "no-store",
       });
-      if (!response.ok) throw new Error("خطا در دریافت سفارشات");
-      const data = await response.json();
-      setOrders(data);
-      setFilteredOrders(data);
+
+      if (!response.ok) {
+        throw new Error("خطا در دریافت سفارشات");
+      }
+
+      const data: Order[] = await response.json();
+
+      // مرتب‌سازی: جدیدترین‌ها اول
+      const sortedData = data.sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setOrders(sortedData);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching orders:", err);
-      toast.error("خطا در دریافت سفارشات");
+      toast.error("خطا در بارگذاری سفارشات");
       setLoading(false);
     }
+  };
+
+  // فیلتر ترکیبی: جستجو + وضعیت پرداخت
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const searchLower = searchTerm.toLowerCase();
+
+      const matchesSearch =
+        order.order_code.toLowerCase().includes(searchLower) ||
+        `${order.first_name} ${order.last_name}`.toLowerCase().includes(searchLower) ||
+        order.username?.toLowerCase().includes(searchLower) ||
+        order.email?.toLowerCase().includes(searchLower);
+
+      const matchesPaymentStatus =
+        paymentStatusFilter === "all" || order.payment_status === paymentStatusFilter;
+
+      return matchesSearch && matchesPaymentStatus;
+    });
+  }, [orders, searchTerm, paymentStatusFilter]);
+
+// تغییر وضعیت سفارش — نسخه جدید و حرفه‌ای
+const handleStatusChange = async (orderId: number, newStatus: Order["status"]) => {
+  const order = orders.find(o => o.id === orderId);
+  if (!order) return;
+
+  // اگر پرداخت نشده و می‌خوای وضعیت رو به "ارسال شده" یا "تحویل داده شده" ببری → هشدار بده
+  if (order.payment_status !== "paid" && ["shipped", "delivered"].includes(newStatus)) {
+    if (!confirm(
+      `هشدار: این سفارش هنوز پرداخت نشده!\n` +
+      `وضعیت پرداخت: ${translatePaymentStatus(order.payment_status)}\n` +
+      `آیا مطمئن هستید که می‌خواهید وضعیت را به "${translateStatus(newStatus)}" تغییر دهید؟`
+    )) {
+      return;
+    }
+  }
+
+  // اگر می‌خوای سفارش در انتظار پرداخت رو لغو کنی → اجازه بده
+  // اگر می‌خوای به "در حال پردازش" ببری → هم اجازه بده (مثلاً سفارش تلفنی)
+
+  if (!confirm(`آیا از تغییر وضعیت سفارش #${order.order_code} به "${translateStatus(newStatus)}" مطمئن هستید؟`)) {
+    return;
+  }
+
+  setStatusUpdating((prev) => ({ ...prev, [orderId]: true }));
+
+  try {
+    const token = Cookies.get("authToken");
+    const res = await fetch(`${API}/admin/orders/${orderId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status: newStatus }),
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.error || "خطا در به‌روزرسانی");
+    }
+
+    // بروزرسانی محلی
+    setOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+    );
+
+    if (selectedOrder?.id === orderId) {
+      setSelectedOrder({ ...selectedOrder, status: newStatus });
+    }
+
+    toast.success("وضعیت سفارش با موفقیت تغییر کرد");
+  } catch (err: any) {
+    toast.error(err.message || "خطا در تغییر وضعیت");
+  } finally {
+    setStatusUpdating((prev) => ({ ...prev, [orderId]: false }));
+  }
+};
+  // ترجمه وضعیت‌ها
+  const translateStatus = (status: string) => {
+    const map: Record<string, string> = {
+      pending: "در انتظار",
+      processing: "در حال پردازش",
+      shipped: "ارسال شده",
+      delivered: "تحویل داده شده",
+      cancelled: "لغو شده",
+    };
+    return map[status] || status;
+  };
+
+  const translatePaymentStatus = (status: string) => {
+    const map: Record<string, string> = {
+      paid: "پرداخت شده",
+      pending: "در انتظار پرداخت",
+      failed: "پرداخت ناموفق",
+      refunded: "بازپرداخت شده",
+    };
+    return map[status] || status;
   };
 
   const handleViewDetails = (order: Order) => {
@@ -75,285 +194,333 @@ const OrdersPage = () => {
     setIsModalOpen(true);
   };
 
-  const handleStatusChange = async (orderId: number, newStatus: Order["status"]) => {
-    if (!confirm(`آیا مطمئن هستید که می‌خواهید وضعیت سفارش #${orderId} را به "${translateStatus(newStatus)}" تغییر دهید؟`)) {
-      return;
-    }
-    setStatusUpdating((prev) => ({ ...prev, [orderId]: true }));
-    try {
-      const token = Cookies.get("authToken");
-      const response = await fetch(`${API}/admin/orders/${orderId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ status: newStatus }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "خطا در به‌روزرسانی وضعیت");
-      }
-      setOrders((prev) =>
-        prev.map((order) =>
-          order.id === orderId ? { ...order, status: newStatus } : order
-        )
-      );
-      setFilteredOrders((prev) =>
-        prev.map((order) =>
-          order.id === orderId ? { ...order, status: newStatus } : order
-        )
-      );
-      if (selectedOrder && selectedOrder.id === orderId) {
-        setSelectedOrder({ ...selectedOrder, status: newStatus });
-      }
-      toast.success("وضعیت سفارش با موفقیت به‌روزرسانی شد");
-    } catch (err) {
-      toast.error(`خطا در به‌روزرسانی وضعیت: ${(err as Error).message}`);
-    } finally {
-      setStatusUpdating((prev) => ({ ...prev, [orderId]: false }));
-    }
-  };
-
-  const translateStatus = (status: Order["status"]) => {
-    switch (status) {
-      case "pending": return "در انتظار";
-      case "processing": return "در حال پردازش";
-      case "shipped": return "ارسال شده";
-      case "delivered": return "تحویل داده شده";
-      case "cancelled": return "لغو شده";
-      default: return status;
-    }
-  };
-
-  const translatePaymentStatus = (status: Order["payment_status"]) => {
-    switch (status) {
-      case "pending": return "در انتظار پرداخت";
-      case "paid": return "پرداخت شده";
-      case "failed": return "پرداخت ناموفق";
-      case "refunded": return "بازپرداخت شده";
-      default: return status;
-    }
-  };
-
+  // لودینگ
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 yekan">
-      <div className="flex justify-between items-center flex-wrap gap-2 mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
-          سفارشات
-        </h1>
+    <div className="container mx-auto px-4 py-6 yekan">
+      {/* عنوان */}
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-8 text-center md:text-right">
+        مدیریت سفارشات زیبولند
+      </h1>
+
+      {/* فیلترها و جستجو - کاملاً ریسپانسیو */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* جستجو */}
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Input
+            placeholder="جستجو در سفارشات..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pr-10 bg-white dark:bg-gray-800"
+          />
+        </div>
+
+        {/* فیلتر وضعیت پرداخت */}
+        <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
+          <SelectTrigger className="bg-white dark:bg-gray-800">
+            <Filter className="w-4 h-4 ml-2 text-gray-500" />
+            <SelectValue placeholder="فیلتر وضعیت پرداخت" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">همه پرداخت‌ها</SelectItem>
+            <SelectItem value="paid">پرداخت شده</SelectItem>
+            <SelectItem value="pending">در انتظار پرداخت</SelectItem>
+            <SelectItem value="failed">پرداخت ناموفق</SelectItem>
+            <SelectItem value="refunded">بازپرداخت شده</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* تعداد سفارشات */}
+        <div className="hidden lg:flex items-center justify-center text-sm text-gray-600 bg-gray-100 dark:bg-gray-800 rounded-lg px-4">
+          نمایش {filteredOrders.length} از {orders.length} سفارش
+        </div>
       </div>
 
-      {/* جستجو */}
-      <div className="relative mb-6">
-        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-        <Input
-          placeholder="جستجو بر اساس شماره سفارش، نام، نام خانوادگی، نام کاربری یا ایمیل..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pr-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
-        />
+      {/* نمایش موبایل: کارت‌های زیبا */}
+      <div className="block lg:hidden space-y-4">
+        {filteredOrders.length === 0 ? (
+          <Card className="text-center py-16 bg-gray-50 dark:bg-gray-900">
+            <p className="text-xl text-gray-500">هیچ سفارشی یافت نشد</p>
+            <p className="text-sm text-gray-400 mt-2">فیلترها را تغییر دهید</p>
+          </Card>
+        ) : (
+          filteredOrders.map((order) => (
+            <Card key={order.id} className="shadow-lg hover:shadow-xl transition-shadow">
+              <CardContent className="pt-6">
+                {/* هدر کارت */}
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <p className="text-lg font-bold text-purple-600">#{order.order_code}</p>
+                    <p className="text-sm text-gray-600">
+                      {order.first_name} {order.last_name}
+                    </p>
+                    <p className="text-xs text-gray-500">@{order.username}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      order.payment_status === "paid"
+                        ? "bg-green-100 text-green-800"
+                        : order.payment_status === "pending"
+                        ? "bg-yellow-100 text-yellow-800"
+                        : "bg-red-100 text-red-800"
+                    }`}>
+                      {translatePaymentStatus(order.payment_status)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* اطلاعات اصلی */}
+                <div className="space-y-2 text-sm">
+                  <p>
+                    <strong>مبلغ:</strong> {(order.total_amount / 10).toLocaleString()} تومان
+                  </p>
+                  <p>
+                    <strong>وضعیت:</strong> {translateStatus(order.status)}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {new Date(order.created_at).toLocaleDateString("fa-IR")}
+                  </p>
+                </div>
+
+                {/* اکشن‌ها */}
+                <div className="flex gap-3 mt-5">
+                  <Select
+                    value={order.status}
+                 onValueChange={(newValue) => {
+  if (newValue !== order.status) {
+    handleStatusChange(order.id, newValue as Order["status"]);
+  }
+}}
+                    disabled={statusUpdating[order.id]}
+                  >
+                    <SelectTrigger className="flex-1 text-xs h-10">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">در انتظار</SelectItem>
+                      <SelectItem value="processing">در حال پردازش</SelectItem>
+                      <SelectItem value="shipped">ارسال شده</SelectItem>
+                      <SelectItem value="delivered">تحویل داده شده</SelectItem>
+                      <SelectItem value="cancelled">لغو شده</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Button
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700"
+                    onClick={() => handleViewDetails(order)}
+                  >
+                    <View className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
 
-      <Card className="bg-white dark:bg-gray-800 shadow-lg rounded-lg">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-gray-800 dark:text-white">
-            لیست سفارشات
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {filteredOrders.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              هیچ سفارشی یافت نشد
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm md:text-base table-auto border-collapse">
-                <thead className="hidden md:table-header-group">
-                  <tr className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                    <th className="px-4 py-2 text-right">شماره سفارش</th>
-                    <th className="px-4 py-2 text-right">کاربر</th>
-                    <th className="px-4 py-2 text-right">مبلغ (تومان)</th>
-                    <th className="px-4 py-2 text-right">وضعیت</th>
-                    <th className="px-4 py-2 text-right">وضعیت پرداخت</th>
-                    <th className="px-4 py-2 text-right">روش ارسال</th>
-                    <th className="px-4 py-2 text-right">تاریخ</th>
-                    <th className="px-4 py-2 text-right">عملیات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredOrders.map((order) => (
-                    <tr
-                      key={order.id}
-                      className="block md:table-row border-b md:border-0 border-gray-200 dark:border-gray-700 mb-4 md:mb-0 rounded-lg md:rounded-none shadow-sm md:shadow-none bg-gray-50 md:bg-transparent dark:bg-gray-900 md:dark:bg-transparent transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">شماره سفارش: </span>
-                        {order.order_code}
-                      </td>
-                      <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">کاربر: </span>
-                        {order.first_name} {order.last_name} ({order.username})
-                      </td>
-                      <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">مبلغ: </span>
-                        {(order.total_amount / 10).toLocaleString()} تومان
-                      </td>
-                      <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">وضعیت: </span>
-                        <Select
-                          value={order.status}
-                          onValueChange={(value: Order["status"]) => handleStatusChange(order.id, value)}
-                          disabled={statusUpdating[order.id]}
-                        >
-                          <SelectTrigger className="w-[120px]">
-                            <SelectValue>{translateStatus(order.status)}</SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">در انتظار</SelectItem>
-                            <SelectItem value="processing">در حال پردازش</SelectItem>
-                            <SelectItem value="shipped">ارسال شده</SelectItem>
-                            <SelectItem value="delivered">تحویل داده شده</SelectItem>
-                            <SelectItem value="cancelled">لغو شده</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-                      <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">وضعیت پرداخت: </span>
-                        {translatePaymentStatus(order.payment_status)}
-                      </td>
-                      <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">روش ارسال: </span>
-                        {order.shipping_method === "express" ? "اکسپرس" : "عادی"}
-                      </td>
-                      <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">تاریخ: </span>
-                        {new Date(order.created_at).toLocaleDateString("fa-IR")}
-                      </td>
-                      <td className="px-4 py-2 block md:table-cell">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleViewDetails(order)}
-                          title="مشاهده جزئیات"
-                          className="hover:bg-blue-50 dark:hover:bg-blue-900"
-                        >
-                          <View className="h-4 w-4" />
-                        </Button>
-                      </td>
+      {/* نمایش دسکتاپ: جدول حرفه‌ای */}
+      <div className="hidden lg:block">
+        <Card className="shadow-xl">
+          <CardHeader className=" text-black rounded-t-lg">
+            <CardTitle className="text-xl">لیست کامل سفارشات </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {filteredOrders.length === 0 ? (
+              <div className="text-center py-20 text-gray-500 text-lg">
+                هیچ سفارشی با این فیلتر یافت نشد
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">شماره سفارش</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">کاربر</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">مبلغ</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">وضعیت سفارش</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">وضعیت پرداخت</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">تاریخ</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">عملیات</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {filteredOrders.map((order) => (
+                      <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        <td className="px-6 py-4 font-mono text-purple-600 font-bold">
+                          #{order.order_code}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-right">
+                            <p className="font-medium">{order.first_name} {order.last_name}</p>
+                            <p className="text-sm text-gray-500">@{order.username}</p>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 font-bold text-lg">
+                          {(order.total_amount / 10).toLocaleString()} تومان
+                        </td>
+                        <td className="px-6 py-4">
+                          <Select
+                            value={order.status}
+                        onValueChange={(newValue) => {
+  if (newValue !== order.status) {
+    handleStatusChange(order.id, newValue as Order["status"]);
+  }
+}}
+                            disabled={statusUpdating[order.id]}
+                          >
+                            <SelectTrigger className="w-44">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pending">در انتظار</SelectItem>
+                              <SelectItem value="processing">در حال پردازش</SelectItem>
+                              <SelectItem value="shipped">ارسال شده</SelectItem>
+                              <SelectItem value="delivered">تحویل داده شده</SelectItem>
+                              <SelectItem value="cancelled">لغو شده</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className={`px-4 py-2 rounded-full text-xs font-bold ${
+                            order.payment_status === "paid"
+                              ? "bg-green-100 text-green-800"
+                              : order.payment_status === "pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
+                          }`}>
+                            {translatePaymentStatus(order.payment_status)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {new Date(order.created_at).toLocaleDateString("fa-IR")}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="hover:bg-blue-100 dark:hover:bg-blue-900"
+                            onClick={() => handleViewDetails(order)}
+                          >
+                            <View className="w-5 h-5 text-blue-600" />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
+      {/* مودال جزئیات سفارش - کامل و ریسپانسیو */}
       <Modal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        aria-labelledby="order-modal-title"
-        aria-describedby="order-modal-description"
         closeAfterTransition
-        sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
         <Box
           sx={{
-            width: "90%",
-            maxWidth: 720,
-            bgcolor: "background.paper",
-            borderRadius: 3,
-            boxShadow: 30,
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: { xs: "95%", sm: "80%", md: "70%", lg: "60%" },
             maxHeight: "90vh",
             overflowY: "auto",
-            p: 4,
+            bgcolor: "background.paper",
+            borderRadius: 3,
+            boxShadow: 24,
+            p: { xs: 3, sm: 4, md: 5 },
             outline: "none",
-            fontFamily: "yekannew",
-            position: "relative",
           }}
         >
-          <Box
-            sx={{
-              position: "sticky",
-              top: 0,
-              bgcolor: "background.paper",
-              zIndex: 10,
-              borderBottom: "1px solid #e5e7eb",
-              pb: 2,
-              mb: 4,
-            }}
-          >
-            <Typography
-              id="order-modal-title"
-              variant="h5"
-              component="h2"
-              className="text-right font-bold text-gray-800 dark:text-white"
-            >
-              جزئیات سفارش #{selectedOrder?.order_code}
-            </Typography>
-            <Button
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-2 left-2 text-gray-500 hover:text-gray-700 text-xl font-bold"
-            >
-              ✕
-            </Button>
-          </Box>
-
           {selectedOrder && (
-            <div className="space-y-6 text-right">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InfoItem label="کاربر" value={`${selectedOrder.first_name} ${selectedOrder.last_name} (${selectedOrder.username})`} />
-                <InfoItem label="ایمیل" value={selectedOrder.email ?? '-'} />
-                <InfoItem label="شماره تلفن" value={selectedOrder.phone_number ?? '-'} />
-                <InfoItem label="شماره سفارش" value={selectedOrder.order_code} />
-                <InfoItem label="تاریخ" value={new Date(selectedOrder.created_at).toLocaleDateString("fa-IR")} />
+            <div className="text-right">
+              {/* دکمه بستن */}
+              <Button
+                onClick={() => setIsModalOpen(false)}
+                className="absolute top-4 left-4 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+              >
+                ×
+              </Button>
+
+              <Typography variant="h4" className="text-center font-bold text-purple-700 mb-8">
+                جزئیات سفارش #{selectedOrder.order_code}
+              </Typography>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <InfoItem label="نام و نام خانوادگی" value={`${selectedOrder.first_name} ${selectedOrder.last_name}`} />
+                <InfoItem label="نام کاربری" value={`@${selectedOrder.username}`} />
+                <InfoItem label="ایمیل" value={selectedOrder.email} />
+                <InfoItem label="شماره تلفن" value={selectedOrder.phone_number} />
+                <InfoItem label="تاریخ سفارش" value={new Date(selectedOrder.created_at).toLocaleDateString("fa-IR")} />
                 <InfoItem label="مبلغ کل" value={`${(selectedOrder.total_amount / 10).toLocaleString()} تومان`} />
-                <InfoItem label="وضعیت" value={translateStatus(selectedOrder.status)} />
+                <InfoItem label="وضعیت سفارش" value={translateStatus(selectedOrder.status)} />
                 <InfoItem label="وضعیت پرداخت" value={translatePaymentStatus(selectedOrder.payment_status)} />
                 <InfoItem label="روش ارسال" value={selectedOrder.shipping_method === "express" ? "اکسپرس" : "عادی"} />
               </div>
-              <Section title="آدرس">
-                {`${selectedOrder.province}، ${selectedOrder.city}، ${selectedOrder.street}${selectedOrder.alley ? `، ${selectedOrder.alley}` : ""}${selectedOrder.building_number ? `، پلاک ${selectedOrder.building_number}` : ""}${selectedOrder.unit ? `، واحد ${selectedOrder.unit}` : ""}، کدپستی: ${selectedOrder.postal_code}`}
+
+              <Section title="آدرس تحویل">
+                {`${selectedOrder.province}، ${selectedOrder.city}، ${selectedOrder.street}`}
+                {selectedOrder.alley && `، کوچه ${selectedOrder.alley}`}
+                {selectedOrder.building_number && `، پلاک ${selectedOrder.building_number}`}
+                {selectedOrder.unit && `، واحد ${selectedOrder.unit}`}
+                {selectedOrder.postal_code && `، کد پستی: ${selectedOrder.postal_code}`}
               </Section>
-              <Section title="محصولات">
-                <ul className="space-y-3">
+
+              <Section title="محصولات سفارش داده شده">
+                <div className="grid gap-4">
                   {selectedOrder.items.map((item) => (
-                    <li key={item.id} className="border p-3 rounded-lg flex gap-4 items-start hover:shadow-md transition-shadow duration-200">
+                    <div key={item.id} className="flex gap-4 items-start p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       {item.image ? (
                         <Image
                           src={item.image}
                           alt={item.title}
-                          width={64}
-                          height={64}
-                          className="object-cover rounded"
+                          width={80}
+                          height={80}
+                          className="rounded-lg object-cover"
                         />
                       ) : (
-                        <div className="w-16 h-16 bg-gray-200 flex items-center justify-center rounded text-sm text-gray-500">
+                        <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-500 text-xs">
                           بدون تصویر
                         </div>
                       )}
-                      <div className="flex-1 space-y-1">
-                        <InfoItem label="محصول" value={item.title} />
-                        {item.color && <InfoItem label="رنگ" value={`${item.color.persianName} (${item.color.englishName})`} />}
-                        <InfoItem label="تعداد" value={item.quantity} />
-                        <InfoItem label="قیمت واحد" value={`${(item.unit_price / 10).toLocaleString()} تومان`} />
-                        <InfoItem label="نوع قیمت" value={item.price_type === "single" ? "تکی" : "عمده"} />
+                      <div className="flex-1 space-y-2">
+                        <p className="font-semibold">{item.title}</p>
+                        {item.color && (
+                          <p className="text-sm text-gray-600">
+                            رنگ: {item.color.persianName} ({item.color.englishName})
+                          </p>
+                        )}
+                        <p className="text-sm">تعداد: {item.quantity}</p>
+                        <p className="text-sm font-medium">
+                          قیمت واحد: {(item.unit_price / 10).toLocaleString()} تومان
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          نوع قیمت: {item.price_type === "single" ? "تکی" : "عمده"}
+                        </p>
                       </div>
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
               </Section>
-              <div className="flex justify-end mt-6">
-                <Button className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-md" onClick={() => setIsModalOpen(false)}>
+
+              <div className="text-center mt-10">
+                <Button
+                  onClick={() => setIsModalOpen(false)}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-10 py-3 text-lg rounded-xl"
+                >
                   بستن
                 </Button>
               </div>

@@ -1,6 +1,7 @@
+// src/Components/PaymentComponents/PaymentDone.tsx
 "use client";
 import { useEffect, useState } from "react";
-import { Color } from "@/types/types";
+import Link from "next/link";
 
 interface OrderItem {
   id: number;
@@ -8,7 +9,8 @@ interface OrderItem {
   quantity: number;
   unit_price: number;
   title: string;
-  color?: Color | null;
+  image?: string;
+  color?: { persianName?: string } | null;
 }
 
 interface Order {
@@ -47,113 +49,80 @@ export default function PaymentDone() {
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get("orderId");
 
-    if (orderId) {
-      fetch(`/api/orders/${orderId}`)
-        .then((res) => {
-          if (!res.ok) throw new Error("سفارش یافت نشد");
-          return res.json();
-        })
-        .then((data) => {
-          setOrder(data);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error("خطا در بارگذاری سفارش:", err);
-          setLoading(false);
-        });
-    } else {
+    if (!orderId) {
       setLoading(false);
+      return;
     }
+
+    fetch(`/api/orders/${orderId}`, { credentials: "include" })
+      .then(res => {
+        if (!res.ok) throw new Error("سفارش یافت نشد");
+        return res.json();
+      })
+      .then(data => {
+        setOrder(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
-      </div>
-    );
-  }
+  if (loading) return <div className="flex justify-center items-center min-h-screen"><div className="animate-spin rounded-full h-12 w-12 border-t-4 border-green-600"></div></div>;
 
   if (!order) {
     return (
-      <div className="flex items-center my-16 justify-center min-h-screen bg-gray-50">
-        <div className="bg-white p-8 rounded-xl shadow-2xl max-w-md w-full text-center">
-          <p className="text-red-600 mb-4">سفارش یافت نشد</p>
-          <p className="text-gray-600">
-            لطفاً با{" "}
-            <a href="/support" className="text-blue-600 underline">
-              پشتیبانی
-            </a>{" "}
-            تماس بگیرید.
-          </p>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="bg-white p-10 rounded-xl shadow-xl text-center">
+          <p className="text-red-600 text-xl mb-4">سفارش یافت نشد</p>
+          <Link href="/support" className="text-blue-600 underline">تماس با پشتیبانی</Link>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-100 flex my-16 items-center justify-center min-h-screen px-4">
-      <div className="bg-white p-8 sm:p-12 rounded-xl shadow-2xl max-w-2xl w-full text-right animate-fade-in-scale">
-        <div className="mx-auto flex items-center justify-center h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-green-100 mb-6">
-          <svg
-            className="h-12 w-12 sm:h-16 sm:w-16 text-green-500"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-          </svg>
+    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center p-6">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-3xl w-full text-right">
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-green-100 mb-6">
+            <svg className="w-16 h-16 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+          <h1 className="text-4xl font-bold text-gray-800">پرداخت با موفقیت انجام شد</h1>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 text-center">
-          پرداخت با موفقیت انجام شد 
-        </h1>
-
-        <div className="space-y-4 text-sm sm:text-base">
-          <p>
-            <span className="font-semibold">کد سفارش:</span> {order.order_code}
-          </p>
-          <p>
-            <span className="font-semibold">مبلغ کل:</span>{" "}
-            {(order.total_amount / 10).toLocaleString("fa-IR")} تومان
-          </p>
-          <p>
-            <span className="font-semibold">روش ارسال:</span>{" "}
-            {order.shipping_method === "normal" ? "ارسال عادی" : "ارسال پیشتاز"}
-          </p>
-          <p>
-            <span className="font-semibold">آدرس:</span> {formatAddress(order)}
-          </p>
+        <div className="bg-green-50 rounded-xl p-6 mb-8 border border-green-200">
+          <p className="text-2xl font-bold text-green-700">کد سفارش: {order.order_code}</p>
+          <p className="text-lg mt-2">مبلغ پرداختی: {(order.total_amount / 10).toLocaleString("fa-IR")} تومان</p>
         </div>
 
-        <div className="mt-6">
-          <h2 className="font-semibold text-lg mb-2">محصولات سفارش</h2>
-          <ul className="divide-y divide-gray-200">
-            {order.items.map((item) => (
-              <li key={item.id} className="py-2">
-                <div className="flex justify-between items-center">
-                  <span>
-                    {item.title} × {item.quantity}
-                    {item.color && (
-                      <span className="text-sm text-gray-500 ml-2">
-                        (رنگ: {item.color.persianName})
-                      </span>
-                    )}
-                  </span>
-                  <span>{(item.unit_price ).toLocaleString("fa-IR")} تومان</span>
+        <div className="space-y-4 text-gray-700">
+          <p><strong>روش ارسال:</strong> {order.shipping_method === "normal" ? "ارسال عادی" : "ارسال پیشتاز"}</p>
+          <p><strong>آدرس تحویل:</strong> {formatAddress(order)}</p>
+        </div>
+
+        <div className="mt-8">
+          <h3 className="font-bold text-lg mb-4">محصولات سفارش داده شده</h3>
+          <div className="space-y-3">
+            {order.items.map(item => (
+              <div key={item.id} className="flex justify-between items-center bg-gray-50 p-4 rounded-lg">
+                <div>
+                  <p className="font-medium">{item.title} × {item.quantity}</p>
+                  {item.color && <p className="text-sm text-gray-600">رنگ: {item.color.persianName}</p>}
                 </div>
-              </li>
+                <p className="font-semibold">{(item.unit_price / 10).toLocaleString("fa-IR")} تومان</p>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
 
-        <div className="mt-8 text-center">
-          <a
-            href="../userdashboard"
-            className="inline-block px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+        <div className="mt-10 text-center">
+          <Link
+            href="/userdashboard"
+            className="inline-block px-8 py-4 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl transition shadow-lg"
           >
-            رفتن به داشبورد
-          </a>
+            رفتن به داشبورد کاربری
+          </Link>
         </div>
       </div>
     </div>
