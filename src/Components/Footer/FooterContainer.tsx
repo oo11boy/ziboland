@@ -11,9 +11,7 @@ export default function FooterContainer({ settings }: { settings: any }) {
     return null;
   }
 
-  const enamadCode = `<img src="../images/enmad.png" width="100" height="110"
-  onclick="window.open('https://trustseal.enamad.ir/?id=665010&Code=8bOVpOazCIn6m25LT9ROgYztLP5dWra2', 'Popup', 'toolbar=no, scrollbars=no, location=no, statusbar=no, menubar=no, resizable=0, width=450, height=630, top=30')"
-  alt="enamad">`;
+  const enamadCode = `<a referrerpolicy='origin' target='_blank' href='https://trustseal.enamad.ir/?id=665010&Code=8bOVpOazCIn6m25LT9ROgYztLP5dWra2'><img referrerpolicy='origin' src='https://trustseal.enamad.ir/logo.aspx?id=665010&Code=8bOVpOazCIn6m25LT9ROgYztLP5dWra2' alt='' style='cursor:pointer' code='8bOVpOazCIn6m25LT9ROgYztLP5dWra2'></a>`;
 
   return (
     <div className={`footer-container ${ismyaccount && "max-lg:hidden"}`}>
