@@ -83,7 +83,7 @@ const ProductSlider: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
   }
 
   return (
-    <div className="woocommerce-product-gallery max-w-[450px] mx-auto" dir="rtl">
+    <div className="woocommerce-product-gallery max-w-[450px]" dir="rtl">
 
       {/* حالت ۱: فقط یک تصویر */}
       {!hasMultipleImages ? (
