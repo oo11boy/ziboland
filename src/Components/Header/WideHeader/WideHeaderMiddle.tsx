@@ -11,7 +11,7 @@ import {
 } from "@mui/icons-material";
 import Link from "next/link";
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import { toast } from "react-toastify";
 import { useCart } from "@/ContextApi/CartContext";
 import { Product } from "@/types/types";
@@ -20,7 +20,7 @@ import { useAuth } from "@/ContextApi/AuthContext";
 
 export default function WideHeaderMiddle() {
   const { state: { cartItems}, dispatch } = useCart();
-  const { isLoggedIn } = useAuth(); // استفاده از Context به‌جای state
+  const { isLoggedIn } = useAuth();
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   const [productsMap, setProductsMap] = useState<Record<number, Product>>({});
 
@@ -114,27 +114,37 @@ export default function WideHeaderMiddle() {
     }
   };
 
-const modalVariants = {
-  hidden: { opacity: 0, y: "-100%" },
-  visible: { 
-    opacity: 1, 
-    y: 0, 
-    transition: { 
-      duration: 0.3, 
-      ease: "easeInOut" // ✅ Valid
-    } 
-  },
-  exit: { 
-    opacity: 0, 
-    y: "-100%", 
-    transition: { duration: 0.2 } 
-  },
-};
+  // تعریف variants با تایپ صحیح - بهترین روش
+  const modalVariants: Variants = {
+    hidden: { opacity: 0, y: "-100%" },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { 
+        duration: 0.3, 
+        ease: "easeInOut" as const
+      } 
+    },
+    exit: { 
+      opacity: 0, 
+      y: "-100%", 
+      transition: { duration: 0.2 } 
+    },
+  };
 
-  const backdropVariants = {
+  const backdropVariants: Variants = {
     hidden: { opacity: 0 },
-    visible: { opacity: 0.5, transition: { duration: 0.3 } },
-    exit: { opacity: 0, transition: { duration: 0.2 } },
+    visible: { 
+      opacity: 0.5, 
+      transition: { 
+        duration: 0.3,
+        ease: "easeInOut" as const
+      } 
+    },
+    exit: { 
+      opacity: 0, 
+      transition: { duration: 0.2 } 
+    },
   };
 
   return (
@@ -163,7 +173,7 @@ const modalVariants = {
             href={"../myaccount"}
             className="flex items-center gap-2 hover:bg-[#EBEBEB] hover:text-[black] p-2 rounded-lg border border-[#d9d6d6] text-base hover:border-[#C7C7C7]"
           >
-{isLoggedIn ? (
+            {isLoggedIn ? (
               <>
                 <AccountCircle fontSize="small" />
                 <span>مدیریت حساب</span>
@@ -174,9 +184,8 @@ const modalVariants = {
                 <span>ورود | عضویت</span>
               </>
             )}
-           
           </Link>
-          <button className="relative hidden  items-center gap-2 p-2 hover:bg-[#EBEBEB] hover:text-[black] rounded-lg border border-[#d9d6d6] hover:border-[#C7C7C7]">
+          <button className="relative hidden items-center gap-2 p-2 hover:bg-[#EBEBEB] hover:text-[black] rounded-lg border border-[#d9d6d6] hover:border-[#C7C7C7]">
             <FavoriteBorderOutlined fontSize="medium" />
             <span className="bg-[#805B99] pt-1 text-[#EBEBEB] absolute bottom-0 -right-1 w-4 h-4 flex justify-center items-center text-[10px] rounded-full">
               2
