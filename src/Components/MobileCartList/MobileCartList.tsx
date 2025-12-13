@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion"; // <-- Variants اضافه شد
 import { toast } from "react-toastify";
 import { useCart } from "@/ContextApi/CartContext";
 import {
@@ -51,7 +51,6 @@ export default function MobileCartList() {
   const fetchProduct = async (id: number) => {
     if (productsMap[id]) return productsMap[id];
     try {
-  
       const res = await fetch(`${API}/products/${id}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`Failed to fetch product ${id}`);
       const product: Product = await res.json();
@@ -60,8 +59,6 @@ export default function MobileCartList() {
     } catch (err) {
       console.error(err);
       return null;
-    } finally {
-
     }
   };
 
@@ -152,11 +149,22 @@ export default function MobileCartList() {
     window.scrollTo({ top, behavior: "smooth" });
   };
 
-  // انیمیشن کارت
-  const cardVariants = {
+  // 🔧 اصلاح شده: انیمیشن کارت با تایپ صحیح
+  const cardVariants: Variants = { // <-- تایپ Variants اضافه شد
     hidden: { opacity: 0, y: 12 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.22, ease: "easeOut" } },
-    exit: { opacity: 0, y: -12, transition: { duration: 0.18 } },
+    visible: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { 
+        duration: 0.22, 
+        ease: "easeOut" as const // <-- as const اضافه شد
+      } 
+    },
+    exit: { 
+      opacity: 0, 
+      y: -12, 
+      transition: { duration: 0.18 } 
+    },
   };
 
   return (

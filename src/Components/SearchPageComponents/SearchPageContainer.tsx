@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, Variants } from "framer-motion"; // Variants اضافه شد
 import "rc-slider/assets/index.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -81,19 +81,17 @@ export default function SearchPageContainer({
   }, []);
 
   // Sync query params
-useEffect(() => {
-  const mothercatId = searchParams.get("mothercatId");
-  const subcatId = searchParams.get("subcatId");
-  const itemId = searchParams.get("itemId"); // اضافه شد
-  const brands = searchParams.get("brands");
+  useEffect(() => {
+    const mothercatId = searchParams.get("mothercatId");
+    const subcatId = searchParams.get("subcatId");
+    const itemId = searchParams.get("itemId"); // اضافه شد
+    const brands = searchParams.get("brands");
 
-  setSelectedMothercatIds(mothercatId ? [parseInt(mothercatId)] : []);
-  setSelectedSubcatIds(subcatId ? [parseInt(subcatId)] : []);
-  setSelectedItemIds(itemId ? [parseInt(itemId)] : []); // اضافه شد
-  setSelectedBrands(brands ? brands.split(",") : []);
-}, [searchParams]);
-
-
+    setSelectedMothercatIds(mothercatId ? [parseInt(mothercatId)] : []);
+    setSelectedSubcatIds(subcatId ? [parseInt(subcatId)] : []);
+    setSelectedItemIds(itemId ? [parseInt(itemId)] : []); // اضافه شد
+    setSelectedBrands(brands ? brands.split(",") : []);
+  }, [searchParams]);
 
   // Scroll to results on filter change
   useEffect(() => {
@@ -261,10 +259,18 @@ useEffect(() => {
 
   const filteredProducts = getSortedProducts();
 
-  const cardVariants = {
+  // اصلاح شده: تعریف cardVariants با تایپ صحیح
+  const cardVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
     exit: { opacity: 0, y: -20, transition: { duration: 0.2 } },
+  };
+
+  // اصلاح شده: تعریف filterVariants با تایپ صحیح
+  const filterVariants: Variants = {
+    hidden: { opacity: 0, x: -100 },
+    visible: { opacity: 1, x: 0, transition: { duration: 0.3 } },
+    exit: { opacity: 0, x: -100, transition: { duration: 0.2 } },
   };
 
   if (error) {
@@ -322,7 +328,7 @@ useEffect(() => {
                   setDiscount={setDiscount}
                   inStock={inStock}
                   setInStock={setInStock}
-                  filterVariants={{ hidden: {}, visible: {}, exit: {} }}
+                  filterVariants={filterVariants} // اصلاح شده
                   searchTerm={searchTerm}
                   setSearchTerm={setSearchTerm}
                 />
