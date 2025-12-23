@@ -4,13 +4,15 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Swiper as SwiperCore } from "swiper";
 import "swiper/css";
 import Link from "next/link";
-import "./../Sliders.css";
-import "./ProductSlider.css";
+import "./../Sliders.css"; // حفظ فایل CSS اصلی برای بخش VIP
+import "./ProductSlider.css"; // حفظ فایل CSS اصلی برای بخش VIP
 import {
   KeyboardArrowLeft,
+  KeyboardArrowRight,
   AddCircleOutline,
   RemoveCircleOutline,
   AddShoppingCart,
+  VisibilitySharp,
 } from "@mui/icons-material";
 import { Product, Color } from "@/types/types";
 import { useCart } from "@/ContextApi/CartContext";
@@ -42,7 +44,6 @@ export default function ProductSliderContainer({
   const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // دریافت محصولات از API
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -58,10 +59,9 @@ export default function ProductSliderContainer({
     fetchProducts();
   }, []);
 
-  // تنظیمات اولیه برای priceTypes و selectedColors
   useEffect(() => {
     const initialPriceTypes = products.reduce(
-      (acc, product) => ({ ...acc, [product.id]: "single" }), // همیشه از تکی شروع شود
+      (acc, product) => ({ ...acc, [product.id]: "single" }),
       {}
     );
     setPriceTypes(initialPriceTypes);
@@ -79,13 +79,18 @@ export default function ProductSliderContainer({
     setSelectedColors(initialSelectedColors);
   }, [products]);
 
-  // مدیریت اندازه صفحه
   useEffect(() => {
     const handleResize = () => setIsSmallScreen(window.innerWidth < 1024);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const goPrev = () => {
+    if (swiperRef.current?.swiper) {
+      swiperRef.current.swiper.slidePrev();
+    }
+  };
 
   const goNext = () => {
     if (swiperRef.current?.swiper) {
@@ -124,10 +129,8 @@ export default function ProductSliderContainer({
     setCartQuantities((prev) => {
       const newQuantity = (prev[productId] || 0) + delta;
       const product = products.find((p) => p.id === productId);
-
       if (!product) return prev;
 
-      // **اصلاح مهم: اگر قیمت عمده صفر بود اصلا حالت عمده فعال نشود**
       if (
         product.discountwholesalePrice > 0 &&
         newQuantity >= product.minwholesale
@@ -136,7 +139,6 @@ export default function ProductSliderContainer({
       } else {
         handlePriceTypeChange(productId, "single");
       }
-
       return { ...prev, [productId]: newQuantity < 0 ? 0 : newQuantity };
     });
   };
@@ -146,28 +148,14 @@ export default function ProductSliderContainer({
     type: "single" | "wholesale"
   ) => {
     const product = products.find((p) => p.id === productId);
-
-    // **جلوگیری از انتخاب عمده در صورتی که قیمت عمده = 0**
     if (type === "wholesale" && product?.discountwholesalePrice === 0) {
       return;
     }
-
     setPriceTypes((prev) => ({ ...prev, [productId]: type }));
   };
 
   const handleColorSelect = (productId: number, color: Color) => {
     setSelectedColors((prev) => ({ ...prev, [productId]: color }));
-  };
-
-  const getContrastColor = (hexCode: string) => {
-    const hex = hexCode.replace("#", "");
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.5
-      ? { tickColor: "#0000004d", borderColor: "#FFFFFF" }
-      : { tickColor: "#FFFFFF", borderColor: "#0000004d" };
   };
 
   const handleAddToCart = (productId: number) => {
@@ -184,7 +172,6 @@ export default function ProductSliderContainer({
       });
       return;
     }
-
     if (!product.inStock) {
       toast.error("محصول موجود نیست", {
         position: "top-center",
@@ -195,23 +182,18 @@ export default function ProductSliderContainer({
     }
 
     const quantity = cartQuantities[productId];
-
-    // **اینجا هم اصلاح کردیم: اگر عمده صفر بود => همیشه تکی**
     const priceType =
       product.discountwholesalePrice > 0
         ? priceTypes[productId]
         : "single";
-
     const price =
       priceType === "single"
         ? product.discountedPrice
         : product.discountwholesalePrice;
-
     const discount =
       priceType === "single"
         ? product.discount
         : product.discountwholesale;
-
     const selectedColor = selectedColors[productId];
 
     if (priceType === "wholesale" && quantity < product.minwholesale) {
@@ -240,13 +222,11 @@ export default function ProductSliderContainer({
           color: selectedColor,
         },
       });
-
       toast.success("محصول به سبد خرید اضافه شد!", {
         position: "top-center",
         autoClose: 3000,
         theme: "colored",
       });
-
       setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
       setShowQuantitySelector(null);
     } catch (error) {
@@ -324,226 +304,119 @@ export default function ProductSliderContainer({
 
             {products.map((item) => {
               const selectedColor = selectedColors[item.id];
-
-              // اگر عمده صفر بود، همیشه priceType = single
               const effectivePriceType =
                 item.discountwholesalePrice > 0
                   ? priceTypes[item.id]
                   : "single";
-
-              // قیمت نهایی اصلاح‌شده
               const finalPrice =
                 effectivePriceType === "single"
                   ? item.discountedPrice
                   : item.discountwholesalePrice;
+              const originalPrice =
+                effectivePriceType === "single"
+                  ? item.originalPrice
+                  : item.wholesalePrice;
+              const discountBadge =
+                effectivePriceType === "single"
+                  ? item.discount
+                  : item.discountwholesale;
 
               return (
-                <SwiperSlide key={item.id} className="psc-product-slide">
-                  <div className="tpsc-product-card">
+                <SwiperSlide key={item.id} className="psc-product-slide py-2">
+                  <div className="flex flex-col h-[340px] md:h-[430px] bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-2.5 md:p-4 relative overflow-hidden group/card">
                     {effectivePriceType === "wholesale" && (
-                      <div className="absolute top-[2px] left-[2px] bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center">
+                      <div className="absolute top-[2px] left-[2px] bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center z-10">
                         <p className="ml-1">+</p>
                         <p>{item.minwholesale} عدد</p>
                       </div>
                     )}
 
-                    <img
-                      src={item.image || "/placeholder.jpg"}
-                      className="tpsc-product-image"
-                      alt={item.title}
-                    />
-
-                    <Link
-                      href={`../products/${item.id}`}
-                      className="tpsc-product-title"
-                    >
-                      {item.title}
-                    </Link>
-
-                    {/* دکمه‌های قیمت (توجه: عمده فقط اگر >0 باشد) */}
-                    <div className="tpsc-price-buttons">
-                      {item.discountwholesalePrice > 0 && (
-                        <button
-                          className={`tpsc-price-button ${
-                            effectivePriceType === "wholesale"
-                              ? "tpsc-price-button-active"
-                              : ""
-                          }`}
-                          onClick={() =>
-                            handlePriceTypeChange(item.id, "wholesale")
-                          }
-                        >
-                          قیمت عمده
-                        </button>
+                    <div className="relative w-full aspect-square bg-gray-50 rounded-[1.5rem] overflow-hidden mb-3">
+                      <img
+                        src={item.image || "/placeholder.jpg"}
+                        className="w-full h-full object-contain p-2 group-hover/card:scale-105 transition-transform duration-500"
+                        alt={item.title}
+                      />
+                      {discountBadge !== "0" && (
+                        <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-lg shadow-sm z-10">
+                          {discountBadge}%
+                        </span>
                       )}
-
-                      <button
-                        className={`tpsc-price-button ${
-                          effectivePriceType === "single"
-                            ? "tpsc-price-button-active"
-                            : ""
-                        }`}
-                        onClick={() =>
-                          handlePriceTypeChange(item.id, "single")
-                        }
-                      >
-                        قیمت تکی
-                      </button>
                     </div>
 
-                    {item.colors && item.colors.length > 0 && (
-                      <div className="inline-block bg-gray-500 p-1 rounded-3xl my-2">
-                        <div className="flex gap-2 justify-center items-center">
-                          {item.colors.map((color) => {
-                            const { tickColor, borderColor } =
-                              getContrastColor(color.hexCode);
-                            return (
-                              <button
-                                key={color.englishName}
-                                onClick={() =>
-                                  handleColorSelect(item.id, color)
-                                }
-                                style={{
-                                  backgroundColor: color.hexCode,
-                                  width: "16px",
-                                  height: "16px",
-                                  borderRadius: "50%",
-                                  border:
-                                    selectedColor?.englishName ===
-                                    color.englishName
-                                      ? "2px solid #805b99"
-                                      : "1px solid #d1d5db",
-                                  outline:
-                                    selectedColor?.englishName ===
-                                    color.englishName
-                                      ? "2px solid #e9d5ff"
-                                      : "none",
-                                  position: "relative",
-                                }}
-                              >
-                                {selectedColor?.englishName ===
-                                  color.englishName && (
-                                  <span
-                                    style={{
-                                      color: tickColor,
-                                      fontSize: "6px",
-                                      fontWeight: "bold",
-                                      backgroundColor: borderColor,
-                                      borderRadius: "50%",
-                                      width: "10px",
-                                      height: "10px",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      justifyContent: "center",
-                                      position: "absolute",
-                                    }}
-                                  >
-                                    ✔
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                    <div className="flex flex-col flex-grow overflow-hidden">
+                      <h3 className="text-gray-800 text-[11px] md:text-sm font-bold mb-2 line-clamp-2 h-8 md:h-10 leading-4 md:leading-5 tracking-tight">
+                        <Link href={`../products/${item.id}`}>{item.title}</Link>
+                      </h3>
 
-                    {/* تخفیف */}
-                    {item.discount == "0" &&
-                    item.discountwholesale == "0" ? (
-                      ""
-                    ) : (
-                      <div className="tpsc-price-discount-container">
-                        <p className="tpsc-price-strikethrough-text">
-                          {formatPrice(
-                            effectivePriceType === "single"
-                              ? item.originalPrice
-                              : item.wholesalePrice
-                          )}
-                        </p>
-                        <p className="tpsc-discount-badge">
-                          {effectivePriceType === "single"
-                            ? item.discount
-                            : item.discountwholesale}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* قیمت */}
-                    <div className="tpsc-price-quantity">
-                      <p className="tpsc-price">
-                        {formatPrice(finalPrice)} تومان
-                      </p>
-
-                      <div className="tpsc-quantity-selector-mobile relative">
-                        {cartQuantities[item.id] > 0 && (
+                      <div className="flex bg-gray-100 p-0.5 rounded-xl mb-3">
+                        <button
+                          onClick={() => handlePriceTypeChange(item.id, "single")}
+                          className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${effectivePriceType === 'single' ? 'bg-white text-[#805B99] shadow-sm' : 'text-gray-400'}`}
+                        >
+                          تکی
+                        </button>
+                        {item.discountwholesalePrice > 0 && (
                           <button
-                            className="-top-[20px] h-[20px] left-0 bg-[#c7c7c7] text-[11px] px-2 rounded-tr-lg absolute"
-                            onClick={() => handleAddToCart(item.id)}
+                            onClick={() => handlePriceTypeChange(item.id, "wholesale")}
+                            className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${effectivePriceType === 'wholesale' ? 'bg-white text-[#805B99] shadow-sm' : 'text-gray-400'}`}
                           >
-                            ثبت
+                            عمده
                           </button>
                         )}
-                        <button
-                          onClick={() => handleQuantityChange(item.id, 1)}
-                        >
-                          <AddCircleOutline fontSize="small" />
-                        </button>
-                        <input
-                          type="text"
-                          className="tpsc-quantity-input"
-                          value={cartQuantities[item.id] || 0}
-                          readOnly
-                        />
-                        <button
-                          onClick={() => handleQuantityChange(item.id, -1)}
-                        >
-                          <RemoveCircleOutline fontSize="small" />
-                        </button>
                       </div>
 
-                      <button
-                        className="tpsc-add-to-cart"
-                        onClick={() => handleShowQuantitySelector(item.id)}
-                      >
-                        <AddShoppingCart fontSize="small" />
-                      </button>
-
-                      {showQuantitySelector === item.id && (
-                        <div
-                          className="tpsc-quantity-selector relative"
-                          onClick={(e) => e.stopPropagation()}
-                        >
+                      <div className="flex gap-1.5 justify-center mb-2 h-4 items-center">
+                        {item.colors?.map((color) => (
                           <button
-                            onClick={() => handleQuantityChange(item.id, 1)}
-                          >
-                            <AddCircleOutline fontSize="small" />
-                          </button>
-                          <input
-                            type="text"
-                            className="tpsc-quantity-input"
-                            value={cartQuantities[item.id] || 0}
-                            readOnly
+                            key={color.hexCode}
+                            onClick={() => handleColorSelect(item.id, color)}
+                            className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform ${selectedColor?.hexCode === color.hexCode ? 'scale-125 ring-2 ring-blue-400' : ''}`}
+                            style={{ backgroundColor: color.hexCode }}
                           />
-                          <button
-                            onClick={() => handleQuantityChange(item.id, -1)}
-                          >
-                            <RemoveCircleOutline fontSize="small" />
-                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                          {cartQuantities[item.id] > 0 && (
-                            <button
-                              className="tpsc-confirm-button absolute w-[40px] text-[10px] -top-[25px] left-0 bg-black px-1 rounded-tr-lg text-white h-[30px]"
-                              onClick={() => {
-                                handleAddToCart(item.id);
-                                handleShowQuantitySelector(item.id);
-                              }}
-                            >
-                              ثبت
-                            </button>
-                          )}
+                    <div className="mt-auto pt-2 border-t border-gray-50">
+                      <div className="flex flex-col mb-3">
+                        <span className="text-[10px] md:text-xs text-gray-400 line-through h-4 leading-none italic font-medium">
+                          {discountBadge !== "0" ? formatPrice(originalPrice) : ""}
+                        </span>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-sm md:text-xl font-black text-gray-900 leading-none">{formatPrice(finalPrice)}</span>
+                          <span className="text-[9px] md:text-[11px] font-medium text-gray-500">تومان</span>
                         </div>
-                      )}
+                      </div>
+
+                      <div className="h-9 md:h-12">
+                        {showQuantitySelector !== item.id ? (
+                          <button
+                            onClick={() => handleShowQuantitySelector(item.id)}
+                            className="w-full h-full bg-[#805B99] hover:bg-[#805B80] text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200"
+                          >
+                            <AddShoppingCart sx={{ fontSize: { xs: 16, md: 22 } }} />
+                            <span className="text-[11px] md:text-sm font-extrabold text-white">افزودن</span>
+                          </button>
+                        ) : (
+                          <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
+                            <button onClick={() => handleQuantityChange(item.id, 1)} className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white transition-all">
+                              <AddCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
+                            </button>
+                            <div className="flex flex-col items-center">
+                              <span className="text-xs md:text-sm font-black text-blue-900 leading-none">{cartQuantities[item.id] || 0}</span>
+                              {cartQuantities[item.id] > 0 && (
+                                <button onClick={() => handleAddToCart(item.id)} className="text-[8px] md:text-[10px] font-black text-green-600 uppercase tracking-tighter">
+                                  تایید
+                                </button>
+                              )}
+                            </div>
+                            <button onClick={() => handleQuantityChange(item.id, -1)} className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all">
+                              <RemoveCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </SwiperSlide>
@@ -551,6 +424,21 @@ export default function ProductSliderContainer({
             })}
           </Swiper>
         </div>
+
+        {/* دکمه‌های ناوبری دسکتاپ (برای هماهنگی با تب‌ها) */}
+        <button
+          onClick={goPrev}
+          className="absolute top-1/2 -right-6 -translate-y-1/2 z-10 w-12 h-12 bg-white shadow-xl rounded-full hidden lg:flex items-center justify-center border border-gray-100 hover:bg-[#805B99] hover:text-white transition-all text-gray-700"
+          style={{ right: vip && !isSmallScreen ? 'calc(0% + 48px)' : '-3rem' }} // تنظیم موقعیت اگر بنر VIP باشد
+        >
+          <KeyboardArrowRight fontSize="large" />
+        </button>
+        <button
+          onClick={goNext}
+          className="absolute top-1/2 -left-6 -translate-y-1/2 z-10 w-12 h-12 bg-white shadow-xl rounded-full hidden lg:flex items-center justify-center border border-gray-100 hover:bg-[#805B99] hover:text-white transition-all text-gray-700"
+        >
+          <KeyboardArrowLeft fontSize="large" />
+        </button>
       </div>
     </div>
   );

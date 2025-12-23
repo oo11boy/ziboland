@@ -23,6 +23,8 @@ interface ProductGridProps {
   handleQuantityChange: (productId: number, delta: number) => void;
   handleAddToCart: (productId: number) => void;
   handleNotifyMe: () => void;
+  selectedColors?: { [key: number]: any }; // اگر انتخاب رنگ دارید، اضافه کنید
+  handleColorSelect?: (productId: number, color: any) => void;
 }
 
 export default function ProductGrid({
@@ -36,13 +38,14 @@ export default function ProductGrid({
   handleQuantityChange,
   handleAddToCart,
   handleNotifyMe,
+  selectedColors = {},
+  handleColorSelect = () => {},
 }: ProductGridProps) {
   return (
     <AnimatePresence>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 mt-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4  gap-4 md:gap-6 mt-6">
         {filteredProducts.length > 0 ? (
           filteredProducts.map((item) => {
-            // تعیین نوع قیمت واقعی — اگر عمده صفر بود → همیشه تکی
             const effectivePriceType =
               item.discountwholesalePrice > 0
                 ? priceTypes[item.id] || "single"
@@ -53,9 +56,19 @@ export default function ProductGrid({
                 ? item.discountedPrice
                 : item.discountwholesalePrice;
 
-            const hasDiscount =
-              (effectivePriceType === "single" && item.discount !== "0") ||
-              (effectivePriceType === "wholesale" && item.discountwholesale !== "0");
+            const originalPrice =
+              effectivePriceType === "single"
+                ? item.originalPrice
+                : item.wholesalePrice;
+
+            const discountBadge =
+              effectivePriceType === "single"
+                ? item.discount
+                : item.discountwholesale;
+
+            const hasDiscount = discountBadge !== "0";
+
+            const selectedColor = selectedColors[item.id];
 
             return (
               <motion.div
@@ -65,157 +78,167 @@ export default function ProductGrid({
                 animate="visible"
                 exit="exit"
                 layout
-                className="tpsc-product-card relative"
+                className="flex flex-col h-[340px] md:h-[430px] bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-3 md:p-4 relative overflow-hidden group/card"
               >
-                {/* برچسب حداقل تعداد عمده — فقط وقتی واقعاً عمده فعاله */}
+                {/* برچسب حداقل تعداد عمده */}
                 {effectivePriceType === "wholesale" && (
-                  <div className="absolute top-[2px] left-[2px] bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center z-10">
+                  <div className="absolute top-2 left-2 bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center z-10">
                     <span className="ml-1">+</span>
                     <span>{item.minwholesale} عدد</span>
                   </div>
                 )}
 
-                <Link
-                  href={`/products/${item.id}`}
-                  className="flex items-center flex-col"
-                >
-                  <img
-                    src={item.image && item.image.length > 0 ? item.image : "/placeholder.jpg"}
-                    alt={item.title}
-                    width={200}
-                    height={200}
-                    className="tpsc-product-image object-cover"
-                  />
-                  <h2 className="tpsc-product-title text-center mt-2">{item.title}</h2>
+                {/* تصویر + بج تخفیف */}
+                <Link href={`/products/${item.id}`} className="block">
+                  <div className="relative w-full aspect-square bg-gray-50 rounded-[1.5rem] overflow-hidden mb-3">
+                    <img
+                      src={item.image && item.image.length > 0 ? item.image : "/placeholder.jpg"}
+                      alt={item.title}
+                      className="w-full h-full object-contain p-2 group-hover/card:scale-105 transition-transform duration-500"
+                    />
+                    {hasDiscount && (
+                      <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-lg shadow-sm z-10">
+                        {discountBadge}%
+                      </span>
+                    )}
+                  </div>
                 </Link>
 
-                {/* دکمه‌های قیمت — فقط اگر قیمت عمده وجود داشته باشد */}
-                <div className="tpsc-price-buttons mt-2">
-                  {item.discountwholesalePrice > 0 && (
+                {/* اطلاعات محصول */}
+                <div className="flex flex-col flex-grow overflow-hidden">
+                  <Link href={`/products/${item.id}`}>
+                    <h3 className="text-gray-800 text-[11px] md:text-sm font-bold mb-2 line-clamp-2 h-8 md:h-10 leading-4 md:leading-5 tracking-tight text-center">
+                      {item.title}
+                    </h3>
+                  </Link>
+
+                  {/* سوئیچ قیمت تکی/عمده */}
+                  <div className="flex bg-gray-100 p-0.5 rounded-xl mb-3">
                     <button
-                      className={`tpsc-price-button ${
-                        effectivePriceType === "wholesale" ? "tpsc-price-button-active" : ""
+                      onClick={() => handlePriceTypeChange(item.id, "single")}
+                      className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${
+                        effectivePriceType === "single"
+                          ? "bg-white text-[#805B99] shadow-sm"
+                          : "text-gray-400"
                       }`}
-                      onClick={() => handlePriceTypeChange(item.id, "wholesale")}
-                      aria-label="انتخاب قیمت عمده"
                     >
-                      قیمت عمده
+                      تکی
                     </button>
+                    {item.discountwholesalePrice > 0 && (
+                      <button
+                        onClick={() => handlePriceTypeChange(item.id, "wholesale")}
+                        className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${
+                          effectivePriceType === "wholesale"
+                            ? "bg-white text-[#805B99] shadow-sm"
+                            : "text-gray-400"
+                        }`}
+                      >
+                        عمده
+                      </button>
+                    )}
+                  </div>
+
+                  {/* انتخاب رنگ (اگر رنگ وجود داشته باشد) */}
+                  {item.colors && item.colors.length > 0 && (
+                    <div className="flex gap-1.5 justify-center mb-3 h-5 items-center">
+                      {item.colors.map((color) => (
+                        <button
+                          key={color.hexCode}
+                          onClick={() => handleColorSelect(item.id, color)}
+                          className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform ${
+                            selectedColor?.hexCode === color.hexCode
+                              ? "scale-125 ring-2 ring-blue-400"
+                              : ""
+                          }`}
+                          style={{ backgroundColor: color.hexCode }}
+                        />
+                      ))}
+                    </div>
                   )}
-                  <button
-                    className={`tpsc-price-button ${
-                      effectivePriceType === "single" ? "tpsc-price-button-active" : ""
-                    }`}
-                    onClick={() => handlePriceTypeChange(item.id, "single")}
-                    aria-label="انتخاب قیمت تکی"
-                  >
-                    قیمت تکی
-                  </button>
                 </div>
 
-                {/* وضعیت موجودی */}
-                {!item.inStock ? (
-                  <div className="w-full flex justify-between items-center mt-3">
-                    <p className="tpsc-price text-sm text-gray-600">موجود شد خبرم کن</p>
-                    <button
-                      className="tpsc-add-to-nocart"
-                      onClick={handleNotifyMe}
-                      aria-label="اطلاع‌رسانی موجود شدن محصول"
-                    >
-                      <NotificationAdd fontSize="small" />
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    {/* نمایش تخفیف و قیمت خط‌خورده */}
-                    {hasDiscount && (
-                      <div className="tpsc-price-discount-container mt-2">
-                        <p className="tpsc-price-strikethrough-text">
-                          {formatPrice(
-                            effectivePriceType === "single"
-                              ? item.originalPrice
-                              : item.wholesalePrice
-                          )}
-                        </p>
-                        <p className="tpsc-discount-badge">
-                          {effectivePriceType === "single" ? item.discount : item.discountwholesale}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* قیمت نهایی + انتخاب تعداد */}
-                    <div className="tpsc-price-quantity mt-3">
-                      <p className="tpsc-price">
-                        {formatPrice(finalPrice)} تومان
+                {/* پایین کارت: قیمت + عملیات */}
+                <div className="mt-auto pt-2 border-t border-gray-50">
+                  {!item.inStock ? (
+                    /* وضعیت ناموجود */
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs md:text-sm text-gray-600 font-medium">
+                        موجود شد خبرم کن
                       </p>
-
-                      {/* انتخابگر تعداد کوچک (موبایل) */}
-                      <div className="tpsc-quantity-selector-mobile relative">
-                        {cartQuantities[item.id] > 0 && (
-                          <button
-                            className="-top-[20px] h-[20px] left-0 bg-[#c7c7c7] text-[11px] px-2 rounded-tr-lg absolute z-20"
-                            onClick={() => handleAddToCart(item.id)}
-                          >
-                            ثبت
-                          </button>
+                      <button
+                        onClick={handleNotifyMe}
+                        className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+                        aria-label="اطلاع‌رسانی موجود شدن"
+                      >
+                        <NotificationAdd sx={{ fontSize: { xs: 18, md: 22 } }} />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      {/* قیمت با خط‌خورده */}
+                      <div className="flex flex-col mb-3">
+                        {hasDiscount && (
+                          <span className="text-[10px] md:text-xs text-gray-400 line-through italic font-medium">
+                            {formatPrice(originalPrice)}
+                          </span>
                         )}
-                        <button onClick={() => handleQuantityChange(item.id, 1)}>
-                          <AddCircleOutline fontSize="small" />
-                        </button>
-                        <input
-                          type="text"
-                          className="tpsc-quantity-input"
-                          value={cartQuantities[item.id] || 0}
-                          readOnly
-                        />
-                        <button onClick={() => handleQuantityChange(item.id, -1)}>
-                          <RemoveCircleOutline fontSize="small" />
-                        </button>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-sm md:text-xl font-black text-gray-900 leading-none">
+                            {formatPrice(finalPrice)}
+                          </span>
+                          <span className="text-[9px] md:text-[11px] font-medium text-gray-500">
+                            تومان
+                          </span>
+                        </div>
                       </div>
 
-                      {/* دکمه سبد خرید */}
-                      <button
-                        className="tpsc-add-to-cart"
-                        onClick={() => handleShowQuantitySelector(item.id)}
-                      >
-                        <AddShoppingCart fontSize="small" />
-                      </button>
-
-                      {/* انتخابگر بزرگ تعداد (وقتی کلیک شد) */}
-                      {showQuantitySelector === item.id && (
-                        <div
-                          className="tpsc-quantity-selector relative"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button onClick={() => handleQuantityChange(item.id, 1)}>
-                            <AddCircleOutline fontSize="small" />
+                      {/* دکمه افزودن / انتخاب تعداد */}
+                      <div className="h-9 md:h-12">
+                        {showQuantitySelector !== item.id ? (
+                          <button
+                            onClick={() => handleShowQuantitySelector(item.id)}
+                            className="w-full h-full bg-[#805B99] hover:bg-[#805B80] text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200"
+                          >
+                            <AddShoppingCart sx={{ fontSize: { xs: 16, md: 22 } }} />
+                            <span className="text-[11px] md:text-sm font-extrabold">
+                              افزودن
+                            </span>
                           </button>
-                          <input
-                            type="text"
-                            className="tpsc-quantity-input"
-                            value={cartQuantities[item.id] || 0}
-                            readOnly
-                          />
-                          <button onClick={() => handleQuantityChange(item.id, -1)}>
-                            <RemoveCircleOutline fontSize="small" />
-                          </button>
-
-                          {cartQuantities[item.id] > 0 && (
+                        ) : (
+                          <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
                             <button
-                              className="tpsc-confirm-button absolute w-[40px] text-[10px] -top-[25px] left-0 bg-black px-1 rounded-tr-lg text-white h-[30px] z-20"
-                              onClick={() => {
-                                handleAddToCart(item.id);
-                                handleShowQuantitySelector(item.id);
-                              }}
+                              onClick={() => handleQuantityChange(item.id, 1)}
+                              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white transition-all"
                             >
-                              ثبت
+                              <AddCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
                             </button>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </>
-                )}
+
+                            <div className="flex flex-col items-center">
+                              <span className="text-xs md:text-sm font-black text-blue-900 leading-none">
+                                {cartQuantities[item.id] || 0}
+                              </span>
+                              {cartQuantities[item.id] > 0 && (
+                                <button
+                                  onClick={() => handleAddToCart(item.id)}
+                                  className="text-[8px] md:text-[10px] font-black text-green-600 uppercase tracking-tighter mt-0.5"
+                                >
+                                  تایید
+                                </button>
+                              )}
+                            </div>
+
+                            <button
+                              onClick={() => handleQuantityChange(item.id, -1)}
+                              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all"
+                            >
+                              <RemoveCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
               </motion.div>
             );
           })
@@ -223,7 +246,7 @@ export default function ProductGrid({
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center col-span-full text-[#4b5563] text-lg"
+            className="col-span-full text-center text-gray-500 text-lg py-12"
           >
             محصولی یافت نشد
           </motion.p>

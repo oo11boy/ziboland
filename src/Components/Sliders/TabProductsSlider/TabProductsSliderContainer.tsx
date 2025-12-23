@@ -8,8 +8,6 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
-import "./../Sliders.css";
-import "./TabProductSlider.css";
 import {
   AddCircleOutline,
   AddShoppingCart,
@@ -34,39 +32,13 @@ interface TabPanelProps {
 function CustomTabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
   return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`tpsc-tabpanel-${index}`}
-      aria-labelledby={`tpsc-tab-${index}`}
-      {...other}
-    >
-      {value === index && (
-        <Box
-          sx={{
-            paddingTop: { xs: "16px", md: "24px" },
-            paddingBottom: { xs: "16px", md: "24px" },
-          }}
-        >
-          {children}
-        </Box>
-      )}
+    <div role="tabpanel" hidden={value !== index} {...other}>
+      {value === index && <Box sx={{ py: { xs: 1, md: 3 } }}>{children}</Box>}
     </div>
   );
 }
 
-function a11yProps(index: number) {
-  return {
-    id: `tpsc-tab-${index}`,
-    "aria-controls": `tpsc-tabpanel-${index}`,
-  };
-}
-
-export default function TabProductsSliderContainer({
-  title,
-}: {
-  title: string;
-}) {
+export default function TabProductsSliderContainer({ title }: { title: string }) {
   const [value, setValue] = useState(0);
   const { dispatch } = useCart();
   const [cartQuantities, setCartQuantities] = useState<{ [key: number]: number }>({});
@@ -74,473 +46,226 @@ export default function TabProductsSliderContainer({
   const [selectedColors, setSelectedColors] = useState<{ [key: number]: Color | null }>({});
   const [showQuantitySelector, setShowQuantitySelector] = useState<number | null>(null);
   const swiperRefs = useRef<{ [key: number]: { swiper: SwiperCore } | null }>({});
-  const [navStates, setNavStates] = useState<{
-    [key: number]: {
-      showPrev: boolean;
-      showNext: boolean;
-      isBeginning: boolean;
-    };
-  }>({});
   const [products, setProducts] = useState<Product[]>([]);
-  const [error, setError] = useState<string | null>(null);
 
-  // دریافت محصولات
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const response = await fetch("/api/products");
-        if (!response.ok) throw new Error("خطا در دریافت محصولات");
+        if (!response.ok) throw new Error("خطا در دریافت");
         const data: Product[] = await response.json();
-
-        let sortedProducts = data;
-        if (title === "محبوبترین ها") {
-          sortedProducts = [...data].sort((a, b) => b.rating - a.rating);
-        } else if (title === "ارزانترین ها") {
-          sortedProducts = [...data].sort((a, b) => a.numericPrice - b.numericPrice);
-        } else if (title === "جدیدترین ها") {
-          sortedProducts = [...data].sort((a, b) => b.id - a.id);
-        }
-        setProducts(sortedProducts);
-      } catch (err) {
-        setError("خطا در بارگذاری محصولات. لطفاً دوباره تلاش کنید.");
-        console.error(err);
-      }
+        let sorted = data;
+        if (title === "محبوبترین ها") sorted = [...data].sort((a, b) => b.rating - a.rating);
+        else if (title === "ارزانترین ها") sorted = [...data].sort((a, b) => a.numericPrice - b.numericPrice);
+        setProducts(sorted);
+      } catch (err) { console.error(err); }
     };
     fetchProducts();
   }, [title]);
 
-  // تنظیمات اولیه priceTypes و رنگ‌ها
   useEffect(() => {
-    const initialPriceTypes = products.reduce(
-      (acc, product) => ({ ...acc, [product.id]: "single" }),
-      {}
-    );
+    const initialPriceTypes = products.reduce((acc, p) => ({ ...acc, [p.id]: "single" }), {});
     setPriceTypes(initialPriceTypes);
-
-    const initialSelectedColors = products.reduce(
-      (acc, product) => ({
-        ...acc,
-        [product.id]: product.colors && product.colors.length > 0 ? product.colors[0] : null,
-      }),
-      {}
-    );
-    setSelectedColors(initialSelectedColors);
+    const initialColors = products.reduce((acc, p) => ({
+      ...acc, [p.id]: p.colors && p.colors.length > 0 ? p.colors[0] : null
+    }), {});
+    setSelectedColors(initialColors);
   }, [products]);
-
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-  };
-
-  const handleShowQuantitySelector = (productId: number) => {
-    setShowQuantitySelector(showQuantitySelector === productId ? null : productId);
-  };
 
   const handleQuantityChange = (productId: number, delta: number) => {
     setCartQuantities((prev) => {
       const newQuantity = (prev[productId] || 0) + delta;
       const product = products.find((p) => p.id === productId);
-      if (!product) return prev;
-
-      // فقط اگر قیمت عمده وجود داشته باشد و تعداد کافی باشد → عمده فعال شود
-      if (
-        product.discountwholesalePrice > 0 &&
-        newQuantity >= product.minwholesale
-      ) {
-        handlePriceTypeChange(productId, "wholesale");
-      } else {
-        handlePriceTypeChange(productId, "single");
+      if (product && product.discountwholesalePrice > 0) {
+        setPriceTypes(prevTypes => ({
+          ...prevTypes,
+          [productId]: newQuantity >= product.minwholesale ? "wholesale" : "single"
+        }));
       }
-
       return { ...prev, [productId]: newQuantity < 0 ? 0 : newQuantity };
     });
   };
 
-  const handlePriceTypeChange = (productId: number, type: "single" | "wholesale") => {
-    const product = products.find((p) => p.id === productId);
-
-    // اگر قیمت عمده صفر بود → اجازه تغییر به عمده نده
-    if (type === "wholesale" && (!product || product.discountwholesalePrice <= 0)) {
-      return;
-    }
-
-    setPriceTypes((prev) => ({ ...prev, [productId]: type }));
-  };
-
-  const handleColorSelect = (productId: number, color: Color) => {
-    setSelectedColors((prev) => ({ ...prev, [productId]: color }));
-  };
-
-  const getContrastColor = (hexCode: string) => {
-    const hex = hexCode.replace("#", "");
-    const r = parseInt(hex.substring(0, 2), 16);
-    const g = parseInt(hex.substring(2, 4), 16);
-    const b = parseInt(hex.substring(4, 6), 16);
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    return luminance > 0.5
-      ? { tickColor: "#0000004d", borderColor: "#FFFFFF" }
-      : { tickColor: "#FFFFFF", borderColor: "#0000004d" };
-  };
-
   const handleAddToCart = (productId: number) => {
     const product = products.find((p) => p.id === productId);
-    if (!product || !cartQuantities[productId] || cartQuantities[productId] < 1) {
-      toast.error("لطفاً تعداد محصول را انتخاب کنید");
-      return;
-    }
-
-    if (!product.inStock) {
-      toast.error("محصول موجود نیست");
-      return;
-    }
-
     const quantity = cartQuantities[productId];
-
-    // اگر قیمت عمده صفر بود → همیشه تکی
-    const effectivePriceType =
-      product.discountwholesalePrice > 0 ? priceTypes[productId] || "single" : "single";
-
-    const price =
-      effectivePriceType === "single" ? product.discountedPrice : product.discountwholesalePrice;
-    const discount =
-      effectivePriceType === "single" ? product.discount : product.discountwholesale;
-    const selectedColor = selectedColors[productId];
-
-    if (effectivePriceType === "wholesale" && quantity < product.minwholesale) {
-      toast.error(`حداقل تعداد برای قیمت عمده ${product.minwholesale} عدد است.`);
+    if (!product || !quantity || quantity < 1) {
+      toast.error("تعداد محصول را انتخاب کنید");
       return;
     }
-
+    const type = priceTypes[productId] || "single";
     dispatch({
       type: "ADD_ITEM",
       payload: {
         id: productId,
         title: product.title,
         quantity,
-        priceType: effectivePriceType,
-        price: price.toString(),
+        priceType: type,
+        price: (type === "single" ? product.discountedPrice : product.discountwholesalePrice).toString(),
         image: product.image || "/placeholder.jpg",
-        discount,
-        color: selectedColor,
+        discount: type === "single" ? product.discount : product.discountwholesale,
+        color: selectedColors[productId],
       },
     });
-
-    toast.success("محصول به سبد خرید اضافه شد!");
-    setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
+    toast.success("به سبد خرید اضافه شد");
+    setCartQuantities(prev => ({ ...prev, [productId]: 0 }));
     setShowQuantitySelector(null);
   };
 
-  const updateNavigation = (index: number) => {
-    if (swiperRefs.current[index]?.swiper) {
-      const swiper = swiperRefs.current[index].swiper;
-      setNavStates((prev) => ({
-        ...prev,
-        [index]: {
-          showPrev: !swiper.isBeginning,
-          showNext: !swiper.isEnd,
-          isBeginning: swiper.isBeginning,
-        },
-      }));
-    }
-  };
-
-  const goNext = (index: number) => swiperRefs.current[index]?.swiper?.slideNext();
-  const goPrev = (index: number) => swiperRefs.current[index]?.swiper?.slidePrev();
-
-  useEffect(() => {
-    categories.forEach((_, index) => {
-      if (swiperRefs.current[index]?.swiper) {
-        const swiper = swiperRefs.current[index].swiper;
-        swiper.on("slideChange", () => updateNavigation(index));
-        updateNavigation(index);
-      }
-    });
-
-    return () => {
-      categories.forEach((_, index) => {
-        swiperRefs.current[index]?.swiper?.off("slideChange");
-      });
-    };
-  }, [products]);
-
-  const categoryCounts = products.reduce((acc, product) => {
-    acc[product.category] = (acc[product.category] || 0) + 1;
-    return acc;
-  }, {} as { [key: string]: number });
-
-  const categories = Object.keys(categoryCounts).sort(
-    (a, b) => categoryCounts[b] - categoryCounts[a]
-  );
-
-  const productsByCategory = categories.map((category) =>
-    products.filter((product) => product.category === category)
-  );
-
-  if (error) return <div className="text-red-500 text-center">{error}</div>;
+  const categories = Array.from(new Set(products.map(p => p.category)));
+  const productsByCategory = categories.map(cat => products.filter(p => p.category === cat));
 
   return (
-    <div className="tpsc-container">
-      <ToastContainer rtl={true} theme="colored" position="top-center" autoClose={3000} />
+    <div className="w-full max-w-[1440px] mx-auto px-4 py-6 font-[yekannew]" dir="rtl">
+      <ToastContainer rtl theme="colored" position="top-center" autoClose={2500} />
 
-      <div className="tpsc-header">
-        <p className="tpsc-title">{title}</p>
-        <Link href="../search" className="tpsc-view-all">
-          <VisibilitySharp fontSize="inherit" className="tpsc-view-all-icon" />
-          مشاهده همه
+      {/* هدر بخش */}
+      <div className="flex justify-between items-center mb-6 px-1">
+        <div className="border-r-4 border-[#805B99] pr-3">
+          <h2 className="text-xl md:text-2xl font-black text-gray-800 tracking-tight">{title}</h2>
+        </div>
+        <Link href="/search" className="flex items-center gap-1 text-[#805B99] bg-blue-50 px-4 py-2 rounded-2xl text-xs md:text-sm font-bold hover:bg-blue-100 transition-colors">
+          <VisibilitySharp fontSize="inherit" /> مشاهده همه
         </Link>
       </div>
 
-      <Box sx={{ width: "100%", position: "relative" }}>
-        <Tabs
-          value={value}
-          onChange={handleChange}
-          variant="scrollable"
-          scrollButtons="auto"
-          aria-label="product categories tabs"
-          sx={{
-            "& .MuiTabs-flexContainer": { gap: { xs: "0.5rem", sm: "1rem" } },
-            "& .MuiTab-root": {
-              fontSize: { xs: "0.65rem", sm: "0.75rem", md: "0.85rem" },
-              fontWeight: "bold",
-              color: "#555",
-              fontFamily: "yekannew",
-              padding: { xs: "4px 8px", sm: "6px 12px" },
-              minWidth: { xs: "60px", sm: "80px", md: "100px" },
-            },
-            "& .Mui-selected": { color: "#000 !important", backgroundColor: "#c7c7c7", borderRadius: 2 },
-            "& .MuiTabs-indicator": { display: "none" },
-          }}
-        >
-          {categories.map((category, index) => (
-            <Tab key={index} label={category} {...a11yProps(index)} />
-          ))}
-        </Tabs>
+      {/* تب‌ها */}
+      <Tabs
+        value={value}
+        onChange={(_, v) => setValue(v)}
+        variant="scrollable"
+        scrollButtons="auto"
+        sx={{
+          mb: 2,
+          "& .MuiTabs-indicator": { height: 3, borderRadius: '10px', backgroundColor: '#805B99' },
+          "& .MuiTab-root": { fontFamily: "inherit", fontWeight: 800, fontSize: { xs: "0.8rem", md: "0.95rem" }, minWidth: '100px' },
+          "& .Mui-selected": { color: "#805B99 !important" }
+        }}
+      >
+        {categories.map((cat, i) => <Tab key={i} label={cat} />)}
+      </Tabs>
 
-        {categories.map((category, index) => (
+      {/* اسلایدر محصولات */}
+      <div className="relative group">
+        {categories.map((_, index) => (
           <CustomTabPanel key={index} value={value} index={index}>
             <Swiper
               modules={[Navigation]}
-              spaceBetween={8}
-              slidesPerView={2}
+              spaceBetween={12}
+              slidesPerView={2.2}
               breakpoints={{
-                400: { slidesPerView: 2, spaceBetween: 8 },
-                500: { slidesPerView: 3, spaceBetween: 10 },
-                768: { slidesPerView: 4, spaceBetween: 12 },
-                1024: { slidesPerView: 5, spaceBetween: 14 },
-                1280: { slidesPerView: 7, spaceBetween: 16 },
+                640: { slidesPerView: 3, spaceBetween: 15 },
+                1024: { slidesPerView: 5, spaceBetween: 20 },
+                1280: { slidesPerView: 6, spaceBetween: 20 }
               }}
-              className="tpsc-swiper"
-              onSwiper={(swiper) => {
-                swiperRefs.current[index] = { swiper };
-                updateNavigation(index);
-              }}
+              onSwiper={(s) => swiperRefs.current[index] = { swiper: s }}
             >
               {productsByCategory[index].map((item) => {
-                const selectedColor = selectedColors[item.id];
-
-                // تعیین نوع قیمت واقعی (اگر عمده صفر بود → همیشه تکی)
-                const effectivePriceType =
-                  item.discountwholesalePrice > 0 ? priceTypes[item.id] || "single" : "single";
-
-                const finalPrice =
-                  effectivePriceType === "single" ? item.discountedPrice : item.discountwholesalePrice;
+                const effectivePriceType = priceTypes[item.id] || "single";
+                const finalPrice = effectivePriceType === "single" ? item.discountedPrice : item.discountwholesalePrice;
 
                 return (
-                  <SwiperSlide key={item.id} style={{ width: "auto" }}>
-                    <div className="tpsc-product-card">
-                      {/* نشانگر حداقل تعداد عمده */}
-                      {effectivePriceType === "wholesale" && (
-                        <div className="absolute top-[2px] left-[2px] bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center">
-                          <p className="ml-1">+</p>
-                          <p>{item.minwholesale} عدد</p>
-                        </div>
-                      )}
-
-                      <img
-                        src={item.image || "/placeholder.jpg"}
-                        className="tpsc-product-image"
-                        alt={item.title}
-                      />
-
-                      <Link href={`../products/${item.id}`} className="tpsc-product-title">
-                        {item.title}
-                      </Link>
-
-                      {/* دکمه‌های قیمت — فقط اگر قیمت عمده وجود داشته باشد */}
-                      <div className="tpsc-price-buttons">
-                        {item.discountwholesalePrice > 0 && (
-                          <button
-                            className={`tpsc-price-button ${
-                              effectivePriceType === "wholesale" ? "tpsc-price-button-active" : ""
-                            }`}
-                            onClick={() => handlePriceTypeChange(item.id, "wholesale")}
-                          >
-                            قیمت عمده
-                          </button>
+                  <SwiperSlide key={item.id} className="py-2">
+                    {/* کارت اصلی با ارتفاع هماهنگ برای موبایل و دسکتاپ */}
+                    <div className="flex flex-col h-[340px] md:h-[430px] bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-2.5 md:p-4 relative overflow-hidden group/card">
+                      
+                      {/* تصویر محصول */}
+                      <div className="relative w-full aspect-square bg-gray-50 rounded-[1.5rem] overflow-hidden mb-3">
+                        <img src={item.image} className="w-full h-full object-contain p-2 group-hover/card:scale-105 transition-transform duration-500" alt={item.title} />
+                        {item.discount !== "0" && (
+                          <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-lg shadow-sm">
+                            {item.discount}%
+                          </span>
                         )}
-                        <button
-                          className={`tpsc-price-button ${
-                            effectivePriceType === "single" ? "tpsc-price-button-active" : ""
-                          }`}
-                          onClick={() => handlePriceTypeChange(item.id, "single")}
-                        >
-                          قیمت تکی
-                        </button>
                       </div>
 
-                      {/* انتخاب رنگ */}
-                      {item.colors && item.colors.length > 0 && (
-                        <div className="inline-block bg-gray-500 p-1 rounded-3xl my-2">
-                          <div className="flex gap-2 justify-center items-center">
-                            {item.colors.map((color) => {
-                              const { tickColor, borderColor } = getContrastColor(color.hexCode);
-                              return (
-                                <button
-                                  key={color.englishName}
-                                  onClick={() => handleColorSelect(item.id, color)}
-                                  style={{
-                                    backgroundColor: color.hexCode,
-                                    width: "16px",
-                                    height: "16px",
-                                    borderRadius: "50%",
-                                    border:
-                                      selectedColor?.englishName === color.englishName
-                                        ? "2px solid #805b99"
-                                        : "1px solid #d1d5db",
-                                    outline:
-                                      selectedColor?.englishName === color.englishName
-                                        ? "2px solid #e9d5ff"
-                                        : "none",
-                                    position: "relative",
-                                  }}
-                                >
-                                  {selectedColor?.englishName === color.englishName && (
-                                    <span
-                                      style={{
-                                        color: tickColor,
-                                        fontSize: "6px",
-                                        fontWeight: "bold",
-                                        backgroundColor: borderColor,
-                                        borderRadius: "50%",
-                                        width: "10px",
-                                        height: "10px",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        position: "absolute",
-                                      }}
-                                    >
-                                      ✔
-                                    </span>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
+                      {/* اطلاعات محصول */}
+                      <div className="flex flex-col flex-grow overflow-hidden">
+                        {/* عنوان با ارتفاع ثابت جهت تراز شدن */}
+                        <h3 className="text-gray-800 text-[11px] md:text-sm font-bold mb-2 line-clamp-2 h-8 md:h-10 leading-4 md:leading-5 tracking-tight">
+                          <Link href={`/products/${item.id}`}>{item.title}</Link>
+                        </h3>
 
-                      {/* تخفیف */}
-                      {item.discount !== "0" || item.discountwholesale !== "0" ? (
-                        <div className="tpsc-price-discount-container">
-                          <p className="tpsc-price-strikethrough-text">
-                            {formatPrice(
-                              effectivePriceType === "single" ? item.originalPrice : item.wholesalePrice
-                            )}
-                          </p>
-                          <p className="tpsc-discount-badge">
-                            {effectivePriceType === "single" ? item.discount : item.discountwholesale}
-                          </p>
-                        </div>
-                      ) : null}
-
-                      {/* قیمت و تعداد */}
-                      <div className="tpsc-price-quantity">
-                        <p className="tpsc-price">{formatPrice(finalPrice)} تومان</p>
-
-                        <div className="tpsc-quantity-selector-mobile relative">
-                          {cartQuantities[item.id] > 0 && (
-                            <button
-                              className="-top-[20px] h-[20px] left-0 bg-[#c7c7c7] text-[11px] px-2 rounded-tr-lg absolute"
-                              onClick={() => handleAddToCart(item.id)}
-                            >
-                              ثبت
-                            </button>
+                        {/* سوئیچ قیمت */}
+                        <div className="flex bg-gray-100 p-0.5 rounded-xl mb-3">
+                          <button 
+                            onClick={() => setPriceTypes(p => ({ ...p, [item.id]: "single" }))}
+                            className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${effectivePriceType === 'single' ? 'bg-white text-[#805B99] shadow-sm' : 'text-gray-400'}`}
+                          >تکی</button>
+                          {item.discountwholesalePrice > 0 && (
+                            <button 
+                              onClick={() => setPriceTypes(p => ({ ...p, [item.id]: "wholesale" }))}
+                              className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${effectivePriceType === 'wholesale' ? 'bg-white text-[#805B99] shadow-sm' : 'text-gray-400'}`}
+                            >عمده</button>
                           )}
-                          <button onClick={() => handleQuantityChange(item.id, 1)}>
-                            <AddCircleOutline fontSize="small" />
-                          </button>
-                          <input
-                            type="text"
-                            className="tpsc-quantity-input"
-                            value={cartQuantities[item.id] || 0}
-                            readOnly
-                          />
-                          <button onClick={() => handleQuantityChange(item.id, -1)}>
-                            <RemoveCircleOutline fontSize="small" />
-                          </button>
                         </div>
 
-                        <button
-                          className="tpsc-add-to-cart"
-                          onClick={() => handleShowQuantitySelector(item.id)}
-                        >
-                          <AddShoppingCart fontSize="small" />
-                        </button>
-
-                        {showQuantitySelector === item.id && (
-                          <div className="tpsc-quantity-selector relative" onClick={(e) => e.stopPropagation()}>
-                            <button onClick={() => handleQuantityChange(item.id, 1)}>
-                              <AddCircleOutline fontSize="small" />
-                            </button>
-                            <input
-                              type="text"
-                              className="tpsc-quantity-input"
-                              value={cartQuantities[item.id] || 0}
-                              readOnly
+                        {/* انتخاب رنگ */}
+                        <div className="flex gap-1.5 justify-center mb-2 h-4 items-center ">
+                          {item.colors?.map(c => (
+                            <button
+                              key={c.hexCode}
+                              onClick={() => setSelectedColors(p => ({ ...p, [item.id]: c }))}
+                              className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform ${selectedColors[item.id]?.hexCode === c.hexCode ? 'scale-125 ring-2 ring-blue-400' : ''}`}
+                              style={{ backgroundColor: c.hexCode }}
                             />
-                            <button onClick={() => handleQuantityChange(item.id, -1)}>
-                              <RemoveCircleOutline fontSize="small" />
-                            </button>
+                          ))}
+                        </div>
+                      </div>
 
-                            {cartQuantities[item.id] > 0 && (
-                              <button
-                                className="tpsc-confirm-button absolute w-[40px] text-[10px] -top-[25px] left-0 bg-black px-1 rounded-tr-lg text-white h-[30px]"
-                                onClick={() => {
-                                  handleAddToCart(item.id);
-                                  handleShowQuantitySelector(item.id);
-                                }}
-                              >
-                                ثبت
-                              </button>
-                            )}
+                      {/* قیمت و دکمه خرید - همیشه به پایین چسبیده */}
+                      <div className="mt-auto pt-2 border-t border-gray-50">
+                        <div className="flex flex-col mb-3">
+                          <span className="text-[10px] md:text-xs text-gray-400 line-through h-4 leading-none italic font-medium">
+                            {item.discount !== "0" ? formatPrice(item.originalPrice) : ""}
+                          </span>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-sm md:text-xl font-black text-gray-900 leading-none">{formatPrice(finalPrice)}</span>
+                            <span className="text-[9px] md:text-[11px] font-medium text-gray-500">تومان</span>
                           </div>
-                        )}
+                        </div>
+
+                        {/* دکمه عملیات */}
+                        <div className="h-9 md:h-12">
+                          {showQuantitySelector !== item.id ? (
+                            <button 
+                              onClick={() => setShowQuantitySelector(item.id)}
+                              className="w-full h-full bg-[#805B99] hover:bg-[#805B80] text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200"
+                            >
+                              <AddShoppingCart sx={{ fontSize: { xs: 16, md: 22 } }} />
+                              <span className="text-[11px] md:text-sm font-extrabold text-white">افزودن</span>
+                            </button>
+                          ) : (
+                            <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
+                              <button onClick={() => handleQuantityChange(item.id, 1)} className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white transition-all"><AddCircleOutline sx={{ fontSize: {xs: 18, md: 20} }}/></button>
+                              <div className="flex flex-col items-center">
+                                <span className="text-xs md:text-sm font-black text-blue-900 leading-none">{cartQuantities[item.id] || 0}</span>
+                                {cartQuantities[item.id] > 0 && <button onClick={() => handleAddToCart(item.id)} className="text-[8px] md:text-[10px] font-black text-green-600 uppercase tracking-tighter">تایید</button>}
+                              </div>
+                              <button onClick={() => handleQuantityChange(item.id, -1)} className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all"><RemoveCircleOutline sx={{ fontSize: {xs: 18, md: 20} }}/></button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </SwiperSlide>
                 );
               })}
+              
             </Swiper>
-          </CustomTabPanel>
+                 </CustomTabPanel>
+
+          
         ))}
 
-        {/* دکمه‌های ناوبری */}
-        {navStates[value]?.isBeginning && (
-          <button onClick={() => goNext(value)} className="tpsc-nav-button tpsc-next-button tpsc-next-button-mobile">
-            <KeyboardArrowLeft fontSize="medium" />
-          </button>
-        )}
-        {navStates[value]?.showPrev && (
-          <button onClick={() => goPrev(value)} className="tpsc-nav-button tpsc-prev-button tpsc-prev-button-desktop">
-            <KeyboardArrowRight fontSize="medium" />
-          </button>
-        )}
-        {navStates[value]?.showNext && (
-          <button onClick={() => goNext(value)} className="tpsc-nav-button tpsc-next-button tpsc-next-button-desktop">
-            <KeyboardArrowLeft fontSize="medium" />
-          </button>
-        )}
-      </Box>
+        {/* دکمه‌های ناوبری دسکتاپ */}
+        <button onClick={() => swiperRefs.current[value]?.swiper.slidePrev()} className="absolute top-1/2 -right-6 -translate-y-1/2 z-10 w-12 h-12 bg-white shadow-xl rounded-full hidden lg:flex items-center justify-center border border-gray-100 hover:bg-[#805B99] hover:text-white transition-all text-gray-700">
+          <KeyboardArrowRight fontSize="large" />
+        </button>
+        <button onClick={() => swiperRefs.current[value]?.swiper.slideNext()} className="absolute top-1/2 -left-6 -translate-y-1/2 z-10 w-12 h-12 bg-white shadow-xl rounded-full hidden lg:flex items-center justify-center border border-gray-100 hover:bg-[#805B99] hover:text-white transition-all text-gray-700">
+          <KeyboardArrowLeft fontSize="large" />
+        </button>
+      </div>
     </div>
   );
 }
