@@ -76,8 +76,8 @@ export default function CategoriesContainer() {
         >
           {categories.map((item) => (
             <Link key={item.id} href={`./search?mothercatId=${item.id}`} className="category-item">
-              {getIconComponent(item.icon)}
-              <p className="category-text">{item.name}</p>
+             <img className="w-[60px] h-[60px] object-cover" src={item.link} alt={item.name} />
+              <p className="category-text mt-2">{item.name}</p>
             </Link>
           ))}
         </div>

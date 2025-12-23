@@ -1,39 +1,64 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Label } from "@/Components/ui/label";
-import { AlertCircle, Plus, Trash2, Loader2 } from "lucide-react";
+import {
+  AlertCircle,
+  Plus,
+  Trash2,
+  Loader2,
+  Upload,
+  X,
+  Image as ImageIcon,
+  CheckCircle,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { toast } from "react-hot-toast";
-import { API } from "@/lib/MainRoutes";
+import { API, SITE } from "@/lib/MainRoutes";
 import { Categoryapi } from "@/types/types";
 
 interface CategoryFormData {
   name: string;
-  link: string;
+  link: string; // تصویر دسته‌بندی - اختیاری، اگر خالی باشد "" ارسال می‌شود
   mothercat: boolean;
-  icon: string;
   subcat: { name: string; items: { name: string }[] }[];
+}
+
+interface UploadedFile {
+  url: string;
+  name: string;
 }
 
 const EditCategoryPage = () => {
   const router = useRouter();
   const params = useParams();
   const id = params.id as string;
+
   const [formData, setFormData] = useState<CategoryFormData>({
     name: "",
     link: "",
     mothercat: false,
-    icon: "",
     subcat: [],
   });
-  const [errors, setErrors] = useState<Partial<Record<keyof CategoryFormData, string>>>({});
+
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof CategoryFormData, string>>
+  >({});
+
   const [loading, setLoading] = useState(true);
 
+  // حالت‌های مودال آپلود تصویر دسته‌بندی
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<{ [key: string]: string }>({});
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+
+  // بارگذاری داده اولیه
   useEffect(() => {
     fetch(`${API}/categories/${id}`)
       .then((res) => {
@@ -43,13 +68,11 @@ const EditCategoryPage = () => {
       .then((data: Categoryapi) => {
         setFormData({
           name: data.name,
-          link: data.link,
-          mothercat: !!data.mothercat, // Convert number to boolean
-          icon: data.icon,
+          link: data.link || "",
+          mothercat: !!data.mothercat,
           subcat: data.subcat.map((sub) => ({
-            id: sub.id,        // اضافه شد
             name: sub.name,
-            items: sub.items.map((item) => ({ id: item.id,name: item.name })),
+            items: sub.items.map((item) => ({ name: item.name })),
           })),
         });
         setLoading(false);
@@ -57,25 +80,20 @@ const EditCategoryPage = () => {
       .catch((err) => {
         toast.error("خطا در بارگذاری دسته‌بندی");
         setLoading(false);
-        console.log(err)
       });
   }, [id]);
 
   const validateForm = () => {
     const newErrors: Partial<Record<keyof CategoryFormData, string>> = {};
     if (!formData.name) newErrors.name = "نام دسته‌بندی الزامی است";
-    if (!formData.link) newErrors.link = "لینک دسته‌بندی الزامی است";
-    if (!formData.icon) newErrors.icon = "آیکون الزامی است";
+
     if (formData.subcat.some((sub) => !sub.name)) {
       newErrors.subcat = "تمامی زیرمجموعه‌ها باید نام داشته باشند";
     }
-    if (
-      formData.subcat.some((sub) =>
-        sub.items.some((item) => !item.name)
-      )
-    ) {
+    if (formData.subcat.some((sub) => sub.items.some((item) => !item.name))) {
       newErrors.subcat = "تمامی آیتم‌های زیرمجموعه باید نام داشته باشند";
     }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -116,7 +134,10 @@ const EditCategoryPage = () => {
     setFormData({ ...formData, subcat: newSubcat });
   };
 
-  const handleRemoveSubcategoryItem = (subcatIndex: number, itemIndex: number) => {
+  const handleRemoveSubcategoryItem = (
+    subcatIndex: number,
+    itemIndex: number
+  ) => {
     const newSubcat = [...formData.subcat];
     newSubcat[subcatIndex].items = newSubcat[subcatIndex].items.filter(
       (_, i) => i !== itemIndex
@@ -135,10 +156,7 @@ const EditCategoryPage = () => {
       const response = await fetch(`${API}/categories/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...formData,
-       body: JSON.stringify(formData),
-        }),
+        body: JSON.stringify(formData),
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -151,6 +169,82 @@ const EditCategoryPage = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // توابع آپلود تصویر دسته‌بندی
+  const openUploadModal = () => {
+    setFiles([]);
+    setPreviews({});
+    setUploadedFiles([]);
+    setShowUploadModal(true);
+  };
+
+  const closeUploadModal = () => {
+    setShowUploadModal(false);
+  };
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = Array.from(e.target.files || []);
+      setFiles((prev) => [...prev, ...selectedFiles]);
+      selectedFiles.forEach((file) => {
+        const previewUrl = URL.createObjectURL(file);
+        setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
+      });
+    },
+    []
+  );
+
+  const removeFile = useCallback(
+    (fileName: string) => {
+      setFiles((prev) => prev.filter((f) => f.name !== fileName));
+      setPreviews((prev) => {
+        const newPreviews = { ...prev };
+        delete newPreviews[fileName];
+        return newPreviews;
+      });
+      if (previews[fileName]) URL.revokeObjectURL(previews[fileName]);
+    },
+    [previews]
+  );
+
+  const handleUpload = useCallback(async () => {
+    if (files.length === 0) return;
+    setUploading(true);
+    const uploadPromises = files.map(async (file) => {
+      const formDataUpload = new FormData();
+      formDataUpload.append("file", file);
+      try {
+        const res = await fetch("/api/media", {
+          method: "POST",
+          body: formDataUpload,
+        });
+        if (!res.ok) throw new Error("خطا در آپلود");
+        const data = await res.json();
+        return { url: SITE + data.url, name: file.name };
+      } catch (error) {
+        toast.error(`خطا در آپلود ${file.name}`);
+        return null;
+      }
+    });
+
+    const results = await Promise.all(uploadPromises);
+    const successful = results.filter(Boolean) as UploadedFile[];
+    setUploadedFiles(successful);
+    setFiles([]);
+    setPreviews({});
+    setUploading(false);
+    toast.success(`${successful.length} تصویر با موفقیت آپلود شد`);
+  }, [files]);
+
+  const handleConfirmUpload = () => {
+    if (uploadedFiles.length === 0) {
+      toast.error("هیچ تصویری آپلود نشده است");
+      return;
+    }
+    setFormData((prev) => ({ ...prev, link: uploadedFiles[0].url }));
+    closeUploadModal();
+    toast.success("تصویر دسته‌بندی با موفقیت تغییر کرد");
   };
 
   if (loading) {
@@ -166,7 +260,9 @@ const EditCategoryPage = () => {
     <div className="container mx-auto p-4 yekan">
       <Card className="bg-white dark:bg-gray-800 shadow-lg">
         <CardHeader className="pb-3">
-          <CardTitle className="text-2xl font-bold text-center">ویرایش دسته‌بندی</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            ویرایش دسته‌بندی
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -179,7 +275,9 @@ const EditCategoryPage = () => {
                   id="name"
                   placeholder="نام دسته‌بندی را وارد کنید"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, name: e.target.value })
+                  }
                   required
                   aria-invalid={!!errors.name}
                   className={errors.name ? "border-red-500" : ""}
@@ -191,54 +289,42 @@ const EditCategoryPage = () => {
                   </p>
                 )}
               </div>
+
               <div>
-                <Label htmlFor="link" className="mb-2 block">
-                  لینک <span className="text-red-500">*</span>
+                <Label className="mb-2 block">
+                  تصویر دسته‌بندی (اختیاری)
                 </Label>
-                <Input
-                  id="link"
-                  placeholder="لینک دسته‌بندی را وارد کنید"
-                  value={formData.link}
-                  onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-                  required
-                  aria-invalid={!!errors.link}
-                  className={errors.link ? "border-red-500" : ""}
-                />
-                {errors.link && (
-                  <p className="text-red-500 text-sm mt-1 flex items-center">
-                    <AlertCircle className="h-4 w-4 ml-1" />
-                    {errors.link}
-                  </p>
+
+                <div className="flex gap-4 items-center">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={openUploadModal}
+                    className="flex items-center"
+                  >
+                    <Upload className="h-4 w-4 ml-2" />
+                    {formData.link ? "تغییر تصویر" : "آپلود تصویر"}
+                  </Button>
+
+                  {formData.link && (
+                    <span className="text-sm text-green-600 dark:text-green-400">
+                      تصویر فعلی موجود است
+                    </span>
+                  )}
+                </div>
+
+                {formData.link && (
+                  <div className="mt-4">
+                    <img
+                      src={formData.link}
+                      alt="پیش‌نمایش تصویر دسته‌بندی"
+                      className="w-40 h-40 object-cover rounded-lg border shadow-md"
+                      onError={() => toast.error("تصویر قابل نمایش نیست")}
+                    />
+                  </div>
                 )}
               </div>
-              <div>
-               <Label
-                  htmlFor="icon"
-                  className="mb-2 justify-between items-center flex"
-                >
-                  <div>
-                    آیکون <span className="text-red-500">*</span>
-                  </div>
-                  <div>
-                    <a target="_blank" className="bg-gray-800 text-white text-sm p-1 px-2 rounded-3xl" href="https://fonts.google.com/icons">مشاهده آیکون ها</a>
-                  </div>
-                </Label>
-                <Input
-                  id="icon"
-                  placeholder="آدرس آیکون را وارد کنید"
-                  value={formData.icon}
-                  onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
-                  required
-                  aria-invalid={!!errors.icon}
-                  className={errors.icon ? "border-red-500" : ""}
-                />
-                {errors.icon && (
-                  <p className="text-red-500 text-sm mt-1 flex items-center">
-                    <AlertCircle className="h-4 w-4 ml-1" />
-                    {errors.icon}
-                  </p>
-                )}
-              </div>
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="mothercat"
@@ -251,6 +337,7 @@ const EditCategoryPage = () => {
               </div>
             </div>
 
+            {/* زیرمجموعه‌ها */}
             <div className="space-y-2">
               <Label>زیرمجموعه‌ها</Label>
               {formData.subcat.map((subcat, subcatIndex) => (
@@ -279,10 +366,7 @@ const EditCategoryPage = () => {
                   <div className="space-y-2">
                     <Label>آیتم‌های زیرمجموعه</Label>
                     {subcat.items.map((item, itemIndex) => (
-                      <div
-                        key={itemIndex}
-                        className="flex gap-2 items-center"
-                      >
+                      <div key={itemIndex} className="flex gap-2 items-center">
                         <Input
                           placeholder="نام آیتم"
                           value={item.name}
@@ -364,6 +448,118 @@ const EditCategoryPage = () => {
           </form>
         </CardContent>
       </Card>
+
+      {/* مودال آپلود تصویر */}
+      {showUploadModal && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <h2 className="text-xl font-semibold flex items-center gap-2">
+                <ImageIcon className="h-5 w-5" />
+                آپلود تصویر دسته‌بندی
+              </h2>
+            </div>
+            <div className="p-6 space-y-6">
+              <div
+                className="border-2 border-dashed border-purple-300 dark:border-purple-600 rounded-lg p-8 text-center hover:border-purple-400 dark:hover:border-purple-500 transition-colors cursor-pointer bg-gray-50 dark:bg-gray-700"
+                onClick={() =>
+                  document.getElementById("image-file-input-edit")?.click()
+                }
+              >
+                <Upload className="mx-auto h-12 w-12 text-purple-500 mb-4" />
+                <p className="text-sm font-semibold">فایل را بکشید یا کلیک کنید</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  فقط تصویر (حداکثر ۱۰ مگابایت)
+                </p>
+                <Input
+                  id="image-file-input-edit"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+
+              {files.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold">تصویر انتخاب‌شده:</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {files.map((file) => (
+                      <div key={file.name} className="relative group">
+                        <img
+                          src={previews[file.name]}
+                          alt={file.name}
+                          className="w-full h-32 object-cover rounded border"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-white hover:bg-red-500"
+                            onClick={() => removeFile(file.name)}
+                          >
+                            <X className="h-5 w-5" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-center mt-2 truncate">
+                          {file.name}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    onClick={handleUpload}
+                    disabled={uploading}
+                    className="w-full"
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        در حال آپلود...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-4 w-4 mr-2" />
+                        آپلود تصویر ({files.length})
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              {uploadedFiles.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold">تصویر آپلود شده:</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {uploadedFiles.map((file) => (
+                      <div key={file.name} className="text-center">
+                        <img
+                          src={file.url}
+                          alt={file.name}
+                          className="w-full h-32 object-cover rounded border mx-auto"
+                        />
+                        <p className="text-xs mt-2 truncate">{file.name}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <Button
+                    onClick={handleConfirmUpload}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                  >
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    استفاده از این تصویر
+                  </Button>
+                </div>
+              )}
+            </div>
+            <div className="p-6 border-t flex justify-end">
+              <Button variant="outline" onClick={closeUploadModal}>
+                انصراف
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

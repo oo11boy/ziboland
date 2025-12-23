@@ -67,11 +67,11 @@ export default async function Page() {
       <CategoriesContainer />
       <BenefitsContainer />
       <ProductSliderContainer vip={true} />
-      <TabProductsSliderContainer title="محبوب‌ترین‌ها" />
+      <TabProductsSliderContainer title="محبوب‌ترین‌ها" sort="popular" />
       <Banners />
-      <TabProductsSliderContainer title="ارزان‌ترین‌ها" />
+      <TabProductsSliderContainer title="ارزان‌ترین‌ها" sort="cheapest" />
       <Banners />
-      <TabProductsSliderContainer title="جدیدترین‌ها" />
+      <TabProductsSliderContainer title="جدیدترین‌ها" sort="newest" />
       <ArticlesListContainer ispage={false} />
       <BrandsContainer />
     </>

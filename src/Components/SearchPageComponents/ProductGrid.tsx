@@ -43,7 +43,7 @@ export default function ProductGrid({
 }: ProductGridProps) {
   return (
     <AnimatePresence>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4  gap-4 md:gap-6 mt-6">
+      <div className="grid  grid-cols-2  sm:grid-cols-3 lg:grid-cols-4  gap-4 md:gap-6 mt-6">
         {filteredProducts.length > 0 ? (
           filteredProducts.map((item) => {
             const effectivePriceType =
@@ -78,11 +78,11 @@ export default function ProductGrid({
                 animate="visible"
                 exit="exit"
                 layout
-                className="flex flex-col h-[340px] md:h-[430px] bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-3 md:p-4 relative overflow-hidden group/card"
+                className="flex  flex-col bg-white rounded-[0.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-3 md:p-4 relative overflow-hidden group/card"
               >
                 {/* برچسب حداقل تعداد عمده */}
                 {effectivePriceType === "wholesale" && (
-                  <div className="absolute top-2 left-2 bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center z-10">
+                  <div className="absolute top-2 left-2 bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center  z-10">
                     <span className="ml-1">+</span>
                     <span>{item.minwholesale} عدد</span>
                   </div>
@@ -90,7 +90,7 @@ export default function ProductGrid({
 
                 {/* تصویر + بج تخفیف */}
                 <Link href={`/products/${item.id}`} className="block">
-                  <div className="relative w-full aspect-square bg-gray-50 rounded-[1.5rem] overflow-hidden mb-3">
+                  <div className="relative  w-full aspect-square bg-gray-50 rounded-[1.5rem] overflow-hidden mb-3">
                     <img
                       src={item.image && item.image.length > 0 ? item.image : "/placeholder.jpg"}
                       alt={item.title}

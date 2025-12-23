@@ -38,13 +38,13 @@ export async function GET(request: NextRequest) {
       const catId = row.cat_id;
 
       if (!categoriesMap[catId]) {
-        if (!row.cat_name || !row.link || !row.icon) return;
+        if (!row.cat_name) return;
         categoriesMap[catId] = {
           id: catId,
           name: row.cat_name,
-          link: row.link,
+          link: row.link || "", // اگر null بود، خالی برگردان
           mothercat: row.mothercat,
-          icon: row.icon,
+          icon: row.icon || "icon", // پیش‌فرض برای نمایش
           subcat: [],
         };
       }
@@ -71,10 +71,12 @@ export async function GET(request: NextRequest) {
         }
       }
     });
-const category = Object.values(categoriesMap)[0];
-if (!category) {
-  return NextResponse.json(null, { status: 200 }); // یا {}
-}
+
+    const category = Object.values(categoriesMap)[0];
+    if (!category) {
+      return NextResponse.json(null, { status: 200 });
+    }
+
     return NextResponse.json(category);
   } catch (error) {
     console.error("خطا در دریافت دسته‌بندی:", error);
@@ -99,14 +101,17 @@ export async function PUT(request: NextRequest) {
 
   try {
     const data = await request.json();
-    const { name, link, mothercat, icon, subcat } = data;
+    const { name, link = "", mothercat, subcat } = data;
 
-    if (!name || !link || !icon) {
+    if (!name?.trim()) {
       return NextResponse.json(
-        { error: "فیلدهای name، link و icon الزامی هستند" },
+        { error: "نام دسته‌بندی الزامی است" },
         { status: 400 }
       );
     }
+
+    // مقدار پیش‌فرض برای icon
+    const iconValue = "icon";
 
     const connection = await pool.getConnection();
     try {
@@ -115,29 +120,28 @@ export async function PUT(request: NextRequest) {
       // 1. بروزرسانی دسته‌بندی اصلی
       await connection.query(
         "UPDATE categories SET name = ?, link = ?, mothercat = ?, icon = ? WHERE id = ?",
-        [name, link, mothercat ? 1 : 0, icon, categoryId]
+        [name.trim(), link, mothercat ? 1 : 0, iconValue, categoryId]
       );
 
       // 2. دریافت زیرمجموعه‌های فعلی
-      const [currentSubcats] = await connection.query(
+      const [currentSubcats] = (await connection.query(
         "SELECT id, name FROM subcategories WHERE category_id = ?",
         [categoryId]
-      ) as any[];
+      )) as any[];
 
       const currentSubcatMap = new Map<number, string>();
-      currentSubcats.forEach((sc: { id: number; name: string; }) => currentSubcatMap.set(sc.id, sc.name));
+      currentSubcats.forEach((sc: { id: number; name: string }) =>
+        currentSubcatMap.set(sc.id, sc.name)
+      );
 
       const usedSubcatIds = new Set<number>();
-      const newSubcatNames = new Set<string>();
 
       // 3. پردازش زیرمجموعه‌های ارسالی
       if (subcat && Array.isArray(subcat)) {
         for (const sub of subcat) {
           if (!sub.name?.trim()) continue;
 
-          newSubcatNames.add(sub.name.trim());
-
-          // اگر زیرمجموعه id دارد → بروزرسانی نام
+          // اگر زیرمجموعه id دارد → بروزرسانی
           if (sub.id && currentSubcatMap.has(sub.id)) {
             const oldName = currentSubcatMap.get(sub.id);
             if (oldName !== sub.name.trim()) {
@@ -148,14 +152,12 @@ export async function PUT(request: NextRequest) {
             }
             usedSubcatIds.add(sub.id);
 
-            // مدیریت آیتم‌های زیرمجموعه
+            // مدیریت آیتم‌ها
             if (sub.items && Array.isArray(sub.items)) {
-              // حذف آیتم‌های قدیمی
               await connection.query(
                 "DELETE FROM subcategory_items WHERE subcategory_id = ?",
                 [sub.id]
               );
-              // درج آیتم‌های جدید
               for (const item of sub.items) {
                 if (item.name?.trim()) {
                   await connection.query(
@@ -166,7 +168,7 @@ export async function PUT(request: NextRequest) {
               }
             }
           }
-          // اگر id ندارد → زیرمجموعه جدید
+          // زیرمجموعه جدید
           else {
             const [result] = await connection.query(
               "INSERT INTO subcategories (category_id, name) VALUES (?, ?)",
@@ -189,12 +191,12 @@ export async function PUT(request: NextRequest) {
         }
       }
 
+      // 4. حذف زیرمجموعه‌های استفاده‌نشده (فقط اگر در محصولات نباشند)
       const subcatsToDelete = currentSubcats
-        .filter((sc: { id: number; }) => !usedSubcatIds.has(sc.id))
-        .map((sc: { id: any; }) => sc.id);
+        .filter((sc: { id: number }) => !usedSubcatIds.has(sc.id))
+        .map((sc: { id: any }) => sc.id);
 
       if (subcatsToDelete.length > 0) {
-        // فقط زیرمجموعه‌هایی که در محصولات استفاده نشده‌اند حذف شوند
         const placeholders = subcatsToDelete.map(() => "?").join(",");
         await connection.query(
           `DELETE FROM subcategory_items WHERE subcategory_id IN (${placeholders})`,
@@ -220,14 +222,16 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error("خطا در بروزرسانی دسته‌بندی:", error);
     return NextResponse.json(
-      { error: "خطا در بروزرسانی دسته‌بندی", details: (error as Error).message },
+      {
+        error: "خطا در بروزرسانی دسته‌بندی",
+        details: (error as Error).message,
+      },
       { status: 500 }
     );
   }
 }
 
 // ===================== DELETE CATEGORY =====================
-
 export async function DELETE(request: NextRequest) {
   const idStr = request.nextUrl.pathname.split("/").pop();
   const categoryId = parseInt(idStr || "");
@@ -243,7 +247,7 @@ export async function DELETE(request: NextRequest) {
   try {
     await connection.beginTransaction();
 
-    // 1. دریافت زیرمجموعه‌های این دسته‌بندی
+    // 1. دریافت زیرمجموعه‌ها
     const [subcats] = await connection.query<RowDataPacket[]>(
       "SELECT id, name FROM subcategories WHERE category_id = ?",
       [categoryId]
@@ -255,20 +259,22 @@ export async function DELETE(request: NextRequest) {
     if (subcatIds.length > 0) {
       const placeholders = subcatIds.map(() => "?").join(",");
 
-      // 2. دریافت محصولاتی که از این زیرمجموعه‌ها استفاده می‌کنند + نام محصول
-const [usedProducts] = await connection.query<RowDataPacket[]>(
-  `
-  SELECT p.id, p.title AS product_name, p.subcatId 
-  FROM products p 
-  WHERE p.subcatId IN (${placeholders})
-  ORDER BY p.subcatId, p.title
-  `,
-  subcatIds
-);
+      // 2. بررسی استفاده در محصولات
+      const [usedProducts] = await connection.query<RowDataPacket[]>(
+        `
+        SELECT p.id, p.title AS product_name, p.subcatId 
+        FROM products p 
+        WHERE p.subcatId IN (${placeholders})
+        ORDER BY p.subcatId, p.title
+        `,
+        subcatIds
+      );
 
       if (usedProducts.length > 0) {
-        // گروه‌بندی محصولات بر اساس زیرمجموعه
-        const conflicts = new Map<number, { subcatName: string; products: string[] }>();
+        const conflicts = new Map<
+          number,
+          { subcatName: string; products: string[] }
+        >();
 
         usedProducts.forEach((prod: any) => {
           const subcatId = prod.subcatId;
@@ -279,8 +285,8 @@ const [usedProducts] = await connection.query<RowDataPacket[]>(
           conflicts.get(subcatId)!.products.push(prod.product_name);
         });
 
-        // ساخت پیام خطای خوانا
-        let message = "نمی‌توان دسته‌بندی را حذف کرد چون زیرمجموعه‌های آن در محصولات زیر استفاده شده‌اند:\n\n";
+        let message =
+          "نمی‌توان دسته‌بندی را حذف کرد چون زیرمجموعه‌های آن در محصولات زیر استفاده شده‌اند:\n\n";
         conflicts.forEach(({ subcatName, products }) => {
           message += `زیرمجموعه "${subcatName}":\n`;
           products.forEach((name, i) => {
@@ -288,7 +294,8 @@ const [usedProducts] = await connection.query<RowDataPacket[]>(
           });
           message += "\n";
         });
-        message += "لطفاً ابتدا این محصولات را ویرایش کنید و زیرمجموعه را تغییر دهید.";
+        message +=
+          "لطفاً ابتدا این محصولات را ویرایش کنید و زیرمجموعه را تغییر دهید.";
 
         await connection.rollback();
         return NextResponse.json(
@@ -306,7 +313,7 @@ const [usedProducts] = await connection.query<RowDataPacket[]>(
         );
       }
 
-      // 3. حالا امن است: حذف آیتم‌ها و زیرمجموعه‌ها
+      // 3. حذف امن آیتم‌ها و زیرمجموعه‌ها
       await connection.query(
         `DELETE FROM subcategory_items WHERE subcategory_id IN (${placeholders})`,
         subcatIds
@@ -326,7 +333,10 @@ const [usedProducts] = await connection.query<RowDataPacket[]>(
 
     if ((result as any).affectedRows === 0) {
       await connection.rollback();
-      return NextResponse.json({ error: "دسته‌بندی یافت نشد" }, { status: 404 });
+      return NextResponse.json(
+        { error: "دسته‌بندی یافت نشد" },
+        { status: 404 }
+      );
     }
 
     await connection.commit();
@@ -339,7 +349,8 @@ const [usedProducts] = await connection.query<RowDataPacket[]>(
       return NextResponse.json(
         {
           error: "حذف ناموفق",
-          details: "این دسته‌بندی یا زیرمجموعه‌های آن در محصولات استفاده شده است. لطفاً ابتدا محصولات را بررسی کنید.",
+          details:
+            "این دسته‌بندی یا زیرمجموعه‌های آن در محصولات استفاده شده است.",
         },
         { status: 400 }
       );

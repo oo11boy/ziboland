@@ -38,30 +38,53 @@ function CustomTabPanel(props: TabPanelProps) {
   );
 }
 
-export default function TabProductsSliderContainer({ title }: { title: string }) {
+type SortType = "popular" | "cheapest" | "newest" | "none";
+
+interface TabProductsSliderContainerProps {
+  title: string;
+  sort?: SortType;
+}
+
+export default function TabProductsSliderContainer({
+  title,
+  sort = "none",
+}: TabProductsSliderContainerProps) {
   const [value, setValue] = useState(0);
   const { dispatch } = useCart();
   const [cartQuantities, setCartQuantities] = useState<{ [key: number]: number }>({});
   const [priceTypes, setPriceTypes] = useState<{ [key: number]: "single" | "wholesale" }>({});
   const [selectedColors, setSelectedColors] = useState<{ [key: number]: Color | null }>({});
   const [showQuantitySelector, setShowQuantitySelector] = useState<number | null>(null);
-  const swiperRefs = useRef<{ [key: number]: { swiper: SwiperCore } | null }>({});
+
+  // وضعیت دکمه‌های ناوبری
+  const [isBeginning, setIsBeginning] = useState(true);
+  const [isEnd, setIsEnd] = useState(false);
+
+  const swiperRefs = useRef<{ [key: number]: SwiperCore | null }>({});
   const [products, setProducts] = useState<Product[]>([]);
+
+  const updateNavigationState = (swiper: SwiperCore) => {
+    setIsBeginning(swiper.isBeginning);
+    setIsEnd(swiper.isEnd);
+  };
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const response = await fetch("/api/products");
-        if (!response.ok) throw new Error("خطا در دریافت");
+        if (!response.ok) throw new Error("خطا در دریافت محصولات");
         const data: Product[] = await response.json();
-        let sorted = data;
-        if (title === "محبوبترین ها") sorted = [...data].sort((a, b) => b.rating - a.rating);
-        else if (title === "ارزانترین ها") sorted = [...data].sort((a, b) => a.numericPrice - b.numericPrice);
+        let sorted = [...data];
+        if (sort === "popular") sorted.sort((a, b) => b.rating - a.rating);
+        else if (sort === "cheapest") sorted.sort((a, b) => a.numericPrice - b.numericPrice);
+        else if (sort === "newest") sorted.sort((a, b) => b.id - a.id);
         setProducts(sorted);
-      } catch (err) { console.error(err); }
+      } catch (err) {
+        console.error(err);
+      }
     };
     fetchProducts();
-  }, [title]);
+  }, [sort]);
 
   useEffect(() => {
     const initialPriceTypes = products.reduce((acc, p) => ({ ...acc, [p.id]: "single" }), {});
@@ -112,14 +135,30 @@ export default function TabProductsSliderContainer({ title }: { title: string })
     setShowQuantitySelector(null);
   };
 
-  const categories = Array.from(new Set(products.map(p => p.category)));
-  const productsByCategory = categories.map(cat => products.filter(p => p.category === cat));
+  const categoryCounts = products.reduce((acc, p) => {
+    acc[p.category] = (acc[p.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const sortedCategories = Object.keys(categoryCounts).sort((a, b) => categoryCounts[b] - categoryCounts[a]);
+  const productsByCategory = sortedCategories.map(cat => products.filter(p => p.category === cat));
+
+  // بروزرسانی وضعیت دکمه‌ها هنگام تغییر تب
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const currentSwiper = swiperRefs.current[value];
+      if (currentSwiper) {
+        currentSwiper.update();
+        updateNavigationState(currentSwiper);
+      }
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [value, products]);
 
   return (
     <div className="w-full max-w-[1440px] mx-auto px-4 py-6 font-[yekannew]" dir="rtl">
       <ToastContainer rtl theme="colored" position="top-center" autoClose={2500} />
 
-      {/* هدر بخش */}
       <div className="flex justify-between items-center mb-6 px-1">
         <div className="border-r-4 border-[#805B99] pr-3">
           <h2 className="text-xl md:text-2xl font-black text-gray-800 tracking-tight">{title}</h2>
@@ -129,27 +168,31 @@ export default function TabProductsSliderContainer({ title }: { title: string })
         </Link>
       </div>
 
-      {/* تب‌ها */}
-      <Tabs
-        value={value}
-        onChange={(_, v) => setValue(v)}
-        variant="scrollable"
-        scrollButtons="auto"
-        sx={{
-          mb: 2,
-          "& .MuiTabs-indicator": { height: 3, borderRadius: '10px', backgroundColor: '#805B99' },
-          "& .MuiTab-root": { fontFamily: "inherit", fontWeight: 800, fontSize: { xs: "0.8rem", md: "0.95rem" }, minWidth: '100px' },
-          "& .Mui-selected": { color: "#805B99 !important" }
-        }}
-      >
-        {categories.map((cat, i) => <Tab key={i} label={cat} />)}
-      </Tabs>
+      {sortedCategories.length > 0 && (
+        <Tabs
+          value={value}
+          onChange={(_, v) => setValue(v)}
+          variant="scrollable"
+          scrollButtons="auto"
+          sx={{
+            mb: 2,
+            "& .MuiTabs-indicator": { height: 3, borderRadius: '10px', backgroundColor: '#805B99' },
+            "& .MuiTab-root": { fontFamily: "inherit", fontWeight: 800, fontSize: { xs: "0.8rem", md: "0.95rem" }, minWidth: '100px' },
+            "& .Mui-selected": { color: "#805B99 !important" }
+          }}
+        >
+          {sortedCategories.map((cat) => (
+            <Tab key={cat} label={`${cat}`} />
+          ))}
+        </Tabs>
+      )}
 
-      {/* اسلایدر محصولات */}
       <div className="relative group">
-        {categories.map((_, index) => (
-          <CustomTabPanel key={index} value={value} index={index}>
+        {sortedCategories.map((cat, index) => (
+          <CustomTabPanel key={cat} value={value} index={index}>
             <Swiper
+              dir="rtl"
+              key={`${cat}-${productsByCategory[index]?.length}`}
               modules={[Navigation]}
               spaceBetween={12}
               slidesPerView={2.2}
@@ -158,91 +201,63 @@ export default function TabProductsSliderContainer({ title }: { title: string })
                 1024: { slidesPerView: 5, spaceBetween: 20 },
                 1280: { slidesPerView: 6, spaceBetween: 20 }
               }}
-              onSwiper={(s) => swiperRefs.current[index] = { swiper: s }}
+              onSwiper={(swiper) => {
+                swiperRefs.current[index] = swiper;
+                if (index === value) setTimeout(() => updateNavigationState(swiper), 200);
+              }}
+              onSlideChange={(swiper) => index === value && updateNavigationState(swiper)}
             >
-              {productsByCategory[index].map((item) => {
+              {productsByCategory[index]?.map((item) => {
                 const effectivePriceType = priceTypes[item.id] || "single";
                 const finalPrice = effectivePriceType === "single" ? item.discountedPrice : item.discountwholesalePrice;
 
                 return (
                   <SwiperSlide key={item.id} className="py-2">
-                    {/* کارت اصلی با ارتفاع هماهنگ برای موبایل و دسکتاپ */}
                     <div className="flex flex-col h-[340px] md:h-[430px] bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-2.5 md:p-4 relative overflow-hidden group/card">
-                      
-                      {/* تصویر محصول */}
                       <div className="relative w-full aspect-square bg-gray-50 rounded-[1.5rem] overflow-hidden mb-3">
-                        <img src={item.image} className="w-full h-full object-contain p-2 group-hover/card:scale-105 transition-transform duration-500" alt={item.title} />
+                        <img src={item.image || "/placeholder.jpg"} className="w-full h-full object-contain p-2 group-hover/card:scale-105 transition-transform duration-500" alt={item.title} />
                         {item.discount !== "0" && (
-                          <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-lg shadow-sm">
-                            {item.discount}%
-                          </span>
+                          <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-lg shadow-sm">{item.discount}%</span>
                         )}
                       </div>
-
-                      {/* اطلاعات محصول */}
                       <div className="flex flex-col flex-grow overflow-hidden">
-                        {/* عنوان با ارتفاع ثابت جهت تراز شدن */}
-                        <h3 className="text-gray-800 text-[11px] md:text-sm font-bold mb-2 line-clamp-2 h-8 md:h-10 leading-4 md:leading-5 tracking-tight">
+                        <h3 className="text-gray-800 text-[11px] md:text-sm font-bold mb-2 line-clamp-2 h-12 md:h-12 leading-4 md:leading-5 tracking-tight">
                           <Link href={`/products/${item.id}`}>{item.title}</Link>
                         </h3>
-
-                        {/* سوئیچ قیمت */}
                         <div className="flex bg-gray-100 p-0.5 rounded-xl mb-3">
-                          <button 
-                            onClick={() => setPriceTypes(p => ({ ...p, [item.id]: "single" }))}
-                            className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${effectivePriceType === 'single' ? 'bg-white text-[#805B99] shadow-sm' : 'text-gray-400'}`}
-                          >تکی</button>
+                          <button onClick={() => setPriceTypes(p => ({ ...p, [item.id]: "single" }))} className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${effectivePriceType === 'single' ? 'bg-white text-[#805B99] shadow-sm' : 'text-gray-400'}`}>تکی</button>
                           {item.discountwholesalePrice > 0 && (
-                            <button 
-                              onClick={() => setPriceTypes(p => ({ ...p, [item.id]: "wholesale" }))}
-                              className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${effectivePriceType === 'wholesale' ? 'bg-white text-[#805B99] shadow-sm' : 'text-gray-400'}`}
-                            >عمده</button>
+                            <button onClick={() => setPriceTypes(p => ({ ...p, [item.id]: "wholesale" }))} className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${effectivePriceType === 'wholesale' ? 'bg-white text-[#805B99] shadow-sm' : 'text-gray-400'}`}>عمده</button>
                           )}
                         </div>
-
-                        {/* انتخاب رنگ */}
-                        <div className="flex gap-1.5 justify-center mb-2 h-4 items-center ">
+                        <div className="flex gap-1.5 justify-center mb-2 h-4 items-center">
                           {item.colors?.map(c => (
-                            <button
-                              key={c.hexCode}
-                              onClick={() => setSelectedColors(p => ({ ...p, [item.id]: c }))}
-                              className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform ${selectedColors[item.id]?.hexCode === c.hexCode ? 'scale-125 ring-2 ring-blue-400' : ''}`}
-                              style={{ backgroundColor: c.hexCode }}
-                            />
+                            <button key={c.hexCode} onClick={() => setSelectedColors(p => ({ ...p, [item.id]: c }))} className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform ${selectedColors[item.id]?.hexCode === c.hexCode ? 'scale-125 ring-2 ring-blue-400' : ''}`} style={{ backgroundColor: c.hexCode }} />
                           ))}
                         </div>
                       </div>
-
-                      {/* قیمت و دکمه خرید - همیشه به پایین چسبیده */}
                       <div className="mt-auto pt-2 border-t border-gray-50">
                         <div className="flex flex-col mb-3">
-                          <span className="text-[10px] md:text-xs text-gray-400 line-through h-4 leading-none italic font-medium">
-                            {item.discount !== "0" ? formatPrice(item.originalPrice) : ""}
-                          </span>
+                          <span className="text-[10px] md:text-xs text-gray-400 line-through h-4 leading-none italic font-medium">{item.discount !== "0" ? formatPrice(item.originalPrice) : ""}</span>
                           <div className="flex items-baseline gap-1">
                             <span className="text-sm md:text-xl font-black text-gray-900 leading-none">{formatPrice(finalPrice)}</span>
                             <span className="text-[9px] md:text-[11px] font-medium text-gray-500">تومان</span>
                           </div>
                         </div>
-
-                        {/* دکمه عملیات */}
                         <div className="h-9 md:h-12">
                           {showQuantitySelector !== item.id ? (
-                            <button 
-                              onClick={() => setShowQuantitySelector(item.id)}
-                              className="w-full h-full bg-[#805B99] hover:bg-[#805B80] text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200"
-                            >
+                            <button onClick={() => setShowQuantitySelector(item.id)} className="w-full h-full bg-[#805B99] hover:bg-[#805B80] text-white rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-gray-200">
                               <AddShoppingCart sx={{ fontSize: { xs: 16, md: 22 } }} />
                               <span className="text-[11px] md:text-sm font-extrabold text-white">افزودن</span>
                             </button>
                           ) : (
                             <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
-                              <button onClick={() => handleQuantityChange(item.id, 1)} className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white transition-all"><AddCircleOutline sx={{ fontSize: {xs: 18, md: 20} }}/></button>
+                              <button onClick={() => handleQuantityChange(item.id, 1)} className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm"><AddCircleOutline sx={{ fontSize: {xs: 18, md: 20} }}/></button>
                               <div className="flex flex-col items-center">
                                 <span className="text-xs md:text-sm font-black text-blue-900 leading-none">{cartQuantities[item.id] || 0}</span>
-                                {cartQuantities[item.id] > 0 && <button onClick={() => handleAddToCart(item.id)} className="text-[8px] md:text-[10px] font-black text-green-600 uppercase tracking-tighter">تایید</button>}
+                                {cartQuantities[item.id] > 0 && <button onClick={() => handleAddToCart(item.id)} className="text-[8px] md:text-[10px] font-black text-green-600 uppercase">تایید</button>}
                               </div>
-                              <button onClick={() => handleQuantityChange(item.id, -1)} className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all"><RemoveCircleOutline sx={{ fontSize: {xs: 18, md: 20} }}/></button>
+                              <button onClick={() => handleQuantityChange(item.id, -1)} className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm"><RemoveCircleOutline sx={{ fontSize: {xs: 18, md: 20} }}/></button>
                             </div>
                           )}
                         </div>
@@ -251,20 +266,32 @@ export default function TabProductsSliderContainer({ title }: { title: string })
                   </SwiperSlide>
                 );
               })}
-              
             </Swiper>
-                 </CustomTabPanel>
-
-          
+          </CustomTabPanel>
         ))}
 
-        {/* دکمه‌های ناوبری دسکتاپ */}
-        <button onClick={() => swiperRefs.current[value]?.swiper.slidePrev()} className="absolute top-1/2 -right-6 -translate-y-1/2 z-10 w-12 h-12 bg-white shadow-xl rounded-full hidden lg:flex items-center justify-center border border-gray-100 hover:bg-[#805B99] hover:text-white transition-all text-gray-700">
-          <KeyboardArrowRight fontSize="large" />
-        </button>
-        <button onClick={() => swiperRefs.current[value]?.swiper.slideNext()} className="absolute top-1/2 -left-6 -translate-y-1/2 z-10 w-12 h-12 bg-white shadow-xl rounded-full hidden lg:flex items-center justify-center border border-gray-100 hover:bg-[#805B99] hover:text-white transition-all text-gray-700">
-          <KeyboardArrowLeft fontSize="large" />
-        </button>
+        {/* دکمه‌های ناوبری - نمایش در همه نمایشگرها */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-between z-20">
+          <div className="relative w-full h-0">
+            {!isBeginning && (
+              <button
+                onClick={() => swiperRefs.current[value]?.slidePrev()}
+                className="absolute right-0 lg:-right-6 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/95 shadow-2xl rounded-full flex items-center justify-center border border-gray-100 hover:bg-[#805B99] hover:text-white transition-all text-gray-700 pointer-events-auto"
+              >
+                <KeyboardArrowRight fontSize="large" />
+              </button>
+            )}
+
+            {(productsByCategory[value]?.length > 2 || !isEnd) && (
+              <button
+                onClick={() => swiperRefs.current[value]?.slideNext()}
+                className="absolute left-0 lg:-left-6 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/95 shadow-2xl rounded-full flex items-center justify-center border border-gray-100 hover:bg-[#805B99] hover:text-white transition-all text-gray-700 pointer-events-auto"
+              >
+                <KeyboardArrowLeft fontSize="large" />
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

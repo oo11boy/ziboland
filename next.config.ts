@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // فعال‌سازی توربوپک و غیرفعال کردن لاگ‌های اضافی
+  turbopack: {
+    // تنظیمات جایگزین برای webpack
+  },
+
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'cdn.khanoumi.com', pathname: '/**' },
@@ -9,22 +14,21 @@ const nextConfig = {
       { protocol: 'http', hostname: 'localhost', pathname: '/**' },
       { protocol: 'https', hostname: 'encrypted-tbn1.gstatic.com', pathname: '/**' },
       { protocol: 'http', hostname: '91.107.132.39', pathname: '/**' },
-            { protocol: 'http', hostname: '87.107.174.37', pathname: '/**' },
-     { protocol: 'https', hostname: 'ziboland.co', pathname: '/**' },
+      { protocol: 'http', hostname: '87.107.174.37', pathname: '/**' },
+      { protocol: 'https', hostname: 'ziboland.co', pathname: '/**' },
       { protocol: 'http', hostname: 'ziboland.co', pathname: '/**' },
     ],
   },
 
   eslint: {
-    // از نمایش و شکست build بخاطر warning جلوگیری می‌کند
     ignoreDuringBuilds: true,
   },
 
-  webpack(config: { infrastructureLogging: { level: string; }; stats: string; }) {
-    // فقط ارورها را در خروجی build نمایش می‌دهد
-    config.infrastructureLogging = { level: 'error' };
-    config.stats = 'errors-only';
-    return config;
+  // در نسخه ۱۶، کنترل لاگ‌ها به این شکل بهینه شده است
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
   },
 };
 

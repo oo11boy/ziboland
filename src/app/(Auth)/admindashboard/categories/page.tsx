@@ -79,7 +79,7 @@ const handleDelete = async (id: number) => {
               <thead className="hidden md:table-header-group">
                 <tr className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                   <th className="px-4 py-2 text-right">نام</th>
-                  <th className="px-4 py-2 text-right">لینک</th>
+                  <th className="px-4 py-2 text-right">تصویر</th>
                   <th className="px-4 py-2 text-right">دسته اصلی</th>
                   <th className="px-4 py-2 text-right">تعداد زیرمجموعه‌ها</th>
                   <th className="px-4 py-2 text-right">عملیات</th>
@@ -99,7 +99,7 @@ const handleDelete = async (id: number) => {
                     </td>
                     <td className="px-4 py-2 text-right block md:table-cell">
                       <span className="font-medium md:hidden">لینک: </span>
-                      {category.link}
+                    <img src={category.link} className="w-[80px] h-[80px]" alt={category.name} />
                     </td>
                     <td className="px-4 py-2 text-right block md:table-cell">
                       <span className="font-medium md:hidden">دسته اصلی: </span>

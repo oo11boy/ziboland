@@ -125,8 +125,9 @@ export default function MobileCategoryMegaMenu() {
                     onClick={() => toggleCategory(item)}
                     className="flex flex-col items-center justify-center gap-2 rounded-xl bg-white p-4 shadow hover:shadow-md transition"
                   >
-                    {getIconComponent(item.icon)}
-                    <span className="text-sm font-semibold">{item.name}</span>
+      <img className="w-[60px] h-[60px] object-cover" src={item.link} alt={item.name}  />
+            
+                    <span className="text-sm mt-2 font-semibold">{item.name}</span>
                   </button>
                 ))}
             </motion.div>
