@@ -63,11 +63,14 @@ export default function ProductSliderContainer({
 
   useEffect(() => {
     if (products.length > 0) {
-      const initialPriceTypes = products.reduce(
-        (acc, product) => ({ ...acc, [product.id]: "single" }),
-        {} as { [key: number]: "single" | "wholesale" }
-      );
-      setPriceTypes(initialPriceTypes);
+const initialPriceTypes = products.reduce<{ [key: number]: "single" | "wholesale" }>(
+  (acc, product) => ({ 
+    ...acc, 
+    [product.id]: "single" // TypeScript now knows "single" is the specific literal allowed
+  }),
+  {}
+);
+setPriceTypes(initialPriceTypes);
 
       const initialSelectedColors = products.reduce(
         (acc, product) => ({
