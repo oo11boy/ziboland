@@ -21,11 +21,22 @@ import { toast } from "react-hot-toast";
 import { API, SITE } from "@/lib/MainRoutes";
 import { Categoryapi } from "@/types/types";
 
+interface SubcategoryItem {
+  id?: number;
+  name: string;
+}
+
+interface Subcategory {
+  id?: number;
+  name: string;
+  items: SubcategoryItem[];
+}
+
 interface CategoryFormData {
   name: string;
-  link: string; // تصویر دسته‌بندی - اختیاری، اگر خالی باشد "" ارسال می‌شود
+  link: string;
   mothercat: boolean;
-  subcat: { name: string; items: { name: string }[] }[];
+  subcat: Subcategory[];
 }
 
 interface UploadedFile {
@@ -71,8 +82,12 @@ const EditCategoryPage = () => {
           link: data.link || "",
           mothercat: !!data.mothercat,
           subcat: data.subcat.map((sub) => ({
+            id: sub.id, // حفظ id زیرمجموعه
             name: sub.name,
-            items: sub.items.map((item) => ({ name: item.name })),
+            items: sub.items.map((item) => ({
+              id: item.id, // حفظ id آیتم
+              name: item.name,
+            })),
           })),
         });
         setLoading(false);
@@ -158,19 +173,33 @@ const EditCategoryPage = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
+
+      const result = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "خطا در بروزرسانی دسته‌بندی");
+        // اولویت با details (پیام کامل ما)
+    const errorMessage = result.details || result.error || "خطا در بروزرسانی دسته‌بندی";
+       toast.error(errorMessage, {
+          duration: 8000, // طولانی‌تر بمونه تا کاربر بتونه بخونه
+          style: {
+     whiteSpace: "pre-line", // این خط خیلی مهمه! بدون این، \n کار نمی‌کنه
+    maxWidth: "700px",
+    fontSize: "14px",
+    direction: "rtl",
+    textAlign: "right",
+          },
+        });
+        return;
       }
+
       toast.success("دسته‌بندی با موفقیت بروزرسانی شد");
       router.push("/admindashboard/categories");
     } catch (err) {
-      toast.error(`خطا در بروزرسانی دسته‌بندی: ${(err as Error).message}`);
+      toast.error("خطا در ارتباط با سرور");
     } finally {
       setLoading(false);
     }
   };
-
   // توابع آپلود تصویر دسته‌بندی
   const openUploadModal = () => {
     setFiles([]);

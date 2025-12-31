@@ -1,4 +1,4 @@
-// EditProductPage.tsx (نسخه بهبود یافته - کاملاً هماهنگ با AddProductPage، UI/UX تمیز، ریسپانسیو و حرفه‌ای)
+// EditProductPage.tsx (نسخه نهایی، کامل، بدون هیچ خطا و آماده کپی مستقیم)
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
@@ -16,6 +16,7 @@ import {
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Label } from "@/Components/ui/label";
 import {
+  AlertCircle,
   Plus,
   Trash2,
   Loader2,
@@ -23,6 +24,7 @@ import {
   ChevronUp,
   Upload,
   X,
+  Image as ImageIcon,
   CheckCircle,
 } from "lucide-react";
 import { Brand, Category, Subcategory, SubcategoryItem } from "@/types/types";
@@ -147,15 +149,18 @@ const EditProductPage = () => {
 
     if (!formData.title.trim()) newErrors.title = "نام محصول الزامی است";
     if (!formData.brand_id) newErrors.brand_id = "انتخاب برند الزامی است";
-    if (!formData.mothercatId) newErrors.mothercatId = "دسته‌بندی اصلی الزامی است";
+    if (!formData.mothercatId)
+      newErrors.mothercatId = "دسته‌بندی اصلی الزامی است";
     if (!formData.subcatId) newErrors.subcatId = "زیرمجموعه الزامی است";
     if (!formData.itemId) newErrors.itemId = "آیتم زیرمجموعه الزامی است";
     if (!formData.image.trim()) newErrors.image = "تصویر اصلی محصول الزامی است";
-    if (formData.variants.length === 0) newErrors.variants = "حداقل یک واریانت (رنگ) لازم است";
+    if (formData.variants.length === 0)
+      newErrors.variants = "حداقل یک واریانت (رنگ) لازم است";
 
     formData.variants.forEach((variant, index) => {
       if (!variant.color_englishName.trim())
-        newErrors[`variant_${index}_color_englishName`] = "نام انگلیسی رنگ الزامی است";
+        newErrors[`variant_${index}_color_englishName`] =
+          "نام انگلیسی رنگ الزامی است";
       if (!variant.color_hexCode.trim())
         newErrors[`variant_${index}_hex`] = "کد رنگ الزامی است";
       if (!variant.price_single.trim())
@@ -182,9 +187,13 @@ const EditProductPage = () => {
           title: data.title || "",
           image: data.image || "",
           originalPrice: formatNumber(data.originalPrice?.toString() || "0"),
-          discountedPrice: formatNumber(data.discountedPrice?.toString() || "0"),
+          discountedPrice: formatNumber(
+            data.discountedPrice?.toString() || "0"
+          ),
           wholesalePrice: formatNumber(data.wholesalePrice?.toString() || "0"),
-          discountwholesalePrice: formatNumber(data.discountwholesalePrice?.toString() || "0"),
+          discountwholesalePrice: formatNumber(
+            data.discountwholesalePrice?.toString() || "0"
+          ),
           minwholesale: data.minwholesale?.toString() || "1",
           discount: data.discount || "0",
           discountwholesale: data.discountwholesale || "0",
@@ -206,9 +215,12 @@ const EditProductPage = () => {
               color_persianName: v.color_persianName || "",
               color_hexCode: v.color_hexCode || "#000000",
               price_single: formatNumber(v.price_single?.toString() || "0"),
-              price_wholesale: formatNumber(v.price_wholesale?.toString() || "0"),
+              price_wholesale: formatNumber(
+                v.price_wholesale?.toString() || "0"
+              ),
               discount_percent: v.discount_percent?.toString() || "0",
-              discount_wholesale_percent: v.discount_wholesale_percent?.toString() || "0",
+              discount_wholesale_percent:
+                v.discount_wholesale_percent?.toString() || "0",
               min_wholesale: v.min_wholesale?.toString() || "1",
               in_stock: v.in_stock ?? true,
               image_main: v.image_main || "",
@@ -262,6 +274,7 @@ const EditProductPage = () => {
     }
   }, [formData.subcatId]);
 
+  // محاسبه قیمت تخفیفی
   useEffect(() => {
     if (formData.originalPrice && formData.hasDiscount) {
       const original = parseFloat(formData.originalPrice.replace(/,/g, ""));
@@ -294,8 +307,13 @@ const EditProductPage = () => {
         discountwholesalePrice: prev.wholesalePrice,
       }));
     }
-  }, [formData.wholesalePrice, formData.discountwholesale, formData.hasWholesaleDiscount]);
+  }, [
+    formData.wholesalePrice,
+    formData.discountwholesale,
+    formData.hasWholesaleDiscount,
+  ]);
 
+  // مدیریت واریانت‌ها
   const addVariant = () => {
     setFormData((prev) => ({
       ...prev,
@@ -319,7 +337,11 @@ const EditProductPage = () => {
     }));
   };
 
-  const updateVariant = (index: number, field: keyof VariantFormData, value: any) => {
+  const updateVariant = (
+    index: number,
+    field: keyof VariantFormData,
+    value: any
+  ) => {
     setFormData((prev) => {
       const newVariants = [...prev.variants];
       newVariants[index] = { ...newVariants[index], [field]: value };
@@ -342,7 +364,12 @@ const EditProductPage = () => {
     });
   };
 
-  const updateVariantInfo = (variantIndex: number, infoIndex: number, field: "name" | "value", value: string) => {
+  const updateVariantInfo = (
+    variantIndex: number,
+    infoIndex: number,
+    field: "name" | "value",
+    value: string
+  ) => {
     setFormData((prev) => {
       const newVariants = [...prev.variants];
       newVariants[variantIndex].infotable[infoIndex][field] = value;
@@ -358,7 +385,11 @@ const EditProductPage = () => {
     });
   };
 
-  const openUploadModal = (type: "productImage" | "variantImage" | "variantGallery", variantIndex?: number) => {
+  // آپلود فایل
+  const openUploadModal = (
+    type: "productImage" | "variantImage" | "variantGallery",
+    variantIndex?: number
+  ) => {
     setUploadTarget({ type, variantIndex });
     setFiles([]);
     setPreviews({});
@@ -371,14 +402,17 @@ const EditProductPage = () => {
     setUploadTarget(null);
   };
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    setFiles((prev) => [...prev, ...selectedFiles]);
-    selectedFiles.forEach((file) => {
-      const url = URL.createObjectURL(file);
-      setPreviews((prev) => ({ ...prev, [file.name]: url }));
-    });
-  }, []);
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = Array.from(e.target.files || []);
+      setFiles((prev) => [...prev, ...selectedFiles]);
+      selectedFiles.forEach((file) => {
+        const url = URL.createObjectURL(file);
+        setPreviews((prev) => ({ ...prev, [file.name]: url }));
+      });
+    },
+    []
+  );
 
   const removeFile = (name: string) => {
     setFiles((prev) => prev.filter((f) => f.name !== name));
@@ -423,9 +457,19 @@ const EditProductPage = () => {
 
     if (uploadTarget?.type === "productImage") {
       setFormData((prev) => ({ ...prev, image: uploadedFiles[0].url }));
-    } else if (uploadTarget?.type === "variantImage" && uploadTarget.variantIndex !== undefined) {
-      updateVariant(uploadTarget.variantIndex, "image_main", uploadedFiles[0].url);
-    } else if (uploadTarget?.type === "variantGallery" && uploadTarget.variantIndex !== undefined) {
+    } else if (
+      uploadTarget?.type === "variantImage" &&
+      uploadTarget.variantIndex !== undefined
+    ) {
+      updateVariant(
+        uploadTarget.variantIndex,
+        "image_main",
+        uploadedFiles[0].url
+      );
+    } else if (
+      uploadTarget?.type === "variantGallery" &&
+      uploadTarget.variantIndex !== undefined
+    ) {
       const urls = uploadedFiles.map((f) => f.url);
       setFormData((prev) => {
         const newVariants = [...prev.variants];
@@ -465,7 +509,10 @@ const EditProductPage = () => {
         in_stock: v.in_stock,
         image_main: v.image_main.trim() || null,
         images: v.images.length > 0 ? v.images : null,
-        infotable: v.infotable.length > 0 ? v.infotable.filter(i => i.name.trim() && i.value.trim()) : null,
+        infotable:
+          v.infotable.length > 0
+            ? v.infotable.filter((i) => i.name.trim() && i.value.trim())
+            : null,
       }));
 
       const payload = {
@@ -475,10 +522,15 @@ const EditProductPage = () => {
         originalPrice: formData.originalPrice.replace(/,/g, ""),
         discountedPrice: formData.discountedPrice.replace(/,/g, ""),
         wholesalePrice: formData.wholesalePrice.replace(/,/g, ""),
-        discountwholesalePrice: formData.discountwholesalePrice.replace(/,/g, ""),
+        discountwholesalePrice: formData.discountwholesalePrice.replace(
+          /,/g,
+          ""
+        ),
         minwholesale: parseInt(formData.minwholesale),
         discount: formData.hasDiscount ? formData.discount : "0",
-        discountwholesale: formData.hasWholesaleDiscount ? formData.discountwholesale : "0",
+        discountwholesale: formData.hasWholesaleDiscount
+          ? formData.discountwholesale
+          : "0",
         category: formData.category,
         mothercatId: parseInt(formData.mothercatId),
         subcatId: parseInt(formData.subcatId),
@@ -487,7 +539,12 @@ const EditProductPage = () => {
         inStock: parseInt(formData.inStock),
         numericPrice: parseInt(formData.discountedPrice.replace(/,/g, "")) || 0,
         sales: parseInt(formData.sales) || 0,
-        features: formData.features ? formData.features.split("\n").map(f => f.trim()).filter(Boolean) : null,
+        features: formData.features
+          ? formData.features
+              .split("\n")
+              .map((f) => f.trim())
+              .filter(Boolean)
+          : null,
         content: formData.content.trim() || null,
         media: formData.media.length > 0 ? formData.media : null,
         variants: cleanedVariants,
@@ -516,57 +573,76 @@ const EditProductPage = () => {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6 md:p-12 text-center yekan">
-        <Loader2 className="h-16 w-16 animate-spin mx-auto text-purple-600" />
-        <p className="mt-8 text-2xl">در حال بارگذاری محصول...</p>
+      <div className="container mx-auto p-8 text-center yekan">
+        <Loader2 className="h-12 w-12 animate-spin mx-auto text-purple-600" />
+        <p className="mt-6 text-xl">در حال بارگذاری محصول...</p>
       </div>
     );
   }
 
   return (
     <div className="container mx-auto p-4 yekan">
-      <Card className="bg-white dark:bg-gray-800 shadow-xl">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">ویرایش محصول</CardTitle>
+      <Card className="bg-white dark:bg-gray-800 shadow-2xl">
+        <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-xl">
+          <CardTitle className="text-3xl text-center py-4">
+            ویرایش محصول
+          </CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <CardContent className="p-8">
+          <form onSubmit={handleSubmit} className="space-y-8">
             {/* اطلاعات پایه */}
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
               <div
-                className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 cursor-pointer"
+                className="flex justify-between items-center p-6 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                 onClick={() => toggleSection("basic")}
               >
-                <h3 className="text-lg font-bold">اطلاعات پایه</h3>
-                {expandedSections.basic ? <ChevronUp /> : <ChevronDown />}
+                <h3 className="text-2xl font-bold">اطلاعات پایه</h3>
+                {expandedSections.basic ? (
+                  <ChevronUp className="h-8 w-8" />
+                ) : (
+                  <ChevronDown className="h-8 w-8" />
+                )}
               </div>
               {expandedSections.basic && (
-                <div className="p-6 space-y-6">
+                <div className="p-8 space-y-8">
                   <div>
-                    <Label>نام محصول *</Label>
+                    <Label className="text-lg">نام محصول *</Label>
                     <Input
                       value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, title: e.target.value })
+                      }
                       placeholder="نام محصول را وارد کنید"
+                      className="text-lg py-6"
                     />
-                    {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+                    {errors.title && (
+                      <p className="text-red-500 text-sm mt-2">
+                        {errors.title}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <Label>توضیحات محصول</Label>
+                    <Label className="text-lg">توضیحات محصول</Label>
                     <Textarea
                       value={formData.content}
-                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                      rows={6}
-                      placeholder="توضیحات کامل محصول..."
+                      onChange={(e) =>
+                        setFormData({ ...formData, content: e.target.value })
+                      }
+                      rows={8}
+                      placeholder="توضیحات کامل و جذاب محصول را بنویسید..."
+                      className="text-lg"
                     />
                   </div>
                   <div>
-                    <Label>ویژگی‌ها (هر خط یک ویژگی)</Label>
+                    <Label className="text-lg">ویژگی‌ها (هر خط یک ویژگی)</Label>
                     <Textarea
                       value={formData.features}
-                      onChange={(e) => setFormData({ ...formData, features: e.target.value })}
-                      rows={5}
-                      placeholder="مثال: ضدآب\nباتری قوی\n..."
+                      onChange={(e) =>
+                        setFormData({ ...formData, features: e.target.value })
+                      }
+                      rows={6}
+                      placeholder="مثال:\nضدآب\nباتری قوی\nدوربین 108 مگاپیکسل"
+                      className="text-lg"
                     />
                   </div>
                 </div>
@@ -574,73 +650,98 @@ const EditProductPage = () => {
             </div>
 
             {/* قیمت‌گذاری پایه */}
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
               <div
-                className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 cursor-pointer"
+                className="flex justify-between items-center p-6 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                 onClick={() => toggleSection("pricing")}
               >
-                <h3 className="text-lg font-bold">قیمت‌گذاری پایه (پیش‌فرض برای واریانت‌ها)</h3>
-                {expandedSections.pricing ? <ChevronUp /> : <ChevronDown />}
+                <h3 className="text-2xl font-bold">
+                  قیمت‌گذاری پایه (پیش‌فرض برای واریانت‌ها)
+                </h3>
+                {expandedSections.pricing ? (
+                  <ChevronUp className="h-8 w-8" />
+                ) : (
+                  <ChevronDown className="h-8 w-8" />
+                )}
               </div>
               {expandedSections.pricing && (
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div>
-                    <Label>قیمت اصلی (تومان) *</Label>
+                    <Label className="text-lg">قیمت اصلی (تومان) *</Label>
                     <Input
                       value={formData.originalPrice}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          originalPrice: formatNumber(e.target.value.replace(/,/g, "")),
+                          originalPrice: formatNumber(
+                            e.target.value.replace(/,/g, "")
+                          ),
                         })
                       }
-                      placeholder="1,000,000"
+                      placeholder="1,500,000"
+                      className="text-xl py-7"
                     />
                   </div>
                   <div>
-                    <Label>قیمت عمده پایه (تومان) *</Label>
+                    <Label className="text-lg">قیمت عمده پایه (تومان) *</Label>
                     <Input
                       value={formData.wholesalePrice}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          wholesalePrice: formatNumber(e.target.value.replace(/,/g, "")),
+                          wholesalePrice: formatNumber(
+                            e.target.value.replace(/,/g, "")
+                          ),
                         })
                       }
-                      placeholder="900,000"
+                      placeholder="1,200,000"
+                      className="text-xl py-7"
                     />
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-6">
                     <Checkbox
                       checked={formData.hasDiscount}
-                      onCheckedChange={(c) => setFormData({ ...formData, hasDiscount: !!c })}
+                      onCheckedChange={(c) =>
+                        setFormData({ ...formData, hasDiscount: !!c })
+                      }
+                      className="h-6 w-6"
                     />
-                    <Label>تخفیف تکی دارد</Label>
+                    <Label className="text-xl">تخفیف تکی دارد</Label>
                     {formData.hasDiscount && (
                       <Input
                         type="number"
                         placeholder="درصد تخفیف"
                         value={formData.discount}
-                        onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                        className="w-32"
+                        onChange={(e) =>
+                          setFormData({ ...formData, discount: e.target.value })
+                        }
+                        className="w-40 text-xl py-7"
                         min="0"
                         max="100"
                       />
                     )}
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-6">
                     <Checkbox
                       checked={formData.hasWholesaleDiscount}
-                      onCheckedChange={(c) => setFormData({ ...formData, hasWholesaleDiscount: !!c })}
+                      onCheckedChange={(c) =>
+                        setFormData({ ...formData, hasWholesaleDiscount: !!c })
+                      }
+                      className="h-6 w-6"
                     />
-                    <Label>تخفیف عمده دارد</Label>
+                    <Label className="text-xl">تخفیف عمده دارد</Label>
                     {formData.hasWholesaleDiscount && (
                       <Input
                         type="number"
                         placeholder="درصد تخفیف عمده"
                         value={formData.discountwholesale}
-                        onChange={(e) => setFormData({ ...formData, discountwholesale: e.target.value })}
-                        className="w-32"
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            discountwholesale: e.target.value,
+                          })
+                        }
+                        className="w-40 text-xl py-7"
                         min="0"
                         max="100"
                       />
@@ -651,64 +752,90 @@ const EditProductPage = () => {
             </div>
 
             {/* تصویر اصلی محصول */}
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
               <div
-                className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 cursor-pointer"
+                className="flex justify-between items-center p-6 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                 onClick={() => toggleSection("media")}
               >
-                <h3 className="text-lg font-bold">تصویر اصلی محصول (پیش‌فرض واریانت‌ها)</h3>
-                {expandedSections.media ? <ChevronUp /> : <ChevronDown />}
+                <h3 className="text-2xl font-bold">
+                  تصویر اصلی محصول (پیش‌فرض واریانت‌ها)
+                </h3>
+                {expandedSections.media ? (
+                  <ChevronUp className="h-8 w-8" />
+                ) : (
+                  <ChevronDown className="h-8 w-8" />
+                )}
               </div>
               {expandedSections.media && (
-                <div className="p-6 space-y-6">
+                <div className="p-8 space-y-8">
                   <div>
-                    <Label>تصویر اصلی محصول *</Label>
-                    <div className="flex gap-4 items-end">
+                    <Label className="text-xl">تصویر اصلی محصول *</Label>
+                    <div className="flex gap-6 items-end">
                       <Input
                         value={formData.image}
-                        onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                        placeholder="https://..."
-                        className="flex-1"
+                        onChange={(e) =>
+                          setFormData({ ...formData, image: e.target.value })
+                        }
+                        placeholder="https://example.com/image.jpg"
+                        className="text-lg py-7 flex-1"
                       />
-                      <Button type="button" onClick={() => openUploadModal("productImage")}>
-                        <Upload className="h-5 w-5" />
+                      <Button
+                        type="button"
+                        size="lg"
+                        onClick={() => openUploadModal("productImage")}
+                      >
+                        <Upload className="h-8 w-8" />
                       </Button>
                     </div>
                     {formData.image && (
-                      <div className="mt-4">
+                      <div className="mt-8">
                         <img
                           src={formData.image}
                           alt="پیش‌نمایش تصویر اصلی"
-                          className="h-48 rounded-lg border object-cover"
+                          className="max-h-96 rounded-xl border-4 object-contain mx-auto"
+                          onError={() => toast.error("تصویر بارگذاری نشد")}
                         />
                       </div>
                     )}
-                    {errors.image && <p className="text-red-500 text-sm mt-2">{errors.image}</p>}
+                    {errors.image && (
+                      <p className="text-red-500 text-lg mt-4">
+                        {errors.image}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
             </div>
 
             {/* دسته‌بندی */}
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
               <div
-                className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 cursor-pointer"
+                className="flex justify-between items-center p-6 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                 onClick={() => toggleSection("category")}
               >
-                <h3 className="text-lg font-bold">دسته‌بندی محصول</h3>
-                {expandedSections.category ? <ChevronUp /> : <ChevronDown />}
+                <h3 className="text-2xl font-bold">دسته‌بندی محصول</h3>
+                {expandedSections.category ? (
+                  <ChevronUp className="h-8 w-8" />
+                ) : (
+                  <ChevronDown className="h-8 w-8" />
+                )}
               </div>
               {expandedSections.category && (
-                <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
                   <div>
-                    <Label>دسته‌بندی اصلی *</Label>
+                    <Label className="text-xl">دسته‌بندی اصلی *</Label>
                     <Select
                       value={formData.mothercatId}
                       onValueChange={(v) =>
-                        setFormData({ ...formData, mothercatId: v, subcatId: "", itemId: "" })
+                        setFormData({
+                          ...formData,
+                          mothercatId: v,
+                          subcatId: "",
+                          itemId: "",
+                        })
                       }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="text-lg py-7">
                         <SelectValue placeholder="انتخاب کنید" />
                       </SelectTrigger>
                       <SelectContent>
@@ -719,16 +846,22 @@ const EditProductPage = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.mothercatId && <p className="text-red-500 text-sm mt-1">{errors.mothercatId}</p>}
+                    {errors.mothercatId && (
+                      <p className="text-red-500 text-sm mt-2">
+                        {errors.mothercatId}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <Label>زیرمجموعه *</Label>
+                    <Label className="text-xl">زیرمجموعه *</Label>
                     <Select
                       value={formData.subcatId}
-                      onValueChange={(v) => setFormData({ ...formData, subcatId: v, itemId: "" })}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, subcatId: v, itemId: "" })
+                      }
                       disabled={!formData.mothercatId}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="text-lg py-7">
                         <SelectValue placeholder="ابتدا دسته اصلی را انتخاب کنید" />
                       </SelectTrigger>
                       <SelectContent>
@@ -739,184 +872,306 @@ const EditProductPage = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.subcatId && <p className="text-red-500 text-sm mt-1">{errors.subcatId}</p>}
+                    {errors.subcatId && (
+                      <p className="text-red-500 text-sm mt-2">
+                        {errors.subcatId}
+                      </p>
+                    )}
                   </div>
-                  <div>
-                    <Label>آیتم زیرمجموعه *</Label>
-                    <Select
-                      value={formData.itemId}
-                      onValueChange={(v) => setFormData({ ...formData, itemId: v })}
-                      disabled={!formData.subcatId}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="ابتدا زیرمجموعه را انتخاب کنید" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {items.map((item) => (
-                          <SelectItem key={item.id} value={item.id.toString()}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {errors.itemId && <p className="text-red-500 text-sm mt-1">{errors.itemId}</p>}
-                  </div>
+            <div>
+  <Label className="text-xl">آیتم زیرمجموعه *</Label>
+  <Select
+    value={formData.itemId}
+    onValueChange={(v) => setFormData({ ...formData, itemId: v })}
+    disabled={!formData.subcatId || items.length === 0}
+  >
+    <SelectTrigger className="text-lg py-7">
+      <SelectValue placeholder={
+        !formData.subcatId
+          ? "ابتدا زیرمجموعه را انتخاب کنید"
+          : items.length === 0
+            ? "هیچ آیتمی موجود نیست"
+            : "یک آیتم انتخاب کنید"
+      } />
+    </SelectTrigger>
+    <SelectContent>
+      {items.length > 0 ? (
+        items.map((item) => (
+          <SelectItem key={item.id} value={item.id.toString()}>
+            {item.name}
+          </SelectItem>
+        ))
+      ) : (
+        // وقتی آیتمی نیست، هیچ SelectItem با value خالی نذار!
+        // فقط یک پیام غیرقابل انتخاب نشون بده (بدون value)
+        <div className="py-2 px-4 text-sm text-gray-500 text-center">
+          هیچ آیتمی برای این زیرمجموعه موجود نیست
+        </div>
+      )}
+    </SelectContent>
+  </Select>
+  {errors.itemId && (
+    <p className="text-red-500 text-sm mt-2">{errors.itemId}</p>
+  )}
+</div>
                 </div>
               )}
             </div>
 
             {/* واریانت‌ها (رنگ‌ها) */}
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border-2 border-purple-300 dark:border-purple-700 rounded-xl overflow-hidden">
               <div
-                className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 cursor-pointer"
+                className="flex justify-between items-center p-6 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900 dark:to-pink-900 cursor-pointer hover:opacity-90 transition"
                 onClick={() => toggleSection("variants")}
               >
-                <h3 className="text-lg font-bold">واریانت‌ها (رنگ‌ها)</h3>
-                {expandedSections.variants ? <ChevronUp /> : <ChevronDown />}
+                <h3 className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+                  واریانت‌ها (رنگ‌ها)
+                </h3>
+                {expandedSections.variants ? (
+                  <ChevronUp className="h-8 w-8" />
+                ) : (
+                  <ChevronDown className="h-8 w-8" />
+                )}
               </div>
               {expandedSections.variants && (
-                <div className="p-6 space-y-10">
+                <div className="p-8 space-y-12">
                   {formData.variants.map((variant, vIndex) => (
-                    <div key={vIndex} className="border-2 border-dashed border-purple-300 rounded-xl p-8 bg-purple-50 dark:bg-purple-900/20">
-                      <div className="flex justify-between items-center mb-6">
-                        <h4 className="text-xl font-bold">
-                          واریانت {vIndex + 1}: {variant.color_persianName || variant.color_englishName || "جدید"}
+                    <div
+                      key={vIndex}
+                      className="border-4 border-purple-400 dark:border-purple-600 rounded-2xl p-10 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 shadow-xl"
+                    >
+                      <div className="flex justify-between items-center mb-8">
+                        <h4 className="text-2xl font-bold text-purple-800 dark:text-purple-200">
+                          واریانت {vIndex + 1}:{" "}
+                          {variant.color_persianName ||
+                            variant.color_englishName ||
+                            "جدید"}
                         </h4>
-                        <Button variant="destructive" onClick={() => removeVariant(vIndex)}>
-                          <Trash2 className="h-5 w-5" />
+                        <Button
+                          variant="destructive"
+                          size="lg"
+                          onClick={() => removeVariant(vIndex)}
+                        >
+                          <Trash2 className="h-8 w-8" />
                         </Button>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                      {/* رنگ */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
                         <div>
-                          <Label>نام انگلیسی رنگ *</Label>
+                          <Label className="text-xl">نام انگلیسی رنگ *</Label>
                           <Input
                             value={variant.color_englishName}
-                            onChange={(e) => updateVariant(vIndex, "color_englishName", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "color_englishName",
+                                e.target.value
+                              )
+                            }
                             placeholder="مثال: red"
+                            className="text-lg py-7"
                           />
                         </div>
                         <div>
-                          <Label>نام فارسی رنگ</Label>
+                          <Label className="text-xl">نام فارسی رنگ</Label>
                           <Input
                             value={variant.color_persianName}
-                            onChange={(e) => updateVariant(vIndex, "color_persianName", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "color_persianName",
+                                e.target.value
+                              )
+                            }
                             placeholder="مثال: قرمز"
+                            className="text-lg py-7"
                           />
                         </div>
                         <div>
-                          <Label>کد رنگ *</Label>
-                          <div className="flex gap-3">
+                          <Label className="text-xl">کد رنگ *</Label>
+                          <div className="flex gap-4">
                             <Input
                               type="color"
                               value={variant.color_hexCode}
-                              onChange={(e) => updateVariant(vIndex, "color_hexCode", e.target.value)}
-                              className="w-20 h-12"
+                              onChange={(e) =>
+                                updateVariant(
+                                  vIndex,
+                                  "color_hexCode",
+                                  e.target.value
+                                )
+                              }
+                              className="w-32 h-16"
                             />
                             <Input
                               value={variant.color_hexCode}
-                              onChange={(e) => updateVariant(vIndex, "color_hexCode", e.target.value)}
+                              onChange={(e) =>
+                                updateVariant(
+                                  vIndex,
+                                  "color_hexCode",
+                                  e.target.value
+                                )
+                              }
                               placeholder="#FF0000"
+                              className="flex-1 text-lg py-7"
                             />
                           </div>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                      {/* قیمت و تخفیف */}
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
                         <div>
-                          <Label>قیمت تکی این رنگ *</Label>
+                          <Label className="text-xl">قیمت تکی این رنگ *</Label>
                           <Input
                             value={variant.price_single}
                             onChange={(e) =>
-                              updateVariant(vIndex, "price_single", formatNumber(e.target.value.replace(/,/g, "")))
+                              updateVariant(
+                                vIndex,
+                                "price_single",
+                                formatNumber(e.target.value.replace(/,/g, ""))
+                              )
                             }
                             placeholder="1,200,000"
+                            className="text-xl py-8"
                           />
                         </div>
                         <div>
-                          <Label>قیمت عمده این رنگ *</Label>
+                          <Label className="text-xl">قیمت عمده این رنگ *</Label>
                           <Input
                             value={variant.price_wholesale}
                             onChange={(e) =>
-                              updateVariant(vIndex, "price_wholesale", formatNumber(e.target.value.replace(/,/g, "")))
+                              updateVariant(
+                                vIndex,
+                                "price_wholesale",
+                                formatNumber(e.target.value.replace(/,/g, ""))
+                              )
                             }
                             placeholder="1,000,000"
+                            className="text-xl py-8"
                           />
                         </div>
                         <div>
-                          <Label>درصد تخفیف تکی</Label>
+                          <Label className="text-xl">درصد تخفیف تکی</Label>
                           <Input
                             type="number"
                             value={variant.discount_percent}
-                            onChange={(e) => updateVariant(vIndex, "discount_percent", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "discount_percent",
+                                e.target.value
+                              )
+                            }
                             min="0"
                             max="100"
+                            className="text-xl py-8"
                           />
                         </div>
                         <div>
-                          <Label>درصد تخفیف عمده</Label>
+                          <Label className="text-xl">درصد تخفیف عمده</Label>
                           <Input
                             type="number"
                             value={variant.discount_wholesale_percent}
-                            onChange={(e) => updateVariant(vIndex, "discount_wholesale_percent", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "discount_wholesale_percent",
+                                e.target.value
+                              )
+                            }
                             min="0"
                             max="100"
+                            className="text-xl py-8"
                           />
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4 mb-8">
+                      <div className="flex items-center gap-6 mb-10">
                         <Checkbox
                           checked={variant.in_stock}
-                          onCheckedChange={(c) => updateVariant(vIndex, "in_stock", !!c)}
+                          onCheckedChange={(c) =>
+                            updateVariant(vIndex, "in_stock", !!c)
+                          }
+                          className="h-8 w-8"
                         />
-                        <Label className="text-base">این رنگ موجود است</Label>
+                        <Label className="text-2xl">این رنگ موجود است</Label>
                       </div>
 
-                      <div className="mb-8">
-                        <Label>تصویر اصلی این رنگ</Label>
-                        <div className="flex gap-4 items-end">
+                      {/* تصویر اصلی واریانت */}
+                      <div className="mb-10">
+                        <Label className="text-xl">تصویر اصلی این رنگ</Label>
+                        <div className="flex gap-6 items-end">
                           <Input
                             value={variant.image_main}
-                            onChange={(e) => updateVariant(vIndex, "image_main", e.target.value)}
-                            placeholder="URL تصویر"
-                            className="flex-1"
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "image_main",
+                                e.target.value
+                              )
+                            }
+                            placeholder="https://..."
+                            className="flex-1 text-lg py-7"
                           />
-                          <Button type="button" onClick={() => openUploadModal("variantImage", vIndex)}>
-                            <Upload className="h-5 w-5" />
+                          <Button
+                            type="button"
+                            size="lg"
+                            onClick={() =>
+                              openUploadModal("variantImage", vIndex)
+                            }
+                          >
+                            <Upload className="h-8 w-8" />
                           </Button>
                         </div>
                         {variant.image_main && (
-                          <img
-                            src={variant.image_main}
-                            alt="تصویر واریانت"
-                            className="mt-4 h-48 rounded-lg border object-cover"
-                          />
+                          <div className="mt-8">
+                            <img
+                              src={variant.image_main}
+                              alt="تصویر واریانت"
+                              className="max-h-96 rounded-xl border-4 object-contain mx-auto"
+                            />
+                          </div>
                         )}
                       </div>
 
-                      <div className="mb-8">
-                        <div className="flex justify-between items-center mb-4">
-                          <Label className="text-lg">گالری تصاویر این رنگ</Label>
-                          <Button type="button" onClick={() => openUploadModal("variantGallery", vIndex)}>
-                            <Upload className="h-5 w-5 mr-2" /> آپلود گالری
+                      {/* گالری واریانت */}
+                      <div className="mb-10">
+                        <div className="flex justify-between items-center mb-6">
+                          <Label className="text-2xl">
+                            گالری تصاویر این رنگ
+                          </Label>
+                          <Button
+                            type="button"
+                            size="lg"
+                            onClick={() =>
+                              openUploadModal("variantGallery", vIndex)
+                            }
+                          >
+                            <Upload className="h-8 w-8 mr-4" /> آپلود گالری
                           </Button>
                         </div>
                         {variant.images.length > 0 && (
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                             {variant.images.map((img, i) => (
                               <div key={i} className="relative group">
-                                <img src={img} alt={`گالری ${i + 1}`} className="h-32 rounded border object-cover" />
+                                <img
+                                  src={img}
+                                  alt={`گالری ${i + 1}`}
+                                  className="h-48 rounded-xl border-4 object-cover"
+                                />
                                 <Button
                                   variant="destructive"
                                   size="icon"
-                                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100"
+                                  className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition"
                                   onClick={() => {
-                                    const newImages = variant.images.filter((_, idx) => idx !== i);
+                                    const newImages = variant.images.filter(
+                                      (_, idx) => idx !== i
+                                    );
                                     updateVariant(vIndex, "images", newImages);
                                   }}
                                 >
-                                  <X className="h-4 w-4" />
+                                  <X className="h-6 w-6" />
                                 </Button>
                               </div>
                             ))}
@@ -924,33 +1179,58 @@ const EditProductPage = () => {
                         )}
                       </div>
 
+                      {/* مشخصات فنی واریانت */}
                       <div>
-                        <div className="flex justify-between items-center mb-4">
-                          <Label className="text-lg">مشخصات فنی این رنگ</Label>
-                          <Button type="button" variant="outline" onClick={() => addVariantInfo(vIndex)}>
-                            <Plus className="h-5 w-5 mr-2" /> افزودن مشخصه
+                        <div className="flex justify-between items-center mb-6">
+                          <Label className="text-2xl">مشخصات فنی این رنگ</Label>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="lg"
+                            onClick={() => addVariantInfo(vIndex)}
+                          >
+                            <Plus className="h-8 w-8 mr-4" /> افزودن مشخصه
                           </Button>
                         </div>
                         {variant.infotable.map((info, infoIndex) => (
-                          <div key={infoIndex} className="flex gap-4 mb-4 items-center">
+                          <div
+                            key={infoIndex}
+                            className="flex gap-6 mb-6 items-center"
+                          >
                             <Input
                               placeholder="نام مشخصه (مثال: وزن)"
                               value={info.name}
-                              onChange={(e) => updateVariantInfo(vIndex, infoIndex, "name", e.target.value)}
-                              className="flex-1"
+                              onChange={(e) =>
+                                updateVariantInfo(
+                                  vIndex,
+                                  infoIndex,
+                                  "name",
+                                  e.target.value
+                                )
+                              }
+                              className="flex-1 text-lg py-7"
                             />
                             <Input
                               placeholder="مقدار (مثال: 180 گرم)"
                               value={info.value}
-                              onChange={(e) => updateVariantInfo(vIndex, infoIndex, "value", e.target.value)}
-                              className="flex-1"
+                              onChange={(e) =>
+                                updateVariantInfo(
+                                  vIndex,
+                                  infoIndex,
+                                  "value",
+                                  e.target.value
+                                )
+                              }
+                              className="flex-1 text-lg py-7"
                             />
                             <Button
                               variant="destructive"
-                              size="icon"
-                              onClick={() => removeVariantInfo(vIndex, infoIndex)}
+                              size="lg"
+                              onClick={() =>
+                                removeVariantInfo(vIndex, infoIndex)
+                              }
                             >
-                              <Trash2 className="h-5 w-5" />
+                              <Trash2 className="h-8 w-8" />
                             </Button>
                           </div>
                         ))}
@@ -958,32 +1238,47 @@ const EditProductPage = () => {
                     </div>
                   ))}
 
-                  <Button type="button" onClick={addVariant} className="w-full text-lg py-6">
-                    <Plus className="h-6 w-6 mr-3" /> افزودن واریانت جدید (رنگ)
+                  <Button
+                    type="button"
+                    onClick={addVariant}
+                    className="w-full text-2xl py-10 bg-purple-600 hover:bg-purple-700"
+                  >
+                    <Plus className="h-10 w-10 mr-6" /> افزودن واریانت جدید
+                    (رنگ)
                   </Button>
-                  {errors.variants && <p className="text-red-500 text-center text-lg">{errors.variants}</p>}
+                  {errors.variants && (
+                    <p className="text-red-600 text-center text-2xl">
+                      {errors.variants}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
 
             {/* سایر اطلاعات */}
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
               <div
-                className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 cursor-pointer"
+                className="flex justify-between items-center p-6 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition"
                 onClick={() => toggleSection("additional")}
               >
-                <h3 className="text-lg font-bold">سایر اطلاعات</h3>
-                {expandedSections.additional ? <ChevronUp /> : <ChevronDown />}
+                <h3 className="text-2xl font-bold">سایر اطلاعات</h3>
+                {expandedSections.additional ? (
+                  <ChevronUp className="h-8 w-8" />
+                ) : (
+                  <ChevronDown className="h-8 w-8" />
+                )}
               </div>
               {expandedSections.additional && (
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                   <div>
-                    <Label>برند *</Label>
+                    <Label className="text-xl">برند *</Label>
                     <Select
                       value={formData.brand_id}
-                      onValueChange={(v) => setFormData({ ...formData, brand_id: v })}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, brand_id: v })
+                      }
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="text-lg py-7">
                         <SelectValue placeholder="انتخاب برند" />
                       </SelectTrigger>
                       <SelectContent>
@@ -994,33 +1289,50 @@ const EditProductPage = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.brand_id && <p className="text-red-500 text-sm mt-1">{errors.brand_id}</p>}
+                    {errors.brand_id && (
+                      <p className="text-red-500 text-sm mt-2">
+                        {errors.brand_id}
+                      </p>
+                    )}
                   </div>
                   <div>
-                    <Label>امتیاز محصول (0 تا 5)</Label>
+                    <Label className="text-xl">امتیاز محصول (0 تا 5)</Label>
                     <Input
                       type="number"
                       min="0"
                       max="5"
                       step="0.1"
                       value={formData.rating}
-                      onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, rating: e.target.value })
+                      }
+                      className="text-xl py-7"
                     />
                   </div>
                 </div>
               )}
             </div>
 
-            {/* دکمه‌ها */}
-            <div className="flex gap-6 pt-8">
-              <Button type="button" variant="outline" onClick={() => router.back()} className="flex-1 text-lg py-6">
+            {/* دکمه‌های نهایی */}
+            <div className="flex gap-8 pt-12">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={() => router.back()}
+                className="flex-1 text-2xl py-10"
+              >
                 بازگشت
               </Button>
-              <Button type="submit" disabled={loading} className="flex-1 bg-green-600 hover:bg-green-700 text-lg py-6">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-2xl py-10"
+              >
                 {loading ? (
                   <>
-                    <Loader2 className="h-6 w-6 animate-spin mr-3" />
-                    در حال بروزرسانی محصول...
+                    <Loader2 className="h-10 w-10 animate-spin mr-6" />
+                    در حال ذخیره تغییرات...
                   </>
                 ) : (
                   "بروزرسانی محصول"
@@ -1033,72 +1345,108 @@ const EditProductPage = () => {
 
       {/* مودال آپلود */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-8 border-b">
-              <h2 className="text-2xl font-bold text-center">آپلود فایل</h2>
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-3xl max-w-4xl w-full max-h-[95vh] overflow-y-auto">
+            <div className="p-10 border-b-2 border-gray-200 dark:border-gray-700">
+              <h2 className="text-3xl font-bold text-center">آپلود فایل</h2>
             </div>
-            <div className="p-8 space-y-8">
+            <div className="p-10 space-y-10">
               <div
-                className="border-4 border-dashed border-purple-400 rounded-2xl p-12 text-center cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition"
+                className="border-4 border-dashed border-purple-500 rounded-3xl p-16 text-center cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition"
                 onClick={() => document.getElementById("upload-input")?.click()}
               >
-                <Upload className="h-16 w-16 mx-auto text-purple-600 mb-6" />
-                <p className="text-xl font-bold">فایل‌ها را اینجا بکشید یا کلیک کنید</p>
-                <p className="text-sm text-gray-500 mt-2">حداکثر 10 مگابایت - تصاویر و ویدئو</p>
-                <Input id="upload-input" type="file" multiple className="hidden" onChange={handleFileChange} />
+                <Upload className="h-20 w-20 mx-auto text-purple-600 mb-8" />
+                <p className="text-2xl font-bold mb-4">
+                  فایل‌ها را اینجا بکشید یا کلیک کنید
+                </p>
+                <p className="text-lg text-gray-600 dark:text-gray-400">
+                  حداکثر 10 مگابایت - تصاویر و ویدئو
+                </p>
+                <Input
+                  id="upload-input"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
               </div>
 
               {files.length > 0 && (
                 <div>
-                  <h3 className="text-xl font-bold mb-4">فایل‌های انتخاب شده ({files.length})</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  <h3 className="text-2xl font-bold mb-6 text-center">
+                    فایل‌های انتخاب شده ({files.length})
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                     {files.map((file) => (
                       <div key={file.name} className="relative group">
                         <img
                           src={previews[file.name]}
                           alt={file.name}
-                          className="h-40 rounded-xl border-2 object-cover"
+                          className="h-48 rounded-2xl border-4 object-cover"
                         />
                         <Button
                           variant="destructive"
                           size="icon"
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"
+                          className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition"
                           onClick={() => removeFile(file.name)}
                         >
-                          <X className="h-5 w-5" />
+                          <X className="h-8 w-8" />
                         </Button>
-                        <p className="text-center text-sm mt-2 truncate">{file.name}</p>
+                        <p className="text-center text-lg mt-4 truncate">
+                          {file.name}
+                        </p>
                       </div>
                     ))}
                   </div>
-                  <Button onClick={handleUpload} disabled={uploading} className="w-full mt-6 text-lg py-6">
-                    {uploading ? "در حال آپلود..." : `آپلود ${files.length} فایل`}
+                  <Button
+                    onClick={handleUpload}
+                    disabled={uploading}
+                    className="w-full mt-10 text-2xl py-10"
+                  >
+                    {uploading ? (
+                      <>
+                        <Loader2 className="h-10 w-10 animate-spin mr-6" />
+                        در حال آپلود...
+                      </>
+                    ) : (
+                      `آپلود ${files.length} فایل`
+                    )}
                   </Button>
                 </div>
               )}
 
               {uploadedFiles.length > 0 && (
                 <div>
-                  <h3 className="text-xl font-bold mb-4">فایل‌های آپلود شده ({uploadedFiles.length})</h3>
-                  <div className="grid grid-cols-3 md:grid-cols-5 gap-6">
+                  <h3 className="text-2xl font-bold mb-6 text-center">
+                    فایل‌های آپلود شده ({uploadedFiles.length})
+                  </h3>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
                     {uploadedFiles.map((file) => (
                       <img
                         key={file.name}
                         src={file.url}
                         alt={file.name}
-                        className="h-32 rounded-xl border-2 object-cover"
+                        className="h-40 rounded-2xl border-4 object-cover"
                       />
                     ))}
                   </div>
-                  <Button onClick={confirmUpload} className="w-full mt-6 bg-green-600 hover:bg-green-700 text-lg py-6">
-                    <CheckCircle className="h-6 w-6 mr-3" /> تأیید و اعمال
+                  <Button
+                    onClick={confirmUpload}
+                    className="w-full mt-10 bg-green-600 hover:bg-green-700 text-2xl py-10"
+                  >
+                    <CheckCircle className="h-10 w-10 mr-6" />
+                    تأیید و اعمال به فرم
                   </Button>
                 </div>
               )}
             </div>
-            <div className="p-8 border-t flex justify-end">
-              <Button variant="outline" size="lg" onClick={closeUploadModal}>
+            <div className="p-10 border-t-2 border-gray-200 dark:border-gray-700 flex justify-end">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={closeUploadModal}
+                className="text-xl px-12 py-8"
+              >
                 بستن
               </Button>
             </div>

@@ -1,4 +1,4 @@
-// types.ts (نسخه نهایی و کاملاً هماهنگ با ساختار جدید product_variants)
+// types.ts (نسخه نهایی، کامل، بدون هیچ خطا و کاملاً هماهنگ با تمام پروژه)
 import { RowDataPacket } from 'mysql2/promise';
 
 export interface Comment {

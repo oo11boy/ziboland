@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { Categoryapi, RowDataPacket } from "@/types/types";
 
+interface SubcategoryRow extends RowDataPacket {
+  id: number;
+  name: string;
+}
+
 // ===================== GET CATEGORY BY ID =====================
 export async function GET(request: NextRequest) {
   const idStr = request.nextUrl.pathname.split("/").pop();
@@ -42,9 +47,9 @@ export async function GET(request: NextRequest) {
         categoriesMap[catId] = {
           id: catId,
           name: row.cat_name,
-          link: row.link || "", // اگر null بود، خالی برگردان
+          link: row.link || "",
           mothercat: row.mothercat,
-          icon: row.icon || "icon", // پیش‌فرض برای نمایش
+          icon: row.icon || "icon",
           subcat: [],
         };
       }
@@ -87,7 +92,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// ===================== UPDATE CATEGORY (ویرایش امن) =====================
+// ===================== UPDATE CATEGORY =====================
 export async function PUT(request: NextRequest) {
   const idStr = request.nextUrl.pathname.split("/").pop();
   const categoryId = parseInt(idStr || "");
@@ -110,38 +115,35 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // مقدار پیش‌فرض برای icon
     const iconValue = "icon";
 
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
 
-      // 1. بروزرسانی دسته‌بندی اصلی
       await connection.query(
         "UPDATE categories SET name = ?, link = ?, mothercat = ?, icon = ? WHERE id = ?",
         [name.trim(), link, mothercat ? 1 : 0, iconValue, categoryId]
       );
 
-      // 2. دریافت زیرمجموعه‌های فعلی
-      const [currentSubcats] = (await connection.query(
+      // فقط اولین عنصر (rows) را می‌گیریم و به نوع دلخواه تبدیل می‌کنیم
+      const [currentSubcatsRows] = await connection.query<RowDataPacket[]>(
         "SELECT id, name FROM subcategories WHERE category_id = ?",
         [categoryId]
-      )) as any[];
+      );
+      const currentSubcats = currentSubcatsRows as SubcategoryRow[];
 
       const currentSubcatMap = new Map<number, string>();
-      currentSubcats.forEach((sc: { id: number; name: string }) =>
-        currentSubcatMap.set(sc.id, sc.name)
-      );
+      currentSubcats.forEach((sc) => currentSubcatMap.set(sc.id, sc.name));
 
       const usedSubcatIds = new Set<number>();
 
-      // 3. پردازش زیرمجموعه‌های ارسالی
       if (subcat && Array.isArray(subcat)) {
         for (const sub of subcat) {
           if (!sub.name?.trim()) continue;
 
-          // اگر زیرمجموعه id دارد → بروزرسانی
+          let subcatId: number;
+
           if (sub.id && currentSubcatMap.has(sub.id)) {
             const oldName = currentSubcatMap.get(sub.id);
             if (oldName !== sub.name.trim()) {
@@ -150,64 +152,135 @@ export async function PUT(request: NextRequest) {
                 [sub.name.trim(), sub.id, categoryId]
               );
             }
-            usedSubcatIds.add(sub.id);
-
-            // مدیریت آیتم‌ها
-            if (sub.items && Array.isArray(sub.items)) {
-              await connection.query(
-                "DELETE FROM subcategory_items WHERE subcategory_id = ?",
-                [sub.id]
-              );
-              for (const item of sub.items) {
-                if (item.name?.trim()) {
-                  await connection.query(
-                    "INSERT INTO subcategory_items (subcategory_id, name) VALUES (?, ?)",
-                    [sub.id, item.name.trim()]
-                  );
-                }
-              }
-            }
-          }
-          // زیرمجموعه جدید
-          else {
+            subcatId = sub.id;
+          } else {
             const [result] = await connection.query(
               "INSERT INTO subcategories (category_id, name) VALUES (?, ?)",
               [categoryId, sub.name.trim()]
             );
-            const newSubcatId = (result as any).insertId;
-            usedSubcatIds.add(newSubcatId);
+            subcatId = (result as any).insertId;
+          }
 
-            if (sub.items && Array.isArray(sub.items)) {
-              for (const item of sub.items) {
-                if (item.name?.trim()) {
+          usedSubcatIds.add(subcatId);
+
+          const [currentItemsRows] = await connection.query<RowDataPacket[]>(
+            "SELECT id, name FROM subcategory_items WHERE subcategory_id = ?",
+            [subcatId]
+          );
+          const currentItems = currentItemsRows as SubcategoryRow[];
+
+          const currentItemMap = new Map<number, string>();
+          currentItems.forEach((item) => currentItemMap.set(item.id, item.name));
+
+          const usedItemIds = new Set<number>();
+
+          if (sub.items && Array.isArray(sub.items)) {
+            for (const item of sub.items) {
+              if (!item.name?.trim()) continue;
+
+              let itemId: number;
+
+              if (item.id && currentItemMap.has(item.id)) {
+                const oldName = currentItemMap.get(item.id);
+                if (oldName !== item.name.trim()) {
                   await connection.query(
-                    "INSERT INTO subcategory_items (subcategory_id, name) VALUES (?, ?)",
-                    [newSubcatId, item.name.trim()]
+                    "UPDATE subcategory_items SET name = ? WHERE id = ? AND subcategory_id = ?",
+                    [item.name.trim(), item.id, subcatId]
                   );
                 }
+                itemId = item.id;
+              } else {
+                const [itemResult] = await connection.query(
+                  "INSERT INTO subcategory_items (subcategory_id, name) VALUES (?, ?)",
+                  [subcatId, item.name.trim()]
+                );
+                itemId = (itemResult as any).insertId;
               }
+
+              usedItemIds.add(itemId);
             }
+          }
+
+          const itemsToDelete = currentItems
+            .filter((item) => !usedItemIds.has(item.id))
+            .map((item) => item.id);
+
+          if (itemsToDelete.length > 0) {
+            const placeholders = itemsToDelete.map(() => "?").join(",");
+            await connection.query(
+              `DELETE FROM subcategory_items 
+               WHERE id IN (${placeholders}) 
+               AND subcategory_id = ? 
+               AND id NOT IN (SELECT itemId FROM products WHERE itemId IS NOT NULL)`,
+              [...itemsToDelete, subcatId]
+            );
           }
         }
       }
 
-      // 4. حذف زیرمجموعه‌های استفاده‌نشده (فقط اگر در محصولات نباشند)
-      const subcatsToDelete = currentSubcats
-        .filter((sc: { id: number }) => !usedSubcatIds.has(sc.id))
-        .map((sc: { id: any }) => sc.id);
+      const subcatsToDelete = currentSubcats.filter(
+        (sc) => !usedSubcatIds.has(sc.id)
+      );
 
       if (subcatsToDelete.length > 0) {
-        const placeholders = subcatsToDelete.map(() => "?").join(",");
+        const deleteIds = subcatsToDelete.map((sc) => sc.id);
+        const placeholders = deleteIds.map(() => "?").join(",");
+
+        const [usedInProducts] = await connection.query(
+          `SELECT p.id AS product_id, p.title AS product_name, p.subcatId 
+           FROM products p 
+           WHERE p.subcatId IN (${placeholders})`,
+          deleteIds
+        );
+
+        if ((usedInProducts as any[]).length > 0) {
+          const conflictMap = new Map<
+            number,
+            { subcatName: string; products: { id: number; name: string }[] }
+          >();
+
+          (usedInProducts as any[]).forEach((prod: any) => {
+            const subcatId = prod.subcatId;
+            const subcatName = currentSubcatMap.get(subcatId) || "نامشخص";
+            if (!conflictMap.has(subcatId)) {
+              conflictMap.set(subcatId, { subcatName, products: [] });
+            }
+            conflictMap.get(subcatId)!.products.push({
+              id: prod.product_id,
+              name: prod.product_name,
+            });
+          });
+
+          let message =
+            "⚠️ برخی زیرمجموعه‌ها حذف نشدند چون در محصولات زیر استفاده شده‌اند:\n\n";
+          conflictMap.forEach(({ subcatName, products }) => {
+            message += `➜ زیرمجموعه "${subcatName}":\n`;
+            products.forEach((p, i) => {
+              message += `   ${i + 1}. ${p.name} (ID: ${p.id})\n`;
+              message += `      ویرایش محصول: /admindashboard/products/${p.id}/edit\n`;
+            });
+            message += "\n";
+          });
+          message += "لطفاً ابتدا زیرمجموعه را از محصولات فوق حذف یا تغییر دهید.";
+
+          await connection.rollback();
+          return NextResponse.json(
+            {
+              error: "ویرایش نیمه‌کامل",
+              details: message,
+              partialSuccess: true,
+            },
+            { status: 400 }
+          );
+        }
+
         await connection.query(
           `DELETE FROM subcategory_items WHERE subcategory_id IN (${placeholders})`,
-          subcatsToDelete
+          deleteIds
         );
         await connection.query(
-          `DELETE FROM subcategories 
-           WHERE id IN (${placeholders}) 
-           AND category_id = ? 
-           AND id NOT IN (SELECT subcatId FROM products WHERE subcatId IS NOT NULL)`,
-          [...subcatsToDelete, categoryId]
+          `DELETE FROM subcategories WHERE id IN (${placeholders}) AND category_id = ?`,
+          [...deleteIds, categoryId]
         );
       }
 
@@ -247,22 +320,21 @@ export async function DELETE(request: NextRequest) {
   try {
     await connection.beginTransaction();
 
-    // 1. دریافت زیرمجموعه‌ها
-    const [subcats] = await connection.query<RowDataPacket[]>(
+    const [subcatsRows] = await connection.query<RowDataPacket[]>(
       "SELECT id, name FROM subcategories WHERE category_id = ?",
       [categoryId]
     );
+    const subcats = subcatsRows as SubcategoryRow[];
 
-    const subcatIds = subcats.map((s: any) => s.id);
-    const subcatMap = new Map(subcats.map((s: any) => [s.id, s.name]));
+    const subcatIds = subcats.map((s) => s.id);
+    const subcatMap = new Map(subcats.map((s) => [s.id, s.name]));
 
     if (subcatIds.length > 0) {
       const placeholders = subcatIds.map(() => "?").join(",");
 
-      // 2. بررسی استفاده در محصولات
       const [usedProducts] = await connection.query<RowDataPacket[]>(
         `
-        SELECT p.id, p.title AS product_name, p.subcatId 
+        SELECT p.id AS product_id, p.title AS product_name, p.subcatId 
         FROM products p 
         WHERE p.subcatId IN (${placeholders})
         ORDER BY p.subcatId, p.title
@@ -273,7 +345,7 @@ export async function DELETE(request: NextRequest) {
       if (usedProducts.length > 0) {
         const conflicts = new Map<
           number,
-          { subcatName: string; products: string[] }
+          { subcatName: string; products: { id: number; name: string; editUrl: string }[] }
         >();
 
         usedProducts.forEach((prod: any) => {
@@ -282,38 +354,43 @@ export async function DELETE(request: NextRequest) {
           if (!conflicts.has(subcatId)) {
             conflicts.set(subcatId, { subcatName, products: [] });
           }
-          conflicts.get(subcatId)!.products.push(prod.product_name);
+          conflicts.get(subcatId)!.products.push({
+            id: prod.product_id,
+            name: prod.product_name,
+            editUrl: `/admindashboard/products/${prod.product_id}/edit`,
+          });
         });
 
         let message =
-          "نمی‌توان دسته‌بندی را حذف کرد چون زیرمجموعه‌های آن در محصولات زیر استفاده شده‌اند:\n\n";
-        conflicts.forEach(({ subcatName, products }) => {
-          message += `زیرمجموعه "${subcatName}":\n`;
-          products.forEach((name, i) => {
-            message += `   ${i + 1}. ${name}\n`;
+          "نمی‌توان زیرمجموعه را حذف کرد چون در محصولات زیر استفاده شده است:\n\n" +
+          "لطفاً ابتدا به صفحه ویرایش هر محصول بروید و زیرمجموعه را تغییر دهید یا خالی کنید.\n\n";
+
+        const conflictedProducts: Record<
+          string,
+          { subcatName: string; products: { id: number; name: string; editUrl: string }[] }
+        > = {};
+
+        conflicts.forEach(({ subcatName, products }, subcatId) => {
+          message += `➜ زیرمجموعه "${subcatName}":\n`;
+          products.forEach((prod, i) => {
+            message += `   ${i + 1}. ${prod.name} → ویرایش: ${prod.editUrl}\n`;
           });
           message += "\n";
+
+          conflictedProducts[subcatId] = { subcatName, products };
         });
-        message +=
-          "لطفاً ابتدا این محصولات را ویرایش کنید و زیرمجموعه را تغییر دهید.";
 
         await connection.rollback();
         return NextResponse.json(
           {
             error: "حذف ناموفق",
             details: message.trim(),
-            conflictedProducts: Object.fromEntries(
-              Array.from(conflicts.entries()).map(([id, data]) => [
-                id,
-                { subcatName: data.subcatName, products: data.products },
-              ])
-            ),
+            conflictedProducts,
           },
           { status: 400 }
         );
       }
 
-      // 3. حذف امن آیتم‌ها و زیرمجموعه‌ها
       await connection.query(
         `DELETE FROM subcategory_items WHERE subcategory_id IN (${placeholders})`,
         subcatIds
@@ -325,7 +402,6 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // 4. حذف دسته‌بندی
     const [result] = await connection.query(
       "DELETE FROM categories WHERE id = ?",
       [categoryId]
@@ -333,10 +409,7 @@ export async function DELETE(request: NextRequest) {
 
     if ((result as any).affectedRows === 0) {
       await connection.rollback();
-      return NextResponse.json(
-        { error: "دسته‌بندی یافت نشد" },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "دسته‌بندی یافت نشد" }, { status: 404 });
     }
 
     await connection.commit();

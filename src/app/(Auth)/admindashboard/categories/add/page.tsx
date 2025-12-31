@@ -22,7 +22,7 @@ import { API, SITE } from "@/lib/MainRoutes";
 
 interface CategoryFormData {
   name: string;
-  link: string; // حالا تصویر دسته‌بندی است - اگر آپلود نشود، خالی ارسال می‌شود
+  link: string; // تصویر دسته‌بندی - اختیاری، اگر آپلود نشود "" ارسال می‌شود
   mothercat: boolean;
   subcat: { name: string; items: { name: string }[] }[];
 }
@@ -36,7 +36,7 @@ const AddCategoryPage = () => {
   const router = useRouter();
   const [formData, setFormData] = useState<CategoryFormData>({
     name: "",
-    link: "", // هیچ پیش‌فرضی ندارد
+    link: "",
     mothercat: false,
     subcat: [],
   });
@@ -212,7 +212,7 @@ const AddCategoryPage = () => {
       toast.error("هیچ تصویری آپلود نشده است");
       return;
     }
-    // فقط اولین تصویر را انتخاب می‌کنیم
+    // فقط اولین تصویر انتخاب می‌شود
     setFormData((prev) => ({ ...prev, link: uploadedFiles[0].url }));
     closeUploadModal();
     toast.success("تصویر دسته‌بندی با موفقیت انتخاب شد");

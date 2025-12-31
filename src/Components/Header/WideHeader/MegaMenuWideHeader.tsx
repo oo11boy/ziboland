@@ -2,8 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ArrowDropDown, ArrowLeft, Close } from "@mui/icons-material";
 import Link from "next/link";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast, Toaster } from "react-hot-toast";
 import { Categoryapi } from "@/types/types";
 
 interface MegaMenuWideHeaderProps {
@@ -70,19 +69,35 @@ export default function MegaMenuWideHeader({
       ref={menuRef}
       className="bg-black w-full shadow-lg z-[500] relative"
     >
-      <ToastContainer
+      {/* Toaster جدید با react-hot-toast (هماهنگ با بقیه پروژه) */}
+      <Toaster
         position="top-center"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick
-        rtl={true}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-        style={{ zIndex: 99999, top: 0, width: "100%", padding: "10px" }}
+        reverseOrder={false}
+        toastOptions={{
+          duration: 5000,
+          style: {
+            background: "#333",
+            color: "#fff",
+            maxWidth: "600px",
+            fontSize: "14px",
+            whiteSpace: "pre-line",
+            textAlign: "right" as const,
+            direction: "rtl",
+          },
+          error: {
+            duration: 8000,
+            style: {
+              background: "#ef4444",
+            },
+          },
+          success: {
+            style: {
+              background: "#22c55e",
+            },
+          },
+        }}
       />
+
       <ul className="flex justify-start items-center text-white h-[35px] gap-10 w-[90%] mx-auto">
         {categories
           .filter((category) => category.mothercat === 1)
@@ -91,7 +106,7 @@ export default function MegaMenuWideHeader({
               <button
                 onClick={() => handleMenuClick(category.id)}
                 onMouseEnter={() => handleMouseEnter(category.id)}
-                className={`text-base font-semibold flex items-center gap-2 ${
+                className={`text-base font-semibold flex items-center gap-2 transition-colors ${
                   activeMenu === category.id
                     ? "text-[#EBEBEB]"
                     : "text-white hover:text-[#EBEBEB]"
@@ -99,7 +114,7 @@ export default function MegaMenuWideHeader({
               >
                 <span className="text-sm">{category.name}</span>
                 <ArrowDropDown
-                  className={`text-base ${
+                  className={`text-base transition-transform ${
                     activeMenu === category.id ? "rotate-180" : ""
                   }`}
                 />
@@ -108,10 +123,11 @@ export default function MegaMenuWideHeader({
           ))}
       </ul>
 
+      {/* مگامنو */}
       <section
         onMouseLeave={handleMouseLeave}
-        className={`bg-white text-black w-full shadow-xl rounded-b-lg overflow-hidden absolute top-[35px] left-0 z-10 ${
-          activeMenu !== null ? "h-auto py-5" : "h-0 py-0"
+        className={`bg-white text-black w-full shadow-xl rounded-b-lg overflow-hidden absolute top-[35px] left-0 z-10 transition-all duration-300 ease-in-out ${
+          activeMenu !== null ? "h-auto py-8 opacity-100" : "h-0 py-0 opacity-0 pointer-events-none"
         }`}
       >
         <div
@@ -124,50 +140,48 @@ export default function MegaMenuWideHeader({
         >
           <button
             onClick={() => setActiveMenu(null)}
-            className="cursor-pointer absolute top-2 left-2 border-2 rounded-lg border-[#805B99]"
+            className="cursor-pointer absolute top-4 left-4 border-2 rounded-lg border-[#805B99] p-2 hover:bg-[#805B99]/10 transition"
+            aria-label="بستن منو"
           >
             <Close fontSize="medium" className="text-[#805B99]" />
           </button>
+
           {activeMenu !== null &&
           categories.find((category) => category.id === activeMenu)?.subcat ? (
             <>
               <Link
                 href={`/search?mothercatId=${activeMenu}`}
-                className="mb-2 text-lg text-[#805B99] inline-flex items-center gap-2"
+                className="mb-6 text-lg font-bold text-[#805B99] inline-flex items-center gap-2 hover:underline"
               >
                 همه{" "}
                 {
                   categories.find((category) => category.id === activeMenu)
                     ?.name
                 }
-                <ArrowLeft />
+                <ArrowLeft className="text-xl" />
               </Link>
 
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 md:supports-[not(display:grid)]:flex md:supports-[not(display:grid)]:flex-wrap">
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
                 {categories
                   .find((category) => category.id === activeMenu)
                   ?.subcat.map((sub) => (
-                    <div
-                      key={sub.id}
-                      className="subcategory mb-8 md:supports-[not(display:grid)]:flex-1 md:supports-[not(display:grid)]:min-w-[25%]"
-                    >
-                        <Link
-                           href={`/search?mothercatId=${activeMenu}&subcatId=${sub.id}`}
-                            
-                        className="font-bold text-md mb-4 flex items-center gap-2"
+                    <div key={sub.id} className="subcategory">
+                      <Link
+                        href={`/search?mothercatId=${activeMenu}&subcatId=${sub.id}`}
+                        className="font-bold text-lg mb-5 inline-flex items-center gap-3 text-black hover:text-[#805B99] transition"
                         style={{
-                          borderRight: "3px solid #2f2a2a",
-                          paddingRight: "12px",
+                          borderRight: "4px solid #805B99",
+                          paddingRight: "14px",
                         }}
                       >
                         {sub.name}
                       </Link>
-                      <ul className="space-y-3">
+                      <ul className="space-y-3 mt-4">
                         {sub.items.map((item) => (
                           <li key={item.id}>
                             <Link
                               href={`/search?mothercatId=${activeMenu}&subcatId=${sub.id}&itemId=${item.id}`}
-                              className="text-base text-[#666] hover:text-[#c7c7c7] flex items-center gap-2"
+                              className="text-base text-[#666] hover:text-[#805B99] hover:underline transition flex items-center gap-2"
                             >
                               {item.name}
                             </Link>
