@@ -8,35 +8,59 @@ import 'swiper/css/thumbs';
 import 'swiper/css/zoom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Close, ZoomIn } from '@mui/icons-material';
-import { Product, Media } from '@/types/types';
+import { Product, Variant } from '@/types/types';
 import { Swiper as SwiperType } from 'swiper/types';
 
-const ProductSlider: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
+interface ProductSliderProps {
+  infoproduct: Product;
+  selectedVariant?: Variant | null;
+}
+
+const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct, selectedVariant = null }) => {
   const [thumbsSwiper, setThumbsSwiper] = useState<SwiperType | null>(null);
   const [isClient, setIsClient] = useState<boolean>(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const imageRef = useRef<HTMLImageElement | null>(null);
 
-  const featuredImageSrc = infoproduct.image?.trim();
-  const featuredMediaItem: Media | null = featuredImageSrc
-    ? {
-        type: 'image',
-        src: featuredImageSrc,
-        thumbnail: featuredImageSrc,
-        alt: infoproduct.title || 'تصویر اصلی محصول',
-      }
-    : null;
+  // اولویت: تصویر اصلی واریانت → گالری واریانت → تصویر اصلی محصول → مدیای عمومی
+  const variantMainImage = selectedVariant?.image_main?.trim();
+  const variantGallery = selectedVariant?.images || [];
+  const productMainImage = infoproduct.image?.trim();
 
-  const allMediaItems: Media[] = [
-    ...(featuredMediaItem &&
-    (!infoproduct.media ||
-      infoproduct.media.length === 0 ||
-      !infoproduct.media.some((m) => m.src === featuredMediaItem.src))
-      ? [featuredMediaItem]
-      : []),
-    ...(infoproduct.media || []),
-  ];
+  // تصویر اصلی نهایی
+  const featuredImageSrc = variantMainImage || productMainImage;
+
+  // ساخت آرایه تصاویر
+  const allImages: string[] = [];
+
+  if (featuredImageSrc) {
+    allImages.push(featuredImageSrc);
+  }
+
+  // اضافه کردن گالری واریانت (بدون تکرار تصویر اصلی)
+  variantGallery.forEach((src) => {
+    if (src && src !== featuredImageSrc) {
+      allImages.push(src);
+    }
+  });
+
+  // اگر هنوز تصویری اضافه نشده، از مدیای عمومی استفاده کن
+  if (allImages.length === 0 && infoproduct.media) {
+    infoproduct.media.forEach((item) => {
+      if (item.type === 'image' && item.src) {
+        allImages.push(item.src);
+      }
+    });
+  }
+
+  // تبدیل به فرمت Media برای سازگاری با کد اصلی
+  const allMediaItems = allImages.map((src) => ({
+    type: 'image' as const,
+    src,
+    thumbnail: src,
+    alt: infoproduct.title || 'تصویر محصول',
+  }));
 
   const hasMultipleImages = allMediaItems.length > 1;
 
@@ -63,7 +87,9 @@ const ProductSlider: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
 
   useEffect(() => {
     setIsClient(true);
-    return () => { document.body.style.overflow = 'auto'; };
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
   }, []);
 
   if (!isClient) {
@@ -140,23 +166,14 @@ const ProductSlider: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
                   className="w-full aspect-[3/2] cursor-zoom-in bg-gray-50"
                   onClick={toggleLightbox}
                 >
-                  {item.type === 'image' ? (
-                    <div className="swiper-zoom-container flex items-center justify-center">
-                      <img
-                        src={item.src}
-                        alt={item.alt || `تصویر ${index + 1}`}
-                        className="object-contain"
-                        loading={index === 0 ? 'eager' : 'lazy'}
-                      />
-                    </div>
-                  ) : (
-                    <video
+                  <div className="swiper-zoom-container flex items-center justify-center">
+                    <img
                       src={item.src}
-                      controls
-                      className="w-full h-full object-contain"
-                      poster={item.thumbnail}
+                      alt={item.alt || `تصویر ${index + 1}`}
+                      className="object-contain"
+                      loading={index === 0 ? 'eager' : 'lazy'}
                     />
-                  )}
+                  </div>
 
                   <motion.button
                     className="absolute top-3 left-3 p-2.5 bg-white bg-opacity-85 rounded-full shadow-md z-10"

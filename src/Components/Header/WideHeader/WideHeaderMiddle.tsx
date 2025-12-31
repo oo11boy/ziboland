@@ -14,32 +14,15 @@ import React, { useState } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { toast } from "react-toastify";
 import { useCart } from "@/ContextApi/CartContext";
-import { Product } from "@/types/types";
 import { API } from "@/lib/MainRoutes";
 import { useAuth } from "@/ContextApi/AuthContext";
 
 export default function WideHeaderMiddle() {
-  const { state: { cartItems}, dispatch } = useCart();
+  const { state: { cartItems }, dispatch } = useCart();
   const { isLoggedIn } = useAuth();
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
-  const [productsMap, setProductsMap] = useState<Record<number, Product>>({});
 
   const toggleCartModal = () => setIsCartModalOpen(!isCartModalOpen);
-
-  // دریافت داده‌های محصول از API
-  const fetchProduct = async (id: number) => {
-    if (productsMap[id]) return productsMap[id];
-    try {
-      const res = await fetch(`${API}/products/${id}`, { cache: "no-store" });
-      if (!res.ok) throw new Error(`Failed to fetch product ${id}`);
-      const product: Product = await res.json();
-      setProductsMap((prev) => ({ ...prev, [id]: product }));
-      return product;
-    } catch (err) {
-      console.error(err);
-      return null;
-    }
-  };
 
   const handleRemoveItem = (id: number) => {
     dispatch({ type: "REMOVE_ITEM", payload: id });
@@ -59,62 +42,22 @@ export default function WideHeaderMiddle() {
     if (!item) return;
 
     const newQuantity = item.quantity + delta;
-    const product = await fetchProduct(id);
-    if (!product) return;
-
     if (newQuantity <= 0) {
       handleRemoveItem(id);
       return;
     }
 
-    const shouldBeWholesale = newQuantity >= product.minwholesale;
-    const newPriceType = shouldBeWholesale ? "wholesale" : "single";
-
-    const newPrice = newPriceType === "single" ? product.discountedPrice.toString() : product.discountwholesalePrice.toString();
-    const newDiscount = newPriceType === "single" ? product.discount : product.discountwholesale;
-
-    if (priceType !== newPriceType) {
-      dispatch({ type: "REMOVE_ITEM_BY_TYPE", payload: { id, priceType } });
-      const existingItem = cartItems.find((i) => i.id === id && i.priceType === newPriceType);
-
-      if (existingItem) {
-        dispatch({
-          type: "UPDATE_QUANTITY",
-          payload: {
-            ...existingItem,
-            quantity: existingItem.quantity + newQuantity,
-            price: newPrice,
-            discount: newDiscount,
-          },
-        });
-      } else {
-        dispatch({
-          type: "ADD_ITEM",
-          payload: {
-            id,
-            title: product.title,
-            quantity: newQuantity,
-            priceType: newPriceType,
-            price: newPrice,
-            image: product.media?.[0]?.src || product.image || "/placeholder.jpg",
-            discount: newDiscount,
-          },
-        });
-      }
-    } else {
-      dispatch({
-        type: "UPDATE_QUANTITY",
-        payload: {
-          ...item,
-          quantity: newQuantity,
-          price: newPrice,
-          discount: newDiscount,
-        },
-      });
-    }
+    // فقط تعداد رو آپدیت می‌کنیم (قیمت و نوع قیمت از قبل درست ذخیره شده)
+    dispatch({
+      type: "UPDATE_QUANTITY",
+      payload: {
+        ...item,
+        quantity: newQuantity,
+      },
+    });
   };
 
-  // تعریف variants با تایپ صحیح - بهترین روش
+  // تعریف variants با تایپ صحیح
   const modalVariants: Variants = {
     hidden: { opacity: 0, y: "-100%" },
     visible: { 
@@ -247,28 +190,58 @@ export default function WideHeaderMiddle() {
                           />
                           <div className="flex-1">
                             <h3 className="text-sm font-semibold text-[#374151] yekan">{item.title}</h3>
-                            <p className="text-sm text-[#6b7280] yekan">نوع قیمت: {item.priceType === "single" ? "تکی" : "عمده"}</p>
+                            
+                            {/* نمایش رنگ انتخاب‌شده */}
+                            {item.color && (
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-[#6b7280] yekan">رنگ:</span>
+                                <div className="flex items-center gap-1">
+                                  <div 
+                                    className="w-5 h-5 rounded-full border border-gray-300"
+                                    style={{ backgroundColor: item.color.hexCode }}
+                                  />
+                                  <span className="text-xs text-[#6b7280] yekan">
+                                    {item.color.persianName || item.color.englishName}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            <p className="text-sm text-[#6b7280] yekan mt-1">
+                              نوع قیمت: {item.priceType === "single" ? "تکی" : "عمده"}
+                            </p>
                             <p className="text-sm text-[#6b7280] yekan">تعداد: {item.quantity}</p>
                             <p className="text-sm text-[#6b7280] yekan">قیمت واحد: {item.price} تومان</p>
-                            {item.priceType === "wholesale" && <p className="text-sm text-[#6b7280] yekan">درصد تخفیف عمده: {item.discount}</p>}
-                            <p className="text-sm font-bold text-[#805B99] yekan">
+                            {item.priceType === "wholesale" && (
+                              <p className="text-sm text-[#6b7280] yekan">درصد تخفیف عمده: {item.discount}</p>
+                            )}
+                            <p className="text-sm font-bold text-[#805B99] yekan mt-2">
                               مجموع: {(parseInt(item.price.replace(/,/g, "")) * item.quantity).toLocaleString("fa-IR")} تومان
                             </p>
                             <div className="flex items-center gap-2 mt-2">
-                              <button onClick={() => handleQuantityChange(item.id, item.priceType, 1)} className="text-[#805B99] hover:text-[#6b4e82]">
+                              <button 
+                                onClick={() => handleQuantityChange(item.id, item.priceType, 1)} 
+                                className="text-[#805B99] hover:text-[#6b4e82]"
+                              >
                                 <AddCircleOutline fontSize="small" />
                               </button>
-                              <button onClick={() => handleQuantityChange(item.id, item.priceType, -1)} className="text-[#805B99] hover:text-[#6b4e82]">
+                              <button 
+                                onClick={() => handleQuantityChange(item.id, item.priceType, -1)} 
+                                className="text-[#805B99] hover:text-[#6b4e82]"
+                              >
                                 <RemoveCircleOutline fontSize="small" />
                               </button>
-                              <button onClick={() => handleRemoveItem(item.id)} className="text-red-500 hover:text-red-700 text-sm yekan">
+                              <button 
+                                onClick={() => handleRemoveItem(item.id)} 
+                                className="text-red-500 hover:text-red-700 text-sm yekan"
+                              >
                                 حذف
                               </button>
                             </div>
                           </div>
                         </div>
                       ))}
-                      <div className="mt-4">
+                      <div className="mt-4 pt-4 border-t border-gray-300">
                         <p className="text-lg font-bold text-[#374151] yekan">
                           مجموع کل: {cartItems.reduce((total, item) => {
                             const price = parseInt(item.price.replace(/,/g, ""));
@@ -278,12 +251,16 @@ export default function WideHeaderMiddle() {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-center text-[#6b7280] yekan">سبد خرید شما خالی است</p>
+                    <p className="text-center text-[#6b7280] yekan py-8">سبد خرید شما خالی است</p>
                   )}
                 </div>
                 {cartItems.length > 0 && (
                   <div className="p-4 border-t border-[#e5e7eb] bg-[#F9F9F9]">
-                    <Link href="/checkout" className="block w-full text-center bg-[#805B99] text-white py-2 rounded-lg hover:bg-[#6b4e82] transition duration-200 yekan">
+                    <Link 
+                      href="/checkout" 
+                      className="block w-full text-center bg-[#805B99] text-white py-3 rounded-lg hover:bg-[#6b4e82] transition duration-200 yekan font-bold text-lg"
+                      onClick={toggleCartModal}
+                    >
                       ادامه خرید
                     </Link>
                   </div>

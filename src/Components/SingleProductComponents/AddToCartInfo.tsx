@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './SingleProduct.css';
-import { Product, Color } from '@/types/types';
+import { Product, Variant } from '@/types/types';
 import { useCart } from '@/ContextApi/CartContext';
 
 interface BenefitItem {
@@ -17,30 +17,49 @@ interface BenefitItem {
   link: string;
 }
 
-const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
+interface AddToCartInfoProps {
+  infoproduct: Product;
+  selectedVariant?: Variant | null;
+  onVariantChange?: (variant: Variant) => void;
+}
+
+const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
+  infoproduct,
+  selectedVariant: externalSelectedVariant = null,
+  onVariantChange,
+}) => {
   const [quantity, setQuantity] = useState<number>(1);
-  const [selectedColor, setSelectedColor] = useState<Color | null>(
-    infoproduct.colors && infoproduct.colors.length > 0 ? infoproduct.colors[0] : null
+  const [internalSelectedVariant, setInternalSelectedVariant] = useState<Variant | null>(
+    infoproduct.variants && infoproduct.variants.length > 0 ? infoproduct.variants[0] : null
   );
   const [isWholesale, setIsWholesale] = useState<boolean>(false);
   const { dispatch } = useCart();
 
-  // تبدیل قیمت‌ها به عدد
-  const retailPrice = parseInt(String(infoproduct.discountedPrice).replace(/[^\d]/g, ''), 10) || 0;
+  const activeVariant = externalSelectedVariant || internalSelectedVariant;
 
-  const wholesalePriceRaw = String(infoproduct.discountwholesalePrice).replace(/[^\d]/g, '');
-  const wholesalePrice = wholesalePriceRaw ? parseInt(wholesalePriceRaw, 10) : 0;
+  // قیمت تکی (از واریانت یا محصول پایه)
+  const retailPrice = activeVariant
+    ? activeVariant.price_single
+    : parseInt(String(infoproduct.discountedPrice).replace(/[^\d]/g, ''), 10) || 0;
 
-  // آیا قیمت عمده وجود دارد و معتبر است؟
-  const hasWholesalePrice = wholesalePrice > 0 && infoproduct.minwholesale > 0;
+  // قیمت عمده (از واریانت یا محصول پایه)
+  const wholesalePrice = activeVariant
+    ? activeVariant.price_wholesale
+    : parseInt(String(infoproduct.discountwholesalePrice).replace(/[^\d]/g, ''), 10) || 0;
 
-  // آیا کاربر واجد شرایط قیمت عمده است؟
-  const isEligibleForWholesale = hasWholesalePrice && quantity >= infoproduct.minwholesale;
+  // حداقل تعداد برای عمده
+  const minWholesale = activeVariant?.min_wholesale || infoproduct.minwholesale || 1;
 
-  // قیمت نهایی بر اساس شرایط
+  // آیا قیمت عمده معتبر است؟
+  const hasWholesalePrice = wholesalePrice > 0 && minWholesale > 0;
+
+  // آیا کاربر واجد شرایط عمده است؟
+  const isEligibleForWholesale = hasWholesalePrice && quantity >= minWholesale;
+
+  // قیمت نهایی
   const finalPrice = isEligibleForWholesale ? wholesalePrice * quantity : retailPrice * quantity;
 
-  // نمایش Toast فقط وقتی قیمت عمده معتبر باشد
+  // نمایش پیام تغییر قیمت عمده
   useEffect(() => {
     if (!hasWholesalePrice) {
       setIsWholesale(false);
@@ -48,7 +67,7 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
     }
 
     if (isEligibleForWholesale && !isWholesale) {
-      toast.success(`قیمت عمده‌فروشی (${infoproduct.minwholesale} عدد به بالا) اعمال شد!`, {
+      toast.success(`قیمت عمده‌فروشی (${minWholesale} عدد به بالا) اعمال شد!`, {
         position: 'top-center',
         className: 'yekan',
         autoClose: 3000,
@@ -72,7 +91,7 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
       });
       setIsWholesale(false);
     }
-  }, [quantity, infoproduct.minwholesale, isWholesale, hasWholesalePrice, isEligibleForWholesale]);
+  }, [quantity, minWholesale, isWholesale, hasWholesalePrice, isEligibleForWholesale]);
 
   const handleIncrement = () => setQuantity(prev => prev + 1);
 
@@ -85,8 +104,12 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
     }
   };
 
-  const handleColorSelect = (color: Color) => {
-    setSelectedColor(color);
+  const handleVariantSelect = (variant: Variant) => {
+    if (onVariantChange) {
+      onVariantChange(variant);
+    } else {
+      setInternalSelectedVariant(variant);
+    }
   };
 
   const handleAddToCart = () => {
@@ -110,8 +133,7 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
       return;
     }
 
-    // تعیین نوع قیمت
-    const priceType = hasWholesalePrice && quantity >= infoproduct.minwholesale ? 'wholesale' : 'single';
+    const priceType = hasWholesalePrice && quantity >= minWholesale ? 'wholesale' : 'single';
     const price = priceType === 'wholesale' ? wholesalePrice : retailPrice;
     const discount = priceType === 'wholesale' ? infoproduct.discountwholesale : infoproduct.discount;
 
@@ -125,7 +147,13 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
         price: price.toString(),
         image: infoproduct.image || '/placeholder.jpg',
         discount,
-        color: selectedColor,
+        color: activeVariant
+          ? {
+              englishName: activeVariant.color_englishName,
+              persianName: activeVariant.color_persianName || '',
+              hexCode: activeVariant.color_hexCode,
+            }
+          : null,
       },
     });
 
@@ -204,7 +232,7 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
       <div className="sp-product-info-container">
         {/* بخش قیمت‌ها */}
         <div className="sp-pricing-grid">
-          {/* قیمت تک‌فروشی - همیشه نمایش داده می‌شود */}
+          {/* قیمت تک‌فروشی */}
           <div className="sp-pricing-item">
             <span className="sp-pricing-label">قیمت تک فروشی</span>
             <div className="sp-pricing-details">
@@ -213,10 +241,10 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
             </div>
           </div>
 
-          {/* قیمت عمده - فقط اگر قیمت > 0 باشد نمایش داده می‌شود */}
+          {/* قیمت عمده - فقط اگر معتبر باشد */}
           {hasWholesalePrice && (
             <div className="sp-pricing-item">
-              <span className="sp-pricing-label">{infoproduct.minwholesale} عدد به بالا</span>
+              <span className="sp-pricing-label">{minWholesale} عدد به بالا</span>
               <div className="sp-pricing-details">
                 <span className="sp-pricing-value">{formatPrice(wholesalePrice)}</span>
                 <span className="sp-discount-badge">{infoproduct.discountwholesale}</span>
@@ -231,28 +259,28 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
         </div>
 
         {/* انتخاب رنگ */}
-        {infoproduct.colors && infoproduct.colors.length > 0 && (
+        {infoproduct.variants && infoproduct.variants.length > 0 && (
           <div className="sp-color-selection">
             <span className="sp-color-label">رنگ‌بندی:</span>
             <div className="sp-color-options">
-              {infoproduct.colors.map((color) => {
-                const { tickColor, borderColor } = getContrastColor(color.hexCode);
+              {infoproduct.variants.map((variant) => {
+                const { tickColor, borderColor } = getContrastColor(variant.color_hexCode);
 
                 return (
                   <button
-                    key={color.englishName}
-                    onClick={() => handleColorSelect(color)}
+                    key={variant.id || variant.color_englishName}
+                    onClick={() => handleVariantSelect(variant)}
                     style={{
-                      backgroundColor: color.hexCode,
+                      backgroundColor: variant.color_hexCode,
                       width: '24px',
                       height: '24px',
                       borderRadius: '50%',
                       border:
-                        selectedColor?.englishName === color.englishName
+                        activeVariant?.id === variant.id
                           ? '2px solid #805b99'
                           : '1px solid #d1d5db',
                       outline:
-                        selectedColor?.englishName === color.englishName ? '2px solid #e9d5ff' : 'none',
+                        activeVariant?.id === variant.id ? '2px solid #e9d5ff' : 'none',
                       cursor: 'pointer',
                       transition: 'all 0.2s ease',
                       position: 'relative',
@@ -261,9 +289,9 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
                       justifyContent: 'center',
                     }}
                     className="sp-color-button"
-                    aria-label={`انتخاب رنگ ${color.persianName}`}
+                    aria-label={`انتخاب رنگ ${variant.color_persianName || variant.color_englishName}`}
                   >
-                    {selectedColor?.englishName === color.englishName && (
+                    {activeVariant?.id === variant.id && (
                       <span
                         style={{
                           color: tickColor,
@@ -287,7 +315,7 @@ const AddToCartInfo: React.FC<{ infoproduct: Product }> = ({ infoproduct }) => {
               })}
             </div>
             <span className="sp-selected-color">
-              {selectedColor?.persianName || 'نامشخص'}
+              {activeVariant?.color_persianName || 'نامشخص'}
             </span>
           </div>
         )}

@@ -6,7 +6,7 @@ import {
   RemoveCircleOutline,
 } from "@mui/icons-material";
 import Link from "next/link";
-import { Product } from "@/types/types";
+import { Product, Variant } from "@/types/types";
 import { formatPrice } from "../Utils/formatPrice";
 
 interface ProductGridProps {
@@ -17,14 +17,14 @@ interface ProductGridProps {
     productId: number,
     type: "single" | "wholesale"
   ) => void;
+  selectedVariants: { [key: number]: Variant | null };
+  handleVariantSelect: (productId: number, variant: Variant) => void;
   cartQuantities: { [key: number]: number };
   showQuantitySelector: number | null;
   handleShowQuantitySelector: (productId: number) => void;
   handleQuantityChange: (productId: number, delta: number) => void;
   handleAddToCart: (productId: number) => void;
   handleNotifyMe: () => void;
-  selectedColors?: { [key: number]: any }; // اگر انتخاب رنگ دارید، اضافه کنید
-  handleColorSelect?: (productId: number, color: any) => void;
 }
 
 export default function ProductGrid({
@@ -32,43 +32,40 @@ export default function ProductGrid({
   cardVariants,
   priceTypes,
   handlePriceTypeChange,
+  selectedVariants,
+  handleVariantSelect,
   cartQuantities,
   showQuantitySelector,
   handleShowQuantitySelector,
   handleQuantityChange,
   handleAddToCart,
   handleNotifyMe,
-  selectedColors = {},
-  handleColorSelect = () => {},
 }: ProductGridProps) {
   return (
     <AnimatePresence>
-      <div className="grid  grid-cols-2  sm:grid-cols-3 lg:grid-cols-4  gap-4 md:gap-6 mt-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-6">
         {filteredProducts.length > 0 ? (
           filteredProducts.map((item) => {
-            const effectivePriceType =
-              item.discountwholesalePrice > 0
-                ? priceTypes[item.id] || "single"
-                : "single";
+            const activeVariant = selectedVariants[item.id];
+            const effectivePriceType = priceTypes[item.id] || "single";
 
-            const finalPrice =
-              effectivePriceType === "single"
-                ? item.discountedPrice
-                : item.discountwholesalePrice;
+            // قیمت نهایی (از واریانت یا محصول اصلی)
+            const finalPriceNum = effectivePriceType === "single"
+              ? (activeVariant?.price_single || parseInt(String(item.discountedPrice).replace(/[^\d]/g, ""), 10) || 0)
+              : (activeVariant?.price_wholesale || parseInt(String(item.discountwholesalePrice).replace(/[^\d]/g, ""), 10) || 0);
 
-            const originalPrice =
-              effectivePriceType === "single"
-                ? item.originalPrice
-                : item.wholesalePrice;
+            // قیمت اصلی برای خط‌خورده
+            const originalPriceNum = parseInt(String(item.originalPrice).replace(/[^\d]/g, ""), 10) || 0;
 
-            const discountBadge =
-              effectivePriceType === "single"
-                ? item.discount
-                : item.discountwholesale;
+            // تخفیف نمایش‌داده‌شده
+            const discountBadge = effectivePriceType === "single"
+              ? (activeVariant?.discount_percent?.toString() || item.discount || "0")
+              : (activeVariant?.discount_wholesale_percent?.toString() || item.discountwholesale || "0");
 
             const hasDiscount = discountBadge !== "0";
 
-            const selectedColor = selectedColors[item.id];
+            // حداقل تعداد عمده
+            const minWholesale = activeVariant?.min_wholesale || item.minwholesale || 1;
 
             return (
               <motion.div
@@ -78,21 +75,21 @@ export default function ProductGrid({
                 animate="visible"
                 exit="exit"
                 layout
-                className="flex  flex-col bg-white rounded-[0.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-3 md:p-4 relative overflow-hidden group/card"
+                className="flex flex-col bg-white rounded-[0.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-3 md:p-4 relative overflow-hidden group/card"
               >
                 {/* برچسب حداقل تعداد عمده */}
                 {effectivePriceType === "wholesale" && (
-                  <div className="absolute top-2 left-2 bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center  z-10">
+                  <div className="absolute top-2 left-2 bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center z-10">
                     <span className="ml-1">+</span>
-                    <span>{item.minwholesale} عدد</span>
+                    <span>{minWholesale} عدد</span>
                   </div>
                 )}
 
                 {/* تصویر + بج تخفیف */}
                 <Link href={`/products/${item.id}`} className="block">
-                  <div className="relative  w-full aspect-square bg-gray-50 rounded-[1.5rem] overflow-hidden mb-3">
+                  <div className="relative w-full aspect-square bg-gray-50 rounded-[1.5rem] overflow-hidden mb-3">
                     <img
-                      src={item.image && item.image.length > 0 ? item.image : "/placeholder.jpg"}
+                      src={activeVariant?.image_main || item.image || "/placeholder.jpg"}
                       alt={item.title}
                       className="w-full h-full object-contain p-2 group-hover/card:scale-105 transition-transform duration-500"
                     />
@@ -124,7 +121,8 @@ export default function ProductGrid({
                     >
                       تکی
                     </button>
-                    {item.discountwholesalePrice > 0 && (
+                    {/* نمایش دکمه عمده فقط اگر قیمت عمده > 0 باشد */}
+                    {parseInt(String(item.discountwholesalePrice || "0").replace(/[^\d]/g, ""), 10) > 0 && (
                       <button
                         onClick={() => handlePriceTypeChange(item.id, "wholesale")}
                         className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${
@@ -138,19 +136,19 @@ export default function ProductGrid({
                     )}
                   </div>
 
-                  {/* انتخاب رنگ (اگر رنگ وجود داشته باشد) */}
-                  {item.colors && item.colors.length > 0 && (
+                  {/* انتخاب رنگ */}
+                  {item.variants && item.variants.length > 0 && (
                     <div className="flex gap-1.5 justify-center mb-3 h-5 items-center">
-                      {item.colors.map((color) => (
+                      {item.variants.map((variant) => (
                         <button
-                          key={color.hexCode}
-                          onClick={() => handleColorSelect(item.id, color)}
+                          key={variant.id || variant.color_englishName}
+                          onClick={() => handleVariantSelect(item.id, variant)}
                           className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform ${
-                            selectedColor?.hexCode === color.hexCode
+                            selectedVariants[item.id]?.id === variant.id
                               ? "scale-125 ring-2 ring-blue-400"
                               : ""
                           }`}
-                          style={{ backgroundColor: color.hexCode }}
+                          style={{ backgroundColor: variant.color_hexCode }}
                         />
                       ))}
                     </div>
@@ -179,12 +177,12 @@ export default function ProductGrid({
                       <div className="flex flex-col mb-3">
                         {hasDiscount && (
                           <span className="text-[10px] md:text-xs text-gray-400 line-through italic font-medium">
-                            {formatPrice(originalPrice)}
+                            {formatPrice(originalPriceNum)}
                           </span>
                         )}
                         <div className="flex items-baseline gap-1">
                           <span className="text-sm md:text-xl font-black text-gray-900 leading-none">
-                            {formatPrice(finalPrice)}
+                            {formatPrice(finalPriceNum)}
                           </span>
                           <span className="text-[9px] md:text-[11px] font-medium text-gray-500">
                             تومان

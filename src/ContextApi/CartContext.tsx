@@ -1,6 +1,5 @@
 "use client";
 import React, { createContext, useContext, useReducer, useEffect } from "react";
-import { Color } from "@/types/types";
 
 interface CartItem {
   id: number;
@@ -10,7 +9,11 @@ interface CartItem {
   price: string;
   image: string;
   discount: string;
-  color?: Color | null;
+  color?: {
+    englishName: string;
+    persianName: string | null;
+    hexCode: string;
+  } | null;
   addedAt: number;
 }
 
@@ -64,7 +67,7 @@ const getCartFromStorage = (): CartItem[] => {
   }
 };
 
-const getItemKey = (itemOrPayload: { id: number; priceType: string; color?: Color | null }) =>
+const getItemKey = (itemOrPayload: { id: number; priceType: string; color?: CartItem["color"] }) =>
   `${itemOrPayload.id}-${itemOrPayload.priceType}-${itemOrPayload.color?.englishName || "default"}`;
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {

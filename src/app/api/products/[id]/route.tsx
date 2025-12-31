@@ -1,7 +1,56 @@
-// api/products/[id].ts (updated)
+// api/products/[id].ts (کاملاً هماهنگ با product_variants)
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { Product, ProductRow } from "@/types/types";
+import { RowDataPacket } from "mysql2/promise";
+
+interface Variant {
+  id: number;
+  color_englishName: string;
+  color_persianName: string | null;
+  color_hexCode: string;
+  price_single: number;
+  price_wholesale: number;
+  discount_percent: number;
+  discount_wholesale_percent: number;
+  min_wholesale: number;
+  in_stock: boolean;
+  stock_quantity: number;
+  image_main: string | null;
+  images: string[] | null;
+  infotable: { name: string; value: string }[] | null;
+}
+
+interface Product {
+  id: number;
+  title: string;
+  image: string;
+  originalPrice: string;
+  discountedPrice: string;
+  wholesalePrice: string;
+  discountwholesalePrice: string;
+  minwholesale: number;
+  discount: string;
+  discountwholesale: string;
+  category: string;
+  mothercatId: number;
+  subcatId: number;
+  itemId: number | null;
+  rating: number;
+  inStock: boolean;
+  numericPrice: number;
+  sales: number;
+  features: string[] | null;
+  content: string | null;
+  media: { type: string; src: string; thumbnail: string | null; alt: string }[];
+  variants: Variant[];
+  brandDetails?: {
+    id: number;
+    title: string;
+    img: string;
+    link: string;
+  };
+}
+
 // ===================== GET PRODUCT BY ID =====================
 export async function GET(request: NextRequest) {
   const idStr = request.nextUrl.pathname.split("/").pop();
@@ -9,128 +58,150 @@ export async function GET(request: NextRequest) {
   if (isNaN(productId)) {
     return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
   }
+
   try {
-    const [rows] = await pool.query<ProductRow[]>(
+    // 1. اطلاعات پایه محصول + مدیا عمومی + برند
+    const [productRows] = await pool.query<RowDataPacket[]>(
       `
       SELECT
-        p.id AS product_id, p.title, p.image, p.originalPrice, p.discountedPrice,
-        p.wholesalePrice, p.discountwholesalePrice, p.minwholesale, p.discount,
-        p.discountwholesale, p.category, p.mothercatId, p.subcatId, p.itemId, p.rating,
-        p.inStock, p.numericPrice, p.sales, p.features, p.content,
-        m.type AS media_type, m.src AS media_src, m.thumbnail AS media_thumbnail, m.alt AS media_alt,
-        col.englishName, col.persianName, col.hexCode,
-        it.id AS infotable_id, it.name AS infotable_name, it.value AS infotable_value,
-        com.id AS comment_id, com.product_id AS comment_product_id, com.name AS comment_name,
-        com.rating AS comment_rating, com.text AS comment_text, com.date AS comment_date,
-        com.status AS comment_status, com.is_admin AS comment_is_admin,
-        b.id AS brand_id, b.title AS brand_title, b.img AS brand_img, b.link AS brand_link
+        p.id AS product_id,
+        p.title,
+        p.image,
+        p.originalPrice,
+        p.discountedPrice,
+        p.wholesalePrice,
+        p.discountwholesalePrice,
+        p.minwholesale,
+        p.discount,
+        p.discountwholesale,
+        p.category,
+        p.mothercatId,
+        p.subcatId,
+        p.itemId,
+        p.rating,
+        p.inStock,
+        p.numericPrice,
+        p.sales,
+        p.features,
+        p.content,
+        m.type AS media_type,
+        m.src AS media_src,
+        m.thumbnail AS media_thumbnail,
+        m.alt AS media_alt,
+        b.id AS brand_id,
+        b.title AS brand_title,
+        b.img AS brand_img,
+        b.link AS brand_link
       FROM products p
       LEFT JOIN media m ON p.id = m.product_id
-      LEFT JOIN colors col ON p.id = col.product_id
-      LEFT JOIN infotable it ON p.id = it.product_id
-      LEFT JOIN comments com ON p.id = com.product_id
       LEFT JOIN brands b ON p.brand_id = b.id
       WHERE p.id = ?
-      ORDER BY p.id, m.id, col.id, it.id, com.id, b.id
+      ORDER BY m.id
       `,
       [productId]
     );
-    if (rows.length === 0) {
+
+    if (productRows.length === 0) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
-    const productsMap: Record<number, Product> = {};
-    rows.forEach((row) => {
-      const pid = row.product_id;
-      if (!productsMap[pid]) {
-        productsMap[pid] = {
-            id: pid,
-            brand_id: row.brand_id ?? null,
-            title: row.title,
-            image: row.image,
-            originalPrice: row.originalPrice,
-            discountedPrice: row.discountedPrice,
-            wholesalePrice: row.wholesalePrice,
-            discountwholesalePrice: row.discountwholesalePrice,
-            minwholesale: row.minwholesale,
-            discount: row.discount,
-            discountwholesale: row.discountwholesale,
-            category: row.category,
-            mothercatId: row.mothercatId,
-            subcatId: row.subcatId,
-            itemId: row.itemId as number,
-            rating: row.rating,
-            inStock: !!row.inStock,
-            numericPrice: row.numericPrice,
-            sales: row.sales,
-            features: row.features ? JSON.parse(row.features) : [],
-            content: row.content ?? undefined,
-            media: [],
-            colors: [],
-            infotable: [],
-            comments: [],
-            brandDetails: row.brand_id
-              ? {
-                  id: row.brand_id,
-                  title: row.brand_title ?? "",
-                  img: row.brand_img ?? "",
-                  link: row.brand_link ?? "",
-                }
-              : undefined,
-          };
-      }
+
+    // 2. تمام واریانت‌های این محصول
+    const [variantRows] = await pool.query<RowDataPacket[]>(
+      `
+      SELECT
+        pv.id AS variant_id,
+        pv.color_englishName,
+        pv.color_persianName,
+        pv.color_hexCode,
+        pv.price_single,
+        pv.price_wholesale,
+        pv.discount_percent,
+        pv.discount_wholesale_percent,
+        pv.min_wholesale,
+        pv.in_stock,
+        pv.stock_quantity,
+        pv.image_main,
+        pv.images,
+        pv.infotable
+      FROM product_variants pv
+      WHERE pv.product_id = ?
+      ORDER BY pv.id
+      `,
+      [productId]
+    );
+
+    // ساخت آبجکت محصول
+    const row = productRows[0];
+    const product: Product = {
+      id: row.product_id,
+      title: row.title,
+      image: row.image,
+      originalPrice: row.originalPrice,
+      discountedPrice: row.discountedPrice,
+      wholesalePrice: row.wholesalePrice,
+      discountwholesalePrice: row.discountwholesalePrice,
+      minwholesale: row.minwholesale,
+      discount: row.discount,
+      discountwholesale: row.discountwholesale,
+      category: row.category,
+      mothercatId: row.mothercatId,
+      subcatId: row.subcatId,
+      itemId: row.itemId,
+      rating: row.rating,
+      inStock: !!row.inStock,
+      numericPrice: row.numericPrice,
+      sales: row.sales,
+      features: row.features ? JSON.parse(row.features) : null,
+      content: row.content ?? null,
+      media: [],
+      variants: [],
+      brandDetails: row.brand_id
+        ? {
+            id: row.brand_id,
+            title: row.brand_title ?? "",
+            img: row.brand_img ?? "",
+            link: row.brand_link ?? "",
+          }
+        : undefined,
+    };
+
+    // اضافه کردن مدیای عمومی
+    productRows.forEach((r) => {
       if (
-        row.media_type &&
-        row.media_src &&
-        !productsMap[pid].media!.some((m) => m.src === row.media_src)
+        r.media_type &&
+        r.media_src &&
+        !product.media.some((m) => m.src === r.media_src)
       ) {
-        productsMap[pid].media!.push({
-          type: row.media_type,
-          src: row.media_src,
-          thumbnail: row.media_thumbnail ?? "",
-          alt: row.media_alt ?? "",
-        });
-      }
-      if (
-        row.englishName &&
-        row.hexCode &&
-        !productsMap[pid].colors!.some((c) => c.hexCode === row.hexCode)
-      ) {
-        productsMap[pid].colors!.push({
-          englishName: row.englishName,
-          persianName: row.persianName ?? "",
-          hexCode: row.hexCode,
-        });
-      }
-      if (
-        row.infotable_id &&
-        !productsMap[pid].infotable!.some((it) => it.id === row.infotable_id)
-      ) {
-        productsMap[pid].infotable!.push({
-          id: row.infotable_id,
-          name: row.infotable_name ?? "",
-          value: row.infotable_value ?? "",
-        });
-      }
-      if (
-        row.comment_id &&
-        !productsMap[pid].comments!.some((c) => c.id === row.comment_id)
-      ) {
-        productsMap[pid].comments!.push({
-          id: row.comment_id,
-          product_id: row.comment_product_id,
-          name: row.comment_name ?? "",
-          rating: row.comment_rating ?? 0,
-          text: row.comment_text ?? "",
-          date: row.comment_date ?? "",
-          status: row.comment_status ? 1 : 0,
-          is_admin: row.comment_is_admin ? 1 : 0,
-          admin_reply: null,
-          parent_id: null,
-          product_title: null
+        product.media.push({
+          type: r.media_type,
+          src: r.media_src,
+          thumbnail: r.media_thumbnail ?? null,
+          alt: r.media_alt ?? "",
         });
       }
     });
-    return NextResponse.json(Object.values(productsMap)[0]);
+
+    // اضافه کردن واریانت‌ها
+    variantRows.forEach((r) => {
+      product.variants.push({
+        id: r.variant_id,
+        color_englishName: r.color_englishName,
+        color_persianName: r.color_persianName,
+        color_hexCode: r.color_hexCode,
+        price_single: Number(r.price_single),
+        price_wholesale: Number(r.price_wholesale),
+        discount_percent: r.discount_percent,
+        discount_wholesale_percent: r.discount_wholesale_percent,
+        min_wholesale: r.min_wholesale,
+        in_stock: !!r.in_stock,
+        stock_quantity: r.stock_quantity,
+        image_main: r.image_main,
+        images: r.images ? JSON.parse(r.images) : null,
+        infotable: r.infotable ? JSON.parse(r.infotable) : null,
+      });
+    });
+
+    return NextResponse.json(product);
   } catch (error) {
     console.error("Error fetching product:", error);
     return NextResponse.json(
@@ -139,15 +210,18 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-// ===================== UPDATE PRODUCT =====================
+
+// ===================== UPDATE PRODUCT (PUT) =====================
 export async function PUT(request: NextRequest) {
   const idStr = request.nextUrl.pathname.split("/").pop();
   const productId = parseInt(idStr || "");
   if (isNaN(productId)) {
     return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
   }
+
   try {
     const data = await request.json();
+
     const {
       title,
       brand_id,
@@ -163,80 +237,66 @@ export async function PUT(request: NextRequest) {
       mothercatId,
       subcatId,
       itemId,
-      rating,
-      inStock,
+      rating = 0,
+      inStock = 1,
       numericPrice,
-      sales,
+      sales = 0,
       features,
       content,
-      infotable,
-      media,
-      colors,
+      media = [],
+      variants = [], // آرایه از واریانت‌های جدید
     } = data;
-    // validate fields...
-    if (!title || !image || !originalPrice || !discountedPrice || !wholesalePrice || !discountwholesalePrice || !minwholesale || !discount || !discountwholesale || !category || !mothercatId || !subcatId || !itemId) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-    }
-    // Validate infotable entries
-    if (infotable && !Array.isArray(infotable)) {
-      return NextResponse.json(
-        { error: "infotable must be an array" },
-        { status: 400 }
-      );
-    }
-    if (infotable && infotable.some((item: any) => !item.name || !item.value)) {
-      return NextResponse.json(
-        { error: "All infotable entries must have name and value" },
-        { status: 400 }
-      );
-    }
-    // Validate media entries
-    if (media && !Array.isArray(media)) {
-      return NextResponse.json(
-        { error: "media must be an array" },
-        { status: 400 }
-      );
-    }
+
+    // اعتبارسنجی فیلدهای اصلی محصول
     if (
-      media &&
-      media.some(
-        (item: any) =>
-          !item.type ||
-          !item.src ||
-          !item.alt ||
-          !["image", "video"].includes(item.type)
-      )
+      !title ||
+      !image ||
+      !originalPrice ||
+      !discountedPrice ||
+      !wholesalePrice ||
+      !discountwholesalePrice ||
+      !category ||
+      !mothercatId ||
+      !subcatId ||
+      !itemId
     ) {
-      return NextResponse.json(
-        { error: "All media entries must have valid type, src, and alt" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Missing required product fields" }, { status: 400 });
     }
-    // Validate colors entries
-    if (colors && !Array.isArray(colors)) {
-      return NextResponse.json(
-        { error: "colors must be an array" },
-        { status: 400 }
-      );
+
+    // اعتبارسنجی واریانت‌ها
+    if (!Array.isArray(variants) || variants.length === 0) {
+      return NextResponse.json({ error: "At least one variant is required" }, { status: 400 });
     }
-    if (colors && colors.some((item: any) => !item.englishName || !item.hexCode)) {
-      return NextResponse.json(
-        { error: "All colors entries must have englishName and hexCode" },
-        { status: 400 }
-      );
+
+    for (const variant of variants) {
+      if (
+        !variant.color_englishName ||
+        !variant.color_hexCode ||
+        variant.price_single === undefined ||
+        variant.price_wholesale === undefined
+      ) {
+        return NextResponse.json(
+          { error: "Each variant must have color_englishName, color_hexCode, price_single and price_wholesale" },
+          { status: 400 }
+        );
+      }
     }
+
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
-      // Update product
-      const [result] = await connection.query(
-        `UPDATE products SET
+
+      // 1. آپدیت محصول اصلی
+      await connection.query(
+        `
+        UPDATE products SET
           brand_id = ?, title = ?, image = ?, originalPrice = ?, discountedPrice = ?,
           wholesalePrice = ?, discountwholesalePrice = ?, minwholesale = ?,
           discount = ?, discountwholesale = ?, category = ?, mothercatId = ?,
           subcatId = ?, itemId = ?, rating = ?, inStock = ?, numericPrice = ?, sales = ?,
           features = ?, content = ?
-        WHERE id = ?`,
+        WHERE id = ?
+        `,
         [
           brand_id || null,
           title,
@@ -251,30 +311,20 @@ export async function PUT(request: NextRequest) {
           category,
           mothercatId,
           subcatId,
-          itemId || null,
+          itemId,
           rating,
           inStock,
-          numericPrice,
+          numericPrice || discountedPrice.replace(/,/g, ""),
           sales,
-          features,
+          features ? JSON.stringify(features) : null,
           content || null,
           productId,
         ]
       );
-      if ((result as any).affectedRows === 0) throw new Error("Product not found");
-      // Replace infotable
-      await connection.query("DELETE FROM infotable WHERE product_id = ?", [productId]);
-      if (infotable && infotable.length > 0) {
-        for (const item of infotable) {
-          await connection.query(
-            "INSERT INTO infotable (product_id, name, value) VALUES (?, ?, ?)",
-            [productId, item.name, item.value]
-          );
-        }
-      }
-      // Replace media
+
+      // 2. جایگزینی مدیای عمومی
       await connection.query("DELETE FROM media WHERE product_id = ?", [productId]);
-      if (media && media.length > 0) {
+      if (media.length > 0) {
         for (const item of media) {
           await connection.query(
             "INSERT INTO media (product_id, type, src, thumbnail, alt) VALUES (?, ?, ?, ?, ?)",
@@ -282,18 +332,43 @@ export async function PUT(request: NextRequest) {
           );
         }
       }
-      // Replace colors
-      await connection.query("DELETE FROM colors WHERE product_id = ?", [productId]);
-      if (colors && colors.length > 0) {
-        for (const item of colors) {
-          await connection.query(
-            "INSERT INTO colors (product_id, englishName, persianName, hexCode) VALUES (?, ?, ?, ?)",
-            [productId, item.englishName, item.persianName || null, item.hexCode]
-          );
-        }
+
+      // 3. جایگزینی کامل واریانت‌ها
+      await connection.query("DELETE FROM product_variants WHERE product_id = ?", [productId]);
+
+      for (const variant of variants) {
+        await connection.query(
+          `
+          INSERT INTO product_variants (
+            product_id,
+            color_englishName, color_persianName, color_hexCode,
+            price_single, price_wholesale,
+            discount_percent, discount_wholesale_percent,
+            min_wholesale, in_stock, stock_quantity,
+            image_main, images, infotable
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `,
+          [
+            productId,
+            variant.color_englishName,
+            variant.color_persianName || null,
+            variant.color_hexCode,
+            variant.price_single,
+            variant.price_wholesale,
+            variant.discount_percent || 0,
+            variant.discount_wholesale_percent || 0,
+            variant.min_wholesale || minwholesale,
+            variant.in_stock !== undefined ? variant.in_stock : 1,
+            variant.stock_quantity || 0,
+            variant.image_main || null,
+            variant.images ? JSON.stringify(variant.images) : null,
+            variant.infotable ? JSON.stringify(variant.infotable) : null,
+          ]
+        );
       }
+
       await connection.commit();
-      return NextResponse.json({ message: "Product updated successfully" });
+      return NextResponse.json({ message: "Product and variants updated successfully" });
     } catch (error) {
       await connection.rollback();
       throw error;
@@ -317,43 +392,37 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: "Invalid product ID" }, { status: 400 });
   }
 
-  const { force } = await request.json().catch(() => ({ force: false }));
+  const { force = false } = await request.json().catch(() => ({}));
 
   const connection = await pool.getConnection();
   try {
     await connection.beginTransaction();
 
-    // بررسی وجود سفارش
-    const [orders] = await connection.query(
+    // بررسی سفارش‌ها
+    const [orders] = await connection.query<RowDataPacket[]>(
       "SELECT COUNT(*) as count FROM order_items WHERE product_id = ?",
       [productId]
     );
-    const orderCount = (orders as any)[0]?.count || 0;
+    const orderCount = orders[0]?.count || 0;
 
-    // اگر سفارش دارد و force=false → خطا
     if (orderCount > 0 && !force) {
       await connection.rollback();
       return NextResponse.json(
-        { error: "این محصول سفارش دارد. برای حذف آن از force=true استفاده کنید." },
+        { error: "این محصول سفارش دارد. برای حذف اجباری از force=true استفاده کنید." },
         { status: 400 }
       );
     }
 
-    // اگر force=true و سفارش دارد → order_items را حذف کن
     if (force && orderCount > 0) {
       await connection.query("DELETE FROM order_items WHERE product_id = ?", [productId]);
     }
 
-    // حذف داده‌های وابسته
-    await connection.query("DELETE FROM infotable WHERE product_id = ?", [productId]);
-    await connection.query("DELETE FROM media WHERE product_id = ?", [productId]);
-    await connection.query("DELETE FROM colors WHERE product_id = ?", [productId]);
-    await connection.query("DELETE FROM comments WHERE product_id = ?", [productId]); // اختیاری
-
-    // حذف محصول
+    // حذف محصول (واریانت‌ها به دلیل ON DELETE CASCADE خودکار حذف می‌شن)
     const [result] = await connection.query("DELETE FROM products WHERE id = ?", [productId]);
+
     if ((result as any).affectedRows === 0) {
-      throw new Error("Product not found");
+      await connection.rollback();
+      return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
     await connection.commit();

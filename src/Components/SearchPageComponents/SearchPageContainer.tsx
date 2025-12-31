@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
-import { motion, AnimatePresence, Variants } from "framer-motion"; // Variants اضافه شد
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import "rc-slider/assets/index.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -9,7 +9,7 @@ import "@/Components/Sliders/Sliders.css";
 import "./SearchPage.css";
 import { useSearchParams } from "next/navigation";
 import { useCart } from "@/ContextApi/CartContext";
-import { Categoryapi, Product } from "@/types/types";
+import { Categoryapi, Product, Variant } from "@/types/types";
 import FilterPanel from "./FilterPanel";
 import MobileFilterPanel from "./MobileFilterPanel";
 import MobileHeader from "./MobileHeader";
@@ -44,13 +44,14 @@ export default function SearchPageContainer({
   const [categorySearch, setCategorySearch] = useState("");
   const [expandedMothercats, setExpandedMothercats] = useState<number[]>([]);
   const [expandedSubcats, setExpandedSubcats] = useState<number[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 5000000]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 50000000]);
   const [rating, setRating] = useState(0);
   const [discount, setDiscount] = useState(false);
   const [inStock, setInStock] = useState(false);
   const [brandSearch, setBrandSearch] = useState("");
   const [cartQuantities, setCartQuantities] = useState<{ [key: number]: number }>({});
   const [priceTypes, setPriceTypes] = useState<{ [key: number]: "single" | "wholesale" }>({});
+  const [selectedVariants, setSelectedVariants] = useState<{ [key: number]: Variant | null }>({});
   const [showQuantitySelector, setShowQuantitySelector] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [sortOption, setSortOption] = useState<string>("جدیدترین");
@@ -84,12 +85,12 @@ export default function SearchPageContainer({
   useEffect(() => {
     const mothercatId = searchParams.get("mothercatId");
     const subcatId = searchParams.get("subcatId");
-    const itemId = searchParams.get("itemId"); // اضافه شد
+    const itemId = searchParams.get("itemId");
     const brands = searchParams.get("brands");
 
     setSelectedMothercatIds(mothercatId ? [parseInt(mothercatId)] : []);
     setSelectedSubcatIds(subcatId ? [parseInt(subcatId)] : []);
-    setSelectedItemIds(itemId ? [parseInt(itemId)] : []); // اضافه شد
+    setSelectedItemIds(itemId ? [parseInt(itemId)] : []);
     setSelectedBrands(brands ? brands.split(",") : []);
   }, [searchParams]);
 
@@ -103,13 +104,21 @@ export default function SearchPageContainer({
     selectedItemIds, priceRange, rating, discount, inStock, sortOption
   ]);
 
-  // Initialize priceTypes
+  // Initialize priceTypes and selectedVariants
   useEffect(() => {
-    const initialPriceTypes = products.reduce(
-      (acc, product) => ({ ...acc, [product.id]: "single" }),
-      {}
-    );
-    setPriceTypes(initialPriceTypes);
+    if (products.length > 0) {
+      const initialPriceTypes: { [key: number]: "single" | "wholesale" } = {};
+      const initialVariants: { [key: number]: Variant | null } = {};
+
+      products.forEach((product) => {
+        initialPriceTypes[product.id] = "single";
+        initialVariants[product.id] =
+          product.variants && product.variants.length > 0 ? product.variants[0] : null;
+      });
+
+      setPriceTypes(initialPriceTypes);
+      setSelectedVariants(initialVariants);
+    }
   }, [products]);
 
   const handleShowQuantitySelector = (productId: number) => {
@@ -120,16 +129,20 @@ export default function SearchPageContainer({
     setCartQuantities((prev) => {
       const newQuantity = (prev[productId] || 0) + delta;
       const product = products.find((p) => p.id === productId);
+      const activeVariant = selectedVariants[productId];
+
       if (!product) return prev;
 
-      // فقط اگر قیمت عمده وجود داشته باشد و تعداد کافی باشد → عمده فعال شود
-      if (
-        product.discountwholesalePrice > 0 &&
-        newQuantity >= product.minwholesale
-      ) {
-        handlePriceTypeChange(productId, "wholesale");
+      const wholesalePriceNum = activeVariant
+        ? activeVariant.price_wholesale
+        : parseInt(String(product.discountwholesalePrice || "0").replace(/[^\d]/g, ""), 10) || 0;
+
+      const minWholesale = activeVariant?.min_wholesale || product.minwholesale || 1;
+
+      if (wholesalePriceNum > 0 && newQuantity >= minWholesale) {
+        setPriceTypes((prev) => ({ ...prev, [productId]: "wholesale" }));
       } else {
-        handlePriceTypeChange(productId, "single");
+        setPriceTypes((prev) => ({ ...prev, [productId]: "single" }));
       }
 
       return { ...prev, [productId]: newQuantity < 0 ? 0 : newQuantity };
@@ -138,18 +151,29 @@ export default function SearchPageContainer({
 
   const handlePriceTypeChange = (productId: number, type: "single" | "wholesale") => {
     const product = products.find((p) => p.id === productId);
+    const activeVariant = selectedVariants[productId];
 
-    // اگر قیمت عمده صفر بود → اجازه تغییر به عمده نده
-    if (type === "wholesale" && (!product || product.discountwholesalePrice <= 0)) {
-      return;
-    }
+    const wholesalePriceNum = activeVariant
+      ? activeVariant.price_wholesale
+      : parseInt(String(product?.discountwholesalePrice || "0").replace(/[^\d]/g, ""), 10) || 0;
+
+    if (type === "wholesale" && wholesalePriceNum === 0) return;
 
     setPriceTypes((prev) => ({ ...prev, [productId]: type }));
   };
 
+  const handleVariantSelect = (productId: number, variant: Variant) => {
+    setSelectedVariants((prev) => ({ ...prev, [productId]: variant }));
+    setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
+    setShowQuantitySelector(null);
+  };
+
   const handleAddToCart = (productId: number) => {
     const product = products.find((p) => p.id === productId);
-    if (!product || !cartQuantities[productId] || cartQuantities[productId] < 1) {
+    const quantity = cartQuantities[productId];
+    const activeVariant = selectedVariants[productId];
+
+    if (!product || !quantity || quantity < 1) {
       toast.error("لطفاً تعداد محصول را انتخاب کنید");
       return;
     }
@@ -159,24 +183,20 @@ export default function SearchPageContainer({
       return;
     }
 
-    const quantity = cartQuantities[productId];
+    const effectivePriceType = priceTypes[productId] || "single";
 
-    // تعیین نوع قیمت واقعی
-    const effectivePriceType =
-      product.discountwholesalePrice > 0
-        ? priceTypes[productId] || "single"
-        : "single";
+    const unitPrice = effectivePriceType === "single"
+      ? (activeVariant?.price_single || parseInt(String(product.discountedPrice).replace(/[^\d]/g, ""), 10) || 0)
+      : (activeVariant?.price_wholesale || parseInt(String(product.discountwholesalePrice).replace(/[^\d]/g, ""), 10) || 0);
 
-    const price =
-      effectivePriceType === "single"
-        ? product.discountedPrice
-        : product.discountwholesalePrice;
+    const discount = effectivePriceType === "single"
+      ? (activeVariant?.discount_percent?.toString() || product.discount || "0")
+      : (activeVariant?.discount_wholesale_percent?.toString() || product.discountwholesale || "0");
 
-    const discount =
-      effectivePriceType === "single" ? product.discount : product.discountwholesale;
+    const minWholesale = activeVariant?.min_wholesale || product.minwholesale || 1;
 
-    if (effectivePriceType === "wholesale" && quantity < product.minwholesale) {
-      toast.error(`حداقل تعداد برای قیمت عمده ${product.minwholesale} عدد است.`);
+    if (effectivePriceType === "wholesale" && quantity < minWholesale) {
+      toast.error(`حداقل تعداد برای قیمت عمده ${minWholesale} عدد است.`);
       return;
     }
 
@@ -187,9 +207,16 @@ export default function SearchPageContainer({
         title: product.title,
         quantity,
         priceType: effectivePriceType,
-        price: price.toString(),
-        image: product.image || "/placeholder.jpg",
+        price: unitPrice.toString(),
+        image: activeVariant?.image_main || product.image || "/placeholder.jpg",
         discount,
+        color: activeVariant
+          ? {
+              englishName: activeVariant.color_englishName,
+              persianName: activeVariant.color_persianName || "",
+              hexCode: activeVariant.color_hexCode,
+            }
+          : null,
       },
     });
 
@@ -208,7 +235,7 @@ export default function SearchPageContainer({
     setSelectedMothercatIds([]);
     setSelectedSubcatIds([]);
     setSelectedItemIds([]);
-    setPriceRange([0, 5000000]);
+    setPriceRange([0, 50000000]);
     setRating(0);
     setDiscount(false);
     setInStock(false);
@@ -222,10 +249,10 @@ export default function SearchPageContainer({
   );
 
   const toggleMothercatExpansion = (id: number) =>
-    setExpandedMothercats((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+    setExpandedMothercats((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
 
   const toggleSubcatExpansion = (id: number) =>
-    setExpandedSubcats((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+    setExpandedSubcats((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
 
   const getSortedProducts = () => {
     const filtered = products.filter((product) => {
@@ -237,9 +264,9 @@ export default function SearchPageContainer({
       const matchesSubcat = selectedSubcatIds.length === 0 ||
         selectedSubcatIds.includes(product.subcatId);
       const matchesItem = selectedItemIds.length === 0 ||
-        selectedItemIds.includes(product.itemId ?? 0);
+        (product.itemId && selectedItemIds.includes(product.itemId));
       const matchesPrice = product.numericPrice >= priceRange[0] && product.numericPrice <= priceRange[1];
-      const matchesDiscount = !discount || product.discount !== "0%";
+      const matchesDiscount = !discount || product.discount !== "0";
       const matchesStock = !inStock || product.inStock;
       const matchesRating = product.rating >= rating;
 
@@ -259,14 +286,12 @@ export default function SearchPageContainer({
 
   const filteredProducts = getSortedProducts();
 
-  // اصلاح شده: تعریف cardVariants با تایپ صحیح
   const cardVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } },
     exit: { opacity: 0, y: -20, transition: { duration: 0.2 } },
   };
 
-  // اصلاح شده: تعریف filterVariants با تایپ صحیح
   const filterVariants: Variants = {
     hidden: { opacity: 0, x: -100 },
     visible: { opacity: 1, x: 0, transition: { duration: 0.3 } },
@@ -328,7 +353,7 @@ export default function SearchPageContainer({
                   setDiscount={setDiscount}
                   inStock={inStock}
                   setInStock={setInStock}
-                  filterVariants={filterVariants} // اصلاح شده
+                  filterVariants={filterVariants}
                   searchTerm={searchTerm}
                   setSearchTerm={setSearchTerm}
                 />
@@ -380,6 +405,8 @@ export default function SearchPageContainer({
                 cardVariants={cardVariants}
                 priceTypes={priceTypes}
                 handlePriceTypeChange={handlePriceTypeChange}
+                selectedVariants={selectedVariants}
+                handleVariantSelect={handleVariantSelect}
                 cartQuantities={cartQuantities}
                 showQuantitySelector={showQuantitySelector}
                 handleShowQuantitySelector={handleShowQuantitySelector}

@@ -1,4 +1,4 @@
-// types.ts (updated)
+// types.ts (نسخه نهایی و کاملاً هماهنگ با ساختار جدید product_variants)
 import { RowDataPacket } from 'mysql2/promise';
 
 export interface Comment {
@@ -9,7 +9,7 @@ export interface Comment {
   text: string;
   admin_reply: string | null;
   date: string;
-  status: number ;
+  status: number;
   parent_id: number | null;
   is_admin: number;
   product_title: string | null;
@@ -42,6 +42,88 @@ export interface CategoryRow extends RowDataPacket {
   item_name: string | null;
 }
 
+export interface Categoryapi {
+  id: number;
+  name: string;
+  link: string;
+  mothercat: number;
+  icon: string;
+  subcat: { id: number; name: string; items: { id: number; name: string }[] }[];
+}
+
+// واریانت محصول (جایگزین colors)
+export interface Variant {
+  id: number;
+  color_englishName: string;
+  color_persianName: string | null;
+  color_hexCode: string;
+  price_single: number;
+  price_wholesale: number;
+  discount_percent: number;
+  discount_wholesale_percent: number;
+  min_wholesale: number;
+  in_stock: boolean;
+  stock_quantity: number;
+  image_main: string | null;
+  images: string[] | null;
+  infotable: { name: string; value: string }[] | null;
+}
+
+// مشخصات فنی (infotable) برای هر واریانت
+export interface InfoTable {
+  name: string;
+  value: string;
+}
+
+// مدیا (تصاویر و ویدئوهای عمومی محصول)
+export interface Media {
+  type: "image" | "video";
+  src: string;
+  thumbnail: string | null;
+  alt: string;
+}
+
+// برند
+export interface Brand {
+  id: number;
+  title: string;
+  img: string;
+  link: string;
+}
+
+// محصول اصلی
+export interface Product {
+  id: number;
+  brand_id: number | null;
+  title: string;
+  image: string; // تصویر پیش‌فرض محصول
+
+  originalPrice: string;
+  discountedPrice: string;
+  wholesalePrice: string;
+  discountwholesalePrice: string;
+  minwholesale: number;
+  discount: string; // درصد تخفیف تکی (مثل "15")
+  discountwholesale: string; // درصد تخفیف عمده
+
+  category: string;
+  mothercatId: number;
+  subcatId: number;
+  itemId: number | null;
+  rating: number;
+  inStock: boolean;
+  numericPrice: number;
+  sales: number;
+  features?: string[];
+  content?: string;
+
+  media?: Media[];
+  variants: Variant[]; // آرایه واریانت‌ها (رنگ‌ها)
+  comments?: Comment[];
+  brandDetails?: Brand;
+}
+
+// ردیف دیتابیس برای محصول (برای APIها)
 export interface ProductRow extends RowDataPacket {
   product_id: number;
   brand_id: number | null;
@@ -64,16 +146,19 @@ export interface ProductRow extends RowDataPacket {
   sales: number;
   features: string | null;
   content: string | null;
+
+  // مدیا عمومی
   media_type: string | null;
   media_src: string | null;
   media_thumbnail: string | null;
   media_alt: string | null;
-  englishName: string | null;
-  persianName: string | null;
-  hexCode: string | null;
-  infotable_id: number | null;
-  infotable_name: string | null;
-  infotable_value: string | null;
+
+  // اطلاعات برند
+  brand_title: string | null;
+  brand_img: string | null;
+  brand_link: string | null;
+
+  // کامنت‌ها
   comment_id: number | null;
   comment_product_id: number;
   comment_name: string | null;
@@ -82,74 +167,6 @@ export interface ProductRow extends RowDataPacket {
   comment_date: string | null;
   comment_status: number | null;
   comment_is_admin: number | null;
-  brand_title: string | null;
-  brand_img: string | null;
-  brand_link: string | null;
-}
-
-export interface Categoryapi {
-  id: number;
-  name: string;
-  link: string;
-  mothercat: number;
-  icon: string;
-  subcat: { id: number; name: string; items: { id: number; name: string }[] }[];
-}
-
-export interface Product {
-  id: number;
-  brand_id: number | null;
-  title: string;
-  image: string;
-
-  originalPrice: any;           // تغییر از string
-  discountedPrice: any;          // تغییر از string
-  wholesalePrice: any;           // تغییر از string
-  discountwholesalePrice: any;   // تغییر از string
-  minwholesale: any;
-  discount: any;                 // این یکی می‌تواند string بماند (مثل "15%")
-  discountwholesale:any;        // این هم string بماند
-  category: string;
-  mothercatId: number;
-  subcatId: number;
-  itemId: number | null;
-  rating: number;
-  inStock: boolean;
-  numericPrice: number;
-  sales: number;
-  features?: string[];
-  content?: string;
-  media?: Media[];
-  colors?: Color[];
-  infotable?: InfoTable[];
-  comments?: Comment[];
-  brandDetails?: Brand;
-}
-
-export interface Media {
-  type: string;
-  src: string;
-  thumbnail: string;
-  alt: string;
-}
-
-export interface Color {
-  englishName: string;
-  persianName: string;
-  hexCode: string;
-}
-
-export interface InfoTable {
-  id: number;
-  name: string;
-  value: string;
-}
-
-export interface Brand {
-  id: number;
-  title: string;
-  img: string;
-  link: string;
 }
 
 export interface Category {
@@ -237,13 +254,30 @@ export interface AccountContentProps {
   handleSaveAccountInfo: () => void;
 }
 
+export interface OrderItem {
+  id: number;
+  order_id: number;
+  product_id: number;
+  quantity: number;
+  price_type: "single" | "wholesale";
+  unit_price: number;
+  discount: string | null;
+  title: string;
+  image: string | null;
+  color?: {
+    englishName: string;
+    persianName: string;
+    hexCode: string;
+  };
+}
+
 export interface Order {
   id: number;
   order_code: string;
   user_id: number;
   username?: string;
   email?: string;
-  first_name?: string ;
+  first_name?: string;
   last_name?: string;
   phone_number?: string;
   address_id: number;
@@ -261,19 +295,7 @@ export interface Order {
   building_number?: string;
   unit?: string;
   postal_code?: string;
-  items: {
-    id: number;
-    order_id: number;
-    product_id: number;
-    quantity: number;
-    price_type: "single" | "wholesale";
-    unit_price: number;
-    discount: string | null;
-    title: string;
-    image: string | null;
-      color?: Color;
-  }[];
-
+  items: OrderItem[];
 }
 
 export interface OrdersContentProps {
@@ -352,4 +374,4 @@ export interface WishlistContentProps {
   handleRemoveFromWishlist: (id: number) => void;
 }
 
-export type { RowDataPacket }; 
+export type { RowDataPacket };
