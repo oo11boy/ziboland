@@ -12,27 +12,27 @@ import {
 import { Categoryapi, Product } from "@/types/types";
 
 interface MobileFilterPanelProps {
-    searchTerm: string;
+  searchTerm: string;
   setSearchTerm: (value: string) => void;
   clearFilters: () => void;
   categorySearch: string;
   setCategorySearch: (value: string) => void;
   filteredCategories: Categoryapi[];
-selectedMothercatIds: number[];
-setSelectedMothercatIds: React.Dispatch<React.SetStateAction<number[]>>;
+  selectedMothercatIds: number[];
+  setSelectedMothercatIds: React.Dispatch<React.SetStateAction<number[]>>;
   expandedMothercats: number[];
   toggleMothercatExpansion: (id: number) => void;
   selectedSubcatIds: number[];
-setSelectedSubcatIds: React.Dispatch<React.SetStateAction<number[]>>;
+  setSelectedSubcatIds: React.Dispatch<React.SetStateAction<number[]>>;
   expandedSubcats: number[];
   toggleSubcatExpansion: (id: number) => void;
   selectedItemIds: number[];
-setSelectedItemIds: React.Dispatch<React.SetStateAction<number[]>>;
+  setSelectedItemIds: React.Dispatch<React.SetStateAction<number[]>>;
   brandSearch: string;
   setBrandSearch: (value: string) => void;
   allBrands: string[];
   selectedBrands: string[];
-setSelectedBrands: React.Dispatch<React.SetStateAction<string[]>>;
+  setSelectedBrands: React.Dispatch<React.SetStateAction<string[]>>;
   priceRange: [number, number];
   setPriceRange: (range: [number, number]) => void;
   rating: number;
@@ -75,6 +75,8 @@ export default function MobileFilterPanel({
   inStock,
   setInStock,
   filterVariants,
+  searchTerm,
+  setSearchTerm,
 }: MobileFilterPanelProps) {
   return (
     <motion.div
@@ -82,10 +84,11 @@ export default function MobileFilterPanel({
       initial="hidden"
       animate="visible"
       exit="exit"
-      className="mobile-filter-panel lg:hidden"
+      className="fixed inset-x-0 bottom-0 top-16 bg-white z-50 overflow-y-auto pb-20 lg:hidden"
     >
-      <div className="">
-        <div className="flex sticky py-4 top-0 bg-white justify-between mb-4 items-center">
+      <div className="p-4">
+        {/* هدر فیلتر موبایل */}
+        <div className="flex sticky top-0 bg-white py-4 justify-between items-center border-b border-gray-200 mb-4">
           <h2 className="text-lg font-bold text-[#374151] flex items-center">
             <FilterAlt className="ml-2 text-[#805b99]" /> فیلترها
           </h2>
@@ -95,61 +98,64 @@ export default function MobileFilterPanel({
           <button
             onClick={clearFilters}
             className="text-[#805b99] font-bold text-sm"
-            aria-label="حذف فیلترها"
+            aria-label="حذف همه فیلترها"
           >
             حذف فیلترها
           </button>
         </div>
-        <div className="my-2">
-          <label
-            className="block text-sm font-medium mb-1 text-[#374151]"
-            htmlFor="category-search-mobile"
-          >
-            <Category className="ml-2 text-[#805b99] yekan" />{" "}
-            دسته‌بندی‌ها
+
+        {/* جستجوی کلی محصولات (اضافه شده برای هماهنگی با دسکتاپ) */}
+        <div className="mb-4">
+          <label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-2">
+            <Category className="text-[#805b99]" /> جستجو
           </label>
           <input
-            id="category-search-mobile"
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="نام محصول..."
+            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#805b99] outline-none transition"
+          />
+        </div>
+
+        {/* دسته‌بندی‌ها */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2 text-[#374151] flex items-center">
+            <Category className="ml-2 text-[#805b99]" /> دسته‌بندی‌ها
+          </label>
+          <input
             type="text"
             value={categorySearch}
             onChange={(e) => setCategorySearch(e.target.value)}
             placeholder="جستجو در دسته‌بندی‌ها..."
-            className="w-full p-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805b99] transition duration-200"
-            aria-label="جستجوی دسته‌بندی"
+            className="w-full p-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805b99] mb-3"
           />
-          <div className="mt-2 space-y-2 max-h-[50vh] overflow-y-auto">
+          <div className="max-h-[50vh] overflow-y-auto space-y-3">
             {filteredCategories.map((cat) => (
-              <div key={cat.id} className="border-b pb-2">
+              <div key={cat.id} className="border-b border-gray-100 pb-3 last:border-0">
                 <div className="flex items-center justify-between">
                   <label className="flex items-center text-sm">
                     <input
                       type="checkbox"
-                      checked={selectedMothercatIds.includes(
-                        cat.id
-                      )}
+                      checked={selectedMothercatIds.includes(cat.id)}
                       onChange={() => {
                         setSelectedMothercatIds((prev) =>
                           prev.includes(cat.id)
                             ? prev.filter((id) => id !== cat.id)
                             : [...prev, cat.id]
                         );
-                        if (
-                          !selectedMothercatIds.includes(cat.id)
-                        ) {
+                        if (!selectedMothercatIds.includes(cat.id)) {
                           setSelectedSubcatIds([]);
                           setSelectedItemIds([]);
                         }
                       }}
                       className="ml-2 accent-[#805b99]"
-                      aria-label={`انتخاب دسته‌بندی ${cat.name}`}
                     />
                     {cat.name}
                   </label>
                   {cat.subcat && cat.subcat.length > 0 && (
                     <button
-                      onClick={() =>
-                        toggleMothercatExpansion(cat.id)
-                      }
+                      onClick={() => toggleMothercatExpansion(cat.id)}
                       className="text-[#805b99]"
                     >
                       {expandedMothercats.includes(cat.id) ? (
@@ -160,100 +166,71 @@ export default function MobileFilterPanel({
                     </button>
                   )}
                 </div>
+
                 <AnimatePresence>
                   {expandedMothercats.includes(cat.id) && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      className="ml-4 mt-2 space-y-2 overflow-hidden"
+                      className="ml-6 mt-3 space-y-3 overflow-hidden"
                     >
                       {cat.subcat?.map((subcat) => (
-                        <div
-                          key={subcat.id}
-                          className="border-b pb-2"
-                        >
+                        <div key={subcat.id} className="border-b border-gray-100 pb-3 last:border-0">
                           <div className="flex items-center justify-between">
                             <label className="flex items-center text-sm">
                               <input
                                 type="checkbox"
-                                checked={selectedSubcatIds.includes(
-                                  subcat.id
-                                )}
+                                checked={selectedSubcatIds.includes(subcat.id)}
                                 onChange={() => {
                                   setSelectedSubcatIds((prev) =>
                                     prev.includes(subcat.id)
-                                      ? prev.filter(
-                                          (id) => id !== subcat.id
-                                        )
+                                      ? prev.filter((id) => id !== subcat.id)
                                       : [...prev, subcat.id]
                                   );
-                                  if (
-                                    !selectedSubcatIds.includes(
-                                      subcat.id
-                                    )
-                                  ) {
+                                  if (!selectedSubcatIds.includes(subcat.id)) {
                                     setSelectedItemIds([]);
                                   }
                                 }}
                                 className="ml-2 accent-[#805b99]"
-                                aria-label={`انتخاب زیرمجموعه ${subcat.name}`}
                               />
                               {subcat.name}
                             </label>
-                            {subcat.items &&
-                              subcat.items.length > 0 && (
-                                <button
-                                  onClick={() =>
-                                    toggleSubcatExpansion(subcat.id)
-                                  }
-                                  className="text-[#805b99]"
-                                >
-                                  {expandedSubcats.includes(
-                                    subcat.id
-                                  ) ? (
-                                    <ExpandLess fontSize="small" />
-                                  ) : (
-                                    <ExpandMore fontSize="small" />
-                                  )}
-                                </button>
-                              )}
+                            {subcat.items && subcat.items.length > 0 && (
+                              <button
+                                onClick={() => toggleSubcatExpansion(subcat.id)}
+                                className="text-[#805b99]"
+                              >
+                                {expandedSubcats.includes(subcat.id) ? (
+                                  <ExpandLess fontSize="small" />
+                                ) : (
+                                  <ExpandMore fontSize="small" />
+                                )}
+                              </button>
+                            )}
                           </div>
+
                           <AnimatePresence>
-                            {expandedSubcats.includes(
-                              subcat.id
-                            ) && (
+                            {expandedSubcats.includes(subcat.id) && (
                               <motion.div
                                 initial={{ height: 0, opacity: 0 }}
-                                animate={{
-                                  height: "auto",
-                                  opacity: 1,
-                                }}
+                                animate={{ height: "auto", opacity: 1 }}
                                 exit={{ height: 0, opacity: 0 }}
-                                className="ml-4 mt-2 space-y-1 overflow-hidden"
+                                className="ml-6 mt-3 space-y-2 overflow-hidden"
                               >
                                 {subcat.items?.map((item) => (
-                                  <label
-                                    key={item.id}
-                                    className="flex items-center text-sm"
-                                  >
+                                  <label key={item.id} className="flex items-center text-sm">
                                     <input
                                       type="checkbox"
-                                      checked={selectedItemIds.includes(
-                                        item.id
-                                      )}
+                                      checked={selectedItemIds.includes(item.id)}
                                       onChange={() => {
                                         setSelectedItemIds((prev) =>
                                           prev.includes(item.id)
-                                            ? prev.filter(
-                                                (id) =>
-                                                  id !== item.id
-                                              )
+                                            ? prev.filter((id) => id !== item.id)
                                             : [...prev, item.id]
                                         );
                                       }}
                                       className="ml-2 accent-[#805b99]"
-                                      aria-label={`انتخاب زیرمجموعه زیرمجموعه ${item.name}`}
                                     />
                                     {item.name}
                                   </label>
@@ -270,147 +247,75 @@ export default function MobileFilterPanel({
             ))}
           </div>
         </div>
-        <div className="my-2">
-          <label
-            className="block text-sm font-medium mb-1 text-[#374151]"
-            htmlFor="brand-search-mobile"
-          >
+
+        {/* برند */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2 text-[#374151] flex items-center">
             <Store className="ml-2 text-[#805b99]" /> برند
           </label>
           <input
-            id="brand-search-mobile"
             type="text"
             value={brandSearch}
             onChange={(e) => setBrandSearch(e.target.value)}
             placeholder="جستجوی برند..."
-            className="w-full p-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805b99] transition duration-200"
-            aria-label="جستجوی برند"
+            className="w-full p-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805b99] mb-3"
           />
-          <div className="mt-1 max-h-32 overflow-y-auto">
+          <div className="max-h-40 overflow-y-auto space-y-2">
             {allBrands
-              .filter((brand) =>
-                brand
-                  .toLowerCase()
-                  .includes(brandSearch.toLowerCase())
-              )
+              .filter((brand) => brand.toLowerCase().includes(brandSearch.toLowerCase()))
               .map((brand) => (
-                <label
-                
-                  key={brand}
-                  className="flex items-center text-sm mb-1"
-                >
+                <label key={brand} className="flex items-center text-sm">
                   <input
                     type="checkbox"
                     checked={selectedBrands.includes(brand)}
-                    onChange={() => {
+                    onChange={() =>
                       setSelectedBrands((prev) =>
                         prev.includes(brand)
                           ? prev.filter((b) => b !== brand)
                           : [...prev, brand]
-                      );
-                    }}
+                      )
+                    }
                     className="ml-2 accent-[#805b99]"
-                    aria-label={`انتخاب برند ${console.log(selectedBrands)}`}
                   />
                   {brand}
                 </label>
               ))}
           </div>
         </div>
-        <div className="my-2">
-          <label
-            className="block text-sm font-medium mb-1 text-[#374151]"
-            htmlFor="price-range-mobile"
-          >
-            <PriceChange className="ml-2 text-[#805b99]" /> محدوده
-            قیمت (تومان)
+
+        {/* محدوده قیمت */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2 text-[#374151] flex items-center">
+            <PriceChange className="ml-2 text-[#805b99]" /> محدوده قیمت
           </label>
-          <div className="bapf_sfilter bapf_slidr bapf_slidr_jqrui bapf_attr_price bapf_slidr_ready bapf_ccolaps">
-            <div className="bapf_head bapf_colaps_togl">
-              <div className="bapf_hascolarr">
-                قیمت
-                <i className="bapf_colaps_smb fa fa-chevron-up"></i>
-              </div>
-            </div>
-            <div className="bapf_body">
-              <div className="bapf_slidr_all">
-                <span className="bapf_from">
-                  <span className="bapf_tbprice">از</span>
-                  <input
-                    type="text"
-                    value={priceRange[0].toLocaleString("fa-IR")}
-                    onChange={(e) => {
-                      const value =
-                        parseInt(
-                          e.target.value.replace(/,/g, "")
-                        ) || 0;
-                      if (value <= priceRange[1]) {
-                        setPriceRange([value, priceRange[1]]);
-                      }
-                    }}
-                    className="w-full p-1 border border-[#e5e7eb] rounded-lg text-center"
-                    aria-label="حداقل قیمت"
-                  />
-                  <span className="bapf_taprice">
-                    <i className="icon-toman"></i>
-                  </span>
-                </span>
-                <span className="bapf_to">
-                  <span className="bapf_tbprice">تا</span>
-                  <input
-                    type="text"
-                    value={priceRange[1].toLocaleString("fa-IR")}
-                    onChange={(e) => {
-                      const value =
-                        parseInt(
-                          e.target.value.replace(/,/g, "")
-                        ) || 5000000;
-                      if (value >= priceRange[0]) {
-                        setPriceRange([priceRange[0], value]);
-                      }
-                    }}
-                    className="w-full p-1 border border-[#e5e7eb] rounded-lg text-center"
-                    aria-label="حداکثر قیمت"
-                  />
-                  <span className="bapf_taprice">
-                    <i className="icon-toman"></i>
-                  </span>
-                </span>
-                <div className="bapf_slidr_main bapf_slidr_num mt-4">
-                  <Slider
-                    range
-                    min={0}
-                    max={5000000}
-                    step={10000}
-                    value={priceRange}
-                    onChange={(value) =>
-                      setPriceRange(value as [number, number])
-                    }
-                    trackStyle={{ backgroundColor: "#805b99" }}
-                    handleStyle={{
-                      borderColor: "#805b99",
-                      backgroundColor: "#fff",
-                    }}
-                    railStyle={{ backgroundColor: "#e5e7eb" }}
-                  />
-                  <div className="flex justify-between mt-2 text-sm text-[#374151]">
-                    <span className="price-label">گران‌ترین</span>
-                    <span className="price-label">ارزان‌ترین</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <Slider
+            range
+            min={0}
+            max={5000000}
+            step={10000}
+            value={priceRange}
+            onChange={(v) => setPriceRange(v as [number, number])}
+            trackStyle={{ backgroundColor: "#805b99", height: 6 }}
+            handleStyle={{
+              borderColor: "#805b99",
+              backgroundColor: "#fff",
+              width: 18,
+              height: 18,
+            }}
+            railStyle={{ backgroundColor: "#e5e7eb", height: 6 }}
+          />
+          <div className="flex justify-between mt-3 text-xs text-gray-600">
+            <span>{priceRange[0].toLocaleString("fa-IR")} تومان</span>
+            <span>{priceRange[1].toLocaleString("fa-IR")} تومان</span>
           </div>
         </div>
-        <div className="my-2">
-          <label
-            className="block text-sm font-medium mb-1 text-[#374151]"
-            htmlFor="rating-input-mobile"
-          >
+
+        {/* حداقل امتیاز */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2 text-[#374151] flex items-center">
             <Star className="ml-2 text-[#805b99]" /> حداقل امتیاز
           </label>
           <input
-            id="rating-input-mobile"
             type="number"
             min="0"
             max="5"
@@ -418,35 +323,32 @@ export default function MobileFilterPanel({
             value={rating}
             onChange={(e) => {
               const value = parseFloat(e.target.value);
-              if (!isNaN(value) && value >= 0 && value <= 5) {
-                setRating(value);
-              } else {
-                setRating(0);
-              }
+              setRating(!isNaN(value) ? value : 0);
             }}
-            className="w-full p-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805b99] transition duration-200"
-            aria-label="حداقل امتیاز محصول"
+            className="w-full p-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805b99] text-center"
           />
         </div>
-        <div className="flex my-4 items-center text-sm font-medium text-[#374151]">
-          <input
-            type="checkbox"
-            checked={discount}
-            onChange={(e) => setDiscount(e.target.checked)}
-            className="ml-2 accent-[#805b99]"
-            aria-label="فقط محصولات با تخفیف"
-          />
-          فقط محصولات با تخفیف
-        </div>
-        <div className="flex items-center text-sm font-medium text-[#374151]">
-          <input
-            type="checkbox"
-            checked={inStock}
-            onChange={(e) => setInStock(e.target.checked)}
-            className="ml-2 accent-[#805b99]"
-            aria-label="فقط محصولات موجود"
-          />
-          فقط محصولات موجود
+
+        {/* توگل‌ها */}
+        <div className="space-y-4">
+          <label className="flex items-center text-sm font-medium text-[#374151]">
+            <input
+              type="checkbox"
+              checked={discount}
+              onChange={(e) => setDiscount(e.target.checked)}
+              className="ml-2 accent-[#805b99]"
+            />
+            فقط تخفیف‌دار
+          </label>
+          <label className="flex items-center text-sm font-medium text-[#374151]">
+            <input
+              type="checkbox"
+              checked={inStock}
+              onChange={(e) => setInStock(e.target.checked)}
+              className="ml-2 accent-[#805b99]"
+            />
+            فقط موجود
+          </label>
         </div>
       </div>
     </motion.div>

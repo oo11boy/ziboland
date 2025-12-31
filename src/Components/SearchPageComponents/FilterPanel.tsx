@@ -111,138 +111,140 @@ export default function FilterPanel({
         />
       </div>
 
-{/* Category Section (سه سطحی) */}
-<div className="bg-gray-50 p-3 rounded-xl hover:shadow-sm transition">
-  <label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-2">
-    <Category className="text-[#805B99]" /> دسته‌بندی‌ها
-  </label>
-  <input
-    type="text"
-    value={categorySearch}
-    onChange={(e) => setCategorySearch(e.target.value)}
-    placeholder="جستجو در دسته‌ها..."
-    className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg mb-3 focus:ring-2 focus:ring-[#805B99]"
-  />
-  <div className="max-h-[45vh] overflow-y-auto pr-1 space-y-2 scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
-    {filteredCategories.map((cat) => (
-      <div key={cat.id} className="bg-white rounded-lg border border-gray-100 p-2">
-        {/* سطح اول - مادر */}
-        <div className="flex justify-between items-center">
-          <label className="text-sm flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={selectedMothercatIds.includes(cat.id)}
-              onChange={() => {
-                setSelectedMothercatIds((prev) =>
-                  prev.includes(cat.id)
-                    ? prev.filter((id) => id !== cat.id)
-                    : [...prev, cat.id]
-                );
-                if (!selectedMothercatIds.includes(cat.id)) {
-                  setSelectedSubcatIds([]);
-                  setSelectedItemIds([]);
-                }
-              }}
-              className="accent-[#805B99]"
-            />
-            {cat.name}
-          </label>
-          {cat.subcat?.length > 0 && (
-            <button
-              onClick={() => toggleMothercatExpansion(cat.id)}
-              className="text-[#805B99]"
-            >
-              {expandedMothercats.includes(cat.id) ? (
-                <ExpandLess fontSize="small" />
-              ) : (
-                <ExpandMore fontSize="small" />
-              )}
-            </button>
-          )}
-        </div>
-
-        {/* سطح دوم - زیر‌دسته */}
-        <AnimatePresence>
-          {expandedMothercats.includes(cat.id) && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="pl-4 mt-2 space-y-1 border-l border-gray-100"
-            >
-              {cat.subcat?.map((subcat) => (
-                <div key={subcat.id} className="mb-1">
-                  <div className="flex justify-between items-center">
-                    <label className="text-sm flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedSubcatIds.includes(subcat.id)}
-                        onChange={() => {
-                          setSelectedSubcatIds((prev) =>
-                            prev.includes(subcat.id)
-                              ? prev.filter((id) => id !== subcat.id)
-                              : [...prev, subcat.id]
-                          );
-                          if (!selectedSubcatIds.includes(subcat.id)) {
-                            setSelectedItemIds([]);
-                          }
-                        }}
-                        className="accent-[#805B99]"
-                      />
-                      {subcat.name}
-                    </label>
-                    {subcat.items?.length > 0 && (
-                      <button
-                        onClick={() => toggleSubcatExpansion(subcat.id)}
-                        className="text-[#805B99]"
-                      >
-                        {expandedSubcats.includes(subcat.id) ? (
-                          <ExpandLess fontSize="small" />
-                        ) : (
-                          <ExpandMore fontSize="small" />
-                        )}
-                      </button>
+      {/* Category Section (سه سطحی) */}
+      <div className="bg-gray-50 p-3 rounded-xl hover:shadow-sm transition">
+        <label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-2">
+          <Category className="text-[#805B99]" /> دسته‌بندی‌ها
+        </label>
+        <input
+          type="text"
+          value={categorySearch}
+          onChange={(e) => setCategorySearch(e.target.value)}
+          placeholder="جستجو در دسته‌ها..."
+          className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg mb-3 focus:ring-2 focus:ring-[#805B99]"
+        />
+        <div className="max-h-[45vh] overflow-y-auto pr-1 space-y-2 scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
+          {filteredCategories.map((cat) => (
+            <div key={cat.id} className="bg-white rounded-lg border border-gray-100 p-2">
+              {/* سطح اول - مادر */}
+              <div className="flex justify-between items-center">
+                <label className="text-sm flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedMothercatIds.includes(cat.id)}
+                    onChange={() => {
+                      setSelectedMothercatIds((prev) =>
+                        prev.includes(cat.id)
+                          ? prev.filter((id) => id !== cat.id)
+                          : [...prev, cat.id]
+                      );
+                      // وقتی مادر دسته انتخاب میشه، زیرمجموعه‌ها ریست بشن
+                      if (!selectedMothercatIds.includes(cat.id)) {
+                        setSelectedSubcatIds([]);
+                        setSelectedItemIds([]);
+                      }
+                    }}
+                    className="accent-[#805B99]"
+                  />
+                  {cat.name}
+                </label>
+                {cat.subcat?.length > 0 && (
+                  <button
+                    onClick={() => toggleMothercatExpansion(cat.id)}
+                    className="text-[#805B99]"
+                  >
+                    {expandedMothercats.includes(cat.id) ? (
+                      <ExpandLess fontSize="small" />
+                    ) : (
+                      <ExpandMore fontSize="small" />
                     )}
-                  </div>
+                  </button>
+                )}
+              </div>
 
-                  {/* سطح سوم - آیتم‌ها */}
-                  <AnimatePresence>
-                    {expandedSubcats.includes(subcat.id) && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="pl-4 mt-2 space-y-1 border-l border-gray-100"
-                      >
-                        {subcat.items?.map((item) => (
-                          <label key={item.id} className="text-sm flex items-center gap-2">
+              {/* سطح دوم - زیر‌دسته */}
+              <AnimatePresence>
+                {expandedMothercats.includes(cat.id) && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="pl-4 mt-2 space-y-1 border-l border-gray-100"
+                  >
+                    {cat.subcat?.map((subcat) => (
+                      <div key={subcat.id} className="mb-1">
+                        <div className="flex justify-between items-center">
+                          <label className="text-sm flex items-center gap-2">
                             <input
                               type="checkbox"
-                              checked={selectedItemIds.includes(item.id)}
+                              checked={selectedSubcatIds.includes(subcat.id)}
                               onChange={() => {
-                                setSelectedItemIds((prev) =>
-                                  prev.includes(item.id)
-                                    ? prev.filter((id) => id !== item.id)
-                                    : [...prev, item.id]
+                                setSelectedSubcatIds((prev) =>
+                                  prev.includes(subcat.id)
+                                    ? prev.filter((id) => id !== subcat.id)
+                                    : [...prev, subcat.id]
                                 );
+                                // وقتی زیر دسته انتخاب میشه، آیتم‌ها ریست بشن
+                                if (!selectedSubcatIds.includes(subcat.id)) {
+                                  setSelectedItemIds([]);
+                                }
                               }}
                               className="accent-[#805B99]"
                             />
-                            {item.name}
+                            {subcat.name}
                           </label>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+                          {subcat.items?.length > 0 && (
+                            <button
+                              onClick={() => toggleSubcatExpansion(subcat.id)}
+                              className="text-[#805B99]"
+                            >
+                              {expandedSubcats.includes(subcat.id) ? (
+                                <ExpandLess fontSize="small" />
+                              ) : (
+                                <ExpandMore fontSize="small" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* سطح سوم - آیتم‌ها */}
+                        <AnimatePresence>
+                          {expandedSubcats.includes(subcat.id) && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="pl-4 mt-2 space-y-1 border-l border-gray-100"
+                            >
+                              {subcat.items?.map((item) => (
+                                <label key={item.id} className="text-sm flex items-center gap-2">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedItemIds.includes(item.id)}
+                                    onChange={() => {
+                                      setSelectedItemIds((prev) =>
+                                        prev.includes(item.id)
+                                          ? prev.filter((id) => id !== item.id)
+                                          : [...prev, item.id]
+                                      );
+                                    }}
+                                    className="accent-[#805B99]"
+                                  />
+                                  {item.name}
+                                </label>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ))}
+        </div>
       </div>
-    ))}
-  </div>
-</div>
 
       {/* Brand */}
       <div className="bg-gray-50 p-3 rounded-xl hover:shadow-sm transition">
@@ -326,7 +328,7 @@ export default function FilterPanel({
   );
 }
 
-/* ✅ جدا کردن کامپوننت محدوده قیمت برای جلوگیری از scroll jump */
+/* ✅ کامپوننت محدوده قیمت (بدون تغییر در دیزاین و بدون مشکل scroll jump) */
 const StablePriceRange = memo(function StablePriceRange({
   priceRange,
   setPriceRange,

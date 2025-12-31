@@ -7,7 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "@/Components/Sliders/TabProductsSlider/TabProductSlider.css";
 import "@/Components/Sliders/Sliders.css";
 import "./SearchPage.css";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useCart } from "@/ContextApi/CartContext";
 import { Categoryapi, Product, Variant } from "@/types/types";
 import FilterPanel from "./FilterPanel";
@@ -24,15 +24,20 @@ interface QueryParams {
 
 export default function SearchPageContainer({
   queryParams,
+  initialSearchTerm = "", // اضافه شده برای پشتیبانی از pretty URL در آینده (فعلاً اختیاری)
 }: {
   queryParams: QueryParams;
+  initialSearchTerm?: string;
 }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { dispatch } = useCart();
+
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Categoryapi[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState<string>(initialSearchTerm);
+
   const [selectedBrands, setSelectedBrands] = useState<string[]>(queryParams.brands || []);
   const [selectedMothercatIds, setSelectedMothercatIds] = useState<number[]>(
     queryParams.mothercatId ? [parseInt(queryParams.mothercatId)] : []
@@ -55,7 +60,42 @@ export default function SearchPageContainer({
   const [showQuantitySelector, setShowQuantitySelector] = useState<number | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [sortOption, setSortOption] = useState<string>("جدیدترین");
+
   const productsRef = useRef<HTMLDivElement>(null);
+
+  // 1. فقط وقتی URL تغییر کرد → state رو آپدیت کن (ورود از لینک خارجی یا بوکمارک)
+  useEffect(() => {
+    const q = searchParams.get("q");
+    const decoded = q ? decodeURIComponent(q) : "";
+    if (decoded !== searchTerm) {
+      setSearchTerm(decoded);
+    }
+  }, [searchParams]);
+
+  // 2. فقط وقتی کاربر تایپ کرد → URL رو آپدیت کن (بدون لوپ)
+  useEffect(() => {
+    const trimmed = searchTerm.trim();
+    const currentQ = searchParams.get("q");
+    const currentDecoded = currentQ ? decodeURIComponent(currentQ) : "";
+
+    if (trimmed !== currentDecoded) {
+      const newParams = new URLSearchParams(searchParams.toString());
+
+      if (trimmed) {
+        newParams.set("q", encodeURIComponent(trimmed));
+      } else {
+        newParams.delete("q");
+      }
+
+      const newSearch = newParams.toString();
+      const newUrl = newSearch ? `?${newSearch}` : "";
+
+      // فقط اگر واقعاً تغییر کرده باشه push کن
+      if (window.location.search !== newUrl) {
+        router.push(`${window.location.pathname}${newUrl}`, { scroll: false });
+      }
+    }
+  }, [searchTerm, searchParams, router]);
 
   // Fetch data
   useEffect(() => {
@@ -65,12 +105,9 @@ export default function SearchPageContainer({
           fetch("/api/products"),
           fetch("/api/categories"),
         ]);
-
         if (!productsRes.ok || !categoriesRes.ok) throw new Error("خطا در دریافت داده‌ها");
-
         const productsData: Product[] = await productsRes.json();
         const categoriesData: Categoryapi[] = await categoriesRes.json();
-
         setProducts(productsData);
         setCategories(categoriesData);
       } catch (err) {
@@ -81,7 +118,7 @@ export default function SearchPageContainer({
     fetchData();
   }, []);
 
-  // Sync query params
+  // Sync سایر پارامترهای فیلتر از URL
   useEffect(() => {
     const mothercatId = searchParams.get("mothercatId");
     const subcatId = searchParams.get("subcatId");
@@ -94,33 +131,40 @@ export default function SearchPageContainer({
     setSelectedBrands(brands ? brands.split(",") : []);
   }, [searchParams]);
 
-  // Scroll to results on filter change
+  // Scroll به نتایج بعد از تغییر فیلترها
   useEffect(() => {
     if (window.innerWidth >= 1024 && productsRef.current) {
       productsRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [
-    searchTerm, selectedBrands, selectedMothercatIds, selectedSubcatIds,
-    selectedItemIds, priceRange, rating, discount, inStock, sortOption
+    searchTerm,
+    selectedBrands,
+    selectedMothercatIds,
+    selectedSubcatIds,
+    selectedItemIds,
+    priceRange,
+    rating,
+    discount,
+    inStock,
+    sortOption,
   ]);
 
-  // Initialize priceTypes and selectedVariants
+  // Initialize priceTypes و selectedVariants
   useEffect(() => {
     if (products.length > 0) {
       const initialPriceTypes: { [key: number]: "single" | "wholesale" } = {};
       const initialVariants: { [key: number]: Variant | null } = {};
-
       products.forEach((product) => {
         initialPriceTypes[product.id] = "single";
         initialVariants[product.id] =
           product.variants && product.variants.length > 0 ? product.variants[0] : null;
       });
-
       setPriceTypes(initialPriceTypes);
       setSelectedVariants(initialVariants);
     }
   }, [products]);
 
+  // ==== توابع کمکی بدون تغییر ====
   const handleShowQuantitySelector = (productId: number) => {
     setShowQuantitySelector(showQuantitySelector === productId ? null : productId);
   };
@@ -130,21 +174,16 @@ export default function SearchPageContainer({
       const newQuantity = (prev[productId] || 0) + delta;
       const product = products.find((p) => p.id === productId);
       const activeVariant = selectedVariants[productId];
-
       if (!product) return prev;
-
       const wholesalePriceNum = activeVariant
         ? activeVariant.price_wholesale
         : parseInt(String(product.discountwholesalePrice || "0").replace(/[^\d]/g, ""), 10) || 0;
-
       const minWholesale = activeVariant?.min_wholesale || product.minwholesale || 1;
-
       if (wholesalePriceNum > 0 && newQuantity >= minWholesale) {
         setPriceTypes((prev) => ({ ...prev, [productId]: "wholesale" }));
       } else {
         setPriceTypes((prev) => ({ ...prev, [productId]: "single" }));
       }
-
       return { ...prev, [productId]: newQuantity < 0 ? 0 : newQuantity };
     });
   };
@@ -152,13 +191,10 @@ export default function SearchPageContainer({
   const handlePriceTypeChange = (productId: number, type: "single" | "wholesale") => {
     const product = products.find((p) => p.id === productId);
     const activeVariant = selectedVariants[productId];
-
     const wholesalePriceNum = activeVariant
       ? activeVariant.price_wholesale
       : parseInt(String(product?.discountwholesalePrice || "0").replace(/[^\d]/g, ""), 10) || 0;
-
     if (type === "wholesale" && wholesalePriceNum === 0) return;
-
     setPriceTypes((prev) => ({ ...prev, [productId]: type }));
   };
 
@@ -172,34 +208,26 @@ export default function SearchPageContainer({
     const product = products.find((p) => p.id === productId);
     const quantity = cartQuantities[productId];
     const activeVariant = selectedVariants[productId];
-
     if (!product || !quantity || quantity < 1) {
       toast.error("لطفاً تعداد محصول را انتخاب کنید");
       return;
     }
-
     if (!product.inStock) {
       toast.error("محصول موجود نیست");
       return;
     }
-
     const effectivePriceType = priceTypes[productId] || "single";
-
     const unitPrice = effectivePriceType === "single"
       ? (activeVariant?.price_single || parseInt(String(product.discountedPrice).replace(/[^\d]/g, ""), 10) || 0)
       : (activeVariant?.price_wholesale || parseInt(String(product.discountwholesalePrice).replace(/[^\d]/g, ""), 10) || 0);
-
     const discount = effectivePriceType === "single"
       ? (activeVariant?.discount_percent?.toString() || product.discount || "0")
       : (activeVariant?.discount_wholesale_percent?.toString() || product.discountwholesale || "0");
-
     const minWholesale = activeVariant?.min_wholesale || product.minwholesale || 1;
-
     if (effectivePriceType === "wholesale" && quantity < minWholesale) {
       toast.error(`حداقل تعداد برای قیمت عمده ${minWholesale} عدد است.`);
       return;
     }
-
     dispatch({
       type: "ADD_ITEM",
       payload: {
@@ -219,7 +247,6 @@ export default function SearchPageContainer({
           : null,
       },
     });
-
     toast.success("محصول به سبد خرید اضافه شد!");
     setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
     setShowQuantitySelector(null);
@@ -269,7 +296,6 @@ export default function SearchPageContainer({
       const matchesDiscount = !discount || product.discount !== "0";
       const matchesStock = !inStock || product.inStock;
       const matchesRating = product.rating >= rating;
-
       return matchesSearch && matchesBrand && matchesMothercat && matchesSubcat &&
              matchesItem && matchesPrice && matchesDiscount && matchesStock && matchesRating;
     });
@@ -309,9 +335,7 @@ export default function SearchPageContainer({
   return (
     <div dir="rtl" className="min-h-screen bg-[#F7F7F7] font-yekan">
       <ToastContainer rtl theme="colored" position="top-center" autoClose={3000} />
-
       <MobileHeader showFilters={showFilters} setShowFilters={setShowFilters} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
-
       <div className="w-[95%] mx-auto p-4 md:p-8">
         <div className="flex flex-col lg:flex-row gap-6">
           <AnimatePresence>
@@ -399,7 +423,6 @@ export default function SearchPageContainer({
               <div className="text-sm my-4 text-gray-600">
                 تعداد نتایج: {filteredProducts.length}
               </div>
-
               <ProductGrid
                 filteredProducts={filteredProducts}
                 cardVariants={cardVariants}
