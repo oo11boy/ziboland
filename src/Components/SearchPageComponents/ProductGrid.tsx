@@ -49,6 +49,10 @@ export default function ProductGrid({
             const activeVariant = selectedVariants[item.id];
             const effectivePriceType = priceTypes[item.id] || "single";
 
+            // موجودی این رنگ (اگر واریانت انتخاب شده باشه)
+            const stockQuantity = activeVariant?.stock_quantity ?? 0;
+            const isInStock = stockQuantity > 0;
+
             // قیمت نهایی (از واریانت یا محصول اصلی)
             const finalPriceNum = effectivePriceType === "single"
               ? (activeVariant?.price_single || parseInt(String(item.discountedPrice).replace(/[^\d]/g, ""), 10) || 0)
@@ -67,6 +71,9 @@ export default function ProductGrid({
             // حداقل تعداد عمده
             const minWholesale = activeVariant?.min_wholesale || item.minwholesale || 1;
 
+            // آیا قیمت عمده معتبر است؟
+            const hasWholesalePrice = parseInt(String(item.discountwholesalePrice || "0").replace(/[^\d]/g, ""), 10) > 0;
+
             return (
               <motion.div
                 key={item.id}
@@ -78,7 +85,7 @@ export default function ProductGrid({
                 className="flex flex-col bg-white rounded-[0.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-3 md:p-4 relative overflow-hidden group/card"
               >
                 {/* برچسب حداقل تعداد عمده */}
-                {effectivePriceType === "wholesale" && (
+                {effectivePriceType === "wholesale" && hasWholesalePrice && (
                   <div className="absolute top-2 left-2 bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center z-10">
                     <span className="ml-1">+</span>
                     <span>{minWholesale} عدد</span>
@@ -97,6 +104,12 @@ export default function ProductGrid({
                       <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-lg shadow-sm z-10">
                         {discountBadge}%
                       </span>
+                    )}
+                    {/* نمایش وضعیت موجودی روی تصویر */}
+                    {!isInStock && (
+                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                        <span className="text-white text-lg font-bold">ناموجود</span>
+                      </div>
                     )}
                   </div>
                 </Link>
@@ -121,8 +134,7 @@ export default function ProductGrid({
                     >
                       تکی
                     </button>
-                    {/* نمایش دکمه عمده فقط اگر قیمت عمده > 0 باشد */}
-                    {parseInt(String(item.discountwholesalePrice || "0").replace(/[^\d]/g, ""), 10) > 0 && (
+                    {hasWholesalePrice && (
                       <button
                         onClick={() => handlePriceTypeChange(item.id, "wholesale")}
                         className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${
@@ -139,25 +151,47 @@ export default function ProductGrid({
                   {/* انتخاب رنگ */}
                   {item.variants && item.variants.length > 0 && (
                     <div className="flex gap-1.5 justify-center mb-3 h-5 items-center">
-                      {item.variants.map((variant) => (
-                        <button
-                          key={variant.id || variant.color_englishName}
-                          onClick={() => handleVariantSelect(item.id, variant)}
-                          className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform ${
-                            selectedVariants[item.id]?.id === variant.id
-                              ? "scale-125 ring-2 ring-blue-400"
-                              : ""
-                          }`}
-                          style={{ backgroundColor: variant.color_hexCode }}
-                        />
-                      ))}
+                      {item.variants.map((variant) => {
+                        const variantInStock = (variant.stock_quantity ?? 0) > 0;
+
+                        return (
+                          <button
+                            key={variant.id || variant.color_englishName}
+                            onClick={() => variantInStock && handleVariantSelect(item.id, variant)}
+                            disabled={!variantInStock}
+                            className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform relative ${
+                              selectedVariants[item.id]?.id === variant.id
+                                ? "scale-125 ring-2 ring-[#805B99]"
+                                : ""
+                            } ${!variantInStock ? "opacity-50 cursor-not-allowed" : ""}`}
+                            style={{ backgroundColor: variant.color_hexCode }}
+                          >
+                            {/* خط قرمز روی رنگ ناموجود */}
+                            {!variantInStock && (
+                              <span
+                                className="absolute inset-0 flex items-center justify-center"
+                                style={{
+                                  background: "linear-gradient(45deg, transparent 48%, red 49%, red 51%, transparent 52%)",
+                                }}
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* نمایش موجودی فعلی رنگ انتخاب‌شده */}
+                  {activeVariant && (
+                    <div className="text-center text-[10px] text-gray-600 mb-2">
+                      موجودی: {stockQuantity > 0 ? `${stockQuantity} عدد` : "ناموجود"}
                     </div>
                   )}
                 </div>
 
                 {/* پایین کارت: قیمت + عملیات */}
                 <div className="mt-auto pt-2 border-t border-gray-50">
-                  {!item.inStock ? (
+                  {!isInStock ? (
                     /* وضعیت ناموجود */
                     <div className="flex items-center justify-between">
                       <p className="text-xs md:text-sm text-gray-600 font-medium">
@@ -195,7 +229,7 @@ export default function ProductGrid({
                         {showQuantitySelector !== item.id ? (
                           <button
                             onClick={() => handleShowQuantitySelector(item.id)}
-                            className="w-full h-full bg-[#805B99] hover:bg-[#805B80] text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200"
+                            className="w-full h-full bg-[#805B99] hover:bg-[#6b4e82] text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200"
                           >
                             <AddShoppingCart sx={{ fontSize: { xs: 16, md: 22 } }} />
                             <span className="text-[11px] md:text-sm font-extrabold">
@@ -206,7 +240,8 @@ export default function ProductGrid({
                           <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
                             <button
                               onClick={() => handleQuantityChange(item.id, 1)}
-                              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white transition-all"
+                              disabled={cartQuantities[item.id] >= stockQuantity}
+                              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white transition-all disabled:opacity-50"
                             >
                               <AddCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
                             </button>
@@ -227,7 +262,8 @@ export default function ProductGrid({
 
                             <button
                               onClick={() => handleQuantityChange(item.id, -1)}
-                              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all"
+                              disabled={(cartQuantities[item.id] || 0) <= 1}
+                              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
                             >
                               <RemoveCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
                             </button>

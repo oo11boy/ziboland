@@ -24,7 +24,7 @@ interface QueryParams {
 
 export default function SearchPageContainer({
   queryParams,
-  initialSearchTerm = "", // اضافه شده برای پشتیبانی از pretty URL در آینده (فعلاً اختیاری)
+  initialSearchTerm = "",
 }: {
   queryParams: QueryParams;
   initialSearchTerm?: string;
@@ -63,41 +63,53 @@ export default function SearchPageContainer({
 
   const productsRef = useRef<HTMLDivElement>(null);
 
-  // 1. فقط وقتی URL تغییر کرد → state رو آپدیت کن (ورود از لینک خارجی یا بوکمارک)
+  // تابع مشترک برای آپدیت query string مربوط به جستجو (q)
+  const updateSearchQuery = (newValue: string) => {
+    const trimmed = newValue.trim();
+    const newParams = new URLSearchParams(searchParams.toString());
+
+    if (trimmed) {
+      newParams.set("q", encodeURIComponent(trimmed));
+    } else {
+      newParams.delete("q");
+    }
+
+    const newSearch = newParams.toString();
+    const newUrl = newSearch ? `?${newSearch}` : "";
+
+    if (window.location.search !== newUrl) {
+      router.push(`/search${newUrl}`, { scroll: false });
+    }
+  };
+
+  // همگام‌سازی اولیه searchTerm از URL (هنگام ورود مستقیم یا رفرش)
   useEffect(() => {
     const q = searchParams.get("q");
-    const decoded = q ? decodeURIComponent(q) : "";
-    if (decoded !== searchTerm) {
-      setSearchTerm(decoded);
+
+    if (!q) {
+      if (searchTerm) setSearchTerm("");
+      return;
+    }
+
+    try {
+      let decoded = decodeURIComponent(q);
+      try {
+        const doubleDecoded = decodeURIComponent(decoded);
+        if (doubleDecoded !== decoded) {
+          decoded = doubleDecoded;
+        }
+      } catch {}
+      if (decoded !== searchTerm) {
+        setSearchTerm(decoded);
+      }
+    } catch {
+      if (q !== searchTerm) {
+        setSearchTerm(q);
+      }
     }
   }, [searchParams]);
 
-  // 2. فقط وقتی کاربر تایپ کرد → URL رو آپدیت کن (بدون لوپ)
-  useEffect(() => {
-    const trimmed = searchTerm.trim();
-    const currentQ = searchParams.get("q");
-    const currentDecoded = currentQ ? decodeURIComponent(currentQ) : "";
-
-    if (trimmed !== currentDecoded) {
-      const newParams = new URLSearchParams(searchParams.toString());
-
-      if (trimmed) {
-        newParams.set("q", encodeURIComponent(trimmed));
-      } else {
-        newParams.delete("q");
-      }
-
-      const newSearch = newParams.toString();
-      const newUrl = newSearch ? `?${newSearch}` : "";
-
-      // فقط اگر واقعاً تغییر کرده باشه push کن
-      if (window.location.search !== newUrl) {
-        router.push(`${window.location.pathname}${newUrl}`, { scroll: false });
-      }
-    }
-  }, [searchTerm, searchParams, router]);
-
-  // Fetch data
+  // Fetch داده‌های محصولات و دسته‌بندی‌ها
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -118,7 +130,7 @@ export default function SearchPageContainer({
     fetchData();
   }, []);
 
-  // Sync سایر پارامترهای فیلتر از URL
+  // Sync سایر فیلترها از URL
   useEffect(() => {
     const mothercatId = searchParams.get("mothercatId");
     const subcatId = searchParams.get("subcatId");
@@ -131,7 +143,7 @@ export default function SearchPageContainer({
     setSelectedBrands(brands ? brands.split(",") : []);
   }, [searchParams]);
 
-  // Scroll به نتایج بعد از تغییر فیلترها
+  // اسکرول نرم به نتایج بعد از تغییر فیلترها (فقط دسکتاپ)
   useEffect(() => {
     if (window.innerWidth >= 1024 && productsRef.current) {
       productsRef.current.scrollIntoView({ behavior: "smooth" });
@@ -149,7 +161,7 @@ export default function SearchPageContainer({
     sortOption,
   ]);
 
-  // Initialize priceTypes و selectedVariants
+  // مقداردهی اولیه priceTypes و variants
   useEffect(() => {
     if (products.length > 0) {
       const initialPriceTypes: { [key: number]: "single" | "wholesale" } = {};
@@ -164,7 +176,7 @@ export default function SearchPageContainer({
     }
   }, [products]);
 
-  // ==== توابع کمکی بدون تغییر ====
+  // ==== توابع کمکی (بدون تغییر) ====
   const handleShowQuantitySelector = (productId: number) => {
     setShowQuantitySelector(showQuantitySelector === productId ? null : productId);
   };
@@ -212,10 +224,6 @@ export default function SearchPageContainer({
       toast.error("لطفاً تعداد محصول را انتخاب کنید");
       return;
     }
-    if (!product.inStock) {
-      toast.error("محصول موجود نیست");
-      return;
-    }
     const effectivePriceType = priceTypes[productId] || "single";
     const unitPrice = effectivePriceType === "single"
       ? (activeVariant?.price_single || parseInt(String(product.discountedPrice).replace(/[^\d]/g, ""), 10) || 0)
@@ -258,6 +266,7 @@ export default function SearchPageContainer({
 
   const clearFilters = () => {
     setSearchTerm("");
+    updateSearchQuery("");
     setSelectedBrands([]);
     setSelectedMothercatIds([]);
     setSelectedSubcatIds([]);
@@ -294,10 +303,13 @@ export default function SearchPageContainer({
         (product.itemId && selectedItemIds.includes(product.itemId));
       const matchesPrice = product.numericPrice >= priceRange[0] && product.numericPrice <= priceRange[1];
       const matchesDiscount = !discount || product.discount !== "0";
-      const matchesStock = !inStock || product.inStock;
       const matchesRating = product.rating >= rating;
+
+      // فیلتر "فقط موجود" — چک می‌کنیم آیا حداقل یک واریانت موجود دارد
+      const matchesStock = !inStock || product.variants?.some(v => (v.stock_quantity ?? 0) > 0);
+
       return matchesSearch && matchesBrand && matchesMothercat && matchesSubcat &&
-             matchesItem && matchesPrice && matchesDiscount && matchesStock && matchesRating;
+             matchesItem && matchesPrice && matchesDiscount && matchesRating && matchesStock;
     });
 
     switch (sortOption) {
@@ -335,7 +347,13 @@ export default function SearchPageContainer({
   return (
     <div dir="rtl" className="min-h-screen bg-[#F7F7F7] font-yekan">
       <ToastContainer rtl theme="colored" position="top-center" autoClose={3000} />
-      <MobileHeader showFilters={showFilters} setShowFilters={setShowFilters} searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
+      <MobileHeader
+        showFilters={showFilters}
+        setShowFilters={setShowFilters}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        updateSearchQuery={updateSearchQuery}
+      />
       <div className="w-[95%] mx-auto p-4 md:p-8">
         <div className="flex flex-col lg:flex-row gap-6">
           <AnimatePresence>
@@ -380,6 +398,7 @@ export default function SearchPageContainer({
                   filterVariants={filterVariants}
                   searchTerm={searchTerm}
                   setSearchTerm={setSearchTerm}
+                  updateSearchQuery={updateSearchQuery}
                 />
               </>
             )}
@@ -388,6 +407,7 @@ export default function SearchPageContainer({
           <FilterPanel
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
+            updateSearchQuery={updateSearchQuery}
             clearFilters={clearFilters}
             categorySearch={categorySearch}
             setCategorySearch={setCategorySearch}

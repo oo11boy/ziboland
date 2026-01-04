@@ -1,4 +1,3 @@
-// app/api/payment/verify/route.ts — نسخه نهایی و هماهنگ با کامپوننت‌هات
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
@@ -10,12 +9,11 @@ export async function GET(request: Request) {
   const trackId = searchParams.get("trackId");
   const success = searchParams.get("success");
   const status = searchParams.get("status");
+  const orderIdParam = searchParams.get("orderId");
 
-  // اگر پرداخت موفق نبود → برو به صفحه ناموفق با orderId
   if (!trackId || success !== "1" || status !== "2") {
-    const orderId = searchParams.get("orderId") || "";
-    const failedUrl = `${BASE_URL}/paymentfailed?orderId=${orderId}&error=${encodeURIComponent(
-      "پرداخت لغو شده توسط کاربر"
+    const failedUrl = `${BASE_URL}/paymentfailed?orderId=${orderIdParam || ""}&error=${encodeURIComponent(
+      "پرداخت لغو شده یا ناموفق"
     )}`;
     return NextResponse.redirect(failedUrl);
   }
@@ -24,7 +22,7 @@ export async function GET(request: Request) {
 
   try {
     const [orders]: any = await conn.query(
-      "SELECT id, order_code FROM orders WHERE track_id = ?",
+      "SELECT id, order_code, payment_status FROM orders WHERE track_id = ?",
       [trackId]
     );
 
@@ -54,14 +52,50 @@ export async function GET(request: Request) {
     const verifyData = await verifyRes.json();
 
     if (verifyData.result !== 100) {
-      const failedUrl = `${BASE_URL}/paymentfailed?orderId=${
-        order.order_code
-      }&error=${encodeURIComponent("تراکنش توسط بانک تأیید نشد")}`;
+      const failedUrl = `${BASE_URL}/paymentfailed?orderId=${order.order_code}&error=${encodeURIComponent("تراکنش توسط بانک تأیید نشد")}`;
       return NextResponse.redirect(failedUrl);
     }
 
     await conn.beginTransaction();
 
+    // دوباره چک موجودی قبل از کاهش (امنیت بیشتر)
+    const [orderItems]: any = await conn.query(
+      "SELECT product_id, quantity, color_json FROM order_items WHERE order_id = ?",
+      [order.id]
+    );
+
+    for (const item of orderItems) {
+      if (item.color_json) {
+        const color = JSON.parse(item.color_json);
+        const [variant]: any = await conn.query(
+          `SELECT stock_quantity FROM product_variants 
+           WHERE product_id = ? AND color_hexCode = ?`,
+          [item.product_id, color.hexCode]
+        );
+
+        if (variant.length === 0 || variant[0].stock_quantity < item.quantity) {
+          await conn.rollback();
+          return NextResponse.redirect(
+            `${BASE_URL}/paymentfailed?orderId=${order.order_code}&error=${encodeURIComponent("موجودی کافی نیست")}`
+          );
+        }
+      }
+    }
+
+    // کاهش موجودی
+    for (const item of orderItems) {
+      if (item.color_json) {
+        const color = JSON.parse(item.color_json);
+        await conn.query(
+          `UPDATE product_variants 
+           SET stock_quantity = stock_quantity - ? 
+           WHERE product_id = ? AND color_hexCode = ?`,
+          [item.quantity, item.product_id, color.hexCode]
+        );
+      }
+    }
+
+    // بروزرسانی وضعیت سفارش و پرداخت
     await conn.query(
       `UPDATE orders SET payment_status = 'paid', status = 'processing', updated_at = NOW() WHERE id = ?`,
       [order.id]
@@ -76,17 +110,16 @@ export async function GET(request: Request) {
 
     await conn.commit();
 
-    // موفقیت → برو به صفحه پرداخت موفق با orderId
     return NextResponse.redirect(
       `${BASE_URL}/paymentdone?orderId=${order.order_code}`
     );
   } catch (error: any) {
+    if (conn) await conn.rollback();
     console.error("Verify Error:", error);
-    const orderId = searchParams.get("orderId") || "";
     return NextResponse.redirect(
-      `${BASE_URL}/paymentfailed?orderId=${orderId}&error=خطای%20سرور`
+      `${BASE_URL}/paymentfailed?orderId=${orderIdParam || ""}&error=خطای%20سرور`
     );
   } finally {
-    conn.release();
+    if (conn) conn.release();
   }
 }

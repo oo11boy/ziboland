@@ -16,6 +16,7 @@ import "rc-slider/assets/index.css";
 interface FilterPanelProps {
   searchTerm: string;
   setSearchTerm: (value: string) => void;
+  updateSearchQuery: (value: string) => void; // جدید: برای آپدیت URL
   clearFilters: () => void;
   categorySearch: string;
   setCategorySearch: (value: string) => void;
@@ -48,6 +49,7 @@ interface FilterPanelProps {
 export default function FilterPanel({
   searchTerm,
   setSearchTerm,
+  updateSearchQuery,
   clearFilters,
   categorySearch,
   setCategorySearch,
@@ -105,7 +107,11 @@ export default function FilterPanel({
         <input
           type="text"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSearchTerm(value);
+            updateSearchQuery(value); // آپدیت URL همزمان با تایپ کاربر
+          }}
           placeholder="نام محصول..."
           className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#805B99] outline-none transition"
         />
@@ -121,7 +127,7 @@ export default function FilterPanel({
           value={categorySearch}
           onChange={(e) => setCategorySearch(e.target.value)}
           placeholder="جستجو در دسته‌ها..."
-          className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg mb-3 focus:ring-2 focus:ring-[#805B99]"
+          className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg mb-3 focus:ring-2 focus:ring-[#805B99] outline-none"
         />
         <div className="max-h-[45vh] overflow-y-auto pr-1 space-y-2 scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
           {filteredCategories.map((cat) => (
@@ -138,7 +144,6 @@ export default function FilterPanel({
                           ? prev.filter((id) => id !== cat.id)
                           : [...prev, cat.id]
                       );
-                      // وقتی مادر دسته انتخاب میشه، زیرمجموعه‌ها ریست بشن
                       if (!selectedMothercatIds.includes(cat.id)) {
                         setSelectedSubcatIds([]);
                         setSelectedItemIds([]);
@@ -184,7 +189,6 @@ export default function FilterPanel({
                                     ? prev.filter((id) => id !== subcat.id)
                                     : [...prev, subcat.id]
                                 );
-                                // وقتی زیر دسته انتخاب میشه، آیتم‌ها ریست بشن
                                 if (!selectedSubcatIds.includes(subcat.id)) {
                                   setSelectedItemIds([]);
                                 }
@@ -256,7 +260,7 @@ export default function FilterPanel({
           value={brandSearch}
           onChange={(e) => setBrandSearch(e.target.value)}
           placeholder="جستجوی برند..."
-          className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg mb-3 focus:ring-2 focus:ring-[#805B99]"
+          className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg mb-3 focus:ring-2 focus:ring-[#805B99] outline-none"
         />
         <div className="max-h-32 overflow-y-auto space-y-1 scrollbar-thin scrollbar-thumb-gray-200 hover:scrollbar-thumb-gray-300">
           {allBrands
@@ -299,7 +303,7 @@ export default function FilterPanel({
             const value = parseFloat(e.target.value);
             setRating(!isNaN(value) ? value : 0);
           }}
-          className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#805B99] text-center"
+          className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#805B99] text-center outline-none"
         />
       </div>
 
@@ -328,7 +332,7 @@ export default function FilterPanel({
   );
 }
 
-/* ✅ کامپوننت محدوده قیمت (بدون تغییر در دیزاین و بدون مشکل scroll jump) */
+/* کامپوننت محدوده قیمت – بدون مشکل scroll jump و با تجربه کاربری عالی */
 const StablePriceRange = memo(function StablePriceRange({
   priceRange,
   setPriceRange,

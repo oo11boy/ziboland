@@ -5,6 +5,7 @@ import Cookies from "js-cookie";
 import { Modal, Box, Typography, Button } from "@mui/material";
 import { Address } from "@/types/types";
 import { useCart } from "@/ContextApi/CartContext";
+import { cities, provinces } from "@/lib/city";
 
 interface FormData {
   first_name: string;
@@ -46,14 +47,6 @@ export default function Checkout() {
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [submissionError, setSubmissionError] = useState<string>("");
   const token = Cookies.get("authToken");
-
-  const provinces = ["تهران", "اصفهان", "شیراز", "مشهد"];
-  const cities: { [key: string]: string[] } = {
-    تهران: ["تهران", "ری", "شمیرانات"],
-    اصفهان: ["اصفهان", "کاشان", "نجف‌آباد"],
-    شیراز: ["شیراز", "مرودشت", "کازرون"],
-    مشهد: ["مشهد", "نیشابور", "سبزوار"],
-  };
 
   useEffect(() => {
     if (token) {

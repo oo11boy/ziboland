@@ -1,7 +1,7 @@
 "use client";
 import React, { useRef, useState, useEffect } from "react";
-import { Swiper, SwiperSlide } from "swiper/react";
 import { Swiper as SwiperCore } from "swiper";
+import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import { KeyboardArrowLeft, KeyboardArrowRight, VisibilitySharp } from "@mui/icons-material";
 import Link from "next/link";
@@ -37,7 +37,7 @@ export default function BrandsContainer() {
     fetchBrands();
   }, []);
 
-  // به‌روزرسانی وضعیت دکمه‌ها
+  // به‌روزرسانی وضعیت دکمه‌های ناوبری
   const updateNavigation = () => {
     if (swiperRef.current) {
       const swiper = swiperRef.current;
@@ -46,22 +46,44 @@ export default function BrandsContainer() {
     }
   };
 
-  const goNext = () => { if (swiperRef.current) swiperRef.current.slideNext(); };
-  const goPrev = () => { if (swiperRef.current) swiperRef.current.slidePrev(); };
+  const goNext = () => {
+    if (swiperRef.current) swiperRef.current.slideNext();
+  };
+
+  const goPrev = () => {
+    if (swiperRef.current) swiperRef.current.slidePrev();
+  };
 
   useEffect(() => {
     if (swiperRef.current) {
       swiperRef.current.on("slideChange", updateNavigation);
+      swiperRef.current.on("reachBeginning", updateNavigation);
+      swiperRef.current.on("reachEnd", updateNavigation);
       updateNavigation();
     }
     return () => {
-      if (swiperRef.current) swiperRef.current.off("slideChange", updateNavigation);
+      if (swiperRef.current) {
+        swiperRef.current.off("slideChange", updateNavigation);
+        swiperRef.current.off("reachBeginning", updateNavigation);
+        swiperRef.current.off("reachEnd", updateNavigation);
+      }
     };
-  }, []);
+  }, [brands]);
 
-  if (loading) return <div className="w-[90%] yekan mx-auto my-8 text-center">در حال بارگذاری...</div>;
-  if (error) return <div className="w-[90%] yekan mx-auto my-8 text-center text-red-500">خطا: {error}</div>;
-  if (brands.length === 0) return <div className="w-[90%] yekan mx-auto my-8 text-center">هیچ برندی یافت نشد</div>;
+  if (loading) {
+    return <div className="w-[90%] yekan mx-auto my-8 text-center">در حال بارگذاری...</div>;
+  }
+
+  if (error) {
+    return <div className="w-[90%] yekan mx-auto my-8 text-center text-red-500">خطا: {error}</div>;
+  }
+
+  if (brands.length === 0) {
+    return <div className="w-[90%] yekan mx-auto my-8 text-center">هیچ برندی یافت نشد</div>;
+  }
+
+  // اگر تعداد برندها کم باشه (مثلاً کمتر از ۷ تا در صفحه بزرگ)، وسط چین می‌کنیم
+  const shouldCenter = brands.length <= 7;
 
   return (
     <div className="w-[95%] yekan mx-auto my-8 bg-white rounded-lg p-4 relative sm:p-6 md:p-8">
@@ -101,18 +123,22 @@ export default function BrandsContainer() {
         <Swiper
           slidesPerView={3}
           spaceBetween={10}
+          centeredSlides={shouldCenter} // فقط وقتی تعداد کمه، وسط چین می‌شه
+          initialSlide={shouldCenter ? Math.floor(brands.length / 2) : 0} // شروع از وسط اگر وسط چین فعال باشه
           breakpoints={{
             640: { slidesPerView: 3, spaceBetween: 15 },
             768: { slidesPerView: 4, spaceBetween: 20 },
             1024: { slidesPerView: 6, spaceBetween: 25 },
             1280: { slidesPerView: 7, spaceBetween: 30 },
           }}
-          onSwiper={(swiper) => { swiperRef.current = swiper; updateNavigation(); }}
+          onSwiper={(swiper) => {
+            swiperRef.current = swiper;
+            updateNavigation();
+          }}
           dir="rtl"
         >
           {brands.map((item) => (
             <SwiperSlide key={item.id} className="flex flex-col items-center">
-              {/* لینک برند بر اساس title برای فیلتر */}
               <a
                 href={`/search?brands=${encodeURIComponent(item.title)}`}
                 className="text-center flex justify-center items-center"

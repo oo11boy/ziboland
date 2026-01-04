@@ -37,6 +37,10 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
 
   const activeVariant = externalSelectedVariant || internalSelectedVariant;
 
+  // موجودی این رنگ
+  const stockQuantity = activeVariant?.stock_quantity ?? 0;
+  const isInStock = stockQuantity > 0;
+
   // قیمت تکی (از واریانت یا محصول پایه)
   const retailPrice = activeVariant
     ? activeVariant.price_single
@@ -93,14 +97,31 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
     }
   }, [quantity, minWholesale, isWholesale, hasWholesalePrice, isEligibleForWholesale]);
 
-  const handleIncrement = () => setQuantity(prev => prev + 1);
+  const handleIncrement = () => {
+    if (quantity < stockQuantity) {
+      setQuantity(prev => prev + 1);
+    } else {
+      toast.warning(`حداکثر موجودی: ${stockQuantity} عدد`, {
+        position: 'top-center',
+        className: 'yekan',
+      });
+    }
+  };
 
   const handleDecrement = () => setQuantity(prev => (prev > 1 ? prev - 1 : 1));
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value, 10);
-    if (!isNaN(value) && value >= 0) {
-      setQuantity(value);
+    if (!isNaN(value) && value >= 1) {
+      if (value > stockQuantity) {
+        toast.warning(`حداکثر موجودی: ${stockQuantity} عدد`, {
+          position: 'top-center',
+          className: 'yekan',
+        });
+        setQuantity(stockQuantity);
+      } else {
+        setQuantity(value);
+      }
     }
   };
 
@@ -110,11 +131,12 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
     } else {
       setInternalSelectedVariant(variant);
     }
+    setQuantity(1); // وقتی رنگ عوض میشه، تعداد رو ریست کن
   };
 
   const handleAddToCart = () => {
-    if (!infoproduct.inStock) {
-      toast.error('محصول موجود نیست', {
+    if (!isInStock) {
+      toast.error('این رنگ موجود نیست', {
         position: 'top-center',
         className: 'yekan',
         autoClose: 3000,
@@ -123,12 +145,10 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
       return;
     }
 
-    if (quantity < 1) {
-      toast.error('لطفاً تعداد محصول را انتخاب کنید', {
+    if (quantity < 1 || quantity > stockQuantity) {
+      toast.error(`تعداد معتبر نیست (موجودی: ${stockQuantity})`, {
         position: 'top-center',
         className: 'yekan',
-        autoClose: 3000,
-        theme: 'colored',
       });
       return;
     }
@@ -230,6 +250,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
       />
 
       <div className="sp-product-info-container">
+
         {/* بخش قیمت‌ها */}
         <div className="sp-pricing-grid">
           {/* قیمت تک‌فروشی */}
@@ -264,24 +285,27 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
             <span className="sp-color-label">رنگ‌بندی:</span>
             <div className="sp-color-options">
               {infoproduct.variants.map((variant) => {
+                const variantInStock = variant.stock_quantity > 0;
                 const { tickColor, borderColor } = getContrastColor(variant.color_hexCode);
 
                 return (
                   <button
                     key={variant.id || variant.color_englishName}
                     onClick={() => handleVariantSelect(variant)}
+                    disabled={!variantInStock}
                     style={{
                       backgroundColor: variant.color_hexCode,
-                      width: '24px',
-                      height: '24px',
+                      width: '28px',
+                      height: '28px',
                       borderRadius: '50%',
                       border:
                         activeVariant?.id === variant.id
-                          ? '2px solid #805b99'
-                          : '1px solid #d1d5db',
+                          ? '3px solid #805b99'
+                          : '2px solid #d1d5db',
                       outline:
-                        activeVariant?.id === variant.id ? '2px solid #e9d5ff' : 'none',
-                      cursor: 'pointer',
+                        activeVariant?.id === variant.id ? '3px solid #e9d5ff' : 'none',
+                      cursor: variantInStock ? 'pointer' : 'not-allowed',
+                      opacity: variantInStock ? 1 : 0.4,
                       transition: 'all 0.2s ease',
                       position: 'relative',
                       display: 'flex',
@@ -291,24 +315,34 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
                     className="sp-color-button"
                     aria-label={`انتخاب رنگ ${variant.color_persianName || variant.color_englishName}`}
                   >
-                    {activeVariant?.id === variant.id && (
+                    {activeVariant?.id === variant.id && variantInStock && (
                       <span
                         style={{
                           color: tickColor,
-                          fontSize: '10px',
+                          fontSize: '14px',
                           fontWeight: 'bold',
                           backgroundColor: borderColor,
                           borderRadius: '50%',
-                          width: '16px',
-                          height: '16px',
+                          width: '20px',
+                          height: '20px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          position: 'absolute',
                         }}
                       >
                         
                       </span>
+                    )}
+                    {!variantInStock && (
+                      <span
+                        style={{
+                          position: 'absolute',
+                          width: '2px',
+                          height: '32px',
+                          backgroundColor: '#ff0000',
+                          transform: 'rotate(45deg)',
+                        }}
+                      />
                     )}
                   </button>
                 );
@@ -325,26 +359,35 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
           <div className="sp-quantity-control">
             <p className="sp-quantity-label">تعداد:</p>
             <div className="sp-quantity-input-container">
-              <button onClick={handleIncrement} className="sp-quantity-button" aria-label="افزایش">
+              <button onClick={handleIncrement} className="sp-quantity-button" aria-label="افزایش" disabled={!isInStock}>
                 +
               </button>
               <input
-                disabled
                 type="number"
                 value={quantity}
                 onChange={handleInputChange}
                 className="sp-quantity-input"
                 min="1"
+                max={stockQuantity}
+                disabled={!isInStock}
               />
-              <button onClick={handleDecrement} className="sp-quantity-button" aria-label="کاهش">
+              <button onClick={handleDecrement} className="sp-quantity-button" aria-label="کاهش" disabled={!isInStock}>
                 -
               </button>
             </div>
           </div>
 
-          <button onClick={handleAddToCart} className="sp-add-to-cart-button">
+          <button
+            onClick={handleAddToCart}
+            className="sp-add-to-cart-button"
+            disabled={!isInStock}
+            style={{
+              backgroundColor: !isInStock ? '#cccccc' : '#805b99',
+              cursor: !isInStock ? 'not-allowed' : 'pointer',
+            }}
+          >
             <ShoppingCartOutlined className="sp-cart-icon" />
-            افزودن به سبد خرید
+            {!isInStock ? 'ناموجود' : 'افزودن به سبد خرید'}
           </button>
         </div>
 

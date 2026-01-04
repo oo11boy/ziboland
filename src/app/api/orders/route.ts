@@ -46,6 +46,32 @@ export async function POST(req: Request) {
   try {
     await conn.beginTransaction();
 
+    // چک موجودی هر آیتم (واریانت رنگ)
+    for (const item of items) {
+      if (item.color?.hexCode) {
+        const [variantRows]: any = await conn.query(
+          `SELECT stock_quantity FROM product_variants 
+           WHERE product_id = ? AND color_hexCode = ?`,
+          [item.product_id, item.color.hexCode]
+        );
+
+        if (
+          variantRows.length === 0 ||
+          variantRows[0].stock_quantity < item.quantity
+        ) {
+          await conn.rollback();
+          return NextResponse.json(
+            {
+              error: `موجودی کافی برای محصول ${item.product_id} با رنگ ${
+                item.color.persianName || item.color.hexCode
+              } وجود ندارد`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     // تولید کد سفارش منحصر به فرد
     let orderCode = Math.floor(100000 + Math.random() * 900000).toString();
     let isUnique = false;
@@ -95,8 +121,8 @@ export async function POST(req: Request) {
       [`سفارش جدید با کد ${orderCode} ثبت شد`, orderId]
     );
 
-    // درخواست به زیبال — روش عادی
-    const callbackUrl = `${BASE_URL}/api/payment/verify`;
+    // درخواست پرداخت زیبال
+    const callbackUrl = `${BASE_URL}/api/payment/verify?orderId=${orderCode}`;
 
     const res = await fetch("https://gateway.zibal.ir/v1/request", {
       method: "POST",

@@ -1,4 +1,3 @@
-// AddProductPage.tsx (کاملاً هماهنگ با product_variants - نسخه نهایی و بدون مشکل)
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -6,7 +5,13 @@ import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Textarea } from "@/Components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/Components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/Components/ui/select";
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Label } from "@/Components/ui/label";
 import {
@@ -18,7 +23,6 @@ import {
   ChevronUp,
   Upload,
   X,
-  Image as ImageIcon,
   CheckCircle,
 } from "lucide-react";
 import { Brand, Category, Subcategory, SubcategoryItem } from "@/types/types";
@@ -36,6 +40,7 @@ interface VariantFormData {
   discount_wholesale_percent: string;
   min_wholesale: string;
   in_stock: boolean;
+  stock_quantity: string; // تعداد موجودی هر رنگ
   image_main: string;
   images: string[];
   infotable: { name: string; value: string }[];
@@ -138,21 +143,26 @@ const AddProductPage = () => {
 
     if (!formData.title.trim()) newErrors.title = "نام محصول الزامی است";
     if (!formData.brand_id) newErrors.brand_id = "انتخاب برند الزامی است";
-    if (!formData.mothercatId) newErrors.mothercatId = "دسته‌بندی اصلی الزامی است";
+    if (!formData.mothercatId)
+      newErrors.mothercatId = "دسته‌بندی اصلی الزامی است";
     if (!formData.subcatId) newErrors.subcatId = "زیرمجموعه الزامی است";
     if (!formData.itemId) newErrors.itemId = "آیتم زیرمجموعه الزامی است";
     if (!formData.image.trim()) newErrors.image = "تصویر اصلی محصول الزامی است";
-    if (formData.variants.length === 0) newErrors.variants = "حداقل یک واریانت (رنگ) لازم است";
+    if (formData.variants.length === 0)
+      newErrors.variants = "حداقل یک واریانت (رنگ) لازم است";
 
     formData.variants.forEach((variant, index) => {
       if (!variant.color_englishName.trim())
-        newErrors[`variant_${index}_color_englishName`] = "نام انگلیسی رنگ الزامی است";
+        newErrors[`variant_${index}_color_englishName`] =
+          "نام انگلیسی رنگ الزامی است";
       if (!variant.color_hexCode.trim())
         newErrors[`variant_${index}_hex`] = "کد رنگ الزامی است";
       if (!variant.price_single.trim())
         newErrors[`variant_${index}_price_single`] = "قیمت تکی الزامی است";
       if (!variant.price_wholesale.trim())
         newErrors[`variant_${index}_price_wholesale`] = "قیمت عمده الزامی است";
+      if (parseInt(variant.stock_quantity) < 0)
+        newErrors[`variant_${index}_stock`] = "موجودی نمی‌تواند منفی باشد";
     });
 
     setErrors(newErrors);
@@ -227,7 +237,11 @@ const AddProductPage = () => {
         discountwholesalePrice: prev.wholesalePrice,
       }));
     }
-  }, [formData.wholesalePrice, formData.discountwholesale, formData.hasWholesaleDiscount]);
+  }, [
+    formData.wholesalePrice,
+    formData.discountwholesale,
+    formData.hasWholesaleDiscount,
+  ]);
 
   // مدیریت واریانت‌ها
   const addVariant = () => {
@@ -245,6 +259,7 @@ const AddProductPage = () => {
           discount_wholesale_percent: prev.discountwholesale,
           min_wholesale: prev.minwholesale,
           in_stock: true,
+          stock_quantity: "0",
           image_main: prev.image,
           images: [],
           infotable: [],
@@ -253,10 +268,21 @@ const AddProductPage = () => {
     }));
   };
 
-  const updateVariant = (index: number, field: keyof VariantFormData, value: any) => {
+  const updateVariant = (
+    index: number,
+    field: keyof VariantFormData,
+    value: any
+  ) => {
     setFormData((prev) => {
       const newVariants = [...prev.variants];
       newVariants[index] = { ...newVariants[index], [field]: value };
+
+      // اگر موجودی تغییر کرد → وضعیت موجودی رو خودکار تنظیم کن
+      if (field === "stock_quantity") {
+        const qty = parseInt(value) || 0;
+        newVariants[index].in_stock = qty > 0;
+      }
+
       return { ...prev, variants: newVariants };
     });
   };
@@ -276,7 +302,12 @@ const AddProductPage = () => {
     });
   };
 
-  const updateVariantInfo = (variantIndex: number, infoIndex: number, field: "name" | "value", value: string) => {
+  const updateVariantInfo = (
+    variantIndex: number,
+    infoIndex: number,
+    field: "name" | "value",
+    value: string
+  ) => {
     setFormData((prev) => {
       const newVariants = [...prev.variants];
       newVariants[variantIndex].infotable[infoIndex][field] = value;
@@ -293,7 +324,10 @@ const AddProductPage = () => {
   };
 
   // آپلود فایل
-  const openUploadModal = (type: "productImage" | "variantImage" | "variantGallery", variantIndex?: number) => {
+  const openUploadModal = (
+    type: "productImage" | "variantImage" | "variantGallery",
+    variantIndex?: number
+  ) => {
     setUploadTarget({ type, variantIndex });
     setFiles([]);
     setPreviews({});
@@ -306,14 +340,17 @@ const AddProductPage = () => {
     setUploadTarget(null);
   };
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    setFiles((prev) => [...prev, ...selectedFiles]);
-    selectedFiles.forEach((file) => {
-      const url = URL.createObjectURL(file);
-      setPreviews((prev) => ({ ...prev, [file.name]: url }));
-    });
-  }, []);
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = Array.from(e.target.files || []);
+      setFiles((prev) => [...prev, ...selectedFiles]);
+      selectedFiles.forEach((file) => {
+        const url = URL.createObjectURL(file);
+        setPreviews((prev) => ({ ...prev, [file.name]: url }));
+      });
+    },
+    []
+  );
 
   const removeFile = (name: string) => {
     setFiles((prev) => prev.filter((f) => f.name !== name));
@@ -358,9 +395,19 @@ const AddProductPage = () => {
 
     if (uploadTarget?.type === "productImage") {
       setFormData((prev) => ({ ...prev, image: uploadedFiles[0].url }));
-    } else if (uploadTarget?.type === "variantImage" && uploadTarget.variantIndex !== undefined) {
-      updateVariant(uploadTarget.variantIndex, "image_main", uploadedFiles[0].url);
-    } else if (uploadTarget?.type === "variantGallery" && uploadTarget.variantIndex !== undefined) {
+    } else if (
+      uploadTarget?.type === "variantImage" &&
+      uploadTarget.variantIndex !== undefined
+    ) {
+      updateVariant(
+        uploadTarget.variantIndex,
+        "image_main",
+        uploadedFiles[0].url
+      );
+    } else if (
+      uploadTarget?.type === "variantGallery" &&
+      uploadTarget.variantIndex !== undefined
+    ) {
       const urls = uploadedFiles.map((f) => f.url);
       setFormData((prev) => {
         const newVariants = [...prev.variants];
@@ -397,9 +444,13 @@ const AddProductPage = () => {
         discount_wholesale_percent: parseInt(v.discount_wholesale_percent) || 0,
         min_wholesale: parseInt(v.min_wholesale) || 1,
         in_stock: v.in_stock,
+        stock_quantity: parseInt(v.stock_quantity) || 0,
         image_main: v.image_main.trim() || null,
         images: v.images.length > 0 ? v.images : null,
-        infotable: v.infotable.length > 0 ? v.infotable.filter(i => i.name.trim() && i.value.trim()) : null,
+        infotable:
+          v.infotable.length > 0
+            ? v.infotable.filter((i) => i.name.trim() && i.value.trim())
+            : null,
       }));
 
       const payload = {
@@ -409,10 +460,15 @@ const AddProductPage = () => {
         originalPrice: formData.originalPrice.replace(/,/g, ""),
         discountedPrice: formData.discountedPrice.replace(/,/g, ""),
         wholesalePrice: formData.wholesalePrice.replace(/,/g, ""),
-        discountwholesalePrice: formData.discountwholesalePrice.replace(/,/g, ""),
+        discountwholesalePrice: formData.discountwholesalePrice.replace(
+          /,/g,
+          ""
+        ),
         minwholesale: parseInt(formData.minwholesale),
         discount: formData.hasDiscount ? formData.discount : "0",
-        discountwholesale: formData.hasWholesaleDiscount ? formData.discountwholesale : "0",
+        discountwholesale: formData.hasWholesaleDiscount
+          ? formData.discountwholesale
+          : "0",
         category: formData.category,
         mothercatId: parseInt(formData.mothercatId),
         subcatId: parseInt(formData.subcatId),
@@ -421,7 +477,12 @@ const AddProductPage = () => {
         inStock: parseInt(formData.inStock),
         numericPrice: parseInt(formData.discountedPrice.replace(/,/g, "")) || 0,
         sales: parseInt(formData.sales) || 0,
-        features: formData.features ? formData.features.split("\n").map(f => f.trim()).filter(Boolean) : null,
+        features: formData.features
+          ? formData.features
+              .split("\n")
+              .map((f) => f.trim())
+              .filter(Boolean)
+          : null,
         content: formData.content.trim() || null,
         media: formData.media.length > 0 ? formData.media : null,
         variants: cleanedVariants,
@@ -452,7 +513,9 @@ const AddProductPage = () => {
     <div className="container mx-auto p-4 yekan">
       <Card className="bg-white dark:bg-gray-800 shadow-xl">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">افزودن محصول جدید</CardTitle>
+          <CardTitle className="text-2xl text-center">
+            افزودن محصول جدید
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -471,16 +534,24 @@ const AddProductPage = () => {
                     <Label>نام محصول *</Label>
                     <Input
                       value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, title: e.target.value })
+                      }
                       placeholder="نام محصول را وارد کنید"
                     />
-                    {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+                    {errors.title && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.title}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>توضیحات محصول</Label>
                     <Textarea
                       value={formData.content}
-                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, content: e.target.value })
+                      }
                       rows={6}
                       placeholder="توضیحات کامل محصول..."
                     />
@@ -489,7 +560,9 @@ const AddProductPage = () => {
                     <Label>ویژگی‌ها (هر خط یک ویژگی)</Label>
                     <Textarea
                       value={formData.features}
-                      onChange={(e) => setFormData({ ...formData, features: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, features: e.target.value })
+                      }
                       rows={5}
                       placeholder="مثال: ضدآب\nباتری قوی\n..."
                     />
@@ -504,7 +577,9 @@ const AddProductPage = () => {
                 className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 cursor-pointer"
                 onClick={() => toggleSection("pricing")}
               >
-                <h3 className="text-lg font-bold">قیمت‌گذاری پایه (پیش‌فرض برای واریانت‌ها)</h3>
+                <h3 className="text-lg font-bold">
+                  قیمت‌گذاری پایه (پیش‌فرض برای واریانت‌ها)
+                </h3>
                 {expandedSections.pricing ? <ChevronUp /> : <ChevronDown />}
               </div>
               {expandedSections.pricing && (
@@ -516,7 +591,9 @@ const AddProductPage = () => {
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          originalPrice: formatNumber(e.target.value.replace(/,/g, "")),
+                          originalPrice: formatNumber(
+                            e.target.value.replace(/,/g, "")
+                          ),
                         })
                       }
                       placeholder="1,000,000"
@@ -529,7 +606,9 @@ const AddProductPage = () => {
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          wholesalePrice: formatNumber(e.target.value.replace(/,/g, "")),
+                          wholesalePrice: formatNumber(
+                            e.target.value.replace(/,/g, "")
+                          ),
                         })
                       }
                       placeholder="900,000"
@@ -538,7 +617,9 @@ const AddProductPage = () => {
                   <div className="flex items-center gap-3">
                     <Checkbox
                       checked={formData.hasDiscount}
-                      onCheckedChange={(c) => setFormData({ ...formData, hasDiscount: !!c })}
+                      onCheckedChange={(c) =>
+                        setFormData({ ...formData, hasDiscount: !!c })
+                      }
                     />
                     <Label>تخفیف تکی دارد</Label>
                     {formData.hasDiscount && (
@@ -546,7 +627,9 @@ const AddProductPage = () => {
                         type="number"
                         placeholder="درصد تخفیف"
                         value={formData.discount}
-                        onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, discount: e.target.value })
+                        }
                         className="w-32"
                         min="0"
                         max="100"
@@ -556,7 +639,9 @@ const AddProductPage = () => {
                   <div className="flex items-center gap-3">
                     <Checkbox
                       checked={formData.hasWholesaleDiscount}
-                      onCheckedChange={(c) => setFormData({ ...formData, hasWholesaleDiscount: !!c })}
+                      onCheckedChange={(c) =>
+                        setFormData({ ...formData, hasWholesaleDiscount: !!c })
+                      }
                     />
                     <Label>تخفیف عمده دارد</Label>
                     {formData.hasWholesaleDiscount && (
@@ -564,7 +649,12 @@ const AddProductPage = () => {
                         type="number"
                         placeholder="درصد تخفیف عمده"
                         value={formData.discountwholesale}
-                        onChange={(e) => setFormData({ ...formData, discountwholesale: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            discountwholesale: e.target.value,
+                          })
+                        }
                         className="w-32"
                         min="0"
                         max="100"
@@ -581,7 +671,9 @@ const AddProductPage = () => {
                 className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 cursor-pointer"
                 onClick={() => toggleSection("media")}
               >
-                <h3 className="text-lg font-bold">تصویر اصلی محصول (پیش‌فرض واریانت‌ها)</h3>
+                <h3 className="text-lg font-bold">
+                  تصویر اصلی محصول (پیش‌فرض واریانت‌ها)
+                </h3>
                 {expandedSections.media ? <ChevronUp /> : <ChevronDown />}
               </div>
               {expandedSections.media && (
@@ -591,11 +683,16 @@ const AddProductPage = () => {
                     <div className="flex gap-4 items-end">
                       <Input
                         value={formData.image}
-                        onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, image: e.target.value })
+                        }
                         placeholder="https://..."
                         className="flex-1"
                       />
-                      <Button type="button" onClick={() => openUploadModal("productImage")}>
+                      <Button
+                        type="button"
+                        onClick={() => openUploadModal("productImage")}
+                      >
                         <Upload className="h-5 w-5" />
                       </Button>
                     </div>
@@ -609,7 +706,11 @@ const AddProductPage = () => {
                         />
                       </div>
                     )}
-                    {errors.image && <p className="text-red-500 text-sm mt-2">{errors.image}</p>}
+                    {errors.image && (
+                      <p className="text-red-500 text-sm mt-2">
+                        {errors.image}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -631,7 +732,12 @@ const AddProductPage = () => {
                     <Select
                       value={formData.mothercatId}
                       onValueChange={(v) =>
-                        setFormData({ ...formData, mothercatId: v, subcatId: "", itemId: "" })
+                        setFormData({
+                          ...formData,
+                          mothercatId: v,
+                          subcatId: "",
+                          itemId: "",
+                        })
                       }
                     >
                       <SelectTrigger>
@@ -645,13 +751,19 @@ const AddProductPage = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.mothercatId && <p className="text-red-500 text-sm mt-1">{errors.mothercatId}</p>}
+                    {errors.mothercatId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.mothercatId}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>زیرمجموعه *</Label>
                     <Select
                       value={formData.subcatId}
-                      onValueChange={(v) => setFormData({ ...formData, subcatId: v, itemId: "" })}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, subcatId: v, itemId: "" })
+                      }
                       disabled={!formData.mothercatId}
                     >
                       <SelectTrigger>
@@ -665,13 +777,19 @@ const AddProductPage = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.subcatId && <p className="text-red-500 text-sm mt-1">{errors.subcatId}</p>}
+                    {errors.subcatId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.subcatId}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>آیتم زیرمجموعه *</Label>
                     <Select
                       value={formData.itemId}
-                      onValueChange={(v) => setFormData({ ...formData, itemId: v })}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, itemId: v })
+                      }
                       disabled={!formData.subcatId}
                     >
                       <SelectTrigger>
@@ -685,7 +803,11 @@ const AddProductPage = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.itemId && <p className="text-red-500 text-sm mt-1">{errors.itemId}</p>}
+                    {errors.itemId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.itemId}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -703,12 +825,21 @@ const AddProductPage = () => {
               {expandedSections.variants && (
                 <div className="p-6 space-y-10">
                   {formData.variants.map((variant, vIndex) => (
-                    <div key={vIndex} className="border-2 border-dashed border-purple-300 rounded-xl p-8 bg-purple-50 dark:bg-purple-900/20">
+                    <div
+                      key={vIndex}
+                      className="border-2 border-dashed border-purple-300 rounded-xl p-8 bg-purple-50 dark:bg-purple-900/20"
+                    >
                       <div className="flex justify-between items-center mb-6">
                         <h4 className="text-xl font-bold">
-                          واریانت {vIndex + 1}: {variant.color_persianName || variant.color_englishName || "جدید"}
+                          واریانت {vIndex + 1}:{" "}
+                          {variant.color_persianName ||
+                            variant.color_englishName ||
+                            "جدید"}
                         </h4>
-                        <Button variant="destructive" onClick={() => removeVariant(vIndex)}>
+                        <Button
+                          variant="destructive"
+                          onClick={() => removeVariant(vIndex)}
+                        >
                           <Trash2 className="h-5 w-5" />
                         </Button>
                       </div>
@@ -719,7 +850,13 @@ const AddProductPage = () => {
                           <Label>نام انگلیسی رنگ *</Label>
                           <Input
                             value={variant.color_englishName}
-                            onChange={(e) => updateVariant(vIndex, "color_englishName", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "color_englishName",
+                                e.target.value
+                              )
+                            }
                             placeholder="مثال: red"
                           />
                         </div>
@@ -727,7 +864,13 @@ const AddProductPage = () => {
                           <Label>نام فارسی رنگ</Label>
                           <Input
                             value={variant.color_persianName}
-                            onChange={(e) => updateVariant(vIndex, "color_persianName", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "color_persianName",
+                                e.target.value
+                              )
+                            }
                             placeholder="مثال: قرمز"
                           />
                         </div>
@@ -737,12 +880,24 @@ const AddProductPage = () => {
                             <Input
                               type="color"
                               value={variant.color_hexCode}
-                              onChange={(e) => updateVariant(vIndex, "color_hexCode", e.target.value)}
+                              onChange={(e) =>
+                                updateVariant(
+                                  vIndex,
+                                  "color_hexCode",
+                                  e.target.value
+                                )
+                              }
                               className="w-20 h-12"
                             />
                             <Input
                               value={variant.color_hexCode}
-                              onChange={(e) => updateVariant(vIndex, "color_hexCode", e.target.value)}
+                              onChange={(e) =>
+                                updateVariant(
+                                  vIndex,
+                                  "color_hexCode",
+                                  e.target.value
+                                )
+                              }
                               placeholder="#FF0000"
                             />
                           </div>
@@ -756,7 +911,11 @@ const AddProductPage = () => {
                           <Input
                             value={variant.price_single}
                             onChange={(e) =>
-                              updateVariant(vIndex, "price_single", formatNumber(e.target.value.replace(/,/g, "")))
+                              updateVariant(
+                                vIndex,
+                                "price_single",
+                                formatNumber(e.target.value.replace(/,/g, ""))
+                              )
                             }
                             placeholder="1,200,000"
                           />
@@ -766,7 +925,11 @@ const AddProductPage = () => {
                           <Input
                             value={variant.price_wholesale}
                             onChange={(e) =>
-                              updateVariant(vIndex, "price_wholesale", formatNumber(e.target.value.replace(/,/g, "")))
+                              updateVariant(
+                                vIndex,
+                                "price_wholesale",
+                                formatNumber(e.target.value.replace(/,/g, ""))
+                              )
                             }
                             placeholder="1,000,000"
                           />
@@ -776,7 +939,13 @@ const AddProductPage = () => {
                           <Input
                             type="number"
                             value={variant.discount_percent}
-                            onChange={(e) => updateVariant(vIndex, "discount_percent", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "discount_percent",
+                                e.target.value
+                              )
+                            }
                             min="0"
                             max="100"
                           />
@@ -786,19 +955,53 @@ const AddProductPage = () => {
                           <Input
                             type="number"
                             value={variant.discount_wholesale_percent}
-                            onChange={(e) => updateVariant(vIndex, "discount_wholesale_percent", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "discount_wholesale_percent",
+                                e.target.value
+                              )
+                            }
                             min="0"
                             max="100"
                           />
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-4 mb-8">
-                        <Checkbox
-                          checked={variant.in_stock}
-                          onCheckedChange={(c) => updateVariant(vIndex, "in_stock", !!c)}
-                        />
-                        <Label className="text-base">این رنگ موجود است</Label>
+                      {/* موجودی و وضعیت موجود بودن */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        <div>
+                          <Label>تعداد موجودی این رنگ *</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            value={variant.stock_quantity}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "stock_quantity",
+                                e.target.value
+                              )
+                            }
+                            placeholder="0"
+                          />
+                          <p className="text-sm text-gray-600 mt-2">
+                            {parseInt(variant.stock_quantity || "0") > 0
+                              ? "موجود"
+                              : "ناموجود (به صورت خودکار)"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <Checkbox
+                            checked={variant.in_stock}
+                            onCheckedChange={(c) =>
+                              updateVariant(vIndex, "in_stock", !!c)
+                            }
+                          />
+                          <Label className="text-base">
+                            این رنگ موجود است (خودکار بر اساس موجودی)
+                          </Label>
+                        </div>
                       </div>
 
                       {/* تصویر اصلی واریانت */}
@@ -807,11 +1010,22 @@ const AddProductPage = () => {
                         <div className="flex gap-4 items-end">
                           <Input
                             value={variant.image_main}
-                            onChange={(e) => updateVariant(vIndex, "image_main", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "image_main",
+                                e.target.value
+                              )
+                            }
                             placeholder="URL تصویر"
                             className="flex-1"
                           />
-                          <Button type="button" onClick={() => openUploadModal("variantImage", vIndex)}>
+                          <Button
+                            type="button"
+                            onClick={() =>
+                              openUploadModal("variantImage", vIndex)
+                            }
+                          >
                             <Upload className="h-5 w-5" />
                           </Button>
                         </div>
@@ -827,8 +1041,15 @@ const AddProductPage = () => {
                       {/* گالری واریانت */}
                       <div className="mb-8">
                         <div className="flex justify-between items-center mb-4">
-                          <Label className="text-lg">گالری تصاویر این رنگ</Label>
-                          <Button type="button" onClick={() => openUploadModal("variantGallery", vIndex)}>
+                          <Label className="text-lg">
+                            گالری تصاویر این رنگ
+                          </Label>
+                          <Button
+                            type="button"
+                            onClick={() =>
+                              openUploadModal("variantGallery", vIndex)
+                            }
+                          >
                             <Upload className="h-5 w-5 mr-2" /> آپلود گالری
                           </Button>
                         </div>
@@ -836,13 +1057,19 @@ const AddProductPage = () => {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {variant.images.map((img, i) => (
                               <div key={i} className="relative group">
-                                <img src={img} alt={`گالری ${i + 1}`} className="h-32 rounded border object-cover" />
+                                <img
+                                  src={img}
+                                  alt={`گالری ${i + 1}`}
+                                  className="h-32 rounded border object-cover"
+                                />
                                 <Button
                                   variant="destructive"
                                   size="icon"
                                   className="absolute top-2 right-2 opacity-0 group-hover:opacity-100"
                                   onClick={() => {
-                                    const newImages = variant.images.filter((_, idx) => idx !== i);
+                                    const newImages = variant.images.filter(
+                                      (_, idx) => idx !== i
+                                    );
                                     updateVariant(vIndex, "images", newImages);
                                   }}
                                 >
@@ -858,28 +1085,51 @@ const AddProductPage = () => {
                       <div>
                         <div className="flex justify-between items-center mb-4">
                           <Label className="text-lg">مشخصات فنی این رنگ</Label>
-                          <Button type="button" variant="outline" onClick={() => addVariantInfo(vIndex)}>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => addVariantInfo(vIndex)}
+                          >
                             <Plus className="h-5 w-5 mr-2" /> افزودن مشخصه
                           </Button>
                         </div>
                         {variant.infotable.map((info, infoIndex) => (
-                          <div key={infoIndex} className="flex gap-4 mb-4 items-center">
+                          <div
+                            key={infoIndex}
+                            className="flex gap-4 mb-4 items-center"
+                          >
                             <Input
                               placeholder="نام مشخصه (مثال: وزن)"
                               value={info.name}
-                              onChange={(e) => updateVariantInfo(vIndex, infoIndex, "name", e.target.value)}
+                              onChange={(e) =>
+                                updateVariantInfo(
+                                  vIndex,
+                                  infoIndex,
+                                  "name",
+                                  e.target.value
+                                )
+                              }
                               className="flex-1"
                             />
                             <Input
                               placeholder="مقدار (مثال: 180 گرم)"
                               value={info.value}
-                              onChange={(e) => updateVariantInfo(vIndex, infoIndex, "value", e.target.value)}
+                              onChange={(e) =>
+                                updateVariantInfo(
+                                  vIndex,
+                                  infoIndex,
+                                  "value",
+                                  e.target.value
+                                )
+                              }
                               className="flex-1"
                             />
                             <Button
                               variant="destructive"
                               size="icon"
-                              onClick={() => removeVariantInfo(vIndex, infoIndex)}
+                              onClick={() =>
+                                removeVariantInfo(vIndex, infoIndex)
+                              }
                             >
                               <Trash2 className="h-5 w-5" />
                             </Button>
@@ -889,10 +1139,18 @@ const AddProductPage = () => {
                     </div>
                   ))}
 
-                  <Button type="button" onClick={addVariant} className="w-full text-lg py-6">
+                  <Button
+                    type="button"
+                    onClick={addVariant}
+                    className="w-full text-lg py-6"
+                  >
                     <Plus className="h-6 w-6 mr-3" /> افزودن واریانت جدید (رنگ)
                   </Button>
-                  {errors.variants && <p className="text-red-500 text-center text-lg">{errors.variants}</p>}
+                  {errors.variants && (
+                    <p className="text-red-500 text-center text-lg">
+                      {errors.variants}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -912,7 +1170,9 @@ const AddProductPage = () => {
                     <Label>برند *</Label>
                     <Select
                       value={formData.brand_id}
-                      onValueChange={(v) => setFormData({ ...formData, brand_id: v })}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, brand_id: v })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="انتخاب برند" />
@@ -925,7 +1185,11 @@ const AddProductPage = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.brand_id && <p className="text-red-500 text-sm mt-1">{errors.brand_id}</p>}
+                    {errors.brand_id && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.brand_id}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>امتیاز محصول (0 تا 5)</Label>
@@ -935,7 +1199,9 @@ const AddProductPage = () => {
                       max="5"
                       step="0.1"
                       value={formData.rating}
-                      onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, rating: e.target.value })
+                      }
                     />
                   </div>
                 </div>
@@ -944,10 +1210,19 @@ const AddProductPage = () => {
 
             {/* دکمه‌ها */}
             <div className="flex gap-6 pt-8">
-              <Button type="button" variant="outline" onClick={() => router.back()} className="flex-1 text-lg py-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                className="flex-1 text-lg py-6"
+              >
                 بازگشت
               </Button>
-              <Button type="submit" disabled={loading} className="flex-1 bg-green-600 hover:bg-green-700 text-lg py-6">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-lg py-6"
+              >
                 {loading ? (
                   <>
                     <Loader2 className="h-6 w-6 animate-spin mr-3" />
@@ -975,14 +1250,26 @@ const AddProductPage = () => {
                 onClick={() => document.getElementById("upload-input")?.click()}
               >
                 <Upload className="h-16 w-16 mx-auto text-purple-600 mb-6" />
-                <p className="text-xl font-bold">فایل‌ها را اینجا بکشید یا کلیک کنید</p>
-                <p className="text-sm text-gray-500 mt-2">حداکثر 10 مگابایت - تصاویر و ویدئو</p>
-                <Input id="upload-input" type="file" multiple className="hidden" onChange={handleFileChange} />
+                <p className="text-xl font-bold">
+                  فایل‌ها را اینجا بکشید یا کلیک کنید
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  حداکثر 10 مگابایت - تصاویر و ویدئو
+                </p>
+                <Input
+                  id="upload-input"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
               </div>
 
               {files.length > 0 && (
                 <div>
-                  <h3 className="text-xl font-bold mb-4">فایل‌های انتخاب شده ({files.length})</h3>
+                  <h3 className="text-xl font-bold mb-4">
+                    فایل‌های انتخاب شده ({files.length})
+                  </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     {files.map((file) => (
                       <div key={file.name} className="relative group">
@@ -999,19 +1286,29 @@ const AddProductPage = () => {
                         >
                           <X className="h-5 w-5" />
                         </Button>
-                        <p className="text-center text-sm mt-2 truncate">{file.name}</p>
+                        <p className="text-center text-sm mt-2 truncate">
+                          {file.name}
+                        </p>
                       </div>
                     ))}
                   </div>
-                  <Button onClick={handleUpload} disabled={uploading} className="w-full mt-6 text-lg py-6">
-                    {uploading ? "در حال آپلود..." : `آپلود ${files.length} فایل`}
+                  <Button
+                    onClick={handleUpload}
+                    disabled={uploading}
+                    className="w-full mt-6 text-lg py-6"
+                  >
+                    {uploading
+                      ? "در حال آپلود..."
+                      : `آپلود ${files.length} فایل`}
                   </Button>
                 </div>
               )}
 
               {uploadedFiles.length > 0 && (
                 <div>
-                  <h3 className="text-xl font-bold mb-4">فایل‌های آپلود شده ({uploadedFiles.length})</h3>
+                  <h3 className="text-xl font-bold mb-4">
+                    فایل‌های آپلود شده ({uploadedFiles.length})
+                  </h3>
                   <div className="grid grid-cols-3 md:grid-cols-5 gap-6">
                     {uploadedFiles.map((file) => (
                       <img
@@ -1022,7 +1319,10 @@ const AddProductPage = () => {
                       />
                     ))}
                   </div>
-                  <Button onClick={confirmUpload} className="w-full mt-6 bg-green-600 hover:bg-green-700 text-lg py-6">
+                  <Button
+                    onClick={confirmUpload}
+                    className="w-full mt-6 bg-green-600 hover:bg-green-700 text-lg py-6"
+                  >
                     <CheckCircle className="h-6 w-6 mr-3" /> تأیید و اعمال
                   </Button>
                 </div>

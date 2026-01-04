@@ -18,6 +18,7 @@ import {
   WishlistItem,
 } from "@/types/types";
 import { useAuth } from "@/ContextApi/AuthContext";
+import { cities, provinces } from "@/lib/city";
 
 interface UserDashboardContainerProps {
   initialAddresses: Address[];
@@ -89,13 +90,6 @@ export default function UserDashboardContainer({
 
   const token = Cookies.get("authToken");
 
-  const provinces = ["تهران", "اصفهان", "شیراز", "مشهد"];
-  const cities: { [key: string]: string[] } = {
-    تهران: ["تهران", "ری", "شمیرانات"],
-    اصفهان: ["اصفهان", "کاشان", "نجف‌آباد"],
-    شیراز: ["شیراز", "مرودشت", "کازرون"],
-    مشهد: ["مشهد", "نیشابور", "سبزوار"],
-  };
 
   // تابع برای به‌روزرسانی آدرس‌ها
   const fetchAddresses = async () => {

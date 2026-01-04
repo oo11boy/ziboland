@@ -14,6 +14,7 @@ import { Categoryapi, Product } from "@/types/types";
 interface MobileFilterPanelProps {
   searchTerm: string;
   setSearchTerm: (value: string) => void;
+  updateSearchQuery: (value: string) => void; // جدید: برای آپدیت URL
   clearFilters: () => void;
   categorySearch: string;
   setCategorySearch: (value: string) => void;
@@ -77,6 +78,7 @@ export default function MobileFilterPanel({
   filterVariants,
   searchTerm,
   setSearchTerm,
+  updateSearchQuery,
 }: MobileFilterPanelProps) {
   return (
     <motion.div
@@ -88,7 +90,7 @@ export default function MobileFilterPanel({
     >
       <div className="p-4">
         {/* هدر فیلتر موبایل */}
-        <div className="flex sticky top-0 bg-white py-4 justify-between items-center border-b border-gray-200 mb-4">
+        <div className="sticky top-0 bg-white py-4 flex justify-between items-center border-b border-gray-200 mb-4">
           <h2 className="text-lg font-bold text-[#374151] flex items-center">
             <FilterAlt className="ml-2 text-[#805b99]" /> فیلترها
           </h2>
@@ -104,15 +106,19 @@ export default function MobileFilterPanel({
           </button>
         </div>
 
-        {/* جستجوی کلی محصولات (اضافه شده برای هماهنگی با دسکتاپ) */}
-        <div className="mb-4">
+        {/* جستجوی کلی محصولات */}
+        <div className="mb-6">
           <label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-2">
             <Category className="text-[#805b99]" /> جستجو
           </label>
           <input
             type="text"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSearchTerm(value);
+              updateSearchQuery(value); // آپدیت URL همزمان با تایپ
+            }}
             placeholder="نام محصول..."
             className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#805b99] outline-none transition"
           />
@@ -120,7 +126,7 @@ export default function MobileFilterPanel({
 
         {/* دسته‌بندی‌ها */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2 text-[#374151] flex items-center">
+          <label className="block text-sm font-medium mb-2 text-[#374151] items-center">
             <Category className="ml-2 text-[#805b99]" /> دسته‌بندی‌ها
           </label>
           <input
@@ -250,7 +256,7 @@ export default function MobileFilterPanel({
 
         {/* برند */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2 text-[#374151] flex items-center">
+          <label className="block text-sm font-medium mb-2 text-[#374151] items-center">
             <Store className="ml-2 text-[#805b99]" /> برند
           </label>
           <input
@@ -285,7 +291,7 @@ export default function MobileFilterPanel({
 
         {/* محدوده قیمت */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2 text-[#374151] flex items-center">
+          <label className="block text-sm font-medium mb-2 text-[#374151] items-center">
             <PriceChange className="ml-2 text-[#805b99]" /> محدوده قیمت
           </label>
           <Slider
@@ -312,7 +318,7 @@ export default function MobileFilterPanel({
 
         {/* حداقل امتیاز */}
         <div className="mb-6">
-          <label className="block text-sm font-medium mb-2 text-[#374151] flex items-center">
+          <label className="block text-sm font-medium mb-2 text-[#374151] items-center">
             <Star className="ml-2 text-[#805b99]" /> حداقل امتیاز
           </label>
           <input
