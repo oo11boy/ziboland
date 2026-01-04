@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
-import { Plus, Edit, Trash2, View, Search } from "lucide-react";
+import { Plus, Edit, Trash2, View, Search, Copy } from "lucide-react";
 import { toast } from "react-toastify";
 import { Product } from "@/types/types";
 import { API } from "@/lib/MainRoutes";
@@ -27,18 +27,18 @@ const DeleteDialog = ({
       <p className="mb-6 text-gray-600 dark:text-gray-300">
         محصول "{productTitle}" سفارش دارد. آیا می‌خواهید با سفارش‌ها حذف شود؟
       </p>
-      <div className="flex justify-around">
+      <div className="flex justify-around gap-4">
         <Button
           variant="outline"
           onClick={onCancel}
-          className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-600"
+          className="px-6"
         >
           لغو
         </Button>
         <Button
           variant="destructive"
           onClick={onForceDelete}
-          className="bg-red-500 hover:bg-red-600 text-white"
+          className="px-6"
         >
           حذف با سفارش‌ها
         </Button>
@@ -46,9 +46,10 @@ const DeleteDialog = ({
     </div>
   </div>
 );
+
 const copyToClipboard = (text: string) => {
   navigator.clipboard.writeText(text);
-  toast.success("نام محصول کپی شد");
+  toast.success("نام محصول کپی شد", { autoClose: 2000 });
 };
 
 const ProductsPage = () => {
@@ -66,14 +67,13 @@ const ProductsPage = () => {
   }, []);
 
   useEffect(() => {
+    const lowerSearch = searchTerm.toLowerCase();
     const filtered = products.filter(
       (product) =>
-        product.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.title.toLowerCase().includes(lowerSearch) ||
         (product.brandDetails?.title &&
-          product.brandDetails.title
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase())) ||
-        product.category.toLowerCase().includes(searchTerm.toLowerCase())
+          product.brandDetails.title.toLowerCase().includes(lowerSearch)) ||
+        product.category.toLowerCase().includes(lowerSearch)
     );
     setFilteredProducts(filtered);
   }, [products, searchTerm]);
@@ -97,10 +97,9 @@ const ProductsPage = () => {
   const handleDeleteClick = (product: Product) => {
     setDeleteDialog({ visible: true, product });
   };
-  // حذف واقعی
-  const handleDelete = async (id: number, force = false) => {
-    console.log("[DELETE] Product ID:", id, "Force:", force);
 
+  // حذف واقعی (با یا بدون force)
+  const handleDelete = async (id: number, force = false) => {
     try {
       const res = await fetch(`${API}/products/${id}`, {
         method: "DELETE",
@@ -109,7 +108,7 @@ const ProductsPage = () => {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
+        const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || "خطا در حذف محصول");
       }
 
@@ -125,13 +124,14 @@ const ProductsPage = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-600"></div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 yekan">
+      {/* دیالوگ حذف */}
       {deleteDialog.visible && deleteDialog.product && (
         <DeleteDialog
           productTitle={deleteDialog.product.title}
@@ -140,139 +140,143 @@ const ProductsPage = () => {
         />
       )}
 
-      <div className="flex justify-between items-center flex-wrap gap-2 mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
-          محصولات
+          مدیریت محصولات ({filteredProducts.length})
         </h1>
         <Link href="/admindashboard/products/add">
-          <Button className="bg-blue-500 hover:bg-blue-600 text-white">
-            <Plus className="mr-2 h-4 w-4" /> افزودن محصول
+          <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+            <Plus className="ml-2 h-5 w-5" /> افزودن محصول جدید
           </Button>
         </Link>
       </div>
 
       {/* جستجو */}
-      <div className="relative mb-6">
-        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+      <div className="relative mb-8">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
         <Input
-          placeholder="جستجو بر اساس نام محصول، برند یا دسته‌بندی..."
+          placeholder="جستجو در نام محصول، برند یا دسته‌بندی..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pr-10 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500"
+          className="pl-10 pr-4 py-6 text-lg border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500"
         />
       </div>
 
-      <Card className="bg-white dark:bg-gray-800 shadow-lg rounded-lg">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-gray-800 dark:text-white">
-            لیست محصولات
-          </CardTitle>
+      <Card className="bg-white dark:bg-gray-800 shadow-xl rounded-xl overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+          <CardTitle className="text-2xl">لیست محصولات</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {filteredProducts.length === 0 ? (
-            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            <div className="text-center py-16 text-gray-500 dark:text-gray-400 text-xl">
               هیچ محصولی یافت نشد
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm md:text-base table-auto border-collapse">
-                <thead className="hidden md:table-header-group">
-                  <tr className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                    <th className="px-4 py-2 text-right">نام</th>
-                    <th className="px-4 py-2 text-right">برند</th>
-                    <th className="px-4 py-2 text-right">قیمت تک</th>
-                    <th className="px-4 py-2 text-right">قیمت عمده</th>
-                    <th className="px-4 py-2 text-right">دسته‌بندی</th>
-                    <th className="px-4 py-2 text-right">وضعیت</th>
-                    <th className="px-4 py-2 text-right">عملیات</th>
+              <table className="w-full text-sm md:text-base">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr className="text-gray-700 dark:text-gray-300">
+                    <th className="px-6 py-4 text-right">نام محصول</th>
+                    <th className="px-6 py-4 text-right">برند</th>
+                    <th className="px-6 py-4 text-right">دسته‌بندی</th>
+                    <th className="px-6 py-4 text-right">تعداد واریانت</th>
+                    <th className="px-6 py-4 text-right">وضعیت موجودی</th>
+                    <th className="px-6 py-4 text-right">عملیات</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredProducts.map((product) => (
-                    <tr
-                      key={product.id}
-                      className="block md:table-row border-b md:border-0 border-gray-200 dark:border-gray-700 mb-4 md:mb-0 rounded-lg md:rounded-none shadow-sm md:shadow-none bg-gray-50 md:bg-transparent dark:bg-gray-900 md:dark:bg-transparent transition-colors hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">نام: </span>
+                  {filteredProducts.map((product) => {
+                    const totalStock = product.variants.reduce(
+                      (sum, v) => sum + v.stock_quantity,
+                      0
+                    );
+                    const hasStock = totalStock > 0;
 
-                   <span
-  title="برای کپی کلیک کنید"
-  onClick={() => copyToClipboard(product.title)}
-  className="cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
->
-  {product.title.length > 20
-    ? product.title.slice(0, 20) + "..."
-    : product.title}
-</span>
-
-                      </td>
-
-                      <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">برند: </span>
-                        {product.brandDetails?.title || "نامشخص"}
-                      </td>
-                      <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">قیمت تک: </span>
-                        {product.discountedPrice} تومان
-                      </td>
-                      <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">
-                          قیمت عمده:{" "}
-                        </span>
-                        {product.discountwholesalePrice} تومان
-                      </td>
-                      <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">
-                          دسته‌بندی:{" "}
-                        </span>
-                        {product.category}
-                      </td>
-                      <td className="px-4 py-2 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">وضعیت: </span>
-                        {product.inStock ? "موجود" : "ناموجود"}
-                      </td>
-                      <td className="px-4 py-2 block md:table-cell">
-                        <div className="flex space-x-2 space-x-reverse">
-                          <Link
-                            href={`/admindashboard/products/${product.id}/edit`}
+                    return (
+                      <tr
+                        key={product.id}
+                        className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      >
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => copyToClipboard(product.title)}
+                              className="text-gray-500 hover:text-purple-600 transition"
+                              title="کپی نام محصول"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </button>
+                            <span className="font-medium">
+                              {product.title.length > 30
+                                ? product.title.slice(0, 30) + "..."
+                                : product.title}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {product.brandDetails?.title || "-"}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {product.category}
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="inline-block px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm">
+                            {product.variants.length} واریانت
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-sm ${
+                              hasStock
+                                ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
+                                : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"
+                            }`}
                           >
+                            {hasStock ? "موجود" : "ناموجود"}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-center gap-3">
+                            <Link href={`/admindashboard/products/${product.id}/edit`}>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="hover:bg-blue-50 dark:hover:bg-blue-900"
+                                title="ویرایش"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </Link>
+
                             <Button
                               variant="outline"
                               size="sm"
-                              title="ویرایش محصول"
-                              className="hover:bg-blue-50 dark:hover:bg-blue-900"
+                              onClick={() => handleDeleteClick(product)}
+                              className="hover:bg-red-50 dark:hover:bg-red-900"
+                              title="حذف"
                             >
-                              <Edit className="h-4 w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
-                          </Link>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteClick(product)}
-                            title="حذف محصول"
-                            className="hover:bg-red-50 dark:hover:bg-red-900"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                          <a
-                            href={`/products/${product.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              title="مشاهده محصول"
-                              className="hover:bg-blue-50 dark:hover:bg-blue-900"
+
+                            <a
+                              href={`/products/${product.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
                             >
-                              <View className="h-4 w-4" />
-                            </Button>
-                          </a>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="hover:bg-green-50 dark:hover:bg-green-900"
+                                title="مشاهده در سایت"
+                              >
+                                <View className="h-4 w-4" />
+                              </Button>
+                            </a>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

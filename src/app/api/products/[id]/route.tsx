@@ -1,4 +1,4 @@
-// api/products/[id].ts (کاملاً هماهنگ با product_variants)
+// api/products/[id].ts
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2/promise";
@@ -11,7 +11,6 @@ interface Variant {
   price_single: number;
   price_wholesale: number;
   discount_percent: number;
-  discount_wholesale_percent: number;
   min_wholesale: number;
   in_stock: boolean;
   stock_quantity: number;
@@ -24,20 +23,12 @@ interface Product {
   id: number;
   title: string;
   image: string;
-  originalPrice: string;
-  discountedPrice: string;
-  wholesalePrice: string;
-  discountwholesalePrice: string;
-  minwholesale: number;
-  discount: string;
-  discountwholesale: string;
   category: string;
   mothercatId: number;
   subcatId: number;
   itemId: number | null;
   rating: number;
   inStock: boolean;
-  numericPrice: number;
   sales: number;
   features: string[] | null;
   content: string | null;
@@ -67,20 +58,12 @@ export async function GET(request: NextRequest) {
         p.id AS product_id,
         p.title,
         p.image,
-        p.originalPrice,
-        p.discountedPrice,
-        p.wholesalePrice,
-        p.discountwholesalePrice,
-        p.minwholesale,
-        p.discount,
-        p.discountwholesale,
         p.category,
         p.mothercatId,
         p.subcatId,
         p.itemId,
         p.rating,
         p.inStock,
-        p.numericPrice,
         p.sales,
         p.features,
         p.content,
@@ -116,7 +99,6 @@ export async function GET(request: NextRequest) {
         pv.price_single,
         pv.price_wholesale,
         pv.discount_percent,
-        pv.discount_wholesale_percent,
         pv.min_wholesale,
         pv.in_stock,
         pv.stock_quantity,
@@ -136,20 +118,12 @@ export async function GET(request: NextRequest) {
       id: row.product_id,
       title: row.title,
       image: row.image,
-      originalPrice: row.originalPrice,
-      discountedPrice: row.discountedPrice,
-      wholesalePrice: row.wholesalePrice,
-      discountwholesalePrice: row.discountwholesalePrice,
-      minwholesale: row.minwholesale,
-      discount: row.discount,
-      discountwholesale: row.discountwholesale,
       category: row.category,
       mothercatId: row.mothercatId,
       subcatId: row.subcatId,
       itemId: row.itemId,
       rating: row.rating,
       inStock: !!row.inStock,
-      numericPrice: row.numericPrice,
       sales: row.sales,
       features: row.features ? JSON.parse(row.features) : null,
       content: row.content ?? null,
@@ -191,7 +165,6 @@ export async function GET(request: NextRequest) {
         price_single: Number(r.price_single),
         price_wholesale: Number(r.price_wholesale),
         discount_percent: r.discount_percent,
-        discount_wholesale_percent: r.discount_wholesale_percent,
         min_wholesale: r.min_wholesale,
         in_stock: !!r.in_stock,
         stock_quantity: r.stock_quantity,
@@ -226,20 +199,12 @@ export async function PUT(request: NextRequest) {
       title,
       brand_id,
       image,
-      originalPrice,
-      discountedPrice,
-      wholesalePrice,
-      discountwholesalePrice,
-      minwholesale,
-      discount,
-      discountwholesale,
       category,
       mothercatId,
       subcatId,
       itemId,
       rating = 0,
       inStock = 1,
-      numericPrice,
       sales = 0,
       features,
       content,
@@ -248,24 +213,19 @@ export async function PUT(request: NextRequest) {
     } = data;
 
     // اعتبارسنجی فیلدهای اصلی محصول
-    if (
-      !title ||
-      !image ||
-      !originalPrice ||
-      !discountedPrice ||
-      !wholesalePrice ||
-      !discountwholesalePrice ||
-      !category ||
-      !mothercatId ||
-      !subcatId ||
-      !itemId
-    ) {
-      return NextResponse.json({ error: "Missing required product fields" }, { status: 400 });
+    if (!title || !image || !category || !mothercatId || !subcatId || !itemId) {
+      return NextResponse.json(
+        { error: "Missing required product fields" },
+        { status: 400 }
+      );
     }
 
     // اعتبارسنجی واریانت‌ها
     if (!Array.isArray(variants) || variants.length === 0) {
-      return NextResponse.json({ error: "At least one variant is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "At least one variant is required" },
+        { status: 400 }
+      );
     }
 
     for (const variant of variants) {
@@ -276,7 +236,10 @@ export async function PUT(request: NextRequest) {
         variant.price_wholesale === undefined
       ) {
         return NextResponse.json(
-          { error: "Each variant must have color_englishName, color_hexCode, price_single and price_wholesale" },
+          {
+            error:
+              "Each variant must have color_englishName, color_hexCode, price_single and price_wholesale",
+          },
           { status: 400 }
         );
       }
@@ -290,10 +253,8 @@ export async function PUT(request: NextRequest) {
       await connection.query(
         `
         UPDATE products SET
-          brand_id = ?, title = ?, image = ?, originalPrice = ?, discountedPrice = ?,
-          wholesalePrice = ?, discountwholesalePrice = ?, minwholesale = ?,
-          discount = ?, discountwholesale = ?, category = ?, mothercatId = ?,
-          subcatId = ?, itemId = ?, rating = ?, inStock = ?, numericPrice = ?, sales = ?,
+          brand_id = ?, title = ?, image = ?, category = ?, mothercatId = ?,
+          subcatId = ?, itemId = ?, rating = ?, inStock = ?, sales = ?,
           features = ?, content = ?
         WHERE id = ?
         `,
@@ -301,20 +262,12 @@ export async function PUT(request: NextRequest) {
           brand_id || null,
           title,
           image,
-          originalPrice,
-          discountedPrice,
-          wholesalePrice,
-          discountwholesalePrice,
-          minwholesale,
-          discount,
-          discountwholesale,
           category,
           mothercatId,
           subcatId,
           itemId,
           rating,
           inStock,
-          numericPrice || discountedPrice.replace(/,/g, ""),
           sales,
           features ? JSON.stringify(features) : null,
           content || null,
@@ -323,7 +276,9 @@ export async function PUT(request: NextRequest) {
       );
 
       // 2. جایگزینی مدیای عمومی
-      await connection.query("DELETE FROM media WHERE product_id = ?", [productId]);
+      await connection.query("DELETE FROM media WHERE product_id = ?", [
+        productId,
+      ]);
       if (media.length > 0) {
         for (const item of media) {
           await connection.query(
@@ -334,7 +289,10 @@ export async function PUT(request: NextRequest) {
       }
 
       // 3. جایگزینی کامل واریانت‌ها
-      await connection.query("DELETE FROM product_variants WHERE product_id = ?", [productId]);
+      await connection.query(
+        "DELETE FROM product_variants WHERE product_id = ?",
+        [productId]
+      );
 
       for (const variant of variants) {
         await connection.query(
@@ -343,10 +301,10 @@ export async function PUT(request: NextRequest) {
             product_id,
             color_englishName, color_persianName, color_hexCode,
             price_single, price_wholesale,
-            discount_percent, discount_wholesale_percent,
+            discount_percent,
             min_wholesale, in_stock, stock_quantity,
             image_main, images, infotable
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `,
           [
             productId,
@@ -356,8 +314,7 @@ export async function PUT(request: NextRequest) {
             variant.price_single,
             variant.price_wholesale,
             variant.discount_percent || 0,
-            variant.discount_wholesale_percent || 0,
-            variant.min_wholesale || minwholesale,
+            variant.min_wholesale || 1,
             variant.in_stock !== undefined ? variant.in_stock : 1,
             variant.stock_quantity || 0,
             variant.image_main || null,
@@ -368,7 +325,9 @@ export async function PUT(request: NextRequest) {
       }
 
       await connection.commit();
-      return NextResponse.json({ message: "Product and variants updated successfully" });
+      return NextResponse.json({
+        message: "Product and variants updated successfully",
+      });
     } catch (error) {
       await connection.rollback();
       throw error;
@@ -408,17 +367,25 @@ export async function DELETE(request: NextRequest) {
     if (orderCount > 0 && !force) {
       await connection.rollback();
       return NextResponse.json(
-        { error: "این محصول سفارش دارد. برای حذف اجباری از force=true استفاده کنید." },
+        {
+          error:
+            "این محصول سفارش دارد. برای حذف اجباری از force=true استفاده کنید.",
+        },
         { status: 400 }
       );
     }
 
     if (force && orderCount > 0) {
-      await connection.query("DELETE FROM order_items WHERE product_id = ?", [productId]);
+      await connection.query("DELETE FROM order_items WHERE product_id = ?", [
+        productId,
+      ]);
     }
 
     // حذف محصول (واریانت‌ها به دلیل ON DELETE CASCADE خودکار حذف می‌شن)
-    const [result] = await connection.query("DELETE FROM products WHERE id = ?", [productId]);
+    const [result] = await connection.query(
+      "DELETE FROM products WHERE id = ?",
+      [productId]
+    );
 
     if ((result as any).affectedRows === 0) {
       await connection.rollback();

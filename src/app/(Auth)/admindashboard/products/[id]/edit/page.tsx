@@ -15,7 +15,6 @@ import {
 import { Checkbox } from "@/Components/ui/checkbox";
 import { Label } from "@/Components/ui/label";
 import {
-  AlertCircle,
   Plus,
   Trash2,
   Loader2,
@@ -38,10 +37,10 @@ interface VariantFormData {
   price_single: string;
   price_wholesale: string;
   discount_percent: string;
-  discount_wholesale_percent: string;
+
   min_wholesale: string;
   in_stock: boolean;
-  stock_quantity: string; // تعداد موجودی هر رنگ
+  stock_quantity: string;
   image_main: string;
   images: string[];
   infotable: { name: string; value: string }[];
@@ -52,27 +51,15 @@ interface ProductFormData {
   brand_id: string;
   title: string;
   image: string;
-  originalPrice: string;
-  discountedPrice: string;
-  wholesalePrice: string;
-  discountwholesalePrice: string;
-  minwholesale: string;
-  discount: string;
-  discountwholesale: string;
   category: string;
   mothercatId: string;
   subcatId: string;
   itemId: string;
   rating: string;
-  inStock: string;
-  numericPrice: string;
-  sales: string;
   features: string;
   content: string;
   media: { type: string; src: string; thumbnail: string | null; alt: string }[];
   variants: VariantFormData[];
-  hasDiscount: boolean;
-  hasWholesaleDiscount: boolean;
 }
 
 interface UploadedFile {
@@ -90,27 +77,15 @@ const EditProductPage = () => {
     brand_id: "",
     title: "",
     image: "",
-    originalPrice: "",
-    discountedPrice: "",
-    wholesalePrice: "",
-    discountwholesalePrice: "",
-    minwholesale: "1",
-    discount: "0",
-    discountwholesale: "0",
     category: "",
     mothercatId: "",
     subcatId: "",
     itemId: "",
     rating: "0",
-    inStock: "1",
-    numericPrice: "0",
-    sales: "0",
     features: "",
     content: "",
     media: [],
     variants: [],
-    hasDiscount: false,
-    hasWholesaleDiscount: false,
   });
 
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -121,14 +96,12 @@ const EditProductPage = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [expandedSections, setExpandedSections] = useState({
     basic: true,
-    pricing: true,
-    category: true,
     media: true,
+    category: true,
     variants: true,
     additional: true,
   });
 
-  // آپلود مودال
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [uploadTarget, setUploadTarget] = useState<{
     type: "productImage" | "variantImage" | "variantGallery";
@@ -163,7 +136,9 @@ const EditProductPage = () => {
         newErrors[`variant_${index}_price_single`] = "قیمت تکی الزامی است";
       if (!variant.price_wholesale.trim())
         newErrors[`variant_${index}_price_wholesale`] = "قیمت عمده الزامی است";
-      if (parseInt(variant.stock_quantity) < 0)
+      if (parseInt(variant.min_wholesale || "1", 10) < 1)
+        newErrors[`variant_${index}_min_wholesale`] = "حداقل تعداد عمده باید حداقل ۱ باشد";
+      if (parseInt(variant.stock_quantity || "0", 10) < 0)
         newErrors[`variant_${index}_stock`] = "موجودی نمی‌تواند منفی باشد";
     });
 
@@ -172,7 +147,6 @@ const EditProductPage = () => {
   };
 
   useEffect(() => {
-    // بارگذاری محصول
     fetch(`${API}/products/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("خطا در دریافت محصول");
@@ -184,21 +158,11 @@ const EditProductPage = () => {
           brand_id: data.brandDetails?.id?.toString() || "",
           title: data.title || "",
           image: data.image || "",
-          originalPrice: formatNumber(data.originalPrice?.toString() || "0"),
-          discountedPrice: formatNumber(data.discountedPrice?.toString() || "0"),
-          wholesalePrice: formatNumber(data.wholesalePrice?.toString() || "0"),
-          discountwholesalePrice: formatNumber(data.discountwholesalePrice?.toString() || "0"),
-          minwholesale: data.minwholesale?.toString() || "1",
-          discount: data.discount || "0",
-          discountwholesale: data.discountwholesale || "0",
           category: data.category || "",
           mothercatId: data.mothercatId?.toString() || "",
           subcatId: data.subcatId?.toString() || "",
           itemId: data.itemId?.toString() || "",
           rating: data.rating?.toString() || "0",
-          inStock: data.inStock ? "1" : "0",
-          numericPrice: data.numericPrice?.toString() || "0",
-          sales: data.sales?.toString() || "0",
           features: data.features ? data.features.join("\n") : "",
           content: data.content || "",
           media: data.media || [],
@@ -208,8 +172,8 @@ const EditProductPage = () => {
               color_englishName: v.color_englishName || "",
               color_persianName: v.color_persianName || "",
               color_hexCode: v.color_hexCode || "#000000",
-              price_single: formatNumber(v.price_single?.toString() || "0"),
-              price_wholesale: formatNumber(v.price_wholesale?.toString() || "0"),
+              price_single: formatNumber(v.price_single?.toString() || ""),
+              price_wholesale: formatNumber(v.price_wholesale?.toString() || ""),
               discount_percent: v.discount_percent?.toString() || "0",
               discount_wholesale_percent: v.discount_wholesale_percent?.toString() || "0",
               min_wholesale: v.min_wholesale?.toString() || "1",
@@ -219,8 +183,6 @@ const EditProductPage = () => {
               images: v.images || [],
               infotable: v.infotable || [],
             })) || [],
-          hasDiscount: data.discount !== "0",
-          hasWholesaleDiscount: data.discountwholesale !== "0",
         });
         setLoading(false);
       })
@@ -230,7 +192,6 @@ const EditProductPage = () => {
         setLoading(false);
       });
 
-    // بارگذاری برندها و دسته‌بندی‌ها
     Promise.all([
       fetch(`${API}/brands`).then((res) => res.json()),
       fetch(`${API}/categories?mothercat=1`).then((res) => res.json()),
@@ -266,42 +227,6 @@ const EditProductPage = () => {
     }
   }, [formData.subcatId]);
 
-  // محاسبه قیمت تخفیفی
-  useEffect(() => {
-    if (formData.originalPrice && formData.hasDiscount) {
-      const original = parseFloat(formData.originalPrice.replace(/,/g, ""));
-      const disc = parseFloat(formData.discount) || 0;
-      const discounted = original * (1 - disc / 100);
-      setFormData((prev) => ({
-        ...prev,
-        discountedPrice: formatNumber(Math.round(discounted).toString()),
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        discountedPrice: prev.originalPrice,
-      }));
-    }
-  }, [formData.originalPrice, formData.discount, formData.hasDiscount]);
-
-  useEffect(() => {
-    if (formData.wholesalePrice && formData.hasWholesaleDiscount) {
-      const wholesale = parseFloat(formData.wholesalePrice.replace(/,/g, ""));
-      const disc = parseFloat(formData.discountwholesale) || 0;
-      const discounted = wholesale * (1 - disc / 100);
-      setFormData((prev) => ({
-        ...prev,
-        discountwholesalePrice: formatNumber(Math.round(discounted).toString()),
-      }));
-    } else {
-      setFormData((prev) => ({
-        ...prev,
-        discountwholesalePrice: prev.wholesalePrice,
-      }));
-    }
-  }, [formData.wholesalePrice, formData.discountwholesale, formData.hasWholesaleDiscount]);
-
-  // مدیریت واریانت‌ها
   const addVariant = () => {
     setFormData((prev) => ({
       ...prev,
@@ -311,11 +236,11 @@ const EditProductPage = () => {
           color_englishName: "",
           color_persianName: "",
           color_hexCode: "#000000",
-          price_single: prev.discountedPrice,
-          price_wholesale: prev.discountwholesalePrice,
-          discount_percent: prev.discount,
-          discount_wholesale_percent: prev.discountwholesale,
-          min_wholesale: prev.minwholesale,
+          price_single: "",
+          price_wholesale: "",
+          discount_percent: "0",
+          discount_wholesale_percent: "0",
+          min_wholesale: "1",
           in_stock: true,
           stock_quantity: "0",
           image_main: prev.image,
@@ -331,9 +256,8 @@ const EditProductPage = () => {
       const newVariants = [...prev.variants];
       newVariants[index] = { ...newVariants[index], [field]: value };
 
-      // اگر موجودی تغییر کرد → وضعیت موجودی رو خودکار تنظیم کن
       if (field === "stock_quantity") {
-        const qty = parseInt(value) || 0;
+        const qty = parseInt(value || "0", 10);
         newVariants[index].in_stock = qty > 0;
       }
 
@@ -356,7 +280,12 @@ const EditProductPage = () => {
     });
   };
 
-  const updateVariantInfo = (variantIndex: number, infoIndex: number, field: "name" | "value", value: string) => {
+  const updateVariantInfo = (
+    variantIndex: number,
+    infoIndex: number,
+    field: "name" | "value",
+    value: string
+  ) => {
     setFormData((prev) => {
       const newVariants = [...prev.variants];
       newVariants[variantIndex].infotable[infoIndex][field] = value;
@@ -372,8 +301,10 @@ const EditProductPage = () => {
     });
   };
 
-  // آپلود فایل
-  const openUploadModal = (type: "productImage" | "variantImage" | "variantGallery", variantIndex?: number) => {
+  const openUploadModal = (
+    type: "productImage" | "variantImage" | "variantGallery",
+    variantIndex?: number
+  ) => {
     setUploadTarget({ type, variantIndex });
     setFiles([]);
     setPreviews({});
@@ -386,14 +317,17 @@ const EditProductPage = () => {
     setUploadTarget(null);
   };
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    setFiles((prev) => [...prev, ...selectedFiles]);
-    selectedFiles.forEach((file) => {
-      const url = URL.createObjectURL(file);
-      setPreviews((prev) => ({ ...prev, [file.name]: url }));
-    });
-  }, []);
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = Array.from(e.target.files || []);
+      setFiles((prev) => [...prev, ...selectedFiles]);
+      selectedFiles.forEach((file) => {
+        const url = URL.createObjectURL(file);
+        setPreviews((prev) => ({ ...prev, [file.name]: url }));
+      });
+    },
+    []
+  );
 
   const removeFile = (name: string) => {
     setFiles((prev) => prev.filter((f) => f.name !== name));
@@ -474,36 +408,30 @@ const EditProductPage = () => {
         color_hexCode: v.color_hexCode,
         price_single: parseInt(v.price_single.replace(/,/g, ""), 10),
         price_wholesale: parseInt(v.price_wholesale.replace(/,/g, ""), 10),
-        discount_percent: parseInt(v.discount_percent) || 0,
-        discount_wholesale_percent: parseInt(v.discount_wholesale_percent) || 0,
-        min_wholesale: parseInt(v.min_wholesale) || 1,
+        discount_percent: parseInt(v.discount_percent || "0", 10),
+       min_wholesale: parseInt(v.min_wholesale || "1", 10),
         in_stock: v.in_stock,
-        stock_quantity: parseInt(v.stock_quantity) || 0,
+        stock_quantity: parseInt(v.stock_quantity || "0", 10),
         image_main: v.image_main.trim() || null,
         images: v.images.length > 0 ? v.images : null,
-        infotable: v.infotable.length > 0 ? v.infotable.filter(i => i.name.trim() && i.value.trim()) : null,
+        infotable:
+          v.infotable.length > 0
+            ? v.infotable.filter((i) => i.name.trim() && i.value.trim())
+            : null,
       }));
 
       const payload = {
         title: formData.title.trim(),
         brand_id: parseInt(formData.brand_id),
         image: formData.image.trim(),
-        originalPrice: formData.originalPrice.replace(/,/g, ""),
-        discountedPrice: formData.discountedPrice.replace(/,/g, ""),
-        wholesalePrice: formData.wholesalePrice.replace(/,/g, ""),
-        discountwholesalePrice: formData.discountwholesalePrice.replace(/,/g, ""),
-        minwholesale: parseInt(formData.minwholesale),
-        discount: formData.hasDiscount ? formData.discount : "0",
-        discountwholesale: formData.hasWholesaleDiscount ? formData.discountwholesale : "0",
         category: formData.category,
         mothercatId: parseInt(formData.mothercatId),
         subcatId: parseInt(formData.subcatId),
         itemId: parseInt(formData.itemId),
         rating: parseFloat(formData.rating) || 0,
-        inStock: parseInt(formData.inStock),
-        numericPrice: parseInt(formData.discountedPrice.replace(/,/g, "")) || 0,
-        sales: parseInt(formData.sales) || 0,
-        features: formData.features ? formData.features.split("\n").map(f => f.trim()).filter(Boolean) : null,
+        features: formData.features
+          ? formData.features.split("\n").map((f) => f.trim()).filter(Boolean)
+          : null,
         content: formData.content.trim() || null,
         media: formData.media.length > 0 ? formData.media : null,
         variants: cleanedVariants,
@@ -543,9 +471,7 @@ const EditProductPage = () => {
     <div className="container mx-auto p-4 yekan">
       <Card className="bg-white dark:bg-gray-800 shadow-2xl">
         <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-t-xl">
-          <CardTitle className="text-3xl text-center py-4">
-            ویرایش محصول
-          </CardTitle>
+          <CardTitle className="text-3xl text-center py-4">ویرایش محصول</CardTitle>
         </CardHeader>
         <CardContent className="p-8">
           <form onSubmit={handleSubmit} className="space-y-8">
@@ -589,87 +515,6 @@ const EditProductPage = () => {
                       placeholder="مثال:\nضدآب\nباتری قوی\nدوربین 108 مگاپیکسل"
                       className="text-lg"
                     />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* قیمت‌گذاری پایه */}
-            <div className="border-2 border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
-              <div
-                className="flex justify-between items-center p-6 bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-                onClick={() => toggleSection("pricing")}
-              >
-                <h3 className="text-2xl font-bold">قیمت‌گذاری پایه (پیش‌فرض برای واریانت‌ها)</h3>
-                {expandedSections.pricing ? <ChevronUp className="h-8 w-8" /> : <ChevronDown className="h-8 w-8" />}
-              </div>
-              {expandedSections.pricing && (
-                <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div>
-                    <Label className="text-lg">قیمت اصلی (تومان) *</Label>
-                    <Input
-                      value={formData.originalPrice}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          originalPrice: formatNumber(e.target.value.replace(/,/g, "")),
-                        })
-                      }
-                      placeholder="1,500,000"
-                      className="text-xl py-7"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-lg">قیمت عمده پایه (تومان) *</Label>
-                    <Input
-                      value={formData.wholesalePrice}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          wholesalePrice: formatNumber(e.target.value.replace(/,/g, "")),
-                        })
-                      }
-                      placeholder="1,200,000"
-                      className="text-xl py-7"
-                    />
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <Checkbox
-                      checked={formData.hasDiscount}
-                      onCheckedChange={(c) => setFormData({ ...formData, hasDiscount: !!c })}
-                      className="h-6 w-6"
-                    />
-                    <Label className="text-xl">تخفیف تکی دارد</Label>
-                    {formData.hasDiscount && (
-                      <Input
-                        type="number"
-                        placeholder="درصد تخفیف"
-                        value={formData.discount}
-                        onChange={(e) => setFormData({ ...formData, discount: e.target.value })}
-                        className="w-40 text-xl py-7"
-                        min="0"
-                        max="100"
-                      />
-                    )}
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <Checkbox
-                      checked={formData.hasWholesaleDiscount}
-                      onCheckedChange={(c) => setFormData({ ...formData, hasWholesaleDiscount: !!c })}
-                      className="h-6 w-6"
-                    />
-                    <Label className="text-xl">تخفیف عمده دارد</Label>
-                    {formData.hasWholesaleDiscount && (
-                      <Input
-                        type="number"
-                        placeholder="درصد تخفیف عمده"
-                        value={formData.discountwholesale}
-                        onChange={(e) => setFormData({ ...formData, discountwholesale: e.target.value })}
-                        className="w-40 text-xl py-7"
-                        min="0"
-                        max="100"
-                      />
-                    )}
                   </div>
                 </div>
               )}
@@ -876,10 +721,10 @@ const EditProductPage = () => {
                         </div>
                       </div>
 
-                      {/* قیمت و تخفیف */}
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
+                      {/* قیمت، تخفیف و حداقل عمده */}
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-10">
                         <div>
-                          <Label className="text-xl">قیمت تکی این رنگ *</Label>
+                          <Label className="text-xl">قیمت تکی (تومان) *</Label>
                           <Input
                             value={variant.price_single}
                             onChange={(e) =>
@@ -890,7 +735,7 @@ const EditProductPage = () => {
                           />
                         </div>
                         <div>
-                          <Label className="text-xl">قیمت عمده این رنگ *</Label>
+                          <Label className="text-xl">قیمت عمده (تومان) *</Label>
                           <Input
                             value={variant.price_wholesale}
                             onChange={(e) =>
@@ -901,39 +746,39 @@ const EditProductPage = () => {
                           />
                         </div>
                         <div>
+                          <Label className="text-xl">حداقل تعداد برای عمده *</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={variant.min_wholesale}
+                            onChange={(e) => updateVariant(vIndex, "min_wholesale", e.target.value)}
+                            placeholder="1"
+                            className="text-xl py-8"
+                          />
+                        </div>
+                        <div>
                           <Label className="text-xl">درصد تخفیف تکی</Label>
                           <Input
                             type="number"
+                            min="0"
+                            max="100"
                             value={variant.discount_percent}
                             onChange={(e) => updateVariant(vIndex, "discount_percent", e.target.value)}
-                            min="0"
-                            max="100"
                             className="text-xl py-8"
                           />
                         </div>
-                        <div>
-                          <Label className="text-xl">درصد تخفیف عمده</Label>
-                          <Input
-                            type="number"
-                            value={variant.discount_wholesale_percent}
-                            onChange={(e) => updateVariant(vIndex, "discount_wholesale_percent", e.target.value)}
-                            min="0"
-                            max="100"
-                            className="text-xl py-8"
-                          />
-                        </div>
+                 
                       </div>
 
-                      {/* موجودی و وضعیت موجود بودن */}
+                      {/* موجودی */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-10">
                         <div>
-                          <Label className="text-xl">تعداد موجودی این رنگ *</Label>
+                          <Label className="text-xl">تعداد موجودی این رنگ</Label>
                           <Input
                             type="number"
                             min="0"
                             value={variant.stock_quantity}
                             onChange={(e) => updateVariant(vIndex, "stock_quantity", e.target.value)}
-                            placeholder="0"
                             className="text-xl py-8"
                           />
                           <p className="text-sm text-gray-600 mt-2">
@@ -1145,12 +990,8 @@ const EditProductPage = () => {
                 onClick={() => document.getElementById("upload-input")?.click()}
               >
                 <Upload className="h-20 w-20 mx-auto text-purple-600 mb-8" />
-                <p className="text-2xl font-bold mb-4">
-                  فایل‌ها را اینجا بکشید یا کلیک کنید
-                </p>
-                <p className="text-lg text-gray-600 dark:text-gray-400">
-                  حداکثر 10 مگابایت - تصاویر و ویدئو
-                </p>
+                <p className="text-2xl font-bold mb-4">فایل‌ها را اینجا بکشید یا کلیک کنید</p>
+                <p className="text-lg text-gray-600 dark:text-gray-400">حداکثر 10 مگابایت - تصاویر و ویدئو</p>
                 <Input
                   id="upload-input"
                   type="file"
@@ -1162,9 +1003,7 @@ const EditProductPage = () => {
 
               {files.length > 0 && (
                 <div>
-                  <h3 className="text-2xl font-bold mb-6 text-center">
-                    فایل‌های انتخاب شده ({files.length})
-                  </h3>
+                  <h3 className="text-2xl font-bold mb-6 text-center">فایل‌های انتخاب شده ({files.length})</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                     {files.map((file) => (
                       <div key={file.name} className="relative group">
@@ -1181,17 +1020,11 @@ const EditProductPage = () => {
                         >
                           <X className="h-8 w-8" />
                         </Button>
-                        <p className="text-center text-lg mt-4 truncate">
-                          {file.name}
-                        </p>
+                        <p className="text-center text-lg mt-4 truncate">{file.name}</p>
                       </div>
                     ))}
                   </div>
-                  <Button
-                    onClick={handleUpload}
-                    disabled={uploading}
-                    className="w-full mt-10 text-2xl py-10"
-                  >
+                  <Button onClick={handleUpload} disabled={uploading} className="w-full mt-10 text-2xl py-10">
                     {uploading ? (
                       <>
                         <Loader2 className="h-10 w-10 animate-spin mr-6" />
@@ -1206,9 +1039,7 @@ const EditProductPage = () => {
 
               {uploadedFiles.length > 0 && (
                 <div>
-                  <h3 className="text-2xl font-bold mb-6 text-center">
-                    فایل‌های آپلود شده ({uploadedFiles.length})
-                  </h3>
+                  <h3 className="text-2xl font-bold mb-6 text-center">فایل‌های آپلود شده ({uploadedFiles.length})</h3>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
                     {uploadedFiles.map((file) => (
                       <img
@@ -1219,10 +1050,7 @@ const EditProductPage = () => {
                       />
                     ))}
                   </div>
-                  <Button
-                    onClick={confirmUpload}
-                    className="w-full mt-10 bg-green-600 hover:bg-green-700 text-2xl py-10"
-                  >
+                  <Button onClick={confirmUpload} className="w-full mt-10 bg-green-600 hover:bg-green-700 text-2xl py-10">
                     <CheckCircle className="h-10 w-10 mr-6" />
                     تأیید و اعمال به فرم
                   </Button>
@@ -1230,12 +1058,7 @@ const EditProductPage = () => {
               )}
             </div>
             <div className="p-10 border-t-2 border-gray-200 dark:border-gray-700 flex justify-end">
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={closeUploadModal}
-                className="text-xl px-12 py-8"
-              >
+              <Button variant="outline" size="lg" onClick={closeUploadModal} className="text-xl px-12 py-8">
                 بستن
               </Button>
             </div>

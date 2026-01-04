@@ -1,4 +1,4 @@
-// api/products/index.ts (به‌روزشده برای product_variants)
+// api/products/index.ts
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2/promise";
@@ -11,7 +11,6 @@ interface Variant {
   price_single: number;
   price_wholesale: number;
   discount_percent: number;
-  discount_wholesale_percent: number;
   min_wholesale: number;
   in_stock: boolean;
   stock_quantity: number;
@@ -23,21 +22,13 @@ interface Variant {
 interface Product {
   id: number;
   title: string;
-  image: string; // تصویر پیش‌فرض محصول (اگر واریانت نداشته باشد)
-  originalPrice: string;
-  discountedPrice: string;
-  wholesalePrice: string;
-  discountwholesalePrice: string;
-  minwholesale: number;
-  discount: string;
-  discountwholesale: string;
+  image: string;
   category: string;
   mothercatId: number;
   subcatId: number;
   itemId: number | null;
   rating: number;
   inStock: boolean;
-  numericPrice: number;
   sales: number;
   features: string[] | null;
   content: string | null;
@@ -60,20 +51,12 @@ export async function GET() {
         p.id AS product_id,
         p.title,
         p.image,
-        p.originalPrice,
-        p.discountedPrice,
-        p.wholesalePrice,
-        p.discountwholesalePrice,
-        p.minwholesale,
-        p.discount,
-        p.discountwholesale,
         p.category,
         p.mothercatId,
         p.subcatId,
         p.itemId,
         p.rating,
         p.inStock,
-        p.numericPrice,
         p.sales,
         p.features,
         p.content,
@@ -92,7 +75,7 @@ export async function GET() {
       `
     );
 
-    // سپس تمام واریانت‌ها رو می‌گیریم
+    // سپس تمام واریانت‌ها رو می‌گیریم (حذف discount_wholesale_percent)
     const [variantRows] = await pool.query<RowDataPacket[]>(
       `
       SELECT
@@ -104,7 +87,6 @@ export async function GET() {
         pv.price_single,
         pv.price_wholesale,
         pv.discount_percent,
-        pv.discount_wholesale_percent,
         pv.min_wholesale,
         pv.in_stock,
         pv.stock_quantity,
@@ -126,20 +108,12 @@ export async function GET() {
           id: pid,
           title: row.title,
           image: row.image,
-          originalPrice: row.originalPrice,
-          discountedPrice: row.discountedPrice,
-          wholesalePrice: row.wholesalePrice,
-          discountwholesalePrice: row.discountwholesalePrice,
-          minwholesale: row.minwholesale,
-          discount: row.discount,
-          discountwholesale: row.discountwholesale,
           category: row.category,
           mothercatId: row.mothercatId,
           subcatId: row.subcatId,
           itemId: row.itemId,
           rating: row.rating,
           inStock: !!row.inStock,
-          numericPrice: row.numericPrice,
           sales: row.sales,
           features: row.features ? JSON.parse(row.features) : null,
           content: row.content ?? null,
@@ -183,7 +157,6 @@ export async function GET() {
           price_single: Number(row.price_single),
           price_wholesale: Number(row.price_wholesale),
           discount_percent: row.discount_percent,
-          discount_wholesale_percent: row.discount_wholesale_percent,
           min_wholesale: row.min_wholesale,
           in_stock: !!row.in_stock,
           stock_quantity: row.stock_quantity,
@@ -217,47 +190,34 @@ export async function POST(request: Request) {
     const {
       title,
       brand_id,
-      image, // تصویر پیش‌فرض محصول
-      originalPrice,
-      discountedPrice,
-      wholesalePrice,
-      discountwholesalePrice,
-      minwholesale,
-      discount,
-      discountwholesale,
+      image,
       category,
       mothercatId,
       subcatId,
       itemId,
       rating = 0,
       inStock = 1,
-      numericPrice,
       sales = 0,
       features,
       content,
-      media = [], // گالری عمومی محصول
-      variants = [], // آرایه از واریانت‌ها (جایگزین colors)
+      media = [],
+      variants = [],
     } = data;
 
     // اعتبارسنجی فیلدهای اصلی محصول
-    if (
-      !title ||
-      !image ||
-      !originalPrice ||
-      !discountedPrice ||
-      !wholesalePrice ||
-      !discountwholesalePrice ||
-      !category ||
-      !mothercatId ||
-      !subcatId ||
-      !itemId
-    ) {
-      return NextResponse.json({ error: "Missing required product fields" }, { status: 400 });
+    if (!title || !image || !category || !mothercatId || !subcatId || !itemId) {
+      return NextResponse.json(
+        { error: "Missing required product fields" },
+        { status: 400 }
+      );
     }
 
     // اعتبارسنجی واریانت‌ها
     if (!Array.isArray(variants) || variants.length === 0) {
-      return NextResponse.json({ error: "At least one variant is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "At least one variant is required" },
+        { status: 400 }
+      );
     }
 
     for (const variant of variants) {
@@ -268,38 +228,63 @@ export async function POST(request: Request) {
         !variant.price_wholesale
       ) {
         return NextResponse.json(
-          { error: "Each variant must have color_englishName, color_hexCode, price_single and price_wholesale" },
+          {
+            error:
+              "Each variant must have color_englishName, color_hexCode, price_single and price_wholesale",
+          },
           { status: 400 }
         );
       }
       if (variant.infotable && !Array.isArray(variant.infotable)) {
-        return NextResponse.json({ error: "infotable in variant must be an array" }, { status: 400 });
+        return NextResponse.json(
+          { error: "infotable in variant must be an array" },
+          { status: 400 }
+        );
       }
       if (variant.images && !Array.isArray(variant.images)) {
-        return NextResponse.json({ error: "images in variant must be an array of URLs" }, { status: 400 });
+        return NextResponse.json(
+          { error: "images in variant must be an array of URLs" },
+          { status: 400 }
+        );
       }
     }
 
-    // اعتبارسنجی کلیدهای خارجی (برند، دسته‌بندی و ...)
+    // اعتبارسنجی کلیدهای خارجی
     if (brand_id) {
-      const [brandRows] = await pool.query<RowDataPacket[]>("SELECT id FROM brands WHERE id = ?", [brand_id]);
-      if (brandRows.length === 0) return NextResponse.json({ error: "Invalid brand_id" }, { status: 400 });
+      const [brandRows] = await pool.query<RowDataPacket[]>(
+        "SELECT id FROM brands WHERE id = ?",
+        [brand_id]
+      );
+      if (brandRows.length === 0)
+        return NextResponse.json(
+          { error: "Invalid brand_id" },
+          { status: 400 }
+        );
     }
 
-    const [catRows] = await pool.query<RowDataPacket[]>("SELECT id FROM categories WHERE id = ?", [mothercatId]);
-    if (catRows.length === 0) return NextResponse.json({ error: "Invalid mothercatId" }, { status: 400 });
+    const [catRows] = await pool.query<RowDataPacket[]>(
+      "SELECT id FROM categories WHERE id = ?",
+      [mothercatId]
+    );
+    if (catRows.length === 0)
+      return NextResponse.json(
+        { error: "Invalid mothercatId" },
+        { status: 400 }
+      );
 
     const [subcatRows] = await pool.query<RowDataPacket[]>(
       "SELECT id FROM subcategories WHERE id = ? AND category_id = ?",
       [subcatId, mothercatId]
     );
-    if (subcatRows.length === 0) return NextResponse.json({ error: "Invalid subcatId" }, { status: 400 });
+    if (subcatRows.length === 0)
+      return NextResponse.json({ error: "Invalid subcatId" }, { status: 400 });
 
     const [itemRows] = await pool.query<RowDataPacket[]>(
       "SELECT id FROM subcategory_items WHERE id = ? AND subcategory_id = ?",
       [itemId, subcatId]
     );
-    if (itemRows.length === 0) return NextResponse.json({ error: "Invalid itemId" }, { status: 400 });
+    if (itemRows.length === 0)
+      return NextResponse.json({ error: "Invalid itemId" }, { status: 400 });
 
     const connection = await pool.getConnection();
     try {
@@ -309,31 +294,21 @@ export async function POST(request: Request) {
       const [productResult] = await connection.query(
         `
         INSERT INTO products (
-          brand_id, title, image, originalPrice, discountedPrice,
-          wholesalePrice, discountwholesalePrice, minwholesale,
-          discount, discountwholesale, category, mothercatId,
-          subcatId, itemId, rating, inStock, numericPrice, sales,
+          brand_id, title, image, category, mothercatId,
+          subcatId, itemId, rating, inStock, sales,
           features, content
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           brand_id || null,
           title,
           image,
-          originalPrice,
-          discountedPrice,
-          wholesalePrice,
-          discountwholesalePrice,
-          minwholesale,
-          discount,
-          discountwholesale,
           category,
           mothercatId,
           subcatId,
           itemId,
           rating,
           inStock,
-          numericPrice || discountedPrice.replace(/,/g, ""),
           sales,
           features ? JSON.stringify(features) : null,
           content || null,
@@ -342,7 +317,7 @@ export async function POST(request: Request) {
 
       const productId = (productResult as any).insertId;
 
-      // 2. درج مدیای عمومی محصول (گالری اصلی)
+      // 2. درج مدیای عمومی محصول
       if (media.length > 0) {
         for (const item of media) {
           await connection.query(
@@ -352,18 +327,18 @@ export async function POST(request: Request) {
         }
       }
 
-      // 3. درج واریانت‌ها
+      // 3. درج واریانت‌ها (حذف discount_wholesale_percent از کوئری)
       for (const variant of variants) {
-        const [variantResult] = await connection.query(
+        await connection.query(
           `
           INSERT INTO product_variants (
             product_id,
             color_englishName, color_persianName, color_hexCode,
             price_single, price_wholesale,
-            discount_percent, discount_wholesale_percent,
+            discount_percent,
             min_wholesale, in_stock, stock_quantity,
             image_main, images, infotable
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `,
           [
             productId,
@@ -373,8 +348,7 @@ export async function POST(request: Request) {
             variant.price_single,
             variant.price_wholesale,
             variant.discount_percent || 0,
-            variant.discount_wholesale_percent || 0,
-            variant.min_wholesale || minwholesale,
+            variant.min_wholesale || 1,
             variant.in_stock !== undefined ? variant.in_stock : 1,
             variant.stock_quantity || 0,
             variant.image_main || null,
@@ -385,7 +359,10 @@ export async function POST(request: Request) {
       }
 
       await connection.commit();
-      return NextResponse.json({ id: productId, message: "Product and variants created successfully" }, { status: 201 });
+      return NextResponse.json(
+        { id: productId, message: "Product and variants created successfully" },
+        { status: 201 }
+      );
     } catch (error) {
       await connection.rollback();
       throw error;

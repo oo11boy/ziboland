@@ -14,6 +14,11 @@ interface CartItem {
     persianName: string | null;
     hexCode: string;
   } | null;
+  baseRetailPrice: number;
+  baseWholesalePrice: number;
+  retailDiscountPercent: number;
+  minWholesale: number;
+  stock_quantity: number; // اضافه شد برای کنترل سقف خرید
   addedAt: number;
 }
 
@@ -23,9 +28,14 @@ interface CartState {
 
 type CartAction =
   | { type: "ADD_ITEM"; payload: Omit<CartItem, "addedAt"> }
-  | { type: "REMOVE_ITEM"; payload: number }
-  | { type: "REMOVE_ITEM_BY_TYPE"; payload: { id: number; priceType: "single" | "wholesale" } }
-  | { type: "UPDATE_QUANTITY"; payload: CartItem }
+  | {
+      type: "REMOVE_ITEM_BY_TYPE";
+      payload: { id: number; color?: CartItem["color"] };
+    }
+  | {
+      type: "UPDATE_QUANTITY";
+      payload: { itemKey: string; newQuantity: number };
+    }
   | { type: "CLEAR_CART" };
 
 interface CartContextType {
@@ -34,122 +44,138 @@ interface CartContextType {
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
-
 const CART_STORAGE_KEY = "cartItems";
 
-const getCartFromStorage = (): CartItem[] => {
-  if (typeof window === "undefined") return [];
-  try {
-    const storedCart = localStorage.getItem(CART_STORAGE_KEY);
-    if (storedCart) {
-      const parsedCart = JSON.parse(storedCart);
-      if (Array.isArray(parsedCart) && parsedCart.every(item => 
-        typeof item === "object" &&
-        "id" in item &&
-        "title" in item &&
-        "quantity" in item &&
-        "priceType" in item &&
-        "price" in item &&
-        "image" in item &&
-        "discount" in item &&
-        ("color" in item ? typeof item.color === "object" : true)
-      )) {
-        return parsedCart.map(item => ({
-          ...item,
-          addedAt: item.addedAt || Date.now()
-        }));
-      }
-    }
-    return [];
-  } catch (error) {
-    console.error("Error parsing cart from localStorage:", error);
-    return [];
-  }
-};
-
-const getItemKey = (itemOrPayload: { id: number; priceType: string; color?: CartItem["color"] }) =>
-  `${itemOrPayload.id}-${itemOrPayload.priceType}-${itemOrPayload.color?.englishName || "default"}`;
+const getItemKey = (item: { id: number; color?: CartItem["color"] }) =>
+  `${item.id}-${item.color?.englishName || "default"}`;
 
 const cartReducer = (state: CartState, action: CartAction): CartState => {
   switch (action.type) {
-    case "ADD_ITEM":
+    case "ADD_ITEM": {
+      const key = getItemKey(action.payload);
       const existingItemIndex = state.cartItems.findIndex(
-        (item) => getItemKey(item) === getItemKey(action.payload)
+        (item) => getItemKey(item) === key
       );
-      
+
       if (existingItemIndex >= 0) {
         const updatedItems = [...state.cartItems];
+        const existingItem = updatedItems[existingItemIndex];
+
+        // کنترل موجودی در هنگام اضافه کردن مجدد
+        let totalQuantity = existingItem.quantity + action.payload.quantity;
+        if (totalQuantity > action.payload.stock_quantity) {
+          totalQuantity = action.payload.stock_quantity;
+        }
+
+        const isWholesale =
+          totalQuantity >= action.payload.minWholesale &&
+          action.payload.baseWholesalePrice > 0;
+        let newUnitPrice = isWholesale
+          ? action.payload.baseWholesalePrice
+          : Math.round(
+              action.payload.baseRetailPrice *
+                (1 - action.payload.retailDiscountPercent / 100)
+            );
+
         updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: updatedItems[existingItemIndex].quantity + action.payload.quantity
+          ...existingItem,
+          quantity: totalQuantity,
+          priceType: isWholesale ? "wholesale" : "single",
+          price: newUnitPrice.toString(),
+          discount: isWholesale
+            ? "0"
+            : `${action.payload.retailDiscountPercent}%`,
         };
         return { ...state, cartItems: updatedItems };
       }
-      
+
       return {
         ...state,
         cartItems: [
           ...state.cartItems,
-          {
-            ...action.payload,
-            addedAt: Date.now()
-          }
+          { ...action.payload, addedAt: Date.now() },
         ],
       };
+    }
 
-    case "REMOVE_ITEM":
-      return {
-        ...state,
-        cartItems: state.cartItems.filter((item) => item.id !== action.payload),
-      };
+    case "UPDATE_QUANTITY": {
+      const { itemKey, newQuantity } = action.payload;
+      const itemIndex = state.cartItems.findIndex(
+        (item) => getItemKey(item) === itemKey
+      );
+
+      if (itemIndex >= 0) {
+        const item = state.cartItems[itemIndex];
+
+        // اگر تعداد درخواستی بیشتر از موجودی انبار بود، روی سقف انبار قفل شود
+        const finalQuantity =
+          newQuantity > item.stock_quantity ? item.stock_quantity : newQuantity;
+
+        if (finalQuantity <= 0) {
+          return {
+            ...state,
+            cartItems: state.cartItems.filter((_, i) => i !== itemIndex),
+          };
+        }
+
+        const isWholesale =
+          finalQuantity >= item.minWholesale && item.baseWholesalePrice > 0;
+        let newUnitPrice = isWholesale
+          ? item.baseWholesalePrice
+          : Math.round(
+              item.baseRetailPrice * (1 - item.retailDiscountPercent / 100)
+            );
+
+        const updatedItems = [...state.cartItems];
+        updatedItems[itemIndex] = {
+          ...item,
+          quantity: finalQuantity,
+          priceType: isWholesale ? "wholesale" : "single",
+          price: newUnitPrice.toString(),
+          discount: isWholesale ? "0" : `${item.retailDiscountPercent}%`,
+        };
+        return { ...state, cartItems: updatedItems };
+      }
+      return state;
+    }
 
     case "REMOVE_ITEM_BY_TYPE":
       return {
         ...state,
         cartItems: state.cartItems.filter(
-          (item) => !(item.id === action.payload.id && item.priceType === action.payload.priceType)
+          (item) => getItemKey(item) !== getItemKey(action.payload)
         ),
       };
 
-    case "UPDATE_QUANTITY":
-      const itemIndex = state.cartItems.findIndex(
-        (item) => getItemKey(item) === getItemKey(action.payload)
-      );
-      
-      if (itemIndex >= 0) {
-        const updatedItems = [...state.cartItems];
-        updatedItems[itemIndex] = {
-          ...action.payload,
-          addedAt: updatedItems[itemIndex].addedAt // حفظ زمان افزودن اصلی
-        };
-        return { ...state, cartItems: updatedItems };
-      }
-      return state;
-
     case "CLEAR_CART":
-      return {
-        ...state,
-        cartItems: [],
-      };
+      return { ...state, cartItems: [] };
 
     default:
       return state;
   }
 };
 
-export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(cartReducer, {
-    cartItems: getCartFromStorage(),
-  });
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [state, dispatch] = useReducer(cartReducer, { cartItems: [] });
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    const saved = localStorage.getItem(CART_STORAGE_KEY);
+    if (saved) {
       try {
-        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.cartItems));
-      } catch (error) {
-        console.error("Error saving cart to localStorage:", error);
+        const parsed = JSON.parse(saved);
+        parsed.forEach((item: any) =>
+          dispatch({ type: "ADD_ITEM", payload: item })
+        );
+      } catch (e) {
+        console.error(e);
       }
     }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.cartItems));
   }, [state.cartItems]);
 
   return (
@@ -161,8 +187,6 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useCart = () => {
   const context = useContext(CartContext);
-  if (!context) {
-    throw new Error("useCart must be used within a CartProvider");
-  }
+  if (!context) throw new Error("useCart must be used within a CartProvider");
   return context;
 };

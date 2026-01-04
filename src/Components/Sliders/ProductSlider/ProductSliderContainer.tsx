@@ -15,6 +15,7 @@ import {
   AddCircleOutline,
   RemoveCircleOutline,
   AddShoppingCart,
+  NotificationAdd,
 } from "@mui/icons-material";
 import { Product, Variant } from "@/types/types";
 import { useCart } from "@/ContextApi/CartContext";
@@ -106,26 +107,16 @@ export default function ProductSliderContainer({
       const currentQty = prev[productId] || 0;
       const newQty = currentQty + delta;
 
-      const product = products.find((p) => p.id === productId);
       const activeVariant = selectedVariants[productId];
-
-      if (!product) return prev;
-
-      // موجودی رنگ انتخاب‌شده
       const stockQuantity = activeVariant?.stock_quantity ?? 0;
 
-      // اگر ناموجود باشه یا تعداد بیشتر از موجودی بشه → جلوگیری
       if (stockQuantity <= 0 || newQty > stockQuantity) {
         toast.warning(`حداکثر موجودی: ${stockQuantity} عدد`);
         return prev;
       }
 
-      // تغییر خودکار نوع قیمت (تکی/عمده)
-      const wholesalePriceNum = activeVariant
-        ? activeVariant.price_wholesale
-        : parseInt(String(product.discountwholesalePrice || "0").replace(/[^\d]/g, ""), 10) || 0;
-
-      const minWholesale = activeVariant?.min_wholesale || product.minwholesale || 1;
+      const wholesalePriceNum = activeVariant?.price_wholesale || 0;
+      const minWholesale = activeVariant?.min_wholesale || 1;
 
       if (wholesalePriceNum > 0 && newQty >= minWholesale) {
         setPriceTypes((prev) => ({ ...prev, [productId]: "wholesale" }));
@@ -138,12 +129,8 @@ export default function ProductSliderContainer({
   };
 
   const handlePriceTypeChange = (productId: number, type: "single" | "wholesale") => {
-    const product = products.find((p) => p.id === productId);
     const activeVariant = selectedVariants[productId];
-
-    const wholesalePriceNum = activeVariant
-      ? activeVariant.price_wholesale
-      : parseInt(String(product?.discountwholesalePrice || "0").replace(/[^\d]/g, ""), 10) || 0;
+    const wholesalePriceNum = activeVariant?.price_wholesale || 0;
 
     if (type === "wholesale" && wholesalePriceNum === 0) return;
 
@@ -166,7 +153,6 @@ export default function ProductSliderContainer({
       return;
     }
 
-    // چک نهایی موجودی قبل از افزودن
     const stockQuantity = activeVariant?.stock_quantity ?? 0;
     if (quantity > stockQuantity) {
       toast.error("موجودی کافی نیست!");
@@ -176,12 +162,10 @@ export default function ProductSliderContainer({
     const priceType = priceTypes[productId] || "single";
 
     const unitPrice = priceType === "single"
-      ? (activeVariant?.price_single || parseInt(String(product.discountedPrice).replace(/[^\d]/g, ""), 10) || 0)
-      : (activeVariant?.price_wholesale || parseInt(String(product.discountwholesalePrice).replace(/[^\d]/g, ""), 10) || 0);
+      ? (activeVariant?.price_single || 0)
+      : (activeVariant?.price_wholesale || 0);
 
-    const discount = priceType === "single"
-      ? (activeVariant?.discount_percent?.toString() || product.discount || "0")
-      : (activeVariant?.discount_wholesale_percent?.toString() || product.discountwholesale || "0");
+    const retailDiscountPercent = activeVariant?.discount_percent || 0;
 
     dispatch({
       type: "ADD_ITEM",
@@ -192,7 +176,7 @@ export default function ProductSliderContainer({
         priceType,
         price: unitPrice.toString(),
         image: activeVariant?.image_main || product.image || "/placeholder.jpg",
-        discount,
+        discount: priceType === "wholesale" ? "0" : `${retailDiscountPercent}%`,
         color: activeVariant
           ? {
               englishName: activeVariant.color_englishName,
@@ -200,6 +184,11 @@ export default function ProductSliderContainer({
               hexCode: activeVariant.color_hexCode,
             }
           : null,
+        baseRetailPrice: activeVariant?.price_single || 0,
+        baseWholesalePrice: activeVariant?.price_wholesale || 0,
+        retailDiscountPercent,
+        minWholesale: activeVariant?.min_wholesale || 1,
+        stock_quantity: stockQuantity,
       },
     });
 
@@ -207,6 +196,8 @@ export default function ProductSliderContainer({
     setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
     setShowQuantitySelector(null);
   };
+
+  const handleNotifyMe = () => toast.info("اطلاع‌رسانی فعال شد");
 
   if (error) {
     return <div className="text-red-500 text-center py-10 text-xl">{error}</div>;
@@ -238,12 +229,12 @@ export default function ProductSliderContainer({
             dir="rtl"
             modules={[Navigation]}
             slidesPerView="auto"
-            spaceBetween={12}
+            spaceBetween={16}
             breakpoints={{
-              0: { slidesPerView: 2, spaceBetween: 8 },
-              640: { slidesPerView: 3, spaceBetween: 10 },
-              1024: { slidesPerView: 4, spaceBetween: 12 },
-              1280: { slidesPerView: 5, spaceBetween: 12 },
+              0: { slidesPerView: 2.2, spaceBetween: 12 },
+              640: { slidesPerView: 3, spaceBetween: 20 },
+              1024: { slidesPerView: 4, spaceBetween: 24 },
+              1280: { slidesPerView: 5, spaceBetween: 24 },
             }}
             onSwiper={(swiper) => {
               swiperRef.current = swiper;
@@ -263,74 +254,103 @@ export default function ProductSliderContainer({
             {products.map((item) => {
               const activeVariant = selectedVariants[item.id];
               const effectivePriceType = priceTypes[item.id] || "single";
+              const currentQty = cartQuantities[item.id] || 0;
 
-              // موجودی رنگ انتخاب‌شده
               const stockQuantity = activeVariant?.stock_quantity ?? 0;
               const isInStock = stockQuantity > 0;
 
-              const finalPriceNum = effectivePriceType === "single"
-                ? (activeVariant?.price_single || parseInt(String(item.discountedPrice).replace(/[^\d]/g, ""), 10) || 0)
-                : (activeVariant?.price_wholesale || parseInt(String(item.discountwholesalePrice).replace(/[^\d]/g, ""), 10) || 0);
+              const baseRetailPrice = activeVariant?.price_single || 0;
+              const baseWholesalePrice = activeVariant?.price_wholesale || 0;
+              const retailDiscountPercent = activeVariant?.discount_percent || 0;
+              const minWholesale = activeVariant?.min_wholesale || 1;
 
-              const originalPriceNum = effectivePriceType === "single"
-                ? parseInt(String(item.originalPrice).replace(/[^\d]/g, ""), 10) || 0
-                : parseInt(String(item.wholesalePrice || "0").replace(/[^\d]/g, ""), 10) || 0;
+              const hasWholesalePrice = baseWholesalePrice > 0 && minWholesale > 1;
 
-              const discountBadge = effectivePriceType === "single"
-                ? (activeVariant?.discount_percent?.toString() || item.discount || "0")
-                : (activeVariant?.discount_wholesale_percent?.toString() || item.discountwholesale || "0");
+              const wholesaleDifferencePercent =
+                baseRetailPrice > baseWholesalePrice
+                  ? Math.round(((baseRetailPrice - baseWholesalePrice) / baseRetailPrice) * 100)
+                  : 0;
 
-              const minWholesale = activeVariant?.min_wholesale || item.minwholesale || 1;
+              let unitPriceAfterDiscount: number;
+              let displayDiscount: number;
+              let badgeColor = "bg-red-500";
 
-              const hasWholesalePrice = parseInt(String(item.discountwholesalePrice || "0").replace(/[^\d]/g, ""), 10) > 0;
+              if (effectivePriceType === "wholesale" && hasWholesalePrice) {
+                unitPriceAfterDiscount = baseWholesalePrice;
+                displayDiscount = wholesaleDifferencePercent;
+                badgeColor = "bg-green-600";
+              } else {
+                unitPriceAfterDiscount = Math.round(baseRetailPrice * (1 - retailDiscountPercent / 100));
+                displayDiscount = retailDiscountPercent;
+                badgeColor = "bg-red-500";
+              }
 
               return (
                 <SwiperSlide key={item.id} className="psc-product-slide py-2">
-                  <div className={`flex flex-col h-[340px] md:h-[430px] bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-2.5 md:p-4 relative overflow-hidden group/card ${!isInStock ? "opacity-70" : ""}`}>
-                    {/* برچسب عمده */}
+                  {/* کارت محصول دقیقاً مشابه TabProductsSliderContainer و ProductGrid */}
+                  <div
+                    className={`flex flex-col bg-white rounded-[0.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-3 md:p-4 relative overflow-hidden group/card ${
+                      !isInStock ? "opacity-70" : ""
+                    }`}
+                  >
+                    {/* برچسب حداقل تعداد عمده */}
                     {effectivePriceType === "wholesale" && hasWholesalePrice && (
-                      <div className="absolute top-[2px] left-[2px] bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center z-10">
-                        <p className="ml-1">+</p>
-                        <p>{minWholesale} عدد</p>
+                      <div className="absolute top-2 left-2 bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center z-10">
+                        <span className="ml-1">+</span>
+                        <span>{minWholesale} عدد</span>
                       </div>
                     )}
 
-                    {/* تصویر + بج تخفیف + پوشش ناموجود */}
-                    <div className="relative w-full aspect-square bg-gray-50 rounded-[1.5rem] overflow-hidden mb-3">
-                      <img
-                        src={activeVariant?.image_main || item.image || "/placeholder.jpg"}
-                        className="w-full h-full object-contain p-2 group-hover/card:scale-105 transition-transform duration-500"
-                        alt={item.title}
-                      />
-                      {discountBadge !== "0" && (
-                        <span className="absolute top-2 right-2 bg-red-500 text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-lg shadow-sm z-10">
-                          {discountBadge}%
-                        </span>
-                      )}
-                      {!isInStock && (
-                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center z-20">
-                          <span className="text-white font-bold text-lg">ناموجود</span>
-                        </div>
-                      )}
-                    </div>
+                    {/* تصویر + بج تخفیف هوشمند + پوشش ناموجود */}
+                    <Link href={`/products/${item.id}`} className="block">
+                      <div className="relative w-full aspect-square bg-gray-50 rounded-[1.5rem] overflow-hidden mb-3">
+                        <img
+                          src={activeVariant?.image_main || item.image || "/placeholder.jpg"}
+                          alt={item.title}
+                          className="w-full h-full object-contain p-2 group-hover/card:scale-105 transition-transform duration-500"
+                        />
+                        {displayDiscount > 0 && isInStock && (
+                          <span
+                            className={`absolute top-2 right-2 ${badgeColor} text-white text-[10px] md:text-xs font-black px-2 py-0.5 rounded-lg shadow-sm z-10`}
+                          >
+                            {displayDiscount}% {effectivePriceType === "wholesale" && "سود"}
+                          </span>
+                        )}
+                        {!isInStock && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-20">
+                            <span className="text-white text-lg font-bold">ناموجود</span>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
 
                     {/* عنوان و سوئیچ قیمت */}
                     <div className="flex flex-col flex-grow overflow-hidden">
-                      <h3 className="text-gray-800 text-[11px] md:text-sm font-bold mb-2 line-clamp-2 h-14 leading-4 md:leading-5 tracking-tight">
-                        <Link href={`/products/${item.id}`}>{item.title}</Link>
-                      </h3>
+                      <Link href={`/products/${item.id}`}>
+                        <h3 className="text-gray-800 text-[11px] md:text-sm font-bold mb-2 line-clamp-2 h-8 md:h-10 leading-4 md:leading-5 tracking-tight text-center">
+                          {item.title}
+                        </h3>
+                      </Link>
 
                       <div className="flex bg-gray-100 p-0.5 rounded-xl mb-3">
                         <button
                           onClick={() => handlePriceTypeChange(item.id, "single")}
-                          className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${effectivePriceType === "single" ? "bg-white text-[#805B99] shadow-sm" : "text-gray-400"}`}
+                          className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${
+                            effectivePriceType === "single"
+                              ? "bg-white text-[#805B99] shadow-sm"
+                              : "text-gray-400"
+                          }`}
                         >
                           تکی
                         </button>
                         {hasWholesalePrice && (
                           <button
                             onClick={() => handlePriceTypeChange(item.id, "wholesale")}
-                            className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${effectivePriceType === "wholesale" ? "bg-white text-[#805B99] shadow-sm" : "text-gray-400"}`}
+                            className={`flex-1 py-1 text-[9px] md:text-[10px] font-bold rounded-lg transition-all ${
+                              effectivePriceType === "wholesale"
+                                ? "bg-white text-[#805B99] shadow-sm"
+                                : "text-gray-400"
+                            }`}
                           >
                             عمده
                           </button>
@@ -338,97 +358,113 @@ export default function ProductSliderContainer({
                       </div>
 
                       {/* انتخاب رنگ */}
-                      {item.variants && item.variants.length > 0 && (
-                        <div className="flex gap-1.5 justify-center mb-2 h-4 items-center">
-                          {item.variants.map((variant) => {
-                            const variantInStock = (variant.stock_quantity ?? 0) > 0;
-                            return (
-                              <button
-                                key={variant.id || variant.color_englishName}
-                                onClick={() => variantInStock && handleVariantSelect(item.id, variant)}
-                                disabled={!variantInStock}
-                                className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform relative ${selectedVariants[item.id]?.id === variant.id ? "scale-125 ring-2 ring-[#805B99]" : ""} ${!variantInStock ? "opacity-50 cursor-not-allowed" : ""}`}
-                                style={{ backgroundColor: variant.color_hexCode }}
-                              >
-                                {!variantInStock && (
-                                  <span className="absolute inset-0 bg-red-500" style={{ clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)", transform: "rotate(45deg) scale(1.4)" }} />
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* نمایش موجودی رنگ انتخاب‌شده */}
-                      {activeVariant && (
-                        <div className="text-center text-[9px] text-gray-600 mb-1">
-                          موجودی: {stockQuantity > 0 ? `${stockQuantity} عدد` : "ناموجود"}
-                        </div>
-                      )}
+                      <div className="flex gap-1.5 justify-center mb-3 h-5 items-center">
+                        {item.variants?.map((variant) => {
+                          const variantInStock = (variant.stock_quantity ?? 0) > 0;
+                          return (
+                            <button
+                              key={variant.id}
+                              onClick={() => variantInStock && handleVariantSelect(item.id, variant)}
+                              disabled={!variantInStock}
+                              className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform relative ${
+                                activeVariant?.id === variant.id
+                                  ? "scale-125 ring-2 ring-[#805B99]"
+                                  : ""
+                              } ${!variantInStock ? "opacity-50 cursor-not-allowed" : ""}`}
+                              style={{ backgroundColor: variant.color_hexCode }}
+                            >
+                              {!variantInStock && (
+                                <span
+                                  className="absolute inset-0 flex items-center justify-center"
+                                  style={{
+                                    background:
+                                      "linear-gradient(45deg, transparent 48%, red 49%, red 51%, transparent 52%)",
+                                  }}
+                                />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
-                    {/* قیمت و دکمه */}
+                    {/* پایین کارت: قیمت + عملیات */}
                     <div className="mt-auto pt-2 border-t border-gray-50">
-                      <div className="flex flex-col mb-3">
-                        {discountBadge !== "0" && (
-                          <span className="text-[10px] md:text-xs text-gray-400 line-through italic font-medium">
-                            {formatPrice(originalPriceNum)}
-                          </span>
-                        )}
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-sm md:text-xl font-black text-gray-900 leading-none">
-                            {formatPrice(finalPriceNum)}
-                          </span>
-                          <span className="text-[9px] md:text-[11px] font-medium text-gray-500">تومان</span>
-                        </div>
-                      </div>
-
-                      <div className="h-9 md:h-12">
-                        {showQuantitySelector !== item.id ? (
+                      {!isInStock ? (
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs md:text-sm text-gray-600 font-medium">
+                            موجود شد خبرم کن
+                          </p>
                           <button
-                            onClick={() => isInStock && handleShowQuantitySelector(item.id)}
-                            disabled={!isInStock}
-                            className={`w-full h-full rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg ${isInStock ? "bg-[#805B99] hover:bg-[#6b4e82] text-white" : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}
+                            onClick={handleNotifyMe}
+                            className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
                           >
-                            <AddShoppingCart sx={{ fontSize: { xs: 16, md: 22 } }} />
-                            <span className="text-[11px] md:text-sm font-extrabold">
-                              {isInStock ? "افزودن" : "ناموجود"}
-                            </span>
+                            <NotificationAdd sx={{ fontSize: { xs: 18, md: 22 } }} />
                           </button>
-                        ) : (
-                          <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
-                            <button
-                              onClick={() => handleQuantityChange(item.id, 1)}
-                              disabled={(cartQuantities[item.id] || 0) >= stockQuantity}
-                              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white disabled:opacity-50"
-                            >
-                              <AddCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
-                            </button>
-
-                            <div className="flex flex-col items-center">
-                              <span className="text-xs md:text-sm font-black text-blue-900">
-                                {cartQuantities[item.id] || 0}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="flex flex-col mb-3">
+                            {displayDiscount > 0 && (
+                              <span className="text-[10px] md:text-xs text-gray-400 line-through italic font-medium">
+                                {formatPrice(baseRetailPrice)}
                               </span>
-                              {cartQuantities[item.id] > 0 && (
-                                <button
-                                  onClick={() => handleAddToCart(item.id)}
-                                  className="text-[8px] md:text-[10px] font-black text-green-600 uppercase mt-0.5"
-                                >
-                                  تایید
-                                </button>
-                              )}
+                            )}
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-sm md:text-xl font-black text-gray-900 leading-none">
+                                {formatPrice(unitPriceAfterDiscount)}
+                              </span>
+                              <span className="text-[9px] md:text-[11px] font-medium text-gray-500">
+                                تومان
+                              </span>
                             </div>
-
-                            <button
-                              onClick={() => handleQuantityChange(item.id, -1)}
-                              disabled={(cartQuantities[item.id] || 0) <= 1}
-                              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white disabled:opacity-50"
-                            >
-                              <RemoveCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
-                            </button>
                           </div>
-                        )}
-                      </div>
+
+                          <div className="h-9 md:h-12">
+                            {showQuantitySelector !== item.id ? (
+                              <button
+                                onClick={() => handleShowQuantitySelector(item.id)}
+                                className="w-full h-full bg-[#805B99] hover:bg-[#6b4e82] text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200"
+                              >
+                                <AddShoppingCart sx={{ fontSize: { xs: 16, md: 22 } }} />
+                                <span className="text-[11px] md:text-sm font-extrabold">افزودن</span>
+                              </button>
+                            ) : (
+                              <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
+                                <button
+                                  onClick={() => handleQuantityChange(item.id, 1)}
+                                  disabled={currentQty >= stockQuantity}
+                                  className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white transition-all disabled:opacity-50"
+                                >
+                                  <AddCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
+                                </button>
+
+                                <div className="flex flex-col items-center">
+                                  <span className="text-xs md:text-sm font-black text-blue-900 leading-none">
+                                    {currentQty}
+                                  </span>
+                                  {currentQty > 0 && (
+                                    <button
+                                      onClick={() => handleAddToCart(item.id)}
+                                      className="text-[8px] md:text-[10px] font-black text-green-600 uppercase tracking-tighter mt-0.5"
+                                    >
+                                      تایید
+                                    </button>
+                                  )}
+                                </div>
+
+                                <button
+                                  onClick={() => handleQuantityChange(item.id, -1)}
+                                  disabled={currentQty <= 1}
+                                  className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+                                >
+                                  <RemoveCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 </SwiperSlide>
