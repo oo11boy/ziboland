@@ -197,7 +197,7 @@ export default function OrdersContent({
                       </p>
                       <p>
                         <strong>قیمت واحد:</strong>{" "}
-                        {(item.unit_price / 10).toLocaleString()} تومان
+                        {(item.unit_price ).toLocaleString()} تومان
                       </p>
                       <p>
                         <strong>نوع قیمت:</strong>{" "}

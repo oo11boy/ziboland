@@ -1,3 +1,4 @@
+"use client";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import {
   AddCircleOutline,
@@ -48,9 +49,8 @@ export default function ProductGrid({
           filteredProducts.map((item) => {
             const activeVariant = selectedVariants[item.id];
             const effectivePriceType = priceTypes[item.id] || "single";
-            const currentQty = cartQuantities[item.id] || 1;
+            const currentQty = cartQuantities[item.id] || 0; // اصلاح: مقدار اولیه 0 باشد (نه 1)
 
-            // --- منطق هماهنگ با AddToCartInfo ---
             const stockQuantity = activeVariant?.stock_quantity ?? 0;
             const isInStock = stockQuantity > 0;
 
@@ -62,7 +62,6 @@ export default function ProductGrid({
             const hasWholesalePrice =
               baseWholesalePrice > 0 && minWholesale > 1;
 
-            // محاسبه درصد تفاوت عمده (سود خرید عمده)
             const wholesaleDifferencePercent =
               baseRetailPrice > baseWholesalePrice
                 ? Math.round(
@@ -71,7 +70,7 @@ export default function ProductGrid({
                   )
                 : 0;
 
-            // تعیین قیمت و بج تخفیف بر اساس Toggle
+            // محاسبه قیمت نهایی پس از تخفیف (برای نمایش و ارسال به سبد)
             let unitPriceAfterDiscount: number;
             let displayDiscount: number;
             let badgeColor = "bg-red-500";
@@ -88,6 +87,10 @@ export default function ProductGrid({
               badgeColor = "bg-red-500";
             }
 
+            // وقتی کاربر روی "تایید" کلیک می‌کند، این تابع فراخوانی می‌شود
+            // در این کامپوننت، handleAddToCart از parent می‌آید و باید قیمت نهایی را بفرستد
+            // (فرض می‌کنیم parent مثل TabProductsSliderContainer درست پیاده‌سازی شده)
+
             return (
               <motion.div
                 key={item.id}
@@ -96,7 +99,9 @@ export default function ProductGrid({
                 animate="visible"
                 exit="exit"
                 layout
-                className="flex flex-col bg-white rounded-[0.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-3 md:p-4 relative overflow-hidden group/card"
+                className={`flex flex-col bg-white rounded-[0.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-3 md:p-4 relative overflow-hidden group/card ${
+                  !isInStock ? "opacity-70" : ""
+                }`}
               >
                 {/* برچسب حداقل تعداد عمده */}
                 {effectivePriceType === "wholesale" && hasWholesalePrice && (
@@ -136,7 +141,7 @@ export default function ProductGrid({
                   </div>
                 </Link>
 
-                {/* اطلاعات محصول */}
+                {/* عنوان و سوئیچ قیمت */}
                 <div className="flex flex-col flex-grow overflow-hidden">
                   <Link href={`/products/${item.id}`}>
                     <h3 className="text-gray-800 text-[11px] md:text-sm font-bold mb-2 line-clamp-2 h-8 md:h-10 leading-4 md:leading-5 tracking-tight text-center">
@@ -144,7 +149,6 @@ export default function ProductGrid({
                     </h3>
                   </Link>
 
-                  {/* سوئیچ قیمت تکی/عمده */}
                   <div className="flex bg-gray-100 p-0.5 rounded-xl mb-3">
                     <button
                       onClick={() => handlePriceTypeChange(item.id, "single")}
@@ -165,7 +169,7 @@ export default function ProductGrid({
                           effectivePriceType === "wholesale"
                             ? "bg-white text-[#805B99] shadow-sm"
                             : "text-gray-400"
-                        }`}
+                          }`}
                       >
                         عمده
                       </button>
@@ -208,8 +212,6 @@ export default function ProductGrid({
                       );
                     })}
                   </div>
-
-         
                 </div>
 
                 {/* پایین کارت: قیمت + عملیات */}
@@ -230,7 +232,6 @@ export default function ProductGrid({
                     </div>
                   ) : (
                     <>
-                      {/* قیمت با خط‌خورده */}
                       <div className="flex flex-col mb-3">
                         {displayDiscount > 0 && (
                           <span className="text-[10px] md:text-xs text-gray-400 line-through italic font-medium">
@@ -247,7 +248,6 @@ export default function ProductGrid({
                         </div>
                       </div>
 
-                      {/* دکمه افزودن / انتخاب تعداد (بخش بازگردانی شده) */}
                       <div className="h-9 md:h-12">
                         {showQuantitySelector !== item.id ? (
                           <button
@@ -275,7 +275,7 @@ export default function ProductGrid({
 
                             <div className="flex flex-col items-center">
                               <span className="text-xs md:text-sm font-black text-blue-900 leading-none">
-                                {currentQty}
+                                {currentQty || 0}
                               </span>
                               {currentQty > 0 && (
                                 <button

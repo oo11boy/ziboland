@@ -47,7 +47,7 @@ const formatAddress = (order: Order): string => {
 };
 
 const formatPrice = (priceInRials: number): string => {
-  const toman = priceInRials / 10;
+  const toman = priceInRials;
   return toman.toLocaleString("fa-IR");
 };
 
