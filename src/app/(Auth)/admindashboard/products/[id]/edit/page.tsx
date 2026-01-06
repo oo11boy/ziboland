@@ -201,29 +201,31 @@ const EditProductPage = () => {
       .catch(() => toast.error("خطا در بارگذاری داده‌های اولیه"));
   }, [id]);
 
-  useEffect(() => {
-    if (formData.mothercatId) {
-      fetch(`${API}/subcategories?category_id=${formData.mothercatId}`)
-        .then((res) => res.json())
-        .then((data: Subcategory[]) => setSubcategories(data))
-        .catch(() => setSubcategories([]));
-    } else {
-      setSubcategories([]);
-      setFormData((prev) => ({ ...prev, subcatId: "", itemId: "" }));
-    }
-  }, [formData.mothercatId]);
+useEffect(() => {
+  if (formData.mothercatId) {
+    fetch(`${API}/subcategories?category_id=${formData.mothercatId}`)
+      .then((res) => res.ok ? res.json() : [])  // اگر 404 یا خطا بود، آرایه خالی
+      .then((data) => setSubcategories(Array.isArray(data) ? data : []))
+      .catch(() => setSubcategories([]));
+  } else {
+    setSubcategories([]);
+    setItems([]);
+    setFormData(prev => ({ ...prev, subcatId: "", itemId: "" }));
+  }
+}, [formData.mothercatId]);
 
-  useEffect(() => {
-    if (formData.subcatId) {
-      fetch(`${API}/subcategory-items?subcategory_id=${formData.subcatId}`)
-        .then((res) => res.json())
-        .then((data: SubcategoryItem[]) => setItems(data))
-        .catch(() => setItems([]));
-    } else {
-      setItems([]);
-      setFormData((prev) => ({ ...prev, itemId: "" }));
-    }
-  }, [formData.subcatId]);
+useEffect(() => {
+  if (formData.subcatId) {
+    fetch(`${API}/subcategory-items?subcategory_id=${formData.subcatId}`)
+      .then((res) => res.ok ? res.json() : [])  // همینجا هم
+      .then((data) => setItems(Array.isArray(data) ? data : []))
+      .catch(() => setItems([]));
+  } else {
+    setItems([]);
+    setFormData(prev => ({ ...prev, itemId: "" }));
+  }
+}, [formData.subcatId]);
+
 
   const addVariant = () => {
     setFormData((prev) => ({
@@ -335,56 +337,94 @@ const EditProductPage = () => {
       return newP;
     });
   };
+const handleUpload = async () => {
+  if (files.length === 0) {
+    toast.error("فایلی برای آپلود انتخاب نشده است");
+    return;
+  }
+  setUploading(true);
+  const promises = files.map(async (file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/media", { method: "POST", body: fd });
+      if (!res.ok) throw new Error("خطا در آپلود");
+      const data = await res.json();
+      return { url: SITE + data.url, name: file.name };
+    } catch (err) {
+      toast.error(`آپلود ${file.name} ناموفق بود`);
+      return null;
+    }
+  });
 
-  const handleUpload = async () => {
-    if (files.length === 0) return;
-    setUploading(true);
-    const promises = files.map(async (file) => {
-      const fd = new FormData();
-      fd.append("file", file);
-      try {
-        const res = await fetch("/api/media", { method: "POST", body: fd });
-        if (!res.ok) throw new Error("خطا");
-        const data = await res.json();
-        return { url: SITE + data.url, name: file.name };
-      } catch {
-        toast.error(`آپلود ${file.name} ناموفق بود`);
-        return null;
-      }
-    });
-    const results = await Promise.all(promises);
-    const successful = results.filter(Boolean) as UploadedFile[];
-    setUploadedFiles(successful);
-    setFiles([]);
-    setPreviews({});
+  const results = await Promise.all(promises);
+  const successful = results.filter(Boolean) as UploadedFile[];
+
+  if (successful.length === 0) {
+    toast.error("هیچ فایلی با موفقیت آپلود نشد");
     setUploading(false);
-    toast.success(`${successful.length} فایل با موفقیت آپلود شد`);
-  };
+    return;
+  }
 
-  const confirmUpload = () => {
-    if (uploadedFiles.length === 0) {
-      toast.error("هیچ فایلی آپلود نشده است");
-      return;
-    }
+  setUploadedFiles(successful);
+  // مهم: بعد از آپلود موفق، فایل‌های انتخاب‌شده رو پاک کن تا تکراری نشه
+  setFiles([]);
+  setPreviews({});
+  setUploading(false);
+  toast.success(`${successful.length} فایل با موفقیت آپلود شد`);
+};
 
-    if (uploadTarget?.type === "productImage") {
-      setFormData((prev) => ({ ...prev, image: uploadedFiles[0].url }));
-    } else if (uploadTarget?.type === "variantImage" && uploadTarget.variantIndex !== undefined) {
-      updateVariant(uploadTarget.variantIndex, "image_main", uploadedFiles[0].url);
-    } else if (uploadTarget?.type === "variantGallery" && uploadTarget.variantIndex !== undefined) {
-      const urls = uploadedFiles.map((f) => f.url);
-      setFormData((prev) => {
-        const newVariants = [...prev.variants];
-        newVariants[uploadTarget.variantIndex!].images = [
-          ...newVariants[uploadTarget.variantIndex!].images,
-          ...urls,
-        ];
-        return { ...prev, variants: newVariants };
-      });
-    }
+const confirmUpload = () => {
+  if (uploadedFiles.length === 0) {
+    toast.error("هیچ فایلی آپلود نشده است. ابتدا آپلود کنید.");
     closeUploadModal();
-  };
+    return;
+  }
 
+  let hasApplied = false;
+  let allDuplicate = false;
+
+  if (uploadTarget?.type === "productImage") {
+    setFormData((prev) => ({ ...prev, image: uploadedFiles[0].url }));
+    hasApplied = true;
+  } 
+  else if (uploadTarget?.type === "variantImage" && uploadTarget.variantIndex !== undefined) {
+    updateVariant(uploadTarget.variantIndex, "image_main", uploadedFiles[0].url);
+    hasApplied = true;
+  } 
+  else if (uploadTarget?.type === "variantGallery" && uploadTarget.variantIndex !== undefined) {
+    const urls = uploadedFiles.map((f) => f.url);
+
+    setFormData((prev) => {
+      const newVariants = [...prev.variants];
+      const existingImages = newVariants[uploadTarget.variantIndex!].images;
+
+      // تشخیص تکراری بودن همه عکس‌ها
+      const uniqueNewUrls = urls.filter((url) => !existingImages.includes(url));
+
+      if (uniqueNewUrls.length === 0) {
+        allDuplicate = true;
+        return prev; // هیچ تغییری نده
+      }
+
+      newVariants[uploadTarget.variantIndex!].images = [...existingImages, ...uniqueNewUrls];
+      return { ...prev, variants: newVariants };
+    });
+
+    hasApplied = true;
+  }
+
+  // مهم: toastها رو خارج از updater function فراخوانی کن
+  if (hasApplied) {
+    if (allDuplicate) {
+      toast.success("همه عکس‌ها قبلاً اضافه شده‌اند");
+    } else {
+      toast.success(`عکس${uploadedFiles.length > 1 ? 'ها' : ''} با موفقیت اعمال شدند`);
+    }
+  }
+
+  closeUploadModal();
+};
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
@@ -704,6 +744,16 @@ const EditProductPage = () => {
                             placeholder="1,200,000"
                           />
                         </div>
+                               <div>
+                          <Label>درصد تخفیف تکی</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={variant.discount_percent}
+                            onChange={(e) => updateVariant(vIndex, "discount_percent", e.target.value)}
+                          />
+                        </div>
                         <div>
                           <Label>قیمت عمده (تومان) *</Label>
                           <Input
@@ -724,16 +774,7 @@ const EditProductPage = () => {
                             placeholder="1"
                           />
                         </div>
-                        <div>
-                          <Label>درصد تخفیف تکی</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={variant.discount_percent}
-                            onChange={(e) => updateVariant(vIndex, "discount_percent", e.target.value)}
-                          />
-                        </div>
+                 
                       </div>
 
                       {/* موجودی */}

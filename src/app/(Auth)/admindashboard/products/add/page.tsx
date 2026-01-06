@@ -35,7 +35,7 @@ interface VariantFormData {
   color_hexCode: string;
   price_single: string;
   price_wholesale: string;
-  discount_percent: string; // فقط تخفیف تکی نگه داشته شد
+  discount_percent: string;
   min_wholesale: string;
   in_stock: boolean;
   stock_quantity: string;
@@ -152,14 +152,16 @@ const AddProductPage = () => {
       .catch(() => toast.error("خطا در بارگذاری داده‌های اولیه"));
   }, []);
 
+  // مقاوم‌سازی در برابر 404 یا خطا (مانند Edit)
   useEffect(() => {
     if (formData.mothercatId) {
       fetch(`${API}/subcategories?category_id=${formData.mothercatId}`)
-        .then((res) => res.json())
-        .then((data: Subcategory[]) => setSubcategories(data))
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data) => setSubcategories(Array.isArray(data) ? data : []))
         .catch(() => setSubcategories([]));
     } else {
       setSubcategories([]);
+      setItems([]);
       setFormData((prev) => ({ ...prev, subcatId: "", itemId: "" }));
     }
   }, [formData.mothercatId]);
@@ -167,8 +169,8 @@ const AddProductPage = () => {
   useEffect(() => {
     if (formData.subcatId) {
       fetch(`${API}/subcategory-items?subcategory_id=${formData.subcatId}`)
-        .then((res) => res.json())
-        .then((data: SubcategoryItem[]) => setItems(data))
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data) => setItems(Array.isArray(data) ? data : []))
         .catch(() => setItems([]));
     } else {
       setItems([]);
@@ -191,7 +193,7 @@ const AddProductPage = () => {
           min_wholesale: "1",
           in_stock: true,
           stock_quantity: "0",
-          image_main: prev.image,
+          image_main: prev.image || "",
           images: [],
           infotable: [],
         },
@@ -287,54 +289,94 @@ const AddProductPage = () => {
     });
   };
 
-  const handleUpload = async () => {
-    if (files.length === 0) return;
-    setUploading(true);
-    const promises = files.map(async (file) => {
-      const fd = new FormData();
-      fd.append("file", file);
-      try {
-        const res = await fetch("/api/media", { method: "POST", body: fd });
-        if (!res.ok) throw new Error("خطا");
-        const data = await res.json();
-        return { url: SITE + data.url, name: file.name };
-      } catch {
-        toast.error(`آپلود ${file.name} ناموفق بود`);
-        return null;
-      }
-    });
-    const results = await Promise.all(promises);
-    const successful = results.filter(Boolean) as UploadedFile[];
-    setUploadedFiles(successful);
-    setFiles([]);
-    setPreviews({});
+const handleUpload = async () => {
+  if (files.length === 0) {
+    toast.error("فایلی برای آپلود انتخاب نشده است");
+    return;
+  }
+  setUploading(true);
+  const promises = files.map(async (file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/media", { method: "POST", body: fd });
+      if (!res.ok) throw new Error("خطا در آپلود");
+      const data = await res.json();
+      return { url: SITE + data.url, name: file.name };
+    } catch (err) {
+      toast.error(`آپلود ${file.name} ناموفق بود`);
+      return null;
+    }
+  });
+
+  const results = await Promise.all(promises);
+  const successful = results.filter(Boolean) as UploadedFile[];
+
+  if (successful.length === 0) {
+    toast.error("هیچ فایلی با موفقیت آپلود نشد");
     setUploading(false);
-    toast.success(`${successful.length} فایل با موفقیت آپلود شد`);
-  };
+    return;
+  }
 
-  const confirmUpload = () => {
-    if (uploadedFiles.length === 0) {
-      toast.error("هیچ فایلی آپلود نشده است");
-      return;
-    }
+  setUploadedFiles(successful);
+  // مهم: بعد از آپلود موفق، فایل‌های انتخاب‌شده رو پاک کن تا تکراری نشه
+  setFiles([]);
+  setPreviews({});
+  setUploading(false);
+  toast.success(`${successful.length} فایل با موفقیت آپلود شد`);
+};
 
-    if (uploadTarget?.type === "productImage") {
-      setFormData((prev) => ({ ...prev, image: uploadedFiles[0].url }));
-    } else if (uploadTarget?.type === "variantImage" && uploadTarget.variantIndex !== undefined) {
-      updateVariant(uploadTarget.variantIndex, "image_main", uploadedFiles[0].url);
-    } else if (uploadTarget?.type === "variantGallery" && uploadTarget.variantIndex !== undefined) {
-      const urls = uploadedFiles.map((f) => f.url);
-      setFormData((prev) => {
-        const newVariants = [...prev.variants];
-        newVariants[uploadTarget.variantIndex!].images = [
-          ...newVariants[uploadTarget.variantIndex!].images,
-          ...urls,
-        ];
-        return { ...prev, variants: newVariants };
-      });
-    }
+const confirmUpload = () => {
+  if (uploadedFiles.length === 0) {
+    toast.error("هیچ فایلی آپلود نشده است. ابتدا آپلود کنید.");
     closeUploadModal();
-  };
+    return;
+  }
+
+  let hasApplied = false;
+  let allDuplicate = false;
+
+  if (uploadTarget?.type === "productImage") {
+    setFormData((prev) => ({ ...prev, image: uploadedFiles[0].url }));
+    hasApplied = true;
+  } 
+  else if (uploadTarget?.type === "variantImage" && uploadTarget.variantIndex !== undefined) {
+    updateVariant(uploadTarget.variantIndex, "image_main", uploadedFiles[0].url);
+    hasApplied = true;
+  } 
+  else if (uploadTarget?.type === "variantGallery" && uploadTarget.variantIndex !== undefined) {
+    const urls = uploadedFiles.map((f) => f.url);
+
+    setFormData((prev) => {
+      const newVariants = [...prev.variants];
+      const existingImages = newVariants[uploadTarget.variantIndex!].images;
+
+      // تشخیص تکراری بودن همه عکس‌ها
+      const uniqueNewUrls = urls.filter((url) => !existingImages.includes(url));
+
+      if (uniqueNewUrls.length === 0) {
+        allDuplicate = true;
+        return prev; // هیچ تغییری نده
+      }
+
+      newVariants[uploadTarget.variantIndex!].images = [...existingImages, ...uniqueNewUrls];
+      return { ...prev, variants: newVariants };
+    });
+
+    hasApplied = true;
+  }
+
+  // مهم: toastها رو خارج از updater function فراخوانی کن
+  if (hasApplied) {
+    if (allDuplicate) {
+      toast.success("همه عکس‌ها قبلاً اضافه شده‌اند");
+    } else {
+      toast.success(`عکس${uploadedFiles.length > 1 ? 'ها' : ''} با موفقیت اعمال شدند`);
+    }
+  }
+
+  closeUploadModal();
+};
 
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
@@ -356,7 +398,6 @@ const AddProductPage = () => {
         price_single: parseInt(v.price_single.replace(/,/g, ""), 10),
         price_wholesale: parseInt(v.price_wholesale.replace(/,/g, ""), 10),
         discount_percent: parseInt(v.discount_percent || "0", 10),
-        // discount_wholesale_percent حذف شد
         min_wholesale: parseInt(v.min_wholesale || "1", 10),
         in_stock: v.in_stock,
         stock_quantity: parseInt(v.stock_quantity || "0", 10),
@@ -634,7 +675,7 @@ const AddProductPage = () => {
                         </div>
                       </div>
 
-                      {/* قیمت، تخفیف تکی و حداقل عمده */}
+                      {/* قیمت و ... */}
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                         <div>
                           <Label>قیمت تکی (تومان) *</Label>
@@ -644,6 +685,16 @@ const AddProductPage = () => {
                               updateVariant(vIndex, "price_single", formatNumber(e.target.value.replace(/,/g, "")))
                             }
                             placeholder="1,200,000"
+                          />
+                        </div>
+                                   <div>
+                          <Label>درصد تخفیف تکی</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            value={variant.discount_percent}
+                            onChange={(e) => updateVariant(vIndex, "discount_percent", e.target.value)}
                           />
                         </div>
                         <div>
@@ -666,16 +717,7 @@ const AddProductPage = () => {
                             placeholder="1"
                           />
                         </div>
-                        <div>
-                          <Label>درصد تخفیف تکی</Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={variant.discount_percent}
-                            onChange={(e) => updateVariant(vIndex, "discount_percent", e.target.value)}
-                          />
-                        </div>
+             
                       </div>
 
                       {/* موجودی */}
@@ -871,8 +913,86 @@ const AddProductPage = () => {
         </CardContent>
       </Card>
 
-      {/* مودال آپلود همانند قبل باقی مانده است */}
-      {/* ... (کد مودال آپلود بدون تغییر) */}
+      {/* مودال آپلود */}
+      {showUploadModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-8 border-b">
+              <h2 className="text-2xl font-bold text-center">آپلود فایل</h2>
+            </div>
+            <div className="p-8 space-y-8">
+              <div
+                className="border-4 border-dashed border-purple-400 rounded-2xl p-12 text-center cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30 transition"
+                onClick={() => document.getElementById("upload-input")?.click()}
+              >
+                <Upload className="h-16 w-16 mx-auto text-purple-600 mb-6" />
+                <p className="text-xl font-bold">فایل‌ها را اینجا بکشید یا کلیک کنید</p>
+                <p className="text-sm text-gray-500 mt-2">حداکثر 10 مگابایت - تصاویر و ویدئو</p>
+                <Input
+                  id="upload-input"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+              </div>
+
+              {files.length > 0 && (
+                <div>
+                  <h3 className="text-xl font-bold mb-4">فایل‌های انتخاب شده ({files.length})</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                    {files.map((file) => (
+                      <div key={file.name} className="relative group">
+                        <img
+                          src={previews[file.name]}
+                          alt={file.name}
+                          className="h-40 rounded-xl border-2 object-cover"
+                        />
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition"
+                          onClick={() => removeFile(file.name)}
+                        >
+                          <X className="h-5 w-5" />
+                        </Button>
+                        <p className="text-center text-sm mt-2 truncate">{file.name}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <Button onClick={handleUpload} disabled={uploading} className="w-full mt-6 text-lg py-6">
+                    {uploading ? "در حال آپلود..." : `آپلود ${files.length} فایل`}
+                  </Button>
+                </div>
+              )}
+
+              {uploadedFiles.length > 0 && (
+                <div>
+                  <h3 className="text-xl font-bold mb-4">فایل‌های آپلود شده ({uploadedFiles.length})</h3>
+                  <div className="grid grid-cols-3 md:grid-cols-5 gap-6">
+                    {uploadedFiles.map((file) => (
+                      <img
+                        key={file.name}
+                        src={file.url}
+                        alt={file.name}
+                        className="h-32 rounded-xl border-2 object-cover"
+                      />
+                    ))}
+                  </div>
+                  <Button onClick={confirmUpload} className="w-full mt-6 bg-green-600 hover:bg-green-700 text-lg py-6">
+                    <CheckCircle className="h-6 w-6 mr-3" /> تأیید و اعمال
+                  </Button>
+                </div>
+              )}
+            </div>
+            <div className="p-8 border-t flex justify-end">
+              <Button variant="outline" size="lg" onClick={closeUploadModal}>
+                بستن
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
