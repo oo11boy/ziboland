@@ -23,7 +23,6 @@ interface Product {
   id: number;
   title: string;
   image: string;
-  category: string;
   mothercatId: number;
   subcatId: number;
   itemId: number | null;
@@ -58,7 +57,6 @@ export async function GET(request: NextRequest) {
         p.id AS product_id,
         p.title,
         p.image,
-        p.category,
         p.mothercatId,
         p.subcatId,
         p.itemId,
@@ -118,7 +116,6 @@ export async function GET(request: NextRequest) {
       id: row.product_id,
       title: row.title,
       image: row.image,
-      category: row.category,
       mothercatId: row.mothercatId,
       subcatId: row.subcatId,
       itemId: row.itemId,
@@ -199,7 +196,6 @@ export async function PUT(request: NextRequest) {
       title,
       brand_id,
       image,
-      category,
       mothercatId,
       subcatId,
       itemId,
@@ -213,7 +209,7 @@ export async function PUT(request: NextRequest) {
     } = data;
 
     // اعتبارسنجی فیلدهای اصلی محصول
-    if (!title || !image || !category || !mothercatId || !subcatId || !itemId) {
+    if (!title || !image || !mothercatId || !subcatId || !itemId) {
       return NextResponse.json(
         { error: "Missing required product fields" },
         { status: 400 }
@@ -253,7 +249,7 @@ export async function PUT(request: NextRequest) {
       await connection.query(
         `
         UPDATE products SET
-          brand_id = ?, title = ?, image = ?, category = ?, mothercatId = ?,
+          brand_id = ?, title = ?, image = ?, mothercatId = ?,
           subcatId = ?, itemId = ?, rating = ?, inStock = ?, sales = ?,
           features = ?, content = ?
         WHERE id = ?
@@ -262,7 +258,7 @@ export async function PUT(request: NextRequest) {
           brand_id || null,
           title,
           image,
-          category,
+        
           mothercatId,
           subcatId,
           itemId,
@@ -279,14 +275,14 @@ export async function PUT(request: NextRequest) {
       await connection.query("DELETE FROM media WHERE product_id = ?", [
         productId,
       ]);
-      if (media.length > 0) {
-        for (const item of media) {
-          await connection.query(
-            "INSERT INTO media (product_id, type, src, thumbnail, alt) VALUES (?, ?, ?, ?, ?)",
-            [productId, item.type, item.src, item.thumbnail || null, item.alt]
-          );
-        }
-      }
+if (Array.isArray(media) && media.length > 0) {
+  for (const item of media) {
+    await connection.query(
+      "INSERT INTO media (product_id, type, src, thumbnail, alt) VALUES (?, ?, ?, ?, ?)",
+      [productId, item.type, item.src, item.thumbnail || null, item.alt]
+    );
+  }
+}
 
       // 3. جایگزینی کامل واریانت‌ها
       await connection.query(

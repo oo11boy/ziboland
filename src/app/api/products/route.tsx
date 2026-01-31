@@ -191,7 +191,7 @@ export async function POST(request: Request) {
       title,
       brand_id,
       image,
-      category,
+
       mothercatId,
       subcatId,
       itemId,
@@ -205,7 +205,7 @@ export async function POST(request: Request) {
     } = data;
 
     // اعتبارسنجی فیلدهای اصلی محصول
-    if (!title || !image || !category || !mothercatId || !subcatId || !itemId) {
+    if (!title || !image  || !mothercatId || !subcatId || !itemId) {
       return NextResponse.json(
         { error: "Missing required product fields" },
         { status: 400 }
@@ -294,16 +294,16 @@ export async function POST(request: Request) {
       const [productResult] = await connection.query(
         `
         INSERT INTO products (
-          brand_id, title, image, category, mothercatId,
+          brand_id, title, image, mothercatId,
           subcatId, itemId, rating, inStock, sales,
           features, content
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
         [
           brand_id || null,
           title,
           image,
-          category,
+        
           mothercatId,
           subcatId,
           itemId,
@@ -317,16 +317,15 @@ export async function POST(request: Request) {
 
       const productId = (productResult as any).insertId;
 
-      // 2. درج مدیای عمومی محصول
-      if (media.length > 0) {
-        for (const item of media) {
-          await connection.query(
-            "INSERT INTO media (product_id, type, src, thumbnail, alt) VALUES (?, ?, ?, ?, ?)",
-            [productId, item.type, item.src, item.thumbnail || null, item.alt]
-          );
-        }
-      }
-
+// 2. درج مدیای عمومی محصول
+if (Array.isArray(media) && media.length > 0) {
+  for (const item of media) {
+    await connection.query(
+      "INSERT INTO media (product_id, type, src, thumbnail, alt) VALUES (?, ?, ?, ?, ?)",
+      [productId, item.type, item.src, item.thumbnail || null, item.alt]
+    );
+  }
+}
       // 3. درج واریانت‌ها (حذف discount_wholesale_percent از کوئری)
       for (const variant of variants) {
         await connection.query(
