@@ -34,6 +34,7 @@ interface Product {
   content: string | null;
   media: { type: string; src: string; thumbnail: string | null; alt: string }[];
   variants: Variant[];
+  motherCategoryName: string;
   brandDetails?: {
     id: number;
     title: string;
@@ -67,10 +68,12 @@ export async function GET() {
         b.id AS brand_id,
         b.title AS brand_title,
         b.img AS brand_img,
-        b.link AS brand_link
+        b.link AS brand_link,
+        c.name AS mother_category_name
       FROM products p
       LEFT JOIN media m ON p.id = m.product_id
       LEFT JOIN brands b ON p.brand_id = b.id
+      LEFT JOIN categories c ON p.mothercatId = c.id
       ORDER BY p.id, m.id
       `
     );
@@ -119,6 +122,7 @@ export async function GET() {
           content: row.content ?? null,
           media: [],
           variants: [],
+          motherCategoryName: row.mother_category_name || 'سایر',
           brandDetails: row.brand_id
             ? {
                 id: row.brand_id,

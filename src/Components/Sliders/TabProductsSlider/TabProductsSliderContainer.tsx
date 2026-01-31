@@ -231,7 +231,7 @@ export default function TabProductsSliderContainer({
   const handleNotifyMe = () => toast.info("اطلاع‌رسانی فعال شد");
 
   const categoryCounts = products.reduce((acc, p) => {
-    const cat = p.category || "سایر";
+    const cat = p.motherCategoryName || "سایر";
     acc[cat] = (acc[cat] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
@@ -240,7 +240,7 @@ export default function TabProductsSliderContainer({
     (a, b) => categoryCounts[b] - categoryCounts[a]
   );
   const productsByCategory = sortedCategories.map((cat) =>
-    products.filter((p) => (p.category || "سایر") === cat)
+    products.filter((p) => (p.motherCategoryName || "سایر") === cat)
   );
 
   if (error) {

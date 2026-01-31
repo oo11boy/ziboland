@@ -105,7 +105,7 @@ export interface Product {
   minwholesale: number;
   discount: string; // درصد تخفیف تکی (مثل "15")
   discountwholesale: string; // درصد تخفیف عمده
-
+motherCategoryName:string;
   category: string;
   mothercatId: number;
   subcatId: number;
