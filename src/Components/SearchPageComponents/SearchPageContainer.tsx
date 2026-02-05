@@ -33,6 +33,8 @@ export default function SearchPageContainer({
   const router = useRouter();
   const { dispatch, state: { cartItems } } = useCart();
 
+  const lastPriceTypeRef = useRef<{ [key: number]: "single" | "wholesale" }>({});
+
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Categoryapi[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -129,15 +131,12 @@ export default function SearchPageContainer({
         initialPriceTypes[product.id] = "single";
 
         if (product.variants && product.variants.length > 0) {
-          // ۱. جدا کردن موجودها از ناموجودها
           const availableVariants = product.variants.filter(
             (v) => (v.stock_quantity ?? 0) > 0
           );
 
-          // ۲. تعیین لیست مبنا (اگر موجودی هست فقط بین آن‌ها، وگرنه بین همه)
           const baseList = availableVariants.length > 0 ? availableVariants : product.variants;
 
-          // ۳. پیدا کردن ارزان‌ترین از لیست مبنا
           const cheapest = baseList.reduce((min, current) => {
             const currentFinalPrice = (current.price_single || 0) * (1 - (current.discount_percent || 0) / 100);
             const minFinalPrice = (min.price_single || 0) * (1 - (min.discount_percent || 0) / 100);
@@ -154,16 +153,23 @@ export default function SearchPageContainer({
       setSelectedVariants(initialVariants);
     }
   }, [products]);
-  
-  const handleShowQuantitySelector = (productId: number) => {
-    const activeVariant = selectedVariants[productId];
-    if (!activeVariant) return;
 
-    const cartItem = cartItems.find(
+  const getCartItem = (productId: number) => {
+    const activeVariant = selectedVariants[productId];
+    if (!activeVariant) return null;
+
+    return cartItems.find(
       (item) =>
         item.id === productId &&
         item.color?.englishName === activeVariant.color_englishName
     );
+  };
+
+  const handleShowQuantitySelector = (productId: number) => {
+    const activeVariant = selectedVariants[productId];
+    if (!activeVariant) return;
+
+    const cartItem = getCartItem(productId);
 
     setCartQuantities((prev) => ({
       ...prev,
@@ -175,33 +181,90 @@ export default function SearchPageContainer({
     );
   };
 
-const handleQuantityChange = (productId: number, delta: number) => {
-  setCartQuantities((prev) => {
-    const currentQty = prev[productId] || 0;
-    const activeVariant = selectedVariants[productId];
-    const stockQuantity = activeVariant?.stock_quantity ?? 0;
-    
-    let newQuantity = currentQty + delta;
-    if (newQuantity > stockQuantity) {
+  const handleQuantityChange = (productId: number, delta: number) => {
+    setCartQuantities((prev) => {
+      const currentQty = prev[productId] || 0;
+      const activeVariant = selectedVariants[productId];
+      const stockQuantity = activeVariant?.stock_quantity ?? 0;
+
+      let newQuantity = currentQty + delta;
+      if (newQuantity > stockQuantity) {
         toast.warning(`حداکثر موجودی: ${stockQuantity} عدد`);
         newQuantity = stockQuantity;
-    }
-    newQuantity = Math.max(0, newQuantity);
+      }
+      newQuantity = Math.max(0, newQuantity);
 
-    if (activeVariant && activeVariant.price_wholesale > 0) {
-      const minWholesale = activeVariant.min_wholesale || 1;
-      setPriceTypes(prevTypes => ({
+      let newPriceType: "single" | "wholesale" = "single";
+
+      if (activeVariant && activeVariant.price_wholesale > 0) {
+        const minWholesale = activeVariant.min_wholesale || 1;
+        newPriceType = newQuantity >= minWholesale ? "wholesale" : "single";
+
+        // چک تغییر نوع قیمت
+        const prevType = priceTypes[productId] || "single";
+        const lastShownType = lastPriceTypeRef.current[productId] || prevType;
+
+        if (newPriceType !== prevType && newPriceType !== lastShownType) {
+          if (newPriceType === "wholesale") {
+            toast.success(`قیمت عمده (${minWholesale} عدد به بالا) اعمال شد`, {
+              position: "top-center",
+              autoClose: 2800,
+              theme: "colored",
+              toastId: `wholesale-${productId}`,
+            });
+          } else {
+            toast.info("قیمت به حالت تکی بازگشت", {
+              position: "top-center",
+              autoClose: 2800,
+              theme: "colored",
+              toastId: `single-${productId}`,
+            });
+          }
+
+          lastPriceTypeRef.current = {
+            ...lastPriceTypeRef.current,
+            [productId]: newPriceType,
+          };
+        }
+      }
+
+      setPriceTypes((prevTypes) => ({
         ...prevTypes,
-        [productId]: newQuantity >= minWholesale ? "wholesale" : "single"
+        [productId]: newPriceType,
       }));
-    }
-    return { ...prev, [productId]: newQuantity };
-  });
-};
+
+      return { ...prev, [productId]: newQuantity };
+    });
+  };
 
   const handlePriceTypeChange = (productId: number, type: "single" | "wholesale") => {
     const activeVariant = selectedVariants[productId];
     if (type === "wholesale" && (!activeVariant || activeVariant.price_wholesale <= 0)) return;
+
+    const prevType = priceTypes[productId] || "single";
+    if (type !== prevType) {
+      if (type === "wholesale") {
+        toast.success(`قیمت به حالت عمده تغییر کرد`, {
+          position: "top-center",
+          autoClose: 2800,
+          theme: "colored",
+          toastId: `wholesale-manual-${productId}`,
+        });
+      } else {
+        toast.info("قیمت به حالت تکی بازگشت", {
+          position: "top-center",
+          autoClose: 2800,
+          theme: "colored",
+          toastId: `single-manual-${productId}`,
+        });
+      }
+
+      lastPriceTypeRef.current = {
+        ...lastPriceTypeRef.current,
+        [productId]: type,
+      };
+    }
+
     setPriceTypes((prev) => ({ ...prev, [productId]: type }));
   };
 
@@ -212,92 +275,113 @@ const handleQuantityChange = (productId: number, delta: number) => {
     setShowQuantitySelector(null);
   };
 
-const handleAddToCart = (productId: number) => {
-  const quantity = cartQuantities[productId] ?? 0;
-  const activeVariant = selectedVariants[productId];
-  if (!activeVariant) return;
+  const handleAddToCart = (productId: number) => {
+    const quantity = cartQuantities[productId] ?? 0;
+    const activeVariant = selectedVariants[productId];
+    if (!activeVariant) return;
 
-  const product = products.find((p) => p.id === productId);
-  if (!product) return;
+    const product = products.find((p) => p.id === productId);
+    if (!product) return;
 
-  const cartItem = cartItems.find(
-    (item) =>
-      item.id === productId &&
-      item.color?.englishName === activeVariant.color_englishName
-  );
+    const cartItem = getCartItem(productId);
 
-  // ──────────────── مورد صفر یا منفی ────────────────
-  if (quantity <= 0) {
+    if (quantity <= 0) {
+      if (cartItem) {
+        dispatch({
+          type: "REMOVE_ITEM_BY_TYPE",
+          payload: {
+            id: productId,
+            color: cartItem.color,
+          },
+        });
+        toast.info("محصول از سبد خرید حذف شد");
+      }
+      setShowQuantitySelector(null);
+      setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
+      return;
+    }
+
+    const isWholesale =
+      quantity >= (activeVariant.min_wholesale || 1) &&
+      activeVariant.price_wholesale > 0;
+
+    const unitPrice = isWholesale
+      ? activeVariant.price_wholesale
+      : Math.round(
+          activeVariant.price_single * (1 - (activeVariant.discount_percent || 0) / 100)
+        );
+
+    const newPriceType = isWholesale ? "wholesale" : "single";
+
+    const prevType = priceTypes[productId] || "single";
+    const lastShownType = lastPriceTypeRef.current[productId] || prevType;
+
+    if (newPriceType !== prevType && newPriceType !== lastShownType) {
+      if (newPriceType === "wholesale") {
+        toast.success(`قیمت عمده اعمال شد`, {
+          position: "top-center",
+          autoClose: 2800,
+          theme: "colored",
+          toastId: `wholesale-cart-${productId}`,
+        });
+      } else {
+        toast.info("قیمت به تکی بازگشت", {
+          position: "top-center",
+          autoClose: 2800,
+          theme: "colored",
+          toastId: `single-cart-${productId}`,
+        });
+      }
+
+      lastPriceTypeRef.current = {
+        ...lastPriceTypeRef.current,
+        [productId]: newPriceType,
+      };
+    }
+
+    setPriceTypes((prev) => ({ ...prev, [productId]: newPriceType }));
+
+    const payloadBase = {
+      id: productId,
+      title: product.title,
+      image: activeVariant.image_main || product.image || "",
+      color: {
+        englishName: activeVariant.color_englishName,
+        persianName: activeVariant.color_persianName || "",
+        hexCode: activeVariant.color_hexCode,
+      },
+      baseRetailPrice: activeVariant.price_single,
+      baseWholesalePrice: activeVariant.price_wholesale,
+      retailDiscountPercent: activeVariant.discount_percent || 0,
+      minWholesale: activeVariant.min_wholesale || 1,
+      stock_quantity: activeVariant.stock_quantity ?? 0,
+    };
+
     if (cartItem) {
       dispatch({
-        type: "REMOVE_ITEM_BY_TYPE",
+        type: "UPDATE_QUANTITY",
         payload: {
-          id: productId,
-          color: cartItem.color,
+          itemKey: `${productId}-${cartItem.color?.englishName || "default"}`,
+          newQuantity: quantity,
         },
       });
-      toast.info("محصول از سبد خرید حذف شد");
+      toast.success("سبد خرید به‌روزرسانی شد");
+    } else {
+      dispatch({
+        type: "ADD_ITEM",
+        payload: {
+          ...payloadBase,
+          quantity,
+          priceType: newPriceType,
+          price: unitPrice.toString(),
+          discount: isWholesale ? "0" : `${activeVariant.discount_percent || 0}%`,
+        },
+      });
+      toast.success("به سبد خرید اضافه شد");
     }
+
     setShowQuantitySelector(null);
-    setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
-    return;
-  }
-
-  // ──────────────── محاسبه قیمت نهایی ────────────────
-  const isWholesale =
-    quantity >= (activeVariant.min_wholesale || 1) &&
-    activeVariant.price_wholesale > 0;
-
-  const unitPrice = isWholesale
-    ? activeVariant.price_wholesale
-    : Math.round(
-        activeVariant.price_single * (1 - (activeVariant.discount_percent || 0) / 100)
-      );
-
-  const payloadBase = {
-    id: productId,
-    title: product.title,
-    image: activeVariant.image_main || product.image || "",
-    color: {
-      englishName: activeVariant.color_englishName,
-      persianName: activeVariant.color_persianName || "",
-      hexCode: activeVariant.color_hexCode,
-    },
-    baseRetailPrice: activeVariant.price_single,
-    baseWholesalePrice: activeVariant.price_wholesale,
-    retailDiscountPercent: activeVariant.discount_percent || 0,
-    minWholesale: activeVariant.min_wholesale || 1,
-    stock_quantity: activeVariant.stock_quantity ?? 0,
   };
-
-  if (cartItem) {
-    // به‌روزرسانی
-    dispatch({
-      type: "UPDATE_QUANTITY",
-      payload: {
-        itemKey: `${productId}-${cartItem.color?.englishName || "default"}`,
-        newQuantity: quantity,
-      },
-    });
-    toast.success("سبد خرید به‌روزرسانی شد");
-  } else {
-    // اضافه کردن جدید
-    dispatch({
-      type: "ADD_ITEM",
-      payload: {
-        ...payloadBase,
-        quantity,
-        priceType: isWholesale ? "wholesale" : "single",
-        price: unitPrice.toString(),
-        discount: isWholesale ? "0" : `${activeVariant.discount_percent || 0}%`,
-      },
-    });
-    toast.success("به سبد خرید اضافه شد");
-  }
-
-  // ریست کردن UI
-  setShowQuantitySelector(null);
-};
 
   const handleNotifyMe = () => toast.info("اطلاع‌رسانی فعال شد");
 
@@ -354,7 +438,6 @@ const handleAddToCart = (productId: number) => {
 
   const filteredProducts = getSortedProducts();
 
-  // انیمیشن‌ها
   const cardVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
@@ -364,7 +447,7 @@ const handleAddToCart = (productId: number) => {
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#F7F7F7] font-yekan">
-      <ToastContainer rtl theme="colored" position="top-center" />
+      <ToastContainer rtl theme="colored" position="top-center" limit={3} />
       <MobileHeader
         showFilters={showFilters}
         setShowFilters={setShowFilters}
@@ -409,7 +492,6 @@ const handleAddToCart = (productId: number) => {
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
                 updateSearchQuery={updateSearchQuery}
-            
               />
             )}
           </AnimatePresence>
@@ -464,6 +546,7 @@ const handleAddToCart = (productId: number) => {
                 handleQuantityChange={handleQuantityChange}
                 handleAddToCart={handleAddToCart}
                 handleNotifyMe={handleNotifyMe}
+                getCartItem={getCartItem}
               />
             </div>
           </div>

@@ -51,7 +51,10 @@ export default function TabProductsSliderContainer({
   sort = "none",
 }: TabProductsSliderContainerProps) {
   const [value, setValue] = useState(0);
-const { dispatch, state: { cartItems } } = useCart();
+  const {
+    dispatch,
+    state: { cartItems },
+  } = useCart();
 
   const [cartQuantities, setCartQuantities] = useState<{
     [key: number]: number;
@@ -79,78 +82,80 @@ const { dispatch, state: { cartItems } } = useCart();
   };
 
   useEffect(() => {
-const fetchProducts = async () => {
-  try {
-    const response = await fetch("/api/products");
-    if (!response.ok) throw new Error("خطا در دریافت محصولات");
-    const data: Product[] = await response.json();
-    
-    let sorted = [...data];
+    const fetchProducts = async () => {
+      try {
+        const response = await fetch("/api/products");
+        if (!response.ok) throw new Error("خطا در دریافت محصولات");
+        const data: Product[] = await response.json();
 
-    // تابع کمکی برای چک کردن اینکه آیا محصول حداقل یک واریانت موجود دارد یا خیر
-    const isProductInStock = (p: Product) => 
-      p.variants?.some(v => (v.stock_quantity ?? 0) > 0) ? 1 : 0;
+        let sorted = [...data];
 
-    sorted.sort((a, b) => {
-      // ۱. اولویت اول: موجودی (موجودها = ۱، ناموجودها = ۰)
-      const aInStock = isProductInStock(a);
-      const bInStock = isProductInStock(b);
+        // تابع کمکی برای چک کردن اینکه آیا محصول حداقل یک واریانت موجود دارد یا خیر
+        const isProductInStock = (p: Product) =>
+          p.variants?.some((v) => (v.stock_quantity ?? 0) > 0) ? 1 : 0;
 
-      if (aInStock !== bInStock) {
-        return bInStock - aInStock; // موجودها (۱) قبل از ناموجودها (۰) قرار می‌گیرند
+        sorted.sort((a, b) => {
+          // ۱. اولویت اول: موجودی (موجودها = ۱، ناموجودها = ۰)
+          const aInStock = isProductInStock(a);
+          const bInStock = isProductInStock(b);
+
+          if (aInStock !== bInStock) {
+            return bInStock - aInStock; // موجودها (۱) قبل از ناموجودها (۰) قرار می‌گیرند
+          }
+
+          // ۲. اولویت دوم: بر اساس انتخاب کاربر (ارزان‌ترین، جدیدترین و ...)
+          if (sort === "popular") return b.rating - a.rating;
+          if (sort === "cheapest") {
+            const priceA = a.variants?.[0]?.price_single || 0;
+            const priceB = b.variants?.[0]?.price_single || 0;
+            return priceA - priceB;
+          }
+          if (sort === "newest") return b.id - a.id;
+
+          return 0;
+        });
+
+        setProducts(sorted);
+      } catch (err) {
+        setError("خطا در بارگذاری محصولات. لطفاً دوباره تلاش کنید.");
+        console.error(err);
       }
-
-      // ۲. اولویت دوم: بر اساس انتخاب کاربر (ارزان‌ترین، جدیدترین و ...)
-      if (sort === "popular") return b.rating - a.rating;
-      if (sort === "cheapest") {
-        const priceA = a.variants?.[0]?.price_single || 0;
-        const priceB = b.variants?.[0]?.price_single || 0;
-        return priceA - priceB;
-      }
-      if (sort === "newest") return b.id - a.id;
-      
-      return 0;
-    });
-
-    setProducts(sorted);
-  } catch (err) {
-    setError("خطا در بارگذاری محصولات. لطفاً دوباره تلاش کنید.");
-    console.error(err);
-  }
-};
+    };
 
     fetchProducts();
   }, [sort]);
 
-useEffect(() => {
-  if (products.length > 0) {
-    const initialPriceTypes: { [key: number]: "single" | "wholesale" } = {};
-    const initialVariants: { [key: number]: Variant | null } = {};
-    
-    products.forEach((product) => {
-      initialPriceTypes[product.id] = "single";
-      
-      if (product.variants && product.variants.length > 0) {
-        // مرتب‌سازی هوشمند: ابتدا موجودها، سپس ارزان‌ترین‌ها
-        const sortedVariants = [...product.variants].sort((a, b) => {
-          const aStock = (a.stock_quantity ?? 0) > 0 ? 1 : 0;
-          const bStock = (b.stock_quantity ?? 0) > 0 ? 1 : 0;
-          if (aStock !== bStock) return bStock - aStock;
+  useEffect(() => {
+    if (products.length > 0) {
+      const initialPriceTypes: { [key: number]: "single" | "wholesale" } = {};
+      const initialVariants: { [key: number]: Variant | null } = {};
 
-          const priceA = a.price_single * (1 - (a.discount_percent || 0) / 100);
-          const priceB = b.price_single * (1 - (b.discount_percent || 0) / 100);
-          return priceA - priceB;
-        });
-        initialVariants[product.id] = sortedVariants[0];
-      } else {
-        initialVariants[product.id] = null;
-      }
-    });
-    
-    setPriceTypes(initialPriceTypes);
-    setSelectedVariants(initialVariants);
-  }
-}, [products]);
+      products.forEach((product) => {
+        initialPriceTypes[product.id] = "single";
+
+        if (product.variants && product.variants.length > 0) {
+          // مرتب‌سازی هوشمند: ابتدا موجودها، سپس ارزان‌ترین‌ها
+          const sortedVariants = [...product.variants].sort((a, b) => {
+            const aStock = (a.stock_quantity ?? 0) > 0 ? 1 : 0;
+            const bStock = (b.stock_quantity ?? 0) > 0 ? 1 : 0;
+            if (aStock !== bStock) return bStock - aStock;
+
+            const priceA =
+              a.price_single * (1 - (a.discount_percent || 0) / 100);
+            const priceB =
+              b.price_single * (1 - (b.discount_percent || 0) / 100);
+            return priceA - priceB;
+          });
+          initialVariants[product.id] = sortedVariants[0];
+        } else {
+          initialVariants[product.id] = null;
+        }
+      });
+
+      setPriceTypes(initialPriceTypes);
+      setSelectedVariants(initialVariants);
+    }
+  }, [products]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -163,30 +168,29 @@ useEffect(() => {
     return () => clearTimeout(timer);
   }, [value, products]);
 
-const handleShowQuantitySelector = (productId: number) => {
-  const cartItem = getCartItem(productId);
+  const handleShowQuantitySelector = (productId: number) => {
+    const cartItem = getCartItem(productId);
 
-  setCartQuantities((prev) => ({
-    ...prev,
-    [productId]: cartItem ? cartItem.quantity : 1, // 👈 این خط طلاییه
-  }));
+    setCartQuantities((prev) => ({
+      ...prev,
+      [productId]: cartItem ? cartItem.quantity : 1, // 👈 این خط طلاییه
+    }));
 
-  setShowQuantitySelector(
-    showQuantitySelector === productId ? null : productId
-  );
-};
-
+    setShowQuantitySelector(
+      showQuantitySelector === productId ? null : productId,
+    );
+  };
 
   const getCartItem = (productId: number) => {
-  const activeVariant = selectedVariants[productId];
-  if (!activeVariant) return null;
+    const activeVariant = selectedVariants[productId];
+    if (!activeVariant) return null;
 
-  return cartItems.find(
-    (item) =>
-      item.id === productId &&
-      item.color?.englishName === activeVariant.color_englishName
-  );
-};
+    return cartItems.find(
+      (item) =>
+        item.id === productId &&
+        item.color?.englishName === activeVariant.color_englishName,
+    );
+  };
 
   const handleQuantityChange = (productId: number, delta: number) => {
     setCartQuantities((prev) => {
@@ -214,7 +218,7 @@ const handleShowQuantitySelector = (productId: number) => {
 
   const handlePriceTypeChange = (
     productId: number,
-    type: "single" | "wholesale"
+    type: "single" | "wholesale",
   ) => {
     const activeVariant = selectedVariants[productId];
     if (
@@ -232,101 +236,103 @@ const handleShowQuantitySelector = (productId: number) => {
     setShowQuantitySelector(null);
   };
 
-const handleAddToCart = (productId: number) => {
-  const quantity = cartQuantities[productId];
-  const activeVariant = selectedVariants[productId];
-  const cartItem = getCartItem(productId);
+  const handleAddToCart = (productId: number) => {
+    const quantity = cartQuantities[productId];
+    const activeVariant = selectedVariants[productId];
+    const cartItem = getCartItem(productId);
 
-  if (!activeVariant) return;
+    if (!activeVariant) return;
 
-  // اگر تعداد صفر یا کمتر شد → حذف از سبد
-  if (!quantity || quantity <= 0) {
+    // اگر تعداد صفر یا کمتر شد → حذف از سبد
+    if (!quantity || quantity <= 0) {
+      if (cartItem) {
+        dispatch({
+          type: "REMOVE_ITEM_BY_TYPE",
+          payload: {
+            id: productId,
+            color: cartItem.color,
+          },
+        });
+        toast.info("محصول از سبد خرید حذف شد");
+      }
+      setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
+      setShowQuantitySelector(null);
+      return;
+    }
+
+    // محاسبه قیمت واحد صحیح (قبل از dispatch)
+    const isWholesale =
+      quantity >= (activeVariant.min_wholesale || 1) &&
+      activeVariant.price_wholesale > 0;
+
+    const unitPrice = isWholesale
+      ? activeVariant.price_wholesale
+      : Math.round(
+          activeVariant.price_single *
+            (1 - (activeVariant.discount_percent || 0) / 100),
+        );
+
+    // اگر قبلاً در سبد بوده → فقط UPDATE
     if (cartItem) {
       dispatch({
-        type: "REMOVE_ITEM_BY_TYPE",
+        type: "UPDATE_QUANTITY",
         payload: {
-          id: productId,
-          color: cartItem.color,
+          itemKey: `${productId}-${cartItem.color?.englishName || "default"}`,
+          newQuantity: quantity,
         },
       });
-      toast.info("محصول از سبد خرید حذف شد");
-    }
-    setShowQuantitySelector(null);
-    return;
-  }
-
-  // محاسبه قیمت واحد صحیح (قبل از dispatch)
-  const isWholesale =
-    quantity >= (activeVariant.min_wholesale || 1) &&
-    activeVariant.price_wholesale > 0;
-
-  const unitPrice = isWholesale
-    ? activeVariant.price_wholesale
-    : Math.round(
-        activeVariant.price_single *
-          (1 - (activeVariant.discount_percent || 0) / 100)
-      );
-
-  // اگر قبلاً در سبد بوده → فقط UPDATE
-  if (cartItem) {
-    dispatch({
-      type: "UPDATE_QUANTITY",
-      payload: {
-        itemKey: `${productId}-${cartItem.color?.englishName || "default"}`,
-        newQuantity: quantity,
-      },
-    });
-    toast.success("سبد خرید به‌روزرسانی شد");
-  } else {
-    // اگر جدید بود → ADD با قیمت صحیح
-    dispatch({
-      type: "ADD_ITEM",
-      payload: {
-        id: productId,
-        title: products.find((p) => p.id === productId)!.title,
-        quantity,
-        priceType: isWholesale ? "wholesale" : "single",
-        price: unitPrice.toString(),
-        image:
-          activeVariant.image_main ||
-          products.find((p) => p.id === productId)?.image ||
-          "",
-        discount: isWholesale
-          ? "0"
-          : `${activeVariant.discount_percent || 0}%`,
-        color: {
-          englishName: activeVariant.color_englishName,
-          persianName: activeVariant.color_persianName || "",
-          hexCode: activeVariant.color_hexCode,
+      toast.success("سبد خرید به‌روزرسانی شد");
+    } else {
+      // اگر جدید بود → ADD با قیمت صحیح
+      dispatch({
+        type: "ADD_ITEM",
+        payload: {
+          id: productId,
+          title: products.find((p) => p.id === productId)!.title,
+          quantity,
+          priceType: isWholesale ? "wholesale" : "single",
+          price: unitPrice.toString(),
+          image:
+            activeVariant.image_main ||
+            products.find((p) => p.id === productId)?.image ||
+            "",
+          discount: isWholesale
+            ? "0"
+            : `${activeVariant.discount_percent || 0}%`,
+          color: {
+            englishName: activeVariant.color_englishName,
+            persianName: activeVariant.color_persianName || "",
+            hexCode: activeVariant.color_hexCode,
+          },
+          baseRetailPrice: activeVariant.price_single,
+          baseWholesalePrice: activeVariant.price_wholesale,
+          retailDiscountPercent: activeVariant.discount_percent || 0,
+          minWholesale: activeVariant.min_wholesale || 1,
+          stock_quantity: activeVariant.stock_quantity ?? 0,
         },
-        baseRetailPrice: activeVariant.price_single,
-        baseWholesalePrice: activeVariant.price_wholesale,
-        retailDiscountPercent: activeVariant.discount_percent || 0,
-        minWholesale: activeVariant.min_wholesale || 1,
-        stock_quantity: activeVariant.stock_quantity ?? 0,
-      },
-    });
-    toast.success("به سبد خرید اضافه شد");
-  }
+      });
+      toast.success("به سبد خرید اضافه شد");
+    }
 
-  setShowQuantitySelector(null);
-};
-
-
+    setShowQuantitySelector(null);
+  };
 
   const handleNotifyMe = () => toast.info("اطلاع‌رسانی فعال شد");
 
-  const categoryCounts = products.reduce((acc, p) => {
-    const cat = p.motherCategoryName || "سایر";
-    acc[cat] = (acc[cat] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const categoryCounts = products.reduce(
+    (acc, p) => {
+      const cat = p.motherCategoryName || "سایر";
+      acc[cat] = (acc[cat] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   const sortedCategories = Object.keys(categoryCounts).sort(
-    (a, b) => categoryCounts[b] - categoryCounts[a]
+    (a, b) => categoryCounts[b] - categoryCounts[a],
   );
   const productsByCategory = sortedCategories.map((cat) =>
-    products.filter((p) => (p.motherCategoryName || "سایر") === cat)
+    products.filter((p) => (p.motherCategoryName || "سایر") === cat),
   );
 
   if (error) {
@@ -434,7 +440,7 @@ const handleAddToCart = (productId: number) => {
                     ? Math.round(
                         ((baseRetailPrice - baseWholesalePrice) /
                           baseRetailPrice) *
-                          100
+                          100,
                       )
                     : 0;
 
@@ -448,7 +454,7 @@ const handleAddToCart = (productId: number) => {
                   badgeColor = "bg-green-600";
                 } else {
                   unitPriceAfterDiscount = Math.round(
-                    baseRetailPrice * (1 - retailDiscountPercent / 100)
+                    baseRetailPrice * (1 - retailDiscountPercent / 100),
                   );
                   displayDiscount = retailDiscountPercent;
                   badgeColor = "bg-red-500";
@@ -539,143 +545,158 @@ const handleAddToCart = (productId: number) => {
                         </div>
 
                         {/* انتخاب رنگ */}
-             {/* انتخاب رنگ */}
-<div className="flex gap-1.5 justify-center mb-3 h-5 items-center">
-  {[...(item.variants || [])]
-    .sort((a, b) => {
-      // همان منطق مرتب‌سازی برای هماهنگی بصری
-      const aStock = (a.stock_quantity ?? 0) > 0 ? 1 : 0;
-      const bStock = (b.stock_quantity ?? 0) > 0 ? 1 : 0;
-      if (aStock !== bStock) return bStock - aStock;
+                        {/* انتخاب رنگ */}
+                        <div className="flex gap-1.5 justify-center mb-3 h-5 items-center">
+                          {[...(item.variants || [])]
+                            .sort((a, b) => {
+                              // همان منطق مرتب‌سازی برای هماهنگی بصری
+                              const aStock =
+                                (a.stock_quantity ?? 0) > 0 ? 1 : 0;
+                              const bStock =
+                                (b.stock_quantity ?? 0) > 0 ? 1 : 0;
+                              if (aStock !== bStock) return bStock - aStock;
 
-      const priceA = a.price_single * (1 - (a.discount_percent || 0) / 100);
-      const priceB = b.price_single * (1 - (b.discount_percent || 0) / 100);
-      return priceA - priceB;
-    })
-    .map((variant) => {
-      const variantInStock = (variant.stock_quantity ?? 0) > 0;
-      const isSelected = activeVariant?.id === variant.id;
+                              const priceA =
+                                a.price_single *
+                                (1 - (a.discount_percent || 0) / 100);
+                              const priceB =
+                                b.price_single *
+                                (1 - (b.discount_percent || 0) / 100);
+                              return priceA - priceB;
+                            })
+                            .map((variant) => {
+                              const variantInStock =
+                                (variant.stock_quantity ?? 0) > 0;
+                              const isSelected =
+                                activeVariant?.id === variant.id;
 
-      return (
-        <button
-          key={variant.id}
-          onClick={() => variantInStock && handleVariantSelect(item.id, variant)}
-          disabled={!variantInStock}
-          className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform relative ${
-            isSelected ? "scale-125 ring-2 ring-[#805B99]" : ""
-          } ${!variantInStock ? "opacity-50 cursor-not-allowed" : ""}`}
-          style={{ backgroundColor: variant.color_hexCode }}
-        >
-          {!variantInStock && (
-            <span
-              className="absolute inset-0 flex items-center justify-center"
-              style={{
-                background: "linear-gradient(45deg, transparent 48%, red 49%, red 51%, transparent 52%)",
-              }}
-            />
-          )}
-        </button>
-      );
-    })}
-</div>
+                              return (
+                                <button
+                                  key={variant.id}
+                                  onClick={() =>
+                                    variantInStock &&
+                                    handleVariantSelect(item.id, variant)
+                                  }
+                                  disabled={!variantInStock}
+                                  className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform relative ${
+                                    isSelected
+                                      ? "scale-125 ring-2 ring-[#805B99]"
+                                      : ""
+                                  } ${!variantInStock ? "opacity-50 cursor-not-allowed" : ""}`}
+                                  style={{
+                                    backgroundColor: variant.color_hexCode,
+                                  }}
+                                >
+                                  {!variantInStock && (
+                                    <span
+                                      className="absolute inset-0 flex items-center justify-center"
+                                      style={{
+                                        background:
+                                          "linear-gradient(45deg, transparent 48%, red 49%, red 51%, transparent 52%)",
+                                      }}
+                                    />
+                                  )}
+                                </button>
+                              );
+                            })}
+                        </div>
                       </div>
 
                       {/* پایین کارت: قیمت + عملیات */}
-                      <div className="mt-auto pt-2 border-t border-gray-50">
-                        {!isInStock ? (
-                          <div className="flex items-center justify-between">
-                            <p className="text-xs md:text-sm text-gray-600 font-medium">
-                              موجود شد خبرم کن
-                            </p>
-                            <button
-                              onClick={handleNotifyMe}
-                              className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
-                            >
-                              <NotificationAdd
-                                sx={{ fontSize: { xs: 18, md: 22 } }}
-                              />
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex flex-col mb-3">
-                              {displayDiscount > 0 && (
-                                <span className="text-[10px] md:text-xs text-gray-400 line-through italic font-medium">
-                                  {formatPrice(baseRetailPrice)}
-                                </span>
-                              )}
-                              <div className="flex items-baseline gap-1">
-                                <span className="text-sm md:text-xl font-black text-gray-900 leading-none">
-                                  {formatPrice(unitPriceAfterDiscount)}
-                                </span>
-                                <span className="text-[9px] md:text-[11px] font-medium text-gray-500">
-                                  تومان
-                                </span>
-                              </div>
-                            </div>
+   <div className="mt-auto pt-2 border-t border-gray-50">
+  {!isInStock ? (
+    <div className="flex items-center justify-between">
+      <p className="text-xs md:text-sm text-gray-600 font-medium">
+        موجود شد خبرم کن
+      </p>
+      <button
+        onClick={handleNotifyMe}
+        className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+      >
+        <NotificationAdd sx={{ fontSize: { xs: 18, md: 22 } }} />
+      </button>
+    </div>
+  ) : (
+    <>
+      <div className="flex flex-col mb-3">
+        {displayDiscount > 0 && (
+          <span className="text-[10px] md:text-xs text-gray-400 line-through italic font-medium">
+            {formatPrice(baseRetailPrice)}
+          </span>
+        )}
+        <div className="flex items-baseline gap-1">
+          <span className="text-sm md:text-xl font-black text-gray-900 leading-none">
+            {formatPrice(unitPriceAfterDiscount)}
+          </span>
+          <span className="text-[9px] md:text-[11px] font-medium text-gray-500">
+            تومان
+          </span>
+        </div>
+      </div>
 
-                            <div className="h-9 md:h-12">
-                              {showQuantitySelector !== item.id ? (
-                                <button
-                                  onClick={() =>
-                                    handleShowQuantitySelector(item.id)
-                                  }
-                                  className="w-full h-full bg-[#805B99] hover:bg-[#6b4e82] text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200"
-                                >
-                                  <AddShoppingCart
-                                    sx={{ fontSize: { xs: 16, md: 22 } }}
-                                  />
-                                  <span className="text-[11px] md:text-sm font-extrabold">
-                                    افزودن
-                                  
-                                  </span>
-                                </button>
-                              ) : (
-                                <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
-                                  <button
-                                    onClick={() =>
-                                      handleQuantityChange(item.id, 1)
-                                    }
-                                    disabled={currentQty >= stockQuantity}
-                                    className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white transition-all disabled:opacity-50"
-                                  >
-                                    <AddCircleOutline
-                                      sx={{ fontSize: { xs: 18, md: 20 } }}
-                                    />
-                                  </button>
+      <div className="h-9 md:h-12 relative">
+        {showQuantitySelector !== item.id ? (
+          <button
+            onClick={() => handleShowQuantitySelector(item.id)}
+            className={`w-full h-full rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200 relative overflow-hidden ${
+              (getCartItem(item.id)?.quantity ?? 0) > 0
+                ? "bg-green-700 hover:bg-green-800 text-white"
+                : "bg-[#805B99] hover:bg-[#6b4e82] text-white"
+            }`}
+          >
+            <AddShoppingCart sx={{ fontSize: { xs: 16, md: 22 } }} />
 
-                                  <div className="flex flex-col items-center">
-                                    <span className="text-xs md:text-sm font-black text-blue-900 leading-none">
-                                      {currentQty}
-                                    </span>
-                                
-                                      <button
-                                        onClick={() => handleAddToCart(item.id)}
-                                        className="text-[10px] border rounded bg-green-600 text-white px-2  md:text-[14px] font-black t uppercase tracking-tighter mt-0.5"
-                                      >
-                                       ثبت
-                                      </button>
-                               
-                                  </div>
+            <span className="text-[11px] md:text-sm font-extrabold flex items-center gap-1.5">
+              {(getCartItem(item.id)?.quantity ?? 0) > 0 ? (
+                <>
+                  در سبد
+                  <span className="bg-white/30 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold min-w-[1.8rem] text-center">
+                    {getCartItem(item.id)?.quantity}
+                  </span>
+                </>
+              ) : (
+                "افزودن"
+              )}
+            </span>
 
-                                  <button
-                                    onClick={() =>
-                                      handleQuantityChange(item.id, -1)
-                                   
-                                    }
-                                    disabled={currentQty <= 0}
-                                    className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
-                                  >
-                                    <RemoveCircleOutline
-                                      sx={{ fontSize: { xs: 18, md: 20 } }}
-                                    />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </>
-                        )}
-                      </div>
+          
+          </button>
+        ) : (
+          <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
+            <button
+              onClick={() => handleQuantityChange(item.id, 1)}
+              disabled={currentQty >= stockQuantity}
+              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white transition-all disabled:opacity-50"
+            >
+              <AddCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
+            </button>
+
+            <div className="flex flex-col items-center">
+              <span className="text-xs md:text-sm font-black text-blue-900 leading-none">
+                {currentQty}
+              </span>
+
+              <button
+                onClick={() => handleAddToCart(item.id)}
+                className="text-[10px] border rounded bg-green-600 text-white px-2 md:text-[14px] font-black uppercase tracking-tighter mt-0.5 hover:bg-green-700 transition-colors"
+              >
+                ثبت
+              </button>
+            </div>
+
+            <button
+              onClick={() => handleQuantityChange(item.id, -1)}
+              disabled={currentQty <= 0}
+              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+            >
+              <RemoveCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  )}
+</div>
                     </div>
                   </SwiperSlide>
                 );

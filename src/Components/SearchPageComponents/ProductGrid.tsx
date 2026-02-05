@@ -16,7 +16,7 @@ interface ProductGridProps {
   priceTypes: { [key: number]: "single" | "wholesale" };
   handlePriceTypeChange: (
     productId: number,
-    type: "single" | "wholesale",
+    type: "single" | "wholesale"
   ) => void;
   selectedVariants: { [key: number]: Variant | null };
   handleVariantSelect: (productId: number, variant: Variant) => void;
@@ -26,6 +26,10 @@ interface ProductGridProps {
   handleQuantityChange: (productId: number, delta: number) => void;
   handleAddToCart: (productId: number) => void;
   handleNotifyMe: () => void;
+ getCartItem: (productId: number) => 
+    | { id: number; quantity: number; color?: { englishName: string } | null }
+    | null
+    | undefined;   // ← undefined رو هم قبول کن
 }
 
 export default function ProductGrid({
@@ -41,6 +45,7 @@ export default function ProductGrid({
   handleQuantityChange,
   handleAddToCart,
   handleNotifyMe,
+  getCartItem
 }: ProductGridProps) {
   // ۱. منطق مرتب‌سازی محصولات: موجودها اول، ناموجودها آخر
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -64,7 +69,7 @@ export default function ProductGrid({
                   const aStock = (a.stock_quantity ?? 0) > 0 ? 1 : 0;
                   const bStock = (b.stock_quantity ?? 0) > 0 ? 1 : 0;
 
-                  if (aStock !== bStock) return bStock - aStock; // موجودها قبل از ناموجودها
+                  if (aStock !== bStock) return bStock - aStock;
 
                   const aPrice =
                     (a.price_single || 0) *
@@ -72,11 +77,10 @@ export default function ProductGrid({
                   const bPrice =
                     (b.price_single || 0) *
                     (1 - (b.discount_percent || 0) / 100);
-                  return aPrice - bPrice; // ارزان‌ترها قبل از گران‌ترها
+                  return aPrice - bPrice;
                 })
               : [];
 
-            // استفاده از واریانت انتخاب شده یا اولین واریانت از لیست مرتب شده
             const activeVariant =
               selectedVariants[item.id] || sortedVariants[0];
             const effectivePriceType = priceTypes[item.id] || "single";
@@ -202,7 +206,7 @@ export default function ProductGrid({
                     )}
                   </div>
 
-                  {/* انتخاب رنگ - نمایش بر اساس لیست مرتب شده */}
+                  {/* انتخاب رنگ */}
                   <div className="flex gap-1.5 justify-center mb-3 h-5 items-center">
                     {sortedVariants.map((variant) => {
                       const variantInStock = (variant.stock_quantity ?? 0) > 0;
@@ -270,18 +274,34 @@ export default function ProductGrid({
                         </div>
                       </div>
 
-                      <div className="h-9 md:h-12">
+                      <div className="h-9 md:h-12 relative">
                         {showQuantitySelector !== item.id ? (
                           <button
                             onClick={() => handleShowQuantitySelector(item.id)}
-                            className="w-full h-full bg-[#805B99] hover:bg-[#6b4e82] text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200"
+                            className={`w-full h-full rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200 relative overflow-hidden ${
+                              (getCartItem(item.id)?.quantity ?? 0) > 0
+                                ? "bg-green-700 hover:bg-green-800 text-white"
+                                : "bg-[#805B99] hover:bg-[#6b4e82] text-white"
+                            }`}
                           >
                             <AddShoppingCart
                               sx={{ fontSize: { xs: 16, md: 22 } }}
                             />
-                            <span className="text-[11px] md:text-sm font-extrabold">
-                              افزودن
+
+                            <span className="text-[11px] md:text-sm font-extrabold flex items-center gap-1.5">
+                              {(getCartItem(item.id)?.quantity ?? 0) > 0 ? (
+                                <>
+                                  در سبد
+                                  <span className="bg-white/30 text-white text-[10px] px-2 py-0.5 rounded-full font-bold min-w-[1.8rem] text-center">
+                                    {getCartItem(item.id)?.quantity}
+                                  </span>
+                                </>
+                              ) : (
+                                "افزودن"
+                              )}
                             </span>
+
+                         
                           </button>
                         ) : (
                           <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
@@ -297,16 +317,17 @@ export default function ProductGrid({
 
                             <div className="flex flex-col items-center">
                               <span className="text-xs md:text-sm font-black text-blue-900 leading-none">
-                                {currentQty || 0}
+                                {currentQty}
                               </span>
-                              {currentQty > 0 && (
-                                <button
-                                  onClick={() => handleAddToCart(item.id)}
-                                  className="text-[10px] border rounded bg-green-600 text-white px-2 md:text-[14px] font-black uppercase tracking-tighter mt-0.5"
-                                >
-                                  ثبت
-                                </button>
-                              )}
+
+                              <button
+                                onClick={() => handleAddToCart(item.id)}
+                                className={`text-[10px] border rounded px-2 md:text-[14px] font-black uppercase tracking-tighter mt-0.5 transition-all ${
+                                  currentQty > 0 ? "bg-green-700 hover:bg-green-800" : "bg-green-600 hover:bg-green-700"
+                                } text-white`}
+                              >
+                                ثبت
+                              </button>
                             </div>
 
                             <button

@@ -449,83 +449,102 @@ export default function ProductSliderContainer({
                       </div>
                     </div>
 
-                    <div className="mt-auto pt-2 border-t border-gray-50">
-                      {!isInStock ? (
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs md:text-sm text-gray-600 font-medium">
-                            موجود شد خبرم کن
-                          </p>
-                          <button
-                            onClick={handleNotifyMe}
-                            className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
-                          >
-                            <NotificationAdd sx={{ fontSize: { xs: 18, md: 22 } }} />
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="flex flex-col mb-3">
-                            {displayDiscount > 0 && (
-                              <span className="text-[10px] md:text-xs text-gray-400 line-through italic font-medium">
-                                {formatPrice(baseRetailPrice)}
-                              </span>
-                            )}
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-sm md:text-xl font-black text-gray-900 leading-none">
-                                {formatPrice(unitPriceAfterDiscount)}
-                              </span>
-                              <span className="text-[9px] md:text-[11px] font-medium text-gray-500">
-                                تومان
-                              </span>
-                            </div>
-                          </div>
+             <div className="mt-auto pt-2 border-t border-gray-50">
+  {!isInStock ? (
+    <div className="flex items-center justify-between">
+      <p className="text-xs md:text-sm text-gray-600 font-medium">
+        موجود شد خبرم کن
+      </p>
+      <button
+        onClick={handleNotifyMe}
+        className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+      >
+        <NotificationAdd sx={{ fontSize: { xs: 18, md: 22 } }} />
+      </button>
+    </div>
+  ) : (
+    <>
+      <div className="flex flex-col mb-3">
+        {displayDiscount > 0 && (
+          <span className="text-[10px] md:text-xs text-gray-400 line-through italic font-medium">
+            {formatPrice(baseRetailPrice)}
+          </span>
+        )}
+        <div className="flex items-baseline gap-1">
+          <span className="text-sm md:text-xl font-black text-gray-900 leading-none">
+            {formatPrice(unitPriceAfterDiscount)}
+          </span>
+          <span className="text-[9px] md:text-[11px] font-medium text-gray-500">
+            تومان
+          </span>
+        </div>
+      </div>
 
-                          <div className="h-9 md:h-12">
-                            {showQuantitySelector !== item.id ? (
-                              <button
-                                onClick={() => handleShowQuantitySelector(item.id)}
-                                className="w-full h-full bg-[#805B99] hover:bg-[#6b4e82] text-white rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200"
-                              >
-                                <AddShoppingCart sx={{ fontSize: { xs: 16, md: 22 } }} />
-                                <span className="text-[11px] md:text-sm font-extrabold">افزودن</span>
-                              </button>
-                            ) : (
-                              <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
-                                <button
-                                  onClick={() => handleQuantityChange(item.id, 1)}
-                                  disabled={currentQty >= stockQuantity}
-                                  className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white transition-all disabled:opacity-50"
-                                >
-                                  <AddCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
-                                </button>
+      <div className="h-9 md:h-12 relative">
+        {showQuantitySelector !== item.id ? (
+          <button
+            onClick={() => handleShowQuantitySelector(item.id)}
+            className={`w-full h-full rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200 relative overflow-hidden ${
+              (getCartItem(item.id)?.quantity ?? 0) > 0
+                ? "bg-green-700 hover:bg-green-800 text-white"
+                : "bg-[#805B99] hover:bg-[#6b4e82] text-white"
+            }`}
+          >
+            <AddShoppingCart sx={{ fontSize: { xs: 16, md: 22 } }} />
 
-                                <div className="flex flex-col items-center">
-                                  <span className="text-xs md:text-sm font-black text-blue-900 leading-none">
-                                    {currentQty}
-                                  </span>
-                                  {currentQty > 0 && (
-                                    <button
-                                      onClick={() => handleAddToCart(item.id)}
-                                      className="text-[10px] border rounded bg-green-600 text-white px-2 md:text-[14px] font-black uppercase tracking-tighter mt-0.5"
-                                    >
-                                      ثبت
-                                    </button>
-                                  )}
-                                </div>
+            <span className="text-[11px] md:text-sm font-extrabold flex items-center gap-1.5">
+              {(getCartItem(item.id)?.quantity ?? 0) > 0 ? (
+                <>
+                  در سبد
+                  <span className="bg-white/30 text-white text-[10px] px-2 py-0.5 rounded-full font-bold min-w-[1.8rem] text-center">
+                    {getCartItem(item.id)?.quantity}
+                  </span>
+                </>
+              ) : (
+                "افزودن"
+              )}
+            </span>
 
-                                <button
-                                  onClick={() => handleQuantityChange(item.id, -1)}
-                                  disabled={currentQty <= 0}
-                                  className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
-                                >
-                                  <RemoveCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
+  
+          </button>
+        ) : (
+          <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
+            <button
+              onClick={() => handleQuantityChange(item.id, 1)}
+              disabled={currentQty >= stockQuantity}
+              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white transition-all disabled:opacity-50"
+            >
+              <AddCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
+            </button>
+
+            <div className="flex flex-col items-center">
+              <span className="text-xs md:text-sm font-black text-blue-900 leading-none">
+                {currentQty}
+              </span>
+
+              <button
+                onClick={() => handleAddToCart(item.id)}
+                className={`text-[10px] border rounded px-2 md:text-[14px] font-black uppercase tracking-tighter mt-0.5 transition-all ${
+                  currentQty > 0 ? "bg-green-700 hover:bg-green-800" : "bg-green-600 hover:bg-green-700"
+                } text-white`}
+              >
+                ثبت
+              </button>
+            </div>
+
+            <button
+              onClick={() => handleQuantityChange(item.id, -1)}
+              disabled={currentQty <= 0}
+              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+            >
+              <RemoveCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  )}
+</div>
                   </div>
                 </SwiperSlide>
               );
