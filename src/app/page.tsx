@@ -66,11 +66,12 @@ export default async function Page() {
       <WideSliderContainer slides={slidersData} />
       <CategoriesContainer />
       <BenefitsContainer />
+            <Banners />
       <ProductSliderContainer vip={true} />
       <TabProductsSliderContainer title="محبوب‌ترین‌ها" sort="popular" />
-      <Banners />
+
       <TabProductsSliderContainer title="ارزان‌ترین‌ها" sort="cheapest" />
-      <Banners />
+  
       <TabProductsSliderContainer title="جدیدترین‌ها" sort="newest" />
       <ArticlesListContainer ispage={false} />
       <BrandsContainer />

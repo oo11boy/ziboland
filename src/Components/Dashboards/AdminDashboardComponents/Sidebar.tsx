@@ -47,6 +47,7 @@ const Sidebar = () => {
     { href: "/admindashboard/orders", label: "سفارشات", icon: Package },
     { href: "/admindashboard/categories", label: "دسته‌بندی‌ها", icon: Tag },
     { href: "/admindashboard/sliders", label: "اسلایدر اصلی", icon: LucideSliders },
+    { href: "/admindashboard/banners", label: "بنرها", icon: Image },  // اضافه شده
     { href: "/admindashboard/brands", label: "برندها", icon: Building },
     { href: "/admindashboard/comments", label: "نظرات", icon: MessageCircle },
     { href: "/admindashboard/contacts", label: "پیام‌های تماس", icon: Mail }, // اضافه شده

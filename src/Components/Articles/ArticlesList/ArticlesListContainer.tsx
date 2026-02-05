@@ -27,7 +27,7 @@ export default function ArticlesListContainer({ count = 4, ispage = false }: Pro
   }, []);
 
   const articlesToShow = count === 0 ? articles : articles.slice(0, count);
-
+  if (articles.length === 0) return null;
   return (
     <div className={`${ispage ? "w-[90%] py-10 px-4 " : "w-[95%] my-8 px-4"} mx-auto yekan bg-white rounded-lg p-2`}>
       <div className="w-full mb-8 mt-2 flex justify-between items-center">

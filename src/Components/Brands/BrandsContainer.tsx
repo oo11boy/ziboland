@@ -141,7 +141,7 @@ export default function BrandsContainer() {
             <SwiperSlide key={item.id} className="flex flex-col items-center">
               <a
                 href={`/search?brands=${encodeURIComponent(item.title)}`}
-                className="text-center flex justify-center items-center"
+                className="text-center flex justify-center items-center transition-all duration-300  hover:scale-[1.1]"
               >
                 <img
                   src={item.img}
