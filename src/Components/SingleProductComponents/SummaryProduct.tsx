@@ -3,24 +3,22 @@
 import React from 'react';
 import { FavoriteBorderOutlined, ShareOutlined } from '@mui/icons-material';
 import './SingleProduct.css';
-import { Product, Variant } from '@/types/types';
+import { Categoryapi, Product, Variant } from '@/types/types';
 
 interface SummaryProductProps {
   infoproduct: Product;
   selectedVariant?: Variant | null;
   onVariantChange?: (variant: Variant) => void;
+  categories:Categoryapi[],
 }
 
 const SummaryProduct: React.FC<SummaryProductProps> = ({
   infoproduct,
-  selectedVariant = null,
-  onVariantChange,
+categories
 }) => {
-  const handleVariantClick = (variant: Variant) => {
-    if (onVariantChange) {
-      onVariantChange(variant);
-    }
-  };
+
+console.log(categories)
+  const motherCat = categories.find(c => c.id === infoproduct.mothercatId);
 
   return (
     <div className="sp-summary-container">
@@ -45,7 +43,7 @@ const SummaryProduct: React.FC<SummaryProductProps> = ({
 
       {/* جزئیات اضافی */}
       <div className="sp-summary-details">
-        <span>دسته: {infoproduct.category || 'نامشخص'}</span>
+        <span>دسته: {motherCat && motherCat.name || 'نامشخص'}</span>
         <br />
         <span>برند: {infoproduct.brandDetails?.title || 'نامشخص'}</span>
       </div>

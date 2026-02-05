@@ -110,7 +110,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   return (
     <>
       <BreadCrumbs product={product} categories={categories} />
-      <SingleProductContainer infoproduct={product} />
+      <SingleProductContainer infoproduct={product}  categories={categories} />
     </>
   );
 }

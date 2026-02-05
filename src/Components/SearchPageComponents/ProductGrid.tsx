@@ -16,7 +16,7 @@ interface ProductGridProps {
   priceTypes: { [key: number]: "single" | "wholesale" };
   handlePriceTypeChange: (
     productId: number,
-    type: "single" | "wholesale"
+    type: "single" | "wholesale",
   ) => void;
   selectedVariants: { [key: number]: Variant | null };
   handleVariantSelect: (productId: number, variant: Variant) => void;
@@ -42,14 +42,45 @@ export default function ProductGrid({
   handleAddToCart,
   handleNotifyMe,
 }: ProductGridProps) {
+  // ۱. منطق مرتب‌سازی محصولات: موجودها اول، ناموجودها آخر
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    const aInStock = a.variants?.some((v) => (v.stock_quantity ?? 0) > 0)
+      ? 1
+      : 0;
+    const bInStock = b.variants?.some((v) => (v.stock_quantity ?? 0) > 0)
+      ? 1
+      : 0;
+    return bInStock - aInStock;
+  });
+
   return (
     <AnimatePresence>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mt-6">
-        {filteredProducts.length > 0 ? (
-          filteredProducts.map((item) => {
-            const activeVariant = selectedVariants[item.id];
+        {sortedProducts.length > 0 ? (
+          sortedProducts.map((item) => {
+            // ۲. مرتب‌سازی واریانت‌ها: موجودترین و ارزان‌ترین در ابتدا
+            const sortedVariants = item.variants
+              ? [...item.variants].sort((a, b) => {
+                  const aStock = (a.stock_quantity ?? 0) > 0 ? 1 : 0;
+                  const bStock = (b.stock_quantity ?? 0) > 0 ? 1 : 0;
+
+                  if (aStock !== bStock) return bStock - aStock; // موجودها قبل از ناموجودها
+
+                  const aPrice =
+                    (a.price_single || 0) *
+                    (1 - (a.discount_percent || 0) / 100);
+                  const bPrice =
+                    (b.price_single || 0) *
+                    (1 - (b.discount_percent || 0) / 100);
+                  return aPrice - bPrice; // ارزان‌ترها قبل از گران‌ترها
+                })
+              : [];
+
+            // استفاده از واریانت انتخاب شده یا اولین واریانت از لیست مرتب شده
+            const activeVariant =
+              selectedVariants[item.id] || sortedVariants[0];
             const effectivePriceType = priceTypes[item.id] || "single";
-            const currentQty = cartQuantities[item.id] || 0; // اصلاح: مقدار اولیه 0 باشد (نه 1)
+            const currentQty = cartQuantities[item.id] || 0;
 
             const stockQuantity = activeVariant?.stock_quantity ?? 0;
             const isInStock = stockQuantity > 0;
@@ -66,11 +97,10 @@ export default function ProductGrid({
               baseRetailPrice > baseWholesalePrice
                 ? Math.round(
                     ((baseRetailPrice - baseWholesalePrice) / baseRetailPrice) *
-                      100
+                      100,
                   )
                 : 0;
 
-            // محاسبه قیمت نهایی پس از تخفیف (برای نمایش و ارسال به سبد)
             let unitPriceAfterDiscount: number;
             let displayDiscount: number;
             let badgeColor = "bg-red-500";
@@ -81,15 +111,11 @@ export default function ProductGrid({
               badgeColor = "bg-green-600";
             } else {
               unitPriceAfterDiscount = Math.round(
-                baseRetailPrice * (1 - retailDiscountPercent / 100)
+                baseRetailPrice * (1 - retailDiscountPercent / 100),
               );
               displayDiscount = retailDiscountPercent;
               badgeColor = "bg-red-500";
             }
-
-            // وقتی کاربر روی "تایید" کلیک می‌کند، این تابع فراخوانی می‌شود
-            // در این کامپوننت، handleAddToCart از parent می‌آید و باید قیمت نهایی را بفرستد
-            // (فرض می‌کنیم parent مثل TabProductsSliderContainer درست پیاده‌سازی شده)
 
             return (
               <motion.div
@@ -169,16 +195,16 @@ export default function ProductGrid({
                           effectivePriceType === "wholesale"
                             ? "bg-white text-[#805B99] shadow-sm"
                             : "text-gray-400"
-                          }`}
+                        }`}
                       >
                         عمده
                       </button>
                     )}
                   </div>
 
-                  {/* انتخاب رنگ */}
+                  {/* انتخاب رنگ - نمایش بر اساس لیست مرتب شده */}
                   <div className="flex gap-1.5 justify-center mb-3 h-5 items-center">
-                    {item.variants?.map((variant) => {
+                    {sortedVariants.map((variant) => {
                       const variantInStock = (variant.stock_quantity ?? 0) > 0;
                       return (
                         <button
@@ -192,11 +218,7 @@ export default function ProductGrid({
                             activeVariant?.id === variant.id
                               ? "scale-125 ring-2 ring-[#805B99]"
                               : ""
-                          } ${
-                            !variantInStock
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
-                          }`}
+                          } ${!variantInStock ? "opacity-50 cursor-not-allowed" : ""}`}
                           style={{ backgroundColor: variant.color_hexCode }}
                         >
                           {!variantInStock && (
@@ -280,16 +302,16 @@ export default function ProductGrid({
                               {currentQty > 0 && (
                                 <button
                                   onClick={() => handleAddToCart(item.id)}
-                                  className="text-[8px] md:text-[10px] font-black text-green-600 uppercase tracking-tighter mt-0.5"
+                                  className="text-[10px] border rounded bg-green-600 text-white px-2 md:text-[14px] font-black uppercase tracking-tighter mt-0.5"
                                 >
-                                  تایید
+                                  ثبت
                                 </button>
                               )}
                             </div>
 
                             <button
                               onClick={() => handleQuantityChange(item.id, -1)}
-                              disabled={currentQty <= 1}
+                              disabled={currentQty <= 0}
                               className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
                             >
                               <RemoveCircleOutline

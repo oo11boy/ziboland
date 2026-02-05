@@ -31,7 +31,7 @@ export default function SearchPageContainer({
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { dispatch } = useCart();
+  const { dispatch, state: { cartItems } } = useCart();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Categoryapi[]>([]);
@@ -119,22 +119,60 @@ export default function SearchPageContainer({
     if (brands) setSelectedBrands(brands.split(","));
   }, [searchParams]);
 
-  // مقداردهی اولیه واریانت‌ها
+  // مقداردهی اولیه هوشمند واریانت‌ها (ارزان‌ترین و موجودترین)
   useEffect(() => {
     if (products.length > 0) {
       const initialPriceTypes: { [key: number]: "single" | "wholesale" } = {};
       const initialVariants: { [key: number]: Variant | null } = {};
+
       products.forEach((product) => {
         initialPriceTypes[product.id] = "single";
-        initialVariants[product.id] = product.variants?.[0] || null;
+
+        if (product.variants && product.variants.length > 0) {
+          // ۱. جدا کردن موجودها از ناموجودها
+          const availableVariants = product.variants.filter(
+            (v) => (v.stock_quantity ?? 0) > 0
+          );
+
+          // ۲. تعیین لیست مبنا (اگر موجودی هست فقط بین آن‌ها، وگرنه بین همه)
+          const baseList = availableVariants.length > 0 ? availableVariants : product.variants;
+
+          // ۳. پیدا کردن ارزان‌ترین از لیست مبنا
+          const cheapest = baseList.reduce((min, current) => {
+            const currentFinalPrice = (current.price_single || 0) * (1 - (current.discount_percent || 0) / 100);
+            const minFinalPrice = (min.price_single || 0) * (1 - (min.discount_percent || 0) / 100);
+            return currentFinalPrice < minFinalPrice ? current : min;
+          }, baseList[0]);
+
+          initialVariants[product.id] = cheapest;
+        } else {
+          initialVariants[product.id] = null;
+        }
       });
+
       setPriceTypes(initialPriceTypes);
       setSelectedVariants(initialVariants);
     }
   }, [products]);
-
+  
   const handleShowQuantitySelector = (productId: number) => {
-    setShowQuantitySelector(showQuantitySelector === productId ? null : productId);
+    const activeVariant = selectedVariants[productId];
+    if (!activeVariant) return;
+
+    const cartItem = cartItems.find(
+      (item) =>
+        item.id === productId &&
+        item.color?.englishName === activeVariant.color_englishName
+    );
+
+    setCartQuantities((prev) => ({
+      ...prev,
+      [productId]: cartItem ? cartItem.quantity : 1,
+    }));
+
+    setShowQuantitySelector(
+      showQuantitySelector === productId ? null : productId
+    );
   };
 
 const handleQuantityChange = (productId: number, delta: number) => {
@@ -175,50 +213,89 @@ const handleQuantityChange = (productId: number, delta: number) => {
   };
 
 const handleAddToCart = (productId: number) => {
-  const product = products.find((p) => p.id === productId);
-  const quantity = cartQuantities[productId];
+  const quantity = cartQuantities[productId] ?? 0;
   const activeVariant = selectedVariants[productId];
-  
-  if (!product || !quantity || quantity < 1 || !activeVariant) {
-    toast.error("لطفاً تعداد و رنگ محصول را انتخاب کنید");
+  if (!activeVariant) return;
+
+  const product = products.find((p) => p.id === productId);
+  if (!product) return;
+
+  const cartItem = cartItems.find(
+    (item) =>
+      item.id === productId &&
+      item.color?.englishName === activeVariant.color_englishName
+  );
+
+  // ──────────────── مورد صفر یا منفی ────────────────
+  if (quantity <= 0) {
+    if (cartItem) {
+      dispatch({
+        type: "REMOVE_ITEM_BY_TYPE",
+        payload: {
+          id: productId,
+          color: cartItem.color,
+        },
+      });
+      toast.info("محصول از سبد خرید حذف شد");
+    }
+    setShowQuantitySelector(null);
+    setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
     return;
   }
 
-  const effectivePriceType = priceTypes[productId] || "single";
-  const minWholesale = activeVariant.min_wholesale || 1;
-  const retailDiscountPercent = activeVariant.discount_percent || 0;
+  // ──────────────── محاسبه قیمت نهایی ────────────────
+  const isWholesale =
+    quantity >= (activeVariant.min_wholesale || 1) &&
+    activeVariant.price_wholesale > 0;
 
-  // محاسبه قیمت واحد دقیقا مشابه AddToCartInfo
-  const unitPriceAfterDiscount = effectivePriceType === "wholesale"
+  const unitPrice = isWholesale
     ? activeVariant.price_wholesale
-    : Math.round(activeVariant.price_single * (1 - retailDiscountPercent / 100));
+    : Math.round(
+        activeVariant.price_single * (1 - (activeVariant.discount_percent || 0) / 100)
+      );
 
-  dispatch({
-    type: "ADD_ITEM",
-    payload: {
-      id: productId,
-      title: product.title,
-      quantity,
-      priceType: effectivePriceType,
-      price: unitPriceAfterDiscount.toString(),
-      image: activeVariant.image_main || product.image || "/placeholder.jpg",
-      discount: effectivePriceType === "wholesale" ? "0" : `${retailDiscountPercent}%`,
-      color: {
-        englishName: activeVariant.color_englishName,
-        persianName: activeVariant.color_persianName || "",
-        hexCode: activeVariant.color_hexCode,
-      },
-      // فیلد‌های زیر برای محاسبات سبد خرید ضروری هستند:
-      baseRetailPrice: activeVariant.price_single,
-      baseWholesalePrice: activeVariant.price_wholesale,
-      retailDiscountPercent: retailDiscountPercent,
-      minWholesale: minWholesale,
-      stock_quantity: activeVariant.stock_quantity ?? 0,
+  const payloadBase = {
+    id: productId,
+    title: product.title,
+    image: activeVariant.image_main || product.image || "",
+    color: {
+      englishName: activeVariant.color_englishName,
+      persianName: activeVariant.color_persianName || "",
+      hexCode: activeVariant.color_hexCode,
     },
-  });
+    baseRetailPrice: activeVariant.price_single,
+    baseWholesalePrice: activeVariant.price_wholesale,
+    retailDiscountPercent: activeVariant.discount_percent || 0,
+    minWholesale: activeVariant.min_wholesale || 1,
+    stock_quantity: activeVariant.stock_quantity ?? 0,
+  };
 
-  toast.success("به سبد خرید اضافه شد");
-  setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
+  if (cartItem) {
+    // به‌روزرسانی
+    dispatch({
+      type: "UPDATE_QUANTITY",
+      payload: {
+        itemKey: `${productId}-${cartItem.color?.englishName || "default"}`,
+        newQuantity: quantity,
+      },
+    });
+    toast.success("سبد خرید به‌روزرسانی شد");
+  } else {
+    // اضافه کردن جدید
+    dispatch({
+      type: "ADD_ITEM",
+      payload: {
+        ...payloadBase,
+        quantity,
+        priceType: isWholesale ? "wholesale" : "single",
+        price: unitPrice.toString(),
+        discount: isWholesale ? "0" : `${activeVariant.discount_percent || 0}%`,
+      },
+    });
+    toast.success("به سبد خرید اضافه شد");
+  }
+
+  // ریست کردن UI
   setShowQuantitySelector(null);
 };
 

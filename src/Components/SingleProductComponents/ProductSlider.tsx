@@ -109,7 +109,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({ infoproduct, selectedVari
   }
 
   return (
-    <div className="woocommerce-product-gallery max-w-[450px]" dir="rtl">
+    <div className="woocommerce-product-gallery lg:max-w-[450px]" dir="rtl">
 
       {/* حالت ۱: فقط یک تصویر */}
       {!hasMultipleImages ? (

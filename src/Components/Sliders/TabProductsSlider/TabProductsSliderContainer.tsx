@@ -51,7 +51,7 @@ export default function TabProductsSliderContainer({
   sort = "none",
 }: TabProductsSliderContainerProps) {
   const [value, setValue] = useState(0);
-  const { dispatch } = useCart();
+const { dispatch, state: { cartItems } } = useCart();
 
   const [cartQuantities, setCartQuantities] = useState<{
     [key: number]: number;
@@ -79,41 +79,78 @@ export default function TabProductsSliderContainer({
   };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch("/api/products");
-        if (!response.ok) throw new Error("خطا در دریافت محصولات");
-        const data: Product[] = await response.json();
-        let sorted = [...data];
-        if (sort === "popular") sorted.sort((a, b) => b.rating - a.rating);
-        else if (sort === "cheapest")
-          sorted.sort(
-            (a, b) =>
-              (a.variants?.[0]?.price_single || 0) -
-              (b.variants?.[0]?.price_single || 0)
-          );
-        else if (sort === "newest") sorted.sort((a, b) => b.id - a.id);
-        setProducts(sorted);
-      } catch (err) {
-        setError("خطا در بارگذاری محصولات. لطفاً دوباره تلاش کنید.");
-        console.error(err);
+const fetchProducts = async () => {
+  try {
+    const response = await fetch("/api/products");
+    if (!response.ok) throw new Error("خطا در دریافت محصولات");
+    const data: Product[] = await response.json();
+    
+    let sorted = [...data];
+
+    // تابع کمکی برای چک کردن اینکه آیا محصول حداقل یک واریانت موجود دارد یا خیر
+    const isProductInStock = (p: Product) => 
+      p.variants?.some(v => (v.stock_quantity ?? 0) > 0) ? 1 : 0;
+
+    sorted.sort((a, b) => {
+      // ۱. اولویت اول: موجودی (موجودها = ۱، ناموجودها = ۰)
+      const aInStock = isProductInStock(a);
+      const bInStock = isProductInStock(b);
+
+      if (aInStock !== bInStock) {
+        return bInStock - aInStock; // موجودها (۱) قبل از ناموجودها (۰) قرار می‌گیرند
       }
-    };
+
+      // ۲. اولویت دوم: بر اساس انتخاب کاربر (ارزان‌ترین، جدیدترین و ...)
+      if (sort === "popular") return b.rating - a.rating;
+      if (sort === "cheapest") {
+        const priceA = a.variants?.[0]?.price_single || 0;
+        const priceB = b.variants?.[0]?.price_single || 0;
+        return priceA - priceB;
+      }
+      if (sort === "newest") return b.id - a.id;
+      
+      return 0;
+    });
+
+    setProducts(sorted);
+  } catch (err) {
+    setError("خطا در بارگذاری محصولات. لطفاً دوباره تلاش کنید.");
+    console.error(err);
+  }
+};
+
     fetchProducts();
   }, [sort]);
 
-  useEffect(() => {
-    if (products.length > 0) {
-      const initialPriceTypes: { [key: number]: "single" | "wholesale" } = {};
-      const initialVariants: { [key: number]: Variant | null } = {};
-      products.forEach((product) => {
-        initialPriceTypes[product.id] = "single";
-        initialVariants[product.id] = product.variants?.[0] || null;
-      });
-      setPriceTypes(initialPriceTypes);
-      setSelectedVariants(initialVariants);
-    }
-  }, [products]);
+useEffect(() => {
+  if (products.length > 0) {
+    const initialPriceTypes: { [key: number]: "single" | "wholesale" } = {};
+    const initialVariants: { [key: number]: Variant | null } = {};
+    
+    products.forEach((product) => {
+      initialPriceTypes[product.id] = "single";
+      
+      if (product.variants && product.variants.length > 0) {
+        // مرتب‌سازی هوشمند: ابتدا موجودها، سپس ارزان‌ترین‌ها
+        const sortedVariants = [...product.variants].sort((a, b) => {
+          const aStock = (a.stock_quantity ?? 0) > 0 ? 1 : 0;
+          const bStock = (b.stock_quantity ?? 0) > 0 ? 1 : 0;
+          if (aStock !== bStock) return bStock - aStock;
+
+          const priceA = a.price_single * (1 - (a.discount_percent || 0) / 100);
+          const priceB = b.price_single * (1 - (b.discount_percent || 0) / 100);
+          return priceA - priceB;
+        });
+        initialVariants[product.id] = sortedVariants[0];
+      } else {
+        initialVariants[product.id] = null;
+      }
+    });
+    
+    setPriceTypes(initialPriceTypes);
+    setSelectedVariants(initialVariants);
+  }
+}, [products]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -126,11 +163,30 @@ export default function TabProductsSliderContainer({
     return () => clearTimeout(timer);
   }, [value, products]);
 
-  const handleShowQuantitySelector = (productId: number) => {
-    setShowQuantitySelector(
-      showQuantitySelector === productId ? null : productId
-    );
-  };
+const handleShowQuantitySelector = (productId: number) => {
+  const cartItem = getCartItem(productId);
+
+  setCartQuantities((prev) => ({
+    ...prev,
+    [productId]: cartItem ? cartItem.quantity : 1, // 👈 این خط طلاییه
+  }));
+
+  setShowQuantitySelector(
+    showQuantitySelector === productId ? null : productId
+  );
+};
+
+
+  const getCartItem = (productId: number) => {
+  const activeVariant = selectedVariants[productId];
+  if (!activeVariant) return null;
+
+  return cartItems.find(
+    (item) =>
+      item.id === productId &&
+      item.color?.englishName === activeVariant.color_englishName
+  );
+};
 
   const handleQuantityChange = (productId: number, delta: number) => {
     setCartQuantities((prev) => {
@@ -176,40 +232,68 @@ export default function TabProductsSliderContainer({
     setShowQuantitySelector(null);
   };
 
-  const handleAddToCart = (productId: number) => {
-    const product = products.find((p) => p.id === productId);
-    const quantity = cartQuantities[productId];
-    const activeVariant = selectedVariants[productId];
+const handleAddToCart = (productId: number) => {
+  const quantity = cartQuantities[productId];
+  const activeVariant = selectedVariants[productId];
+  const cartItem = getCartItem(productId);
 
-    if (!product || !quantity || quantity < 1 || !activeVariant) {
-      toast.error("لطفاً تعداد و رنگ محصول را انتخاب کنید");
-      return;
+  if (!activeVariant) return;
+
+  // اگر تعداد صفر یا کمتر شد → حذف از سبد
+  if (!quantity || quantity <= 0) {
+    if (cartItem) {
+      dispatch({
+        type: "REMOVE_ITEM_BY_TYPE",
+        payload: {
+          id: productId,
+          color: cartItem.color,
+        },
+      });
+      toast.info("محصول از سبد خرید حذف شد");
     }
+    setShowQuantitySelector(null);
+    return;
+  }
 
-    const effectivePriceType = priceTypes[productId] || "single";
-    const minWholesale = activeVariant.min_wholesale || 1;
-    const retailDiscountPercent = activeVariant.discount_percent || 0;
+  // محاسبه قیمت واحد صحیح (قبل از dispatch)
+  const isWholesale =
+    quantity >= (activeVariant.min_wholesale || 1) &&
+    activeVariant.price_wholesale > 0;
 
-    const unitPriceAfterDiscount =
-      effectivePriceType === "wholesale"
-        ? activeVariant.price_wholesale
-        : Math.round(
-            activeVariant.price_single * (1 - retailDiscountPercent / 100)
-          );
+  const unitPrice = isWholesale
+    ? activeVariant.price_wholesale
+    : Math.round(
+        activeVariant.price_single *
+          (1 - (activeVariant.discount_percent || 0) / 100)
+      );
 
+  // اگر قبلاً در سبد بوده → فقط UPDATE
+  if (cartItem) {
+    dispatch({
+      type: "UPDATE_QUANTITY",
+      payload: {
+        itemKey: `${productId}-${cartItem.color?.englishName || "default"}`,
+        newQuantity: quantity,
+      },
+    });
+    toast.success("سبد خرید به‌روزرسانی شد");
+  } else {
+    // اگر جدید بود → ADD با قیمت صحیح
     dispatch({
       type: "ADD_ITEM",
       payload: {
         id: productId,
-        title: product.title,
+        title: products.find((p) => p.id === productId)!.title,
         quantity,
-        priceType: effectivePriceType,
-        price: unitPriceAfterDiscount.toString(),
-        image: activeVariant.image_main || product.image || "/placeholder.jpg",
-        discount:
-          effectivePriceType === "wholesale"
-            ? "0"
-            : `${retailDiscountPercent}%`,
+        priceType: isWholesale ? "wholesale" : "single",
+        price: unitPrice.toString(),
+        image:
+          activeVariant.image_main ||
+          products.find((p) => p.id === productId)?.image ||
+          "",
+        discount: isWholesale
+          ? "0"
+          : `${activeVariant.discount_percent || 0}%`,
         color: {
           englishName: activeVariant.color_englishName,
           persianName: activeVariant.color_persianName || "",
@@ -217,16 +301,18 @@ export default function TabProductsSliderContainer({
         },
         baseRetailPrice: activeVariant.price_single,
         baseWholesalePrice: activeVariant.price_wholesale,
-        retailDiscountPercent: retailDiscountPercent,
-        minWholesale: minWholesale,
+        retailDiscountPercent: activeVariant.discount_percent || 0,
+        minWholesale: activeVariant.min_wholesale || 1,
         stock_quantity: activeVariant.stock_quantity ?? 0,
       },
     });
-
     toast.success("به سبد خرید اضافه شد");
-    setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
-    setShowQuantitySelector(null);
-  };
+  }
+
+  setShowQuantitySelector(null);
+};
+
+
 
   const handleNotifyMe = () => toast.info("اطلاع‌رسانی فعال شد");
 
@@ -453,44 +539,45 @@ export default function TabProductsSliderContainer({
                         </div>
 
                         {/* انتخاب رنگ */}
-                        <div className="flex gap-1.5 justify-center mb-3 h-5 items-center">
-                          {item.variants?.map((variant) => {
-                            const variantInStock =
-                              (variant.stock_quantity ?? 0) > 0;
-                            return (
-                              <button
-                                key={variant.id}
-                                onClick={() =>
-                                  variantInStock &&
-                                  handleVariantSelect(item.id, variant)
-                                }
-                                disabled={!variantInStock}
-                                className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform relative ${
-                                  activeVariant?.id === variant.id
-                                    ? "scale-125 ring-2 ring-[#805B99]"
-                                    : ""
-                                } ${
-                                  !variantInStock
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
-                                }`}
-                                style={{
-                                  backgroundColor: variant.color_hexCode,
-                                }}
-                              >
-                                {!variantInStock && (
-                                  <span
-                                    className="absolute inset-0 flex items-center justify-center"
-                                    style={{
-                                      background:
-                                        "linear-gradient(45deg, transparent 48%, red 49%, red 51%, transparent 52%)",
-                                    }}
-                                  />
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
+             {/* انتخاب رنگ */}
+<div className="flex gap-1.5 justify-center mb-3 h-5 items-center">
+  {[...(item.variants || [])]
+    .sort((a, b) => {
+      // همان منطق مرتب‌سازی برای هماهنگی بصری
+      const aStock = (a.stock_quantity ?? 0) > 0 ? 1 : 0;
+      const bStock = (b.stock_quantity ?? 0) > 0 ? 1 : 0;
+      if (aStock !== bStock) return bStock - aStock;
+
+      const priceA = a.price_single * (1 - (a.discount_percent || 0) / 100);
+      const priceB = b.price_single * (1 - (b.discount_percent || 0) / 100);
+      return priceA - priceB;
+    })
+    .map((variant) => {
+      const variantInStock = (variant.stock_quantity ?? 0) > 0;
+      const isSelected = activeVariant?.id === variant.id;
+
+      return (
+        <button
+          key={variant.id}
+          onClick={() => variantInStock && handleVariantSelect(item.id, variant)}
+          disabled={!variantInStock}
+          className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform relative ${
+            isSelected ? "scale-125 ring-2 ring-[#805B99]" : ""
+          } ${!variantInStock ? "opacity-50 cursor-not-allowed" : ""}`}
+          style={{ backgroundColor: variant.color_hexCode }}
+        >
+          {!variantInStock && (
+            <span
+              className="absolute inset-0 flex items-center justify-center"
+              style={{
+                background: "linear-gradient(45deg, transparent 48%, red 49%, red 51%, transparent 52%)",
+              }}
+            />
+          )}
+        </button>
+      );
+    })}
+</div>
                       </div>
 
                       {/* پایین کارت: قیمت + عملیات */}
@@ -540,6 +627,7 @@ export default function TabProductsSliderContainer({
                                   />
                                   <span className="text-[11px] md:text-sm font-extrabold">
                                     افزودن
+                                  
                                   </span>
                                 </button>
                               ) : (
@@ -560,21 +648,22 @@ export default function TabProductsSliderContainer({
                                     <span className="text-xs md:text-sm font-black text-blue-900 leading-none">
                                       {currentQty}
                                     </span>
-                                    {currentQty > 0 && (
+                                
                                       <button
                                         onClick={() => handleAddToCart(item.id)}
-                                        className="text-[8px] md:text-[10px] font-black text-green-600 uppercase tracking-tighter mt-0.5"
+                                        className="text-[10px] border rounded bg-green-600 text-white px-2  md:text-[14px] font-black t uppercase tracking-tighter mt-0.5"
                                       >
-                                        تایید
+                                       ثبت
                                       </button>
-                                    )}
+                               
                                   </div>
 
                                   <button
                                     onClick={() =>
                                       handleQuantityChange(item.id, -1)
+                                   
                                     }
-                                    disabled={currentQty <= 1}
+                                    disabled={currentQty <= 0}
                                     className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
                                   >
                                     <RemoveCircleOutline

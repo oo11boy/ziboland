@@ -29,7 +29,7 @@ export default function ProductSliderContainer({
   vip?: boolean;
 }) {
   const swiperRef = useRef<SwiperCore | null>(null);
-  const { dispatch } = useCart();
+  const { dispatch, state: { cartItems } } = useCart();
 
   const [isBeginning, setIsBeginning] = useState(true);
   const [isEnd, setIsEnd] = useState(false);
@@ -73,13 +73,25 @@ export default function ProductSliderContainer({
       );
       setPriceTypes(initialPriceTypes);
 
-      const initialSelectedVariants = products.reduce(
-        (acc, product) => ({
+      const initialSelectedVariants = products.reduce((acc, product) => {
+        let selected = null;
+        if (product.variants && product.variants.length > 0) {
+          const availableVariants = product.variants.filter(v => (v.stock_quantity ?? 0) > 0);
+          const baseList = availableVariants.length > 0 ? availableVariants : product.variants;
+
+          selected = baseList.reduce((min, current) => {
+            const currentPrice = (current.price_single || 0) * (1 - (current.discount_percent || 0) / 100);
+            const minPrice = (min.price_single || 0) * (1 - (min.discount_percent || 0) / 100);
+            return currentPrice < minPrice ? current : min;
+          }, baseList[0]);
+        }
+
+        return {
           ...acc,
-          [product.id]: product.variants && product.variants.length > 0 ? product.variants[0] : null,
-        }),
-        {} as { [key: number]: Variant | null }
-      );
+          [product.id]: selected,
+        };
+      }, {} as { [key: number]: Variant | null });
+
       setSelectedVariants(initialSelectedVariants);
 
       if (swiperRef.current) {
@@ -98,33 +110,52 @@ export default function ProductSliderContainer({
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  const getCartItem = (productId: number) => {
+    const activeVariant = selectedVariants[productId];
+    if (!activeVariant) return null;
+
+    return cartItems.find(
+      (item) =>
+        item.id === productId &&
+        item.color?.englishName === activeVariant.color_englishName
+    );
+  };
+
   const handleShowQuantitySelector = (productId: number) => {
+    const cartItem = getCartItem(productId);
+
+    setCartQuantities((prev) => ({
+      ...prev,
+      [productId]: cartItem ? cartItem.quantity : 1,
+    }));
+
     setShowQuantitySelector(showQuantitySelector === productId ? null : productId);
   };
 
   const handleQuantityChange = (productId: number, delta: number) => {
     setCartQuantities((prev) => {
       const currentQty = prev[productId] || 0;
-      const newQty = currentQty + delta;
-
       const activeVariant = selectedVariants[productId];
       const stockQuantity = activeVariant?.stock_quantity ?? 0;
 
-      if (stockQuantity <= 0 || newQty > stockQuantity) {
+      let newQty = currentQty + delta;
+
+      if (newQty > stockQuantity) {
         toast.warning(`حداکثر موجودی: ${stockQuantity} عدد`);
-        return prev;
+        newQty = stockQuantity;
       }
 
-      const wholesalePriceNum = activeVariant?.price_wholesale || 0;
-      const minWholesale = activeVariant?.min_wholesale || 1;
+      newQty = Math.max(0, newQty);
 
-      if (wholesalePriceNum > 0 && newQty >= minWholesale) {
-        setPriceTypes((prev) => ({ ...prev, [productId]: "wholesale" }));
-      } else if (newQty < minWholesale) {
-        setPriceTypes((prev) => ({ ...prev, [productId]: "single" }));
+      if (activeVariant && activeVariant.price_wholesale > 0) {
+        const minWholesale = activeVariant.min_wholesale || 1;
+        setPriceTypes((prevTypes) => ({
+          ...prevTypes,
+          [productId]: newQty >= minWholesale ? "wholesale" : "single",
+        }));
       }
 
-      return { ...prev, [productId]: newQty < 1 ? 1 : newQty };
+      return { ...prev, [productId]: newQty };
     });
   };
 
@@ -140,63 +171,86 @@ export default function ProductSliderContainer({
   const handleVariantSelect = (productId: number, variant: Variant) => {
     setSelectedVariants((prev) => ({ ...prev, [productId]: variant }));
     setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
+    setPriceTypes((prev) => ({ ...prev, [productId]: "single" }));
     setShowQuantitySelector(null);
   };
 
-const handleAddToCart = (productId: number) => {
-  const product = products.find((p) => p.id === productId);
-  const quantity = cartQuantities[productId];
-  const activeVariant = selectedVariants[productId];
+  const handleAddToCart = (productId: number) => {
+    const quantity = cartQuantities[productId];
+    const activeVariant = selectedVariants[productId];
+    const product = products.find((p) => p.id === productId);
+    const cartItem = getCartItem(productId);
 
-  if (!product || !quantity || quantity < 1) {
-    toast.error("لطفاً تعداد محصول را انتخاب کنید");
-    return;
-  }
+    if (!product || !activeVariant) {
+      toast.error("اطلاعات محصول ناقص است");
+      return;
+    }
 
-  const stockQuantity = activeVariant?.stock_quantity ?? 0;
-  if (quantity > stockQuantity) {
-    toast.error("موجودی کافی نیست!");
-    return;
-  }
+    if (!quantity || quantity <= 0) {
+      if (cartItem) {
+        dispatch({
+          type: "REMOVE_ITEM_BY_TYPE",
+          payload: {
+            id: productId,
+            color: cartItem.color,
+          },
+        });
+        toast.info("محصول از سبد خرید حذف شد");
+      }
+      setShowQuantitySelector(null);
+      setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
+      return;
+    }
 
-  const priceType = priceTypes[productId] || "single";
-  const retailDiscountPercent = activeVariant?.discount_percent || 0;
+    const isWholesale =
+      quantity >= (activeVariant.min_wholesale || 1) &&
+      activeVariant.price_wholesale > 0;
 
-  // ← اینجا اصلاح اصلی: تخفیف تکی اعمال شود
-  const unitPriceAfterDiscount =
-    priceType === "wholesale"
-      ? activeVariant?.price_wholesale || 0
-      : Math.round((activeVariant?.price_single || 0) * (1 - retailDiscountPercent / 100));
+    const unitPrice = isWholesale
+      ? activeVariant.price_wholesale
+      : Math.round(
+          activeVariant.price_single * (1 - (activeVariant.discount_percent || 0) / 100)
+        );
 
-  dispatch({
-    type: "ADD_ITEM",
-    payload: {
+    const payload = {
       id: productId,
       title: product.title,
       quantity,
-      priceType,
-      price: unitPriceAfterDiscount.toString(), // ← قیمت نهایی (با تخفیف)
-      image: activeVariant?.image_main || product.image || "/placeholder.jpg",
-      discount: priceType === "wholesale" ? "0" : `${retailDiscountPercent}%`,
-      color: activeVariant
-        ? {
-            englishName: activeVariant.color_englishName,
-            persianName: activeVariant.color_persianName || "",
-            hexCode: activeVariant.color_hexCode,
-          }
-        : null,
-      baseRetailPrice: activeVariant?.price_single || 0,
-      baseWholesalePrice: activeVariant?.price_wholesale || 0,
-      retailDiscountPercent,
-      minWholesale: activeVariant?.min_wholesale || 1,
-      stock_quantity: stockQuantity,
-    },
-  });
+   priceType: isWholesale ? "wholesale" as const : "single" as const,
+      price: unitPrice.toString(),
+      image: activeVariant.image_main || product.image || "/placeholder.jpg",
+      discount: isWholesale ? "0" : `${activeVariant.discount_percent || 0}%`,
+      color: {
+        englishName: activeVariant.color_englishName,
+        persianName: activeVariant.color_persianName || "",
+        hexCode: activeVariant.color_hexCode,
+      },
+      baseRetailPrice: activeVariant.price_single,
+      baseWholesalePrice: activeVariant.price_wholesale,
+      retailDiscountPercent: activeVariant.discount_percent || 0,
+      minWholesale: activeVariant.min_wholesale || 1,
+      stock_quantity: activeVariant.stock_quantity ?? 0,
+    };
 
-  toast.success("محصول به سبد خرید اضافه شد!");
-  setCartQuantities((prev) => ({ ...prev, [productId]: 0 }));
-  setShowQuantitySelector(null);
-};
+    if (cartItem) {
+      dispatch({
+        type: "UPDATE_QUANTITY",
+        payload: {
+          itemKey: `${productId}-${cartItem.color?.englishName || "default"}`,
+          newQuantity: quantity,
+        },
+      });
+      toast.success("سبد خرید به‌روزرسانی شد");
+    } else {
+      dispatch({
+        type: "ADD_ITEM",
+        payload,
+      });
+      toast.success("محصول به سبد خرید اضافه شد");
+    }
+
+    setShowQuantitySelector(null);
+  };
 
   const handleNotifyMe = () => toast.info("اطلاع‌رسانی فعال شد");
 
@@ -288,13 +342,11 @@ const handleAddToCart = (productId: number) => {
 
               return (
                 <SwiperSlide key={item.id} className="psc-product-slide py-2">
-                  {/* کارت محصول دقیقاً مشابه TabProductsSliderContainer و ProductGrid */}
                   <div
                     className={`flex flex-col bg-white rounded-[0.5rem] border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 p-3 md:p-4 relative overflow-hidden group/card ${
                       !isInStock ? "opacity-70" : ""
                     }`}
                   >
-                    {/* برچسب حداقل تعداد عمده */}
                     {effectivePriceType === "wholesale" && hasWholesalePrice && (
                       <div className="absolute top-2 left-2 bg-[#c7c7c7] py-1 px-2 rounded-sm text-[11px] flex items-center z-10">
                         <span className="ml-1">+</span>
@@ -302,7 +354,6 @@ const handleAddToCart = (productId: number) => {
                       </div>
                     )}
 
-                    {/* تصویر + بج تخفیف هوشمند + پوشش ناموجود */}
                     <Link href={`/products/${item.id}`} className="block">
                       <div className="relative w-full aspect-square bg-gray-50 rounded-[1.5rem] overflow-hidden mb-3">
                         <img
@@ -325,7 +376,6 @@ const handleAddToCart = (productId: number) => {
                       </div>
                     </Link>
 
-                    {/* عنوان و سوئیچ قیمت */}
                     <div className="flex flex-col flex-grow overflow-hidden">
                       <Link href={`/products/${item.id}`}>
                         <h3 className="text-gray-800 text-[11px] md:text-sm font-bold mb-2 line-clamp-2 h-8 md:h-10 leading-4 md:leading-5 tracking-tight text-center">
@@ -358,38 +408,47 @@ const handleAddToCart = (productId: number) => {
                         )}
                       </div>
 
-                      {/* انتخاب رنگ */}
                       <div className="flex gap-1.5 justify-center mb-3 h-5 items-center">
-                        {item.variants?.map((variant) => {
-                          const variantInStock = (variant.stock_quantity ?? 0) > 0;
-                          return (
-                            <button
-                              key={variant.id}
-                              onClick={() => variantInStock && handleVariantSelect(item.id, variant)}
-                              disabled={!variantInStock}
-                              className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform relative ${
-                                activeVariant?.id === variant.id
-                                  ? "scale-125 ring-2 ring-[#805B99]"
-                                  : ""
-                              } ${!variantInStock ? "opacity-50 cursor-not-allowed" : ""}`}
-                              style={{ backgroundColor: variant.color_hexCode }}
-                            >
-                              {!variantInStock && (
-                                <span
-                                  className="absolute inset-0 flex items-center justify-center"
-                                  style={{
-                                    background:
-                                      "linear-gradient(45deg, transparent 48%, red 49%, red 51%, transparent 52%)",
-                                  }}
-                                />
-                              )}
-                            </button>
-                          );
-                        })}
+                        {item.variants
+                          ?.slice()
+                          .sort((a, b) => {
+                            const aStock = (a.stock_quantity ?? 0) > 0 ? 1 : 0;
+                            const bStock = (b.stock_quantity ?? 0) > 0 ? 1 : 0;
+                            if (aStock !== bStock) return bStock - aStock;
+
+                            const priceA = (a.price_single || 0) * (1 - (a.discount_percent || 0) / 100);
+                            const priceB = (b.price_single || 0) * (1 - (b.discount_percent || 0) / 100);
+                            return priceA - priceB;
+                          })
+                          .map((variant) => {
+                            const variantInStock = (variant.stock_quantity ?? 0) > 0;
+                            return (
+                              <button
+                                key={variant.id}
+                                onClick={() => variantInStock && handleVariantSelect(item.id, variant)}
+                                disabled={!variantInStock}
+                                className={`w-3 h-3 md:w-4 md:h-4 rounded-full border border-gray-200 transition-transform relative ${
+                                  activeVariant?.id === variant.id
+                                    ? "scale-125 ring-2 ring-[#805B99]"
+                                    : ""
+                                } ${!variantInStock ? "opacity-50 cursor-not-allowed" : ""}`}
+                                style={{ backgroundColor: variant.color_hexCode }}
+                              >
+                                {!variantInStock && (
+                                  <span
+                                    className="absolute inset-0 flex items-center justify-center"
+                                    style={{
+                                      background:
+                                        "linear-gradient(45deg, transparent 48%, red 49%, red 51%, transparent 52%)",
+                                    }}
+                                  />
+                                )}
+                              </button>
+                            );
+                          })}
                       </div>
                     </div>
 
-                    {/* پایین کارت: قیمت + عملیات */}
                     <div className="mt-auto pt-2 border-t border-gray-50">
                       {!isInStock ? (
                         <div className="flex items-center justify-between">
@@ -447,16 +506,16 @@ const handleAddToCart = (productId: number) => {
                                   {currentQty > 0 && (
                                     <button
                                       onClick={() => handleAddToCart(item.id)}
-                                      className="text-[8px] md:text-[10px] font-black text-green-600 uppercase tracking-tighter mt-0.5"
+                                      className="text-[10px] border rounded bg-green-600 text-white px-2 md:text-[14px] font-black uppercase tracking-tighter mt-0.5"
                                     >
-                                      تایید
+                                      ثبت
                                     </button>
                                   )}
                                 </div>
 
                                 <button
                                   onClick={() => handleQuantityChange(item.id, -1)}
-                                  disabled={currentQty <= 1}
+                                  disabled={currentQty <= 0}
                                   className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
                                 >
                                   <RemoveCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
@@ -474,7 +533,6 @@ const handleAddToCart = (productId: number) => {
           </Swiper>
         </div>
 
-        {/* دکمه‌های ناوبری */}
         <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-2">
           {!isBeginning && (
             <button

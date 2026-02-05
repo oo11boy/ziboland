@@ -143,7 +143,7 @@ export default function WideHeaderMiddle() {
             </span>
           </button>
           <button
-            onClick={toggleCartModal}
+            onMouseEnter={toggleCartModal}
             className="relative flex items-center gap-2 p-2 hover:bg-[#EBEBEB] hover:text-black rounded-lg border border-[#d9d6d6] hover:border-[#C7C7C7]"
           >
             <ShoppingBagOutlined fontSize="medium" />
@@ -171,7 +171,7 @@ export default function WideHeaderMiddle() {
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="fixed top-0 right-0 w-full md:w-96 h-screen bg-white shadow-2xl z-[999] overflow-y-auto"
+              className="fixed top-0 left-0 w-full md:w-96 h-screen bg-white shadow-2xl z-[999] overflow-y-auto"
               dir="rtl"
             >
               <div className="flex flex-col h-full">
@@ -190,100 +190,116 @@ export default function WideHeaderMiddle() {
                 <div className="flex-1 p-4 overflow-y-auto">
                   {cartItems.length > 0 ? (
                     <div className="space-y-4">
-                      {cartItems.map((item) => {
-                        const unitPrice = parseInt(
-                          item.price.replace(/,/g, ""),
-                          10
-                        );
-                        const itemTotal = unitPrice * item.quantity;
+             {cartItems.map((item) => {
+  // ۱. استخراج قیمت واحد اصلی (بدون تخفیف) از دیتای ذخیره شده در آیتم
+  const originalUnitPrice = item.priceType === "wholesale" 
+    ? (item.baseWholesalePrice || 0) 
+    : (item.baseRetailPrice || 0);
 
-                        return (
-                          <div
-                            key={`${item.id}-${
-                              item.color?.englishName || "default"
-                            }`}
-                            className="flex items-start gap-4 border-b border-[#e5e7eb] pb-4"
-                          >
-                            <img
-                              src={item.image}
-                              alt={item.title}
-                              className="w-20 h-20 object-cover rounded-lg border"
-                            />
-                            <div className="flex-1">
-                              <h3 className="text-sm font-semibold text-[#374151] yekan line-clamp-2">
-                                {item.title}
-                              </h3>
+  // ۲. استخراج قیمت واحد پرداختی (که تخفیف قبلاً روی آن اعمال شده)
+  const payableUnitPrice = parseInt(item.price.replace(/,/g, ""), 10);
 
-                              {/* نمایش رنگ */}
-                              {item.color && (
-                                <div className="flex items-center gap-2 mt-2">
-                                  <span className="text-xs text-[#6b7280] yekan">
-                                    رنگ:
-                                  </span>
-                                  <div className="flex items-center gap-1">
-                                    <div
-                                      className="w-6 h-6 rounded-full border-2 border-gray-300"
-                                      style={{
-                                        backgroundColor: item.color.hexCode,
-                                      }}
-                                    />
-                                    <span className="text-xs text-[#6b7280] yekan">
-                                      {item.color.persianName ||
-                                        item.color.englishName}
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
+  // ۳. محاسبه مجموع کل برای این ردیف (تعداد ضربدر قیمت با تخفیف)
+  const itemTotalPayable = payableUnitPrice * item.quantity;
 
-                              <div className="mt-2 space-y-1 text-sm text-[#6b7280] yekan">
-                                <p>
-                                  نوع قیمت:{" "}
-                                  {item.priceType === "single" ? "تکی" : "عمده"}
-                                </p>
-                                <p>
-                                  قیمت واحد: {unitPrice.toLocaleString("fa-IR")}{" "}
-                                  تومان
-                                </p>
-                                {item.discount !== "0" && (
-                                  <p className="text-green-600">
-                                    تخفیف: {item.discount}
-                                  </p>
-                                )}
-                                <p className="font-bold text-[#805B99]">
-                                  مجموع این آیتم:{" "}
-                                  {itemTotal.toLocaleString("fa-IR")} تومان
-                                </p>
-                              </div>
+  return (
+    <div
+      key={`${item.id}-${item.color?.englishName || "default"}`}
+      className="flex items-start gap-4 border-b border-[#e5e7eb] pb-4"
+    >
+      {/* تصویر محصول */}
+      <img
+        src={item.image}
+        alt={item.title}
+        className="w-20 h-20 object-cover rounded-lg border flex-shrink-0"
+      />
 
-                              <div className="flex items-center gap-3 mt-3">
-                                <button
-                                  onClick={() => handleQuantityChange(item, 1)}
-                                  className="text-[#805B99] hover:text-[#6b4e82]"
-                                  title="افزایش"
-                                >
-                                  <AddCircleOutline fontSize="small" />
-                                </button>
-                                <span className="font-bold text-lg w-8 text-center">
-                                  {item.quantity}
-                                </span>
-                                <button
-                                  onClick={() => handleQuantityChange(item, -1)}
-                                  className="text-[#805B99] hover:text-[#6b4e82]"
-                                  title="کاهش"
-                                >
-                                  <RemoveCircleOutline fontSize="small" />
-                                </button>
-                                <button
-                                  onClick={() => handleRemoveItem(item)}
-                                  className="text-red-500 hover:text-red-700 text-sm yekan ml-auto"
-                                >
-                                  حذف
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+      <div className="flex-1 min-w-0">
+        <h3 className="text-sm font-semibold text-[#374151] yekan line-clamp-2 leading-6">
+          {item.title}
+        </h3>
+
+        {/* نمایش رنگ انتخاب شده */}
+        {item.color && (
+          <div className="flex items-center gap-2 mt-2">
+            <span className="text-xs text-[#6b7280] yekan">رنگ:</span>
+            <div className="flex items-center gap-1.5">
+              <div
+                className="w-4 h-4 rounded-full border border-gray-300"
+                style={{ backgroundColor: item.color.hexCode }}
+              />
+              <span className="text-xs text-[#6b7280] yekan">
+                {item.color.persianName || item.color.englishName}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* بخش جزئیات قیمت */}
+        <div className="mt-2 space-y-1 text-sm yekan">
+          <div className="flex justify-between items-center text-[#6b7280]">
+            <span>نوع خرید:</span>
+            <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">
+              {item.priceType === "single" ? "تکی" : "عمده"}
+            </span>
+          </div>
+
+          <div className="flex justify-between items-center text-[#6b7280]">
+
+            <span>               {item.priceType === "single" ? "قیمت واحد اصلی:" :"قیمت واحد عمده" }</span>
+            <span>{originalUnitPrice.toLocaleString("fa-IR")} تومان</span>
+          </div>
+
+          {/* نمایش درصد تخفیف فقط اگر وجود داشته باشد */}
+          {item.discount !== "0" && (
+            <div className="flex justify-between items-center text-green-600 text-xs">
+              <span>تخفیف:</span>
+              <span className="font-bold">{item.discount}</span>
+            </div>
+          )}
+
+          <div className="flex justify-between items-center font-bold text-[#805B99] pt-1 border-t border-dashed border-gray-200 mt-1">
+            <span>مجموع آیتم:</span>
+            <span className="text-base">
+              {itemTotalPayable.toLocaleString("fa-IR")} تومان
+            </span>
+          </div>
+        </div>
+
+        {/* دکمه‌های کنترل تعداد و حذف */}
+        <div className="flex items-center justify-between mt-3">
+          <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-2 py-1">
+            <button
+              onClick={() => handleQuantityChange(item, 1)}
+              className="text-[#805B99] hover:scale-110 transition-transform"
+              title="افزایش"
+            >
+              <AddCircleOutline fontSize="small" />
+            </button>
+            <span className="font-bold text-base w-6 text-center">
+              {item.quantity}
+            </span>
+            <button
+              onClick={() => handleQuantityChange(item, -1)}
+              className="text-[#805B99] hover:scale-110 transition-transform"
+              title="کاهش"
+            >
+              <RemoveCircleOutline fontSize="small" />
+            </button>
+          </div>
+
+          <button
+            onClick={() => handleRemoveItem(item)}
+            className="text-red-500 hover:text-red-700 text-xs yekan font-medium flex items-center gap-1"
+          >
+            <Close fontSize="inherit" />
+            حذف از سبد
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+})}
 
                       <div className="mt-6 pt-4 border-t-2 border-[#805B99]">
                         <p className="text-xl font-bold text-[#374151] yekan text-center">

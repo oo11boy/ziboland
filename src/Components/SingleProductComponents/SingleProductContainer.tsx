@@ -6,15 +6,23 @@ import SummaryProduct from './SummaryProduct';
 import { InfoTabs } from './InfoTabs';
 import AddToCartInfo from './AddToCartInfo';
 import './SingleProduct.css';
-import { Product, Variant } from '@/types/types';
+import { Categoryapi, Product, Variant } from '@/types/types';
 
-export const SingleProductContainer: React.FC<{ infoproduct: Product | null }> = ({ infoproduct }) => {
-  // واریانت پیش‌فرض: اولین واریانت موجود یا null
-  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(
-    infoproduct?.variants && infoproduct.variants.length > 0 
-      ? infoproduct.variants[0] 
-      : null
-  );
+export const SingleProductContainer: React.FC<{ infoproduct: Product | null, categories: Categoryapi[] }> = ({ infoproduct, categories }) => {
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(() => {
+    if (infoproduct?.variants && infoproduct.variants.length > 0) {
+      return [...infoproduct.variants]
+        .sort((a, b) => {
+          const aInStock = a.stock_quantity > 0 ? 1 : 0;
+          const bInStock = b.stock_quantity > 0 ? 1 : 0;
+          if (aInStock !== bInStock) return bInStock - aInStock;
+          const priceA = a.price_single * (1 - (a.discount_percent || 0) / 100);
+          const priceB = b.price_single * (1 - (b.discount_percent || 0) / 100);
+          return priceA - priceB;
+        })[0];
+    }
+    return null;
+  });
 
   if (!infoproduct) {
     return (
@@ -32,28 +40,25 @@ export const SingleProductContainer: React.FC<{ infoproduct: Product | null }> =
     <div className="sp-container-wrapper">
       <div className="sp-container-main">
         <div className="sp-container-product-details">
-          {/* اسلایدر تصاویر */}
           <ProductSlider 
             infoproduct={infoproduct} 
             selectedVariant={selectedVariant} 
           />
 
-          {/* خلاصه محصول + انتخاب رنگ */}
           <SummaryProduct 
+            categories={categories}
             infoproduct={infoproduct} 
             selectedVariant={selectedVariant}
             onVariantChange={handleVariantChange}
           />
         </div>
 
-        {/* تب‌ها: مشخصات، توضیحات، نظرات */}
         <InfoTabs 
           infoproduct={infoproduct} 
           selectedVariant={selectedVariant} 
         />
       </div>
 
-      {/* سایدبار: قیمت، افزودن به سبد */}
       <div className="sp-container-sidebar">
         <AddToCartInfo 
           infoproduct={infoproduct} 

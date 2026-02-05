@@ -696,8 +696,21 @@ const confirmUpload = () => {
                             value={variant.discount_percent}
                             onChange={(e) => updateVariant(vIndex, "discount_percent", e.target.value)}
                           />
+
+                          {variant.price_single && parseInt(variant.discount_percent) > 0 && (
+      <p className="text-xs text-green-600 mt-2 font-bold">
+         قیمت نهایی تکی: {
+          formatNumber(
+            Math.round(
+              parseInt(variant.price_single.replace(/,/g, "")) * (1 - parseInt(variant.discount_percent) / 100)
+            ).toString()
+          )
+        } تومان
+      </p>
+    )}
                         </div>
                         <div>
+                         
                           <Label>قیمت عمده (تومان) *</Label>
                           <Input
                             value={variant.price_wholesale}

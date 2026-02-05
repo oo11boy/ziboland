@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ArrowDropDown, ArrowLeft, Close } from "@mui/icons-material";
 import Link from "next/link";
-import { toast, Toaster } from "react-hot-toast";
+import { Toaster } from "react-hot-toast";
 import { Categoryapi } from "@/types/types";
 
 interface MegaMenuWideHeaderProps {
@@ -31,10 +31,18 @@ export default function MegaMenuWideHeader({
     setActiveMenu(id);
   };
 
-  const handleMouseLeave = () => {
+  // این تابع حالا کل منو را در صورت خروج موس می‌بندد
+  const handleGlobalMouseLeave = () => {
     timeoutRef.current = setTimeout(() => {
       setActiveMenu(null);
-    }, 200);
+    }, 50); // کمی تاخیر برای تجربه کاربری بهتر
+  };
+
+  // برای متوقف کردن بسته شدن منو وقتی موس دوباره وارد محیط کامپوننت می‌شود
+  const clearCloseTimeout = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
   };
 
   useEffect(() => {
@@ -53,60 +61,34 @@ export default function MegaMenuWideHeader({
     };
   }, []);
 
-  // در صورت خالی بودن دسته‌بندی‌ها، پیام خطا نمایش داده شود
   if (categories.length === 0) {
     return (
-      <div className="flex h-[35px] items-center justify-center bg-black text-white">
-        <p className="text-lg">
-          خطا در بارگذاری دسته‌بندی‌ها. لطفاً دوباره تلاش کنید.
-        </p>
+      <div className="flex h-[35px] items-center justify-center bg-black text-white font-yekan">
+        <p>خطا در بارگذاری دسته‌بندی‌ها.</p>
       </div>
     );
   }
 
   return (
+    // تغییر مهم: اضافه شدن onMouseLeave به کانتینر اصلی
     <section
       ref={menuRef}
-      className="bg-black w-full shadow-lg z-[500] relative"
+      onMouseLeave={handleGlobalMouseLeave}
+      onMouseEnter={clearCloseTimeout}
+      className="bg-black w-full shadow-lg z-[500] relative font-yekan"
     >
-      {/* Toaster جدید با react-hot-toast (هماهنگ با بقیه پروژه) */}
-      <Toaster
-        position="top-center"
-        reverseOrder={false}
-        toastOptions={{
-          duration: 5000,
-          style: {
-            background: "#333",
-            color: "#fff",
-            maxWidth: "600px",
-            fontSize: "14px",
-            whiteSpace: "pre-line",
-            textAlign: "right" as const,
-            direction: "rtl",
-          },
-          error: {
-            duration: 8000,
-            style: {
-              background: "#ef4444",
-            },
-          },
-          success: {
-            style: {
-              background: "#22c55e",
-            },
-          },
-        }}
-      />
+      <Toaster position="top-center" reverseOrder={false} />
 
+      {/* نوار اصلی منو */}
       <ul className="flex justify-start items-center text-white h-[35px] gap-10 w-[90%] mx-auto">
         {categories
           .filter((category) => category.mothercat === 1)
           .map((category) => (
-            <li key={category.id} className="relative">
+            <li key={category.id} className="relative h-full flex items-center">
               <button
                 onClick={() => handleMenuClick(category.id)}
                 onMouseEnter={() => handleMouseEnter(category.id)}
-                className={`text-base font-semibold flex items-center gap-2 transition-colors ${
+                className={`text-base font-semibold flex items-center gap-2 transition-colors h-full ${
                   activeMenu === category.id
                     ? "text-[#EBEBEB]"
                     : "text-white hover:text-[#EBEBEB]"
@@ -123,78 +105,69 @@ export default function MegaMenuWideHeader({
           ))}
       </ul>
 
-      {/* مگامنو */}
-      <section
-        onMouseLeave={handleMouseLeave}
+      {/* بخش مگامنو (پنل باز شونده) */}
+      <div
         className={`bg-white text-black w-full shadow-xl rounded-b-lg overflow-hidden absolute top-[35px] left-0 z-10 transition-all duration-300 ease-in-out ${
-          activeMenu !== null ? "h-auto py-8 opacity-100" : "h-0 py-0 opacity-0 pointer-events-none"
+          activeMenu !== null 
+            ? "max-h-[80vh] py-8 opacity-100 border-t border-gray-100" 
+            : "max-h-0 py-0 opacity-0 pointer-events-none"
         }`}
       >
-        <div
-          className="w-[90%] mx-auto relative"
-          onMouseEnter={() => {
-            if (timeoutRef.current) {
-              clearTimeout(timeoutRef.current);
-            }
-          }}
-        >
+        <div className="w-[90%] mx-auto relative">
           <button
             onClick={() => setActiveMenu(null)}
-            className="cursor-pointer absolute top-4 left-4 border-2 rounded-lg border-[#805B99] p-2 hover:bg-[#805B99]/10 transition"
-            aria-label="بستن منو"
+            className="cursor-pointer absolute top-0 left-0 border-2 rounded-lg border-[#805B99] p-1.5 hover:bg-[#805B99]/10 transition"
           >
-            <Close fontSize="medium" className="text-[#805B99]" />
+            <Close fontSize="small" className="text-[#805B99]" />
           </button>
 
-          {activeMenu !== null &&
-          categories.find((category) => category.id === activeMenu)?.subcat ? (
+          {activeMenu !== null && (
             <>
-              <Link
-                href={`/search?mothercatId=${activeMenu}`}
-                className="mb-6 text-lg font-bold text-[#805B99] inline-flex items-center gap-2 hover:underline"
-              >
-                همه{" "}
-                {
-                  categories.find((category) => category.id === activeMenu)
-                    ?.name
-                }
-                <ArrowLeft className="text-xl" />
-              </Link>
+              {(() => {
+                const currentCat = categories.find((c) => c.id === activeMenu);
+                if (!currentCat) return null;
 
-              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
-                {categories
-                  .find((category) => category.id === activeMenu)
-                  ?.subcat.map((sub) => (
-                    <div key={sub.id} className="subcategory">
-                      <Link
-                        href={`/search?mothercatId=${activeMenu}&subcatId=${sub.id}`}
-                        className="font-bold text-lg mb-5 inline-flex items-center gap-3 text-black hover:text-[#805B99] transition"
-                        style={{
-                          borderRight: "4px solid #805B99",
-                          paddingRight: "14px",
-                        }}
-                      >
-                        {sub.name}
-                      </Link>
-                      <ul className="space-y-3 mt-4">
-                        {sub.items.map((item) => (
-                          <li key={item.id}>
-                            <Link
-                              href={`/search?mothercatId=${activeMenu}&subcatId=${sub.id}&itemId=${item.id}`}
-                              className="text-base text-[#666] hover:text-[#805B99] hover:underline transition flex items-center gap-2"
-                            >
-                              {item.name}
-                            </Link>
-                          </li>
-                        ))}
-                      </ul>
+                return (
+                  <>
+                    <Link
+                      href={`/search?mothercatId=${activeMenu}`}
+                      className="mb-6 text-lg font-bold text-[#805B99] inline-flex items-center gap-2 hover:underline"
+                    >
+                      همه {currentCat.name}
+                      <ArrowLeft className="text-xl" />
+                    </Link>
+
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-8">
+                      {currentCat.subcat?.map((sub) => (
+                        <div key={sub.id} className="subcategory">
+                          <Link
+                            href={`/search?mothercatId=${activeMenu}&subcatId=${sub.id}`}
+                            className="font-bold text-lg mb-4 block text-black hover:text-[#805B99] transition border-r-4 border-[#805B99] pr-3"
+                          >
+                            {sub.name}
+                          </Link>
+                          <ul className="space-y-2.5">
+                            {sub.items?.map((item) => (
+                              <li key={item.id}>
+                                <Link
+                                  href={`/search?mothercatId=${activeMenu}&subcatId=${sub.id}&itemId=${item.id}`}
+                                  className="text-[15px] text-[#666] hover:text-[#805B99] hover:underline transition block"
+                                >
+                                  {item.name}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-              </div>
+                  </>
+                );
+              })()}
             </>
-          ) : null}
+          )}
         </div>
-      </section>
+      </div>
     </section>
   );
 }

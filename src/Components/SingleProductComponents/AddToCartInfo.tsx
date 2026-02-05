@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ShoppingCartOutlined } from "@mui/icons-material";
 import Link from "next/link";
 import { ToastContainer, toast } from "react-toastify";
@@ -28,123 +28,172 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
   selectedVariant: externalSelectedVariant = null,
   onVariantChange,
 }) => {
+  const {
+    dispatch,
+    state: { cartItems },
+  } = useCart();
+
   const [quantity, setQuantity] = useState<number>(1);
   const [internalSelectedVariant, setInternalSelectedVariant] =
-    useState<Variant | null>(
-      infoproduct.variants && infoproduct.variants.length > 0
-        ? infoproduct.variants[0]
-        : null
-    );
-  const [isWholesale, setIsWholesale] = useState<boolean>(false);
-  const { dispatch } = useCart();
+    useState<Variant | null>(null);
+  const [wasWholesale, setWasWholesale] = useState<boolean>(false);
+
+  const prevQuantityRef = useRef<number>(1);
+  const hasReachedMaxRef = useRef<boolean>(false);
 
   const activeVariant = externalSelectedVariant || internalSelectedVariant;
 
   const stockQuantity = activeVariant?.stock_quantity ?? 0;
   const isInStock = stockQuantity > 0;
 
-  // قیمت پایه بدون تخفیف
-  const baseRetailPrice = activeVariant ? activeVariant.price_single : 0;
-  const baseWholesalePrice = activeVariant ? activeVariant.price_wholesale : 0;
-
-  // درصد تخفیف تکی
+  const baseRetailPrice = activeVariant?.price_single ?? 0;
+  const baseWholesalePrice = activeVariant?.price_wholesale ?? 0;
   const retailDiscountPercent = activeVariant?.discount_percent ?? 0;
-
-  // حداقل تعداد برای عمده
   const minWholesale = activeVariant?.min_wholesale ?? 1;
 
-  // آیا قیمت عمده وجود دارد؟
   const hasWholesalePrice = baseWholesalePrice > 0 && minWholesale > 1;
-
-  // آیا شرایط عمده برقرار است؟
   const isEligibleForWholesale = hasWholesalePrice && quantity >= minWholesale;
 
-  // قیمت واحد نهایی
-  // مهم: تخفیف تکی فقط روی قیمت تکی اعمال می‌شه، نه عمده
-  const unitPrice = isEligibleForWholesale
-    ? baseWholesalePrice
-    : baseRetailPrice;
-
   const unitPriceAfterDiscount = isEligibleForWholesale
-    ? baseWholesalePrice // عمده بدون تخفیف تکی
+    ? baseWholesalePrice
     : Math.round(baseRetailPrice * (1 - retailDiscountPercent / 100));
 
-  // مجموع کل
   const finalTotalPrice = unitPriceAfterDiscount * quantity;
 
-  // محاسبه درصد تفاوت عمده نسبت به قیمت تکی اصلی (بدون تخفیف)
   const wholesaleDifferencePercent =
     baseRetailPrice > baseWholesalePrice
       ? Math.round(
-          ((baseRetailPrice - baseWholesalePrice) / baseRetailPrice) * 100
+          ((baseRetailPrice - baseWholesalePrice) / baseRetailPrice) * 100,
         )
       : 0;
 
-  // نمایش پیام تغییر به عمده
+  const cartItem = cartItems.find(
+    (item) =>
+      item.id === infoproduct.id &&
+      item.color?.englishName === activeVariant?.color_englishName,
+  );
+
+  // مقداردهی اولیه
+  useEffect(() => {
+    if (
+      infoproduct.variants &&
+      infoproduct.variants.length > 0 &&
+      !internalSelectedVariant
+    ) {
+      const sorted = [...infoproduct.variants].sort((a, b) => {
+        const aInStock = a.stock_quantity > 0 ? 1 : 0;
+        const bInStock = b.stock_quantity > 0 ? 1 : 0;
+        if (aInStock !== bInStock) return bInStock - aInStock;
+        const priceA = a.price_single * (1 - (a.discount_percent || 0) / 100);
+        const priceB = b.price_single * (1 - (b.discount_percent || 0) / 100);
+        return priceA - priceB;
+      });
+      setInternalSelectedVariant(sorted[0]);
+    }
+  }, [infoproduct.variants, internalSelectedVariant]);
+
+  useEffect(() => {
+    if (cartItem) {
+      setQuantity(cartItem.quantity);
+      const shouldBeWholesale =
+        cartItem.quantity >= minWholesale &&
+        hasWholesalePrice &&
+        cartItem.priceType === "wholesale";
+      setWasWholesale(shouldBeWholesale);
+
+      hasReachedMaxRef.current = cartItem.quantity >= stockQuantity;
+    } else {
+      setQuantity(1);
+      setWasWholesale(false);
+      hasReachedMaxRef.current = false;
+    }
+
+    prevQuantityRef.current = quantity;
+  }, [
+    cartItem,
+    activeVariant?.id,
+    minWholesale,
+    hasWholesalePrice,
+    stockQuantity,
+  ]);
+
+  // toast تغییر نوع قیمت (تکی ↔ عمده)
   useEffect(() => {
     if (!hasWholesalePrice) {
-      setIsWholesale(false);
+      setWasWholesale(false);
       return;
     }
 
-    if (isEligibleForWholesale && !isWholesale) {
-      toast.success(`قیمت عمده‌فروشی (${minWholesale} عدد به بالا) اعمال شد!`, {
+    const nowEligible = quantity >= minWholesale;
+
+    if (nowEligible && !wasWholesale) {
+      toast.success(`قیمت عمده‌فروشی (${minWholesale} عدد به بالا) اعمال شد`, {
         position: "top-center",
-        className: "yekan",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
+        autoClose: 2600,
         theme: "colored",
       });
-      setIsWholesale(true);
-    } else if (!isEligibleForWholesale && isWholesale) {
-      toast.info("قیمت به حالت تک‌فروشی بازگشت.", {
+      setWasWholesale(true);
+    } else if (!nowEligible && wasWholesale) {
+      toast.info("قیمت به حالت تک‌فروشی بازگشت", {
         position: "top-center",
-        className: "yekan",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
+        autoClose: 2600,
         theme: "colored",
       });
-      setIsWholesale(false);
+      setWasWholesale(false);
     }
-  }, [
-    quantity,
-    minWholesale,
-    isWholesale,
-    hasWholesalePrice,
-    isEligibleForWholesale,
-  ]);
+  }, [quantity, hasWholesalePrice, minWholesale, wasWholesale]);
+
+  const showMaxStockToast = () => {
+    toast.warning(`حداکثر موجودی این محصول: ${stockQuantity} عدد`, {
+      position: "top-center",
+      autoClose: 3200,
+      theme: "colored",
+    });
+  };
 
   const handleIncrement = () => {
     if (quantity < stockQuantity) {
-      setQuantity((prev) => prev + 1);
-    } else {
-      toast.warning(`حداکثر موجودی: ${stockQuantity} عدد`, {
-        position: "top-center",
-        className: "yekan",
+      setQuantity((prev) => {
+        const newQty = prev + 1;
+        if (newQty === stockQuantity && !hasReachedMaxRef.current) {
+          showMaxStockToast();
+          hasReachedMaxRef.current = true;
+        }
+        return newQty;
       });
+    } else if (!hasReachedMaxRef.current) {
+      showMaxStockToast();
+      hasReachedMaxRef.current = true;
     }
   };
 
-  const handleDecrement = () =>
-    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
+  const handleDecrement = () => {
+    setQuantity((prev) => {
+      const newQty = Math.max(0, prev - 1);
+      if (newQty < stockQuantity) {
+        hasReachedMaxRef.current = false;
+      }
+      return newQty;
+    });
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value, 10);
-    if (!isNaN(value) && value >= 1) {
+    if (!isNaN(value)) {
       if (value > stockQuantity) {
-        toast.warning(`حداکثر موجودی: ${stockQuantity} عدد`, {
-          position: "top-center",
-          className: "yekan",
-        });
+        if (!hasReachedMaxRef.current) {
+          showMaxStockToast();
+          hasReachedMaxRef.current = true;
+        }
         setQuantity(stockQuantity);
       } else {
-        setQuantity(value);
+        setQuantity(Math.max(0, value));
+        if (value < stockQuantity) {
+          hasReachedMaxRef.current = false;
+        } else if (value === stockQuantity && !hasReachedMaxRef.current) {
+          showMaxStockToast();
+          hasReachedMaxRef.current = true;
+        }
       }
     }
   };
@@ -155,54 +204,86 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
     } else {
       setInternalSelectedVariant(variant);
     }
-    setQuantity(1);
   };
 
-// بخش مربوط به handleAddToCart را با این کد جایگزین کنید:
   const handleAddToCart = () => {
+    if (!activeVariant) {
+      toast.error("لطفاً یک رنگ انتخاب کنید", { position: "top-center" });
+      return;
+    }
+
     if (!isInStock) {
-      toast.error("این محصول در حال حاضر موجود نیست", { position: "top-center" });
+      toast.error("این محصول در حال حاضر موجود نیست", {
+        position: "top-center",
+      });
       return;
     }
 
     const priceType = isEligibleForWholesale ? "wholesale" : "single";
-    const discount = isEligibleForWholesale ? "0" : `${retailDiscountPercent}%`;
+    const discountStr = isEligibleForWholesale
+      ? "0"
+      : `${retailDiscountPercent}%`;
 
-    dispatch({
-      type: "ADD_ITEM",
-      payload: {
-        id: infoproduct.id,
-        title: infoproduct.title,
-        quantity,
-        priceType,
-        price: unitPriceAfterDiscount.toString(),
-        image: activeVariant?.image_main || infoproduct.image || "/placeholder.jpg",
-        discount,
-        color: activeVariant ? {
-          englishName: activeVariant.color_englishName,
-          persianName: activeVariant.color_persianName || "",
-          hexCode: activeVariant.color_hexCode,
-        } : null,
-        baseRetailPrice,
-        baseWholesalePrice,
-        retailDiscountPercent,
-        minWholesale,
-        stock_quantity: stockQuantity, // فیلد حیاتی برای محدودسازی تعداد
-      },
-    });
+    if (quantity <= 0) {
+      if (cartItem) {
+        dispatch({
+          type: "REMOVE_ITEM_BY_TYPE",
+          payload: {
+            id: infoproduct.id,
+            color: cartItem.color,
+          },
+        });
+        toast.info("محصول از سبد خرید حذف شد", { position: "top-center" });
+      }
+      return;
+    }
 
-    toast.success("به سبد خرید اضافه شد", { position: "top-center" });
-    setQuantity(1);
+    if (cartItem) {
+      dispatch({
+        type: "UPDATE_QUANTITY",
+        payload: {
+          itemKey: `${infoproduct.id}-${cartItem.color?.englishName || "default"}`,
+          newQuantity: quantity,
+        },
+      });
+      toast.success("سبد خرید به‌روزرسانی شد", { position: "top-center" });
+    } else {
+      dispatch({
+        type: "ADD_ITEM",
+        payload: {
+          id: infoproduct.id,
+          title: infoproduct.title,
+          quantity,
+          priceType,
+          price: unitPriceAfterDiscount.toString(),
+          image:
+            activeVariant.image_main || infoproduct.image || "/placeholder.jpg",
+          discount: discountStr,
+          color: {
+            englishName: activeVariant.color_englishName,
+            persianName: activeVariant.color_persianName || "",
+            hexCode: activeVariant.color_hexCode,
+          },
+          baseRetailPrice,
+          baseWholesalePrice,
+          retailDiscountPercent,
+          minWholesale,
+          stock_quantity: stockQuantity,
+        },
+      });
+      toast.success("به سبد خرید اضافه شد", { position: "top-center" });
+    }
   };
+
   const formatPrice = (price: number) => {
-    return `${price.toLocaleString("fa-IR")} تومان`;
+    return price.toLocaleString("fa-IR") + " تومان";
   };
 
   const benefitdata: BenefitItem[] = [
     {
       id: 1,
       title: "ارسال رایگان سفارشات",
-      description: "خرید بالای 4 میلیون",
+      description: "خرید بالای ۴ میلیون تومان",
       image:
         "https://abzarreza.com/wp-content/uploads/2023/09/Delivery.png.webp",
       link: "/faq",
@@ -210,7 +291,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
     {
       id: 2,
       title: "ضمانت بازگشت کالا",
-      description: "تا 30 روز پس از خرید",
+      description: "تا ۳۰ روز پس از خرید",
       image:
         "https://abzarreza.com/wp-content/uploads/2023/09/Free-Return.png.webp",
       link: "/faq",
@@ -218,7 +299,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
     {
       id: 3,
       title: "ضمانت اصالت کالا",
-      description: "ابزار آلات اصیل و معتبر",
+      description: "ابزارآلات اصیل و معتبر",
       image:
         "https://abzarreza.com/wp-content/uploads/2023/09/Warranty.png.webp",
       link: "/faq",
@@ -226,7 +307,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
     {
       id: 4,
       title: "مشاوره تخصصی رایگان",
-      description: "خرید آگاهانه ابزار آلات",
+      description: "خرید آگاهانه ابزارآلات",
       image:
         "https://abzarreza.com/wp-content/uploads/2023/09/Support.png.webp",
       link: "/faq",
@@ -248,7 +329,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
     <>
       <ToastContainer
         position="top-center"
-        autoClose={3000}
+        autoClose={2600}
         hideProgressBar={false}
         newestOnTop={true}
         closeOnClick
@@ -257,13 +338,13 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
         draggable
         pauseOnHover
         theme="colored"
+        limit={3}
         style={{ zIndex: 99999, top: 0, width: "100%", padding: "10px" }}
       />
 
       <div className="sp-product-info-container">
         {/* بخش قیمت‌ها */}
         <div className="sp-pricing-grid">
-          {/* قیمت تک‌فروشی */}
           <div className="sp-pricing-item">
             <span className="sp-pricing-label">قیمت تک فروشی</span>
             <div className="sp-pricing-details">
@@ -278,7 +359,6 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
             </div>
           </div>
 
-          {/* قیمت عمده - فقط اگر معتبر باشد */}
           {hasWholesalePrice && (
             <div className="sp-pricing-item">
               <span className="sp-pricing-label">
@@ -297,7 +377,6 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
             </div>
           )}
 
-          {/* مجموع نهایی — باید 600 نشون بده */}
           <div className="bg-[#F7F7F7] text-xl text-[#6D4C82] text-center p-2 rounded-xl">
             <span>{formatPrice(finalTotalPrice)}</span>
           </div>
@@ -308,51 +387,53 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
           <div className="sp-color-selection">
             <span className="sp-color-label">رنگ‌بندی:</span>
             <div className="sp-color-options">
-              {infoproduct.variants.map((variant) => {
-                const variantInStock = variant.stock_quantity > 0;
-                const { tickColor, borderColor } = getContrastColor(
-                  variant.color_hexCode
-                );
+              {[...infoproduct.variants]
+                .sort((a, b) => {
+                  const aInStock = a.stock_quantity > 0 ? 1 : 0;
+                  const bInStock = b.stock_quantity > 0 ? 1 : 0;
+                  if (aInStock !== bInStock) return bInStock - aInStock;
+                  const priceA =
+                    a.price_single * (1 - (a.discount_percent || 0) / 100);
+                  const priceB =
+                    b.price_single * (1 - (b.discount_percent || 0) / 100);
+                  return priceA - priceB;
+                })
+                .map((variant) => {
+                  const variantInStock = variant.stock_quantity > 0;
+                  const isSelected =
+                    activeVariant?.id === variant.id ||
+                    (activeVariant?.color_englishName ===
+                      variant.color_englishName &&
+                      activeVariant?.color_hexCode === variant.color_hexCode);
 
-                return (
-                  <button
-                    key={variant.id || variant.color_englishName}
-                    onClick={() => handleVariantSelect(variant)}
-                    disabled={!variantInStock}
-                    style={{
-                      backgroundColor: variant.color_hexCode,
-                      width: "28px",
-                      height: "28px",
-                      borderRadius: "50%",
-                      border:
-                        activeVariant?.id === variant.id ||
-                        activeVariant?.color_englishName ===
-                          variant.color_englishName
+                  const { tickColor, borderColor } = getContrastColor(
+                    variant.color_hexCode,
+                  );
+
+                  return (
+                    <button
+                      key={variant.id || variant.color_englishName}
+                      onClick={() => handleVariantSelect(variant)}
+                      disabled={!variantInStock}
+                      style={{
+                        backgroundColor: variant.color_hexCode,
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "50%",
+                        border: isSelected
                           ? "3px solid #805b99"
                           : "2px solid #d1d5db",
-                      outline:
-                        activeVariant?.id === variant.id ||
-                        activeVariant?.color_englishName ===
-                          variant.color_englishName
-                          ? "3px solid #e9d5ff"
-                          : "none",
-                      cursor: variantInStock ? "pointer" : "not-allowed",
-                      opacity: variantInStock ? 1 : 0.4,
-                      transition: "all 0.2s ease",
-                      position: "relative",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                    className="sp-color-button"
-                    aria-label={`انتخاب رنگ ${
-                      variant.color_persianName || variant.color_englishName
-                    }`}
-                  >
-                    {(activeVariant?.id === variant.id ||
-                      activeVariant?.color_englishName ===
-                        variant.color_englishName) &&
-                      variantInStock && (
+                        outline: isSelected ? "3px solid #e9d5ff" : "none",
+                        cursor: variantInStock ? "pointer" : "not-allowed",
+                        opacity: variantInStock ? 1 : 0.4,
+                        transition: "all 0.2s ease",
+                        position: "relative",
+                      }}
+                      title={
+                        variant.color_persianName || variant.color_englishName
+                      }
+                    >
+                      {isSelected && variantInStock && (
                         <span
                           style={{
                             color: tickColor,
@@ -370,21 +451,22 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
                           ✓
                         </span>
                       )}
-                    {!variantInStock && (
-                      <span
-                        style={{
-                          position: "absolute",
-                          width: "2px",
-                          height: "32px",
-                          backgroundColor: "#ff0000",
-                          transform: "rotate(45deg)",
-                        }}
-                      />
-                    )}
-                  </button>
-                );
-              })}
+                      {!variantInStock && (
+                        <span
+                          style={{
+                            position: "absolute",
+                            width: "2px",
+                            height: "24px",
+                            backgroundColor: "#ff0000",
+                            transform: "rotate(45deg)",
+                          }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
             </div>
+
             <span className="sp-selected-color">
               {activeVariant?.color_persianName ||
                 activeVariant?.color_englishName ||
@@ -402,7 +484,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
                 onClick={handleIncrement}
                 className="sp-quantity-button"
                 aria-label="افزایش"
-                disabled={!isInStock}
+                disabled={!isInStock || quantity >= stockQuantity}
               >
                 +
               </button>
@@ -411,7 +493,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
                 value={quantity}
                 onChange={handleInputChange}
                 className="sp-quantity-input"
-                min="1"
+                min="0"
                 max={stockQuantity}
                 disabled={!isInStock}
               />
@@ -419,7 +501,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
                 onClick={handleDecrement}
                 className="sp-quantity-button"
                 aria-label="کاهش"
-                disabled={!isInStock}
+                disabled={!isInStock || quantity <= 0}
               >
                 -
               </button>
@@ -436,7 +518,11 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
             }}
           >
             <ShoppingCartOutlined className="sp-cart-icon" />
-            {!isInStock ? "ناموجود" : "افزودن به سبد خرید"}
+            {!isInStock
+              ? "ناموجود"
+              : quantity > 0
+                ? "ثبت در سبد"
+                : "افزودن به سبد خرید"}
           </button>
         </div>
 
