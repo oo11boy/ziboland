@@ -551,25 +551,34 @@ export default function ProductSliderContainer({
           </Swiper>
         </div>
 
-        <div className="pointer-events-none absolute inset-y-0 left-0 right-0 flex items-center justify-between px-2">
-          {!isBeginning && (
-            <button
-              onClick={() => swiperRef.current?.slidePrev()}
-              className="pointer-events-auto w-10 h-10 md:w-12 md:h-12 bg-white/90 shadow-xl rounded-full flex items-center justify-center border border-gray-100 hover:bg-[#805B99] hover:text-white transition-all text-gray-700 z-20"
-            >
-              <KeyboardArrowRight className="text-2xl md:text-4xl" />
-            </button>
-          )}
+{/* دکمه‌های ناوبری Swiper - اصلاح شده برای RTL */}
+<div className="pointer-events-none absolute inset-y-0 -left-5 -right-5 min-lg:right-40 flex items-center justify-between px-2 z-20">
+  
+  {/* سمت راست: دکمه قبلی (فلش راست) */}
+  <div className="w-10 h-10 md:w-12 md:h-12">
+    {!isBeginning && (
+      <button
+        onClick={() => swiperRef.current?.slidePrev()}
+        className="pointer-events-auto w-full h-full bg-white/90 shadow-xl rounded-full flex items-center justify-center border border-gray-100 hover:bg-[#805B99] hover:text-white transition-all text-gray-700"
+      >
+        <KeyboardArrowRight className="text-2xl md:text-4xl" />
+      </button>
+    )}
+  </div>
 
-          {!isEnd && (
-            <button
-              onClick={() => swiperRef.current?.slideNext()}
-              className="pointer-events-auto w-10 h-10 md:w-12 md:h-12 bg-white/90 shadow-xl rounded-full flex items-center justify-center border border-gray-100 hover:bg-[#805B99] hover:text-white transition-all text-gray-700 z-20"
-            >
-              <KeyboardArrowLeft className="text-2xl md:text-4xl" />
-            </button>
-          )}
-        </div>
+  {/* سمت چپ: دکمه بعدی (فلش چپ) */}
+  <div className="w-10 h-10 md:w-12 md:h-12">
+    {!isEnd && (
+      <button
+        onClick={() => swiperRef.current?.slideNext()}
+        className="pointer-events-auto w-full h-full bg-white/90 shadow-xl rounded-full flex items-center justify-center border border-gray-100 hover:bg-[#805B99] hover:text-white transition-all text-gray-700"
+      >
+        <KeyboardArrowLeft className="text-2xl md:text-4xl" />
+      </button>
+    )}
+  </div>
+
+</div>
       </div>
     </div>
   );

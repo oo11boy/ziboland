@@ -7,6 +7,7 @@ import { InfoTabs } from './InfoTabs';
 import AddToCartInfo from './AddToCartInfo';
 import './SingleProduct.css';
 import { Categoryapi, Product, Variant } from '@/types/types';
+import RelatedProductSlider from '../Sliders/RelatedProductSlider/RelatedProductSlider';
 
 export const SingleProductContainer: React.FC<{ infoproduct: Product | null, categories: Categoryapi[] }> = ({ infoproduct, categories }) => {
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(() => {
@@ -51,12 +52,17 @@ export const SingleProductContainer: React.FC<{ infoproduct: Product | null, cat
             selectedVariant={selectedVariant}
             onVariantChange={handleVariantChange}
           />
+          
         </div>
 
         <InfoTabs 
           infoproduct={infoproduct} 
           selectedVariant={selectedVariant} 
         />
+        <RelatedProductSlider 
+  mothercatId={infoproduct.mothercatId} 
+  excludeId={infoproduct.id} 
+/>
       </div>
 
       <div className="sp-container-sidebar">
@@ -66,6 +72,7 @@ export const SingleProductContainer: React.FC<{ infoproduct: Product | null, cat
           onVariantChange={handleVariantChange}
         />
       </div>
+
     </div>
   );
 };
