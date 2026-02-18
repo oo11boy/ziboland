@@ -315,7 +315,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
     <>
      
 
-      <div className="sp-product-info-container">
+      <div className="sp-product-info-container overflow-auto">
         {/* بخش قیمت‌ها */}
         <div className="sp-pricing-grid">
           <div className="sp-pricing-item">

@@ -2,16 +2,29 @@
 .sp-product-info-container * {
     font-family: 'yekannew';
 }
+
 .sp-product-info-container {
     background-color: #f7f7f7;
     position: sticky;
-    top: 16px;
+    /* مقدار 140 پیکسل (120 ارتفاع هدر + 20 فاصله) */
+    top: 100px; 
     width: 100%;
     padding: 12px;
     border-radius: 12px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
+    z-index: 10;
+    /* این خط باعث می‌شود اگر محتوای سایدبار زیاد بود، خودش هم اسکرول داخلی بخورد */
+    max-height: calc(100vh - 160px);
+    overflow-y: auto;
+    transition: top 0.3s ease;
+}
+  @media (max-width: 1024px) {
+    .sp-product-info-container {
+        position: relative;
+        top: 0;
+        max-height: none;
+    }
+}
   @media (min-width: 640px) {
     .sp-product-info-container {
       padding: 16px;
