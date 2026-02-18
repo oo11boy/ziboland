@@ -349,7 +349,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
 
         {/* انتخاب رنگ */}
         {infoproduct.variants && infoproduct.variants.length > 0 && (
-          <div className="sp-color-selection">
+          <div className="sp-color-selection flex-col flex !items-start">
             <span className="sp-color-label">رنگ‌بندی:</span>
             <div className="sp-color-options">
               {[...infoproduct.variants]
@@ -376,6 +376,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
                       onClick={() => handleVariantSelect(variant)}
                       disabled={!variantInStock}
                       style={{
+                 
                         backgroundColor: variant.color_hexCode,
                         width: "28px",
                         height: "28px",
@@ -392,6 +393,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
                       {isSelected && variantInStock && (
                         <span
                           style={{
+                                   margin:"auto",
                             color: tickColor,
                             fontSize: "14px",
                             fontWeight: "bold",
@@ -410,10 +412,13 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
                       {!variantInStock && (
                         <span
                           style={{
+                            
                             position: "absolute",
                             width: "2px",
                             height: "24px",
-                            backgroundColor: "#ff0000",
+                            backgroundColor: "#ffff",
+                            border:"1px solid black",
+                            top:"0",
                             transform: "rotate(45deg)",
                           }}
                         />
@@ -422,12 +427,22 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
                   );
                 })}
             </div>
+            
+<div className="flex flex-col mt-2">
+  
+      <span className="sp-selected-color text-lg">
+<span className="text-sm">
+      رنگ انتخابی: {" "}
+</span>
 
-            <span className="sp-selected-color">
+ 
+   
               {activeVariant?.color_persianName ||
                 activeVariant?.color_englishName ||
                 "نامشخص"}
             </span>
+</div>
+      
           </div>
         )}
 
