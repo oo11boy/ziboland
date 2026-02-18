@@ -8,7 +8,8 @@ import MoblieHeaderTopTab from "@/Components/Header/MobileHeader/MoblieHeaderTop
 import { AuthProvider } from "@/ContextApi/AuthContext";
 import WideHeaderServer from "@/Components/Header/WideHeader/WideHeaderServer";
 import FooterServer from "@/Components/Footer/FooterServer";
-
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css"; // 👈 این خط را اضافه کنید
 
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -23,6 +24,13 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <AuthProvider>
           <CartProvider>
+            <ToastContainer 
+              position="top-center" 
+              autoClose={3000} 
+              theme="colored" 
+              rtl={true}
+              pauseOnFocusLoss={false} // برای جلوگیری از باگ‌های احتمالی در موبایل
+            />
             <WideHeaderServer />
             <MoblieHeaderTopTab />
             {children}

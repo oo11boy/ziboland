@@ -346,12 +346,7 @@ export default function TabProductsSliderContainer({
       className="w-full max-w-[1440px] mx-auto px-4 py-6 font-[yekannew]"
       dir="rtl"
     >
-      <ToastContainer
-        rtl
-        theme="colored"
-        position="top-center"
-        autoClose={2500}
-      />
+ 
 
       <div className="flex justify-between items-center mb-6 px-1">
         <div className="border-r-4 border-[#805B99] pr-3">

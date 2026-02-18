@@ -313,20 +313,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
 
   return (
     <>
-      <ToastContainer
-        position="top-center"
-        autoClose={2600}
-        hideProgressBar={false}
-        newestOnTop={true}
-        closeOnClick
-        rtl={true}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="colored"
-        limit={3}
-        style={{ zIndex: 99999, top: 0, width: "100%", padding: "10px" }}
-      />
+     
 
       <div className="sp-product-info-container">
         {/* بخش قیمت‌ها */}

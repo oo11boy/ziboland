@@ -260,7 +260,6 @@ export default function ProductSliderContainer({
 
   return (
     <div className={`psc-container ${vip ? "psc-vip" : ""}`}>
-      <ToastContainer position="top-center" autoClose={3000} theme="colored" rtl={true} />
 
       <div className={`psc-header ${vip ? "psc-header-vip" : ""}`}>
         {!vip && <p className="psc-title">پرفروش‌ترین‌ها</p>}
