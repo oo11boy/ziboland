@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/Components/ui/select";
 import { Modal, Box, Typography } from "@mui/material";
-import { View, Search, Filter } from "lucide-react";
+import { View, Search, Filter, Trash2, Copy } from "lucide-react";
 import { toast } from "react-toastify";
 import Image from "next/image";
 import { API } from "@/lib/MainRoutes";
@@ -67,6 +67,30 @@ const OrdersPage = () => {
     fetchOrders();
   }, []);
 
+  const handleDeleteOrder = async (orderId: number, orderCode: string) => {
+    if (
+      !confirm(
+        `آیا از حذف کامل سفارش #${orderCode} مطمئن هستید؟ این عمل غیرقابل بازگشت است.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      const token = Cookies.get("authToken");
+      const res = await fetch(`${API}/admin/orders/${orderId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!res.ok) throw new Error("خطا در حذف سفارش");
+
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+      toast.success("سفارش با موفقیت حذف شد");
+    } catch (err: any) {
+      toast.error(err.message || "مشکلی در حذف رخ داد");
+    }
+  };
   const fetchOrders = async () => {
     try {
       const token = Cookies.get("authToken");
@@ -91,7 +115,7 @@ const OrdersPage = () => {
       // مرتب‌سازی: جدیدترین‌ها اول
       const sortedData = data.sort(
         (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
       );
 
       setOrders(sortedData);
@@ -127,7 +151,7 @@ const OrdersPage = () => {
   // تغییر وضعیت سفارش — نسخه جدید و حرفه‌ای
   const handleStatusChange = async (
     orderId: number,
-    newStatus: Order["status"]
+    newStatus: Order["status"],
   ) => {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
@@ -142,8 +166,8 @@ const OrdersPage = () => {
           `هشدار: این سفارش هنوز پرداخت نشده!\n` +
             `وضعیت پرداخت: ${translatePaymentStatus(order.payment_status)}\n` +
             `آیا مطمئن هستید که می‌خواهید وضعیت را به "${translateStatus(
-              newStatus
-            )}" تغییر دهید؟`
+              newStatus,
+            )}" تغییر دهید؟`,
         )
       ) {
         return;
@@ -156,8 +180,8 @@ const OrdersPage = () => {
     if (
       !confirm(
         `آیا از تغییر وضعیت سفارش #${order.order_code} به "${translateStatus(
-          newStatus
-        )}" مطمئن هستید؟`
+          newStatus,
+        )}" مطمئن هستید؟`,
       )
     ) {
       return;
@@ -183,7 +207,7 @@ const OrdersPage = () => {
 
       // بروزرسانی محلی
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
       );
 
       if (selectedOrder?.id === orderId) {
@@ -223,7 +247,10 @@ const OrdersPage = () => {
     setSelectedOrder(order);
     setIsModalOpen(true);
   };
-
+const copyToClipboard = (text: any) => {
+  navigator.clipboard.writeText(text);
+  toast.success("شماره کاربر کپی شد", { autoClose: 2000 });
+};
   // لودینگ
   if (loading) {
     return (
@@ -308,8 +335,8 @@ const OrdersPage = () => {
                         order.payment_status === "paid"
                           ? "bg-green-100 text-green-800"
                           : order.payment_status === "pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
                       }`}
                     >
                       {translatePaymentStatus(order.payment_status)}
@@ -339,7 +366,7 @@ const OrdersPage = () => {
                       if (newValue !== order.status) {
                         handleStatusChange(
                           order.id,
-                          newValue as Order["status"]
+                          newValue as Order["status"],
                         );
                       }
                     }}
@@ -363,6 +390,16 @@ const OrdersPage = () => {
                     onClick={() => handleViewDetails(order)}
                   >
                     <View className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="hover:bg-red-100 dark:hover:bg-red-900"
+                    onClick={() =>
+                      handleDeleteOrder(order.id, order.order_code)
+                    }
+                  >
+                    <Trash2 className="w-5 h-5 text-red-600" />
                   </Button>
                 </div>
               </CardContent>
@@ -425,8 +462,16 @@ const OrdersPage = () => {
                               {order.first_name} {order.last_name}
                             </p>
                             <p className="text-sm text-gray-500">
-                              @{order.username}
+                                   <button
+                              onClick={() =>   {copyToClipboard(order.phone_number)}}
+                              className="text-gray-500 hover:text-purple-600 flex gap-2 transition"
+                              title="کپی نام محصول"
+                            >
+                    <Copy className="h-4 w-4" />    {order.phone_number}  
+                            </button>
                             </p>
+
+                          
                           </div>
                         </td>
                         <td className="px-6 py-4 font-bold text-lg">
@@ -439,7 +484,7 @@ const OrdersPage = () => {
                               if (newValue !== order.status) {
                                 handleStatusChange(
                                   order.id,
-                                  newValue as Order["status"]
+                                  newValue as Order["status"],
                                 );
                               }
                             }}
@@ -467,8 +512,8 @@ const OrdersPage = () => {
                               order.payment_status === "paid"
                                 ? "bg-green-100 text-green-800"
                                 : order.payment_status === "pending"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : "bg-red-100 text-red-800"
                             }`}
                           >
                             {translatePaymentStatus(order.payment_status)}
@@ -476,10 +521,10 @@ const OrdersPage = () => {
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
                           {new Date(order.created_at).toLocaleDateString(
-                            "fa-IR"
+                            "fa-IR",
                           )}
                         </td>
-                        <td className="px-6 py-4 text-center">
+                        <td className="px-6 py-4 text-center flex">
                           <Button
                             size="sm"
                             variant="ghost"
@@ -488,7 +533,20 @@ const OrdersPage = () => {
                           >
                             <View className="w-5 h-5 text-blue-600" />
                           </Button>
+                      
+
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="hover:bg-red-100 dark:hover:bg-red-900"
+                            onClick={() =>
+                              handleDeleteOrder(order.id, order.order_code)
+                            }
+                          >
+                            <Trash2 className="w-5 h-5 text-red-600" />
+                          </Button>
                         </td>
+                        <td className="px-6 py-4 text-center"></td>
                       </tr>
                     ))}
                   </tbody>
@@ -555,7 +613,7 @@ const OrdersPage = () => {
                 <InfoItem
                   label="تاریخ سفارش"
                   value={new Date(selectedOrder.created_at).toLocaleDateString(
-                    "fa-IR"
+                    "fa-IR",
                   )}
                 />
                 <InfoItem

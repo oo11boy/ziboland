@@ -58,3 +58,37 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     conn.release();
   }
 }
+
+
+// اضافه کردن این بخش به انتهای فایل route.tsx موجود در پوشه [id]
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const token = request.headers.get("Authorization")?.replace("Bearer ", "");
+
+  if (!token) return NextResponse.json({ error: "عدم احراز هویت" }, { status: 401 });
+
+  const conn = await pool.getConnection();
+  try {
+    // شروع تراکنش برای حذف امن
+    await conn.beginTransaction();
+
+    // ۱. حذف آیتم‌های سفارش (Order Items)
+    await conn.execute(`DELETE FROM order_items WHERE order_id = ?`, [id]);
+
+    // ۲. حذف خود سفارش
+    const [result]: any = await conn.execute(`DELETE FROM orders WHERE id = ?`, [id]);
+
+    if (result.affectedRows === 0) {
+      await conn.rollback();
+      return NextResponse.json({ error: "سفارش یافت نشد" }, { status: 404 });
+    }
+
+    await conn.commit();
+    return NextResponse.json({ message: "سفارش با موفقیت حذف شد" });
+  } catch (error: any) {
+    await conn.rollback();
+    return NextResponse.json({ error: "خطا در حذف سفارش", details: error.message }, { status: 500 });
+  } finally {
+    conn.release();
+  }
+}
