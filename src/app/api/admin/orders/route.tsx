@@ -35,22 +35,23 @@ export async function GET(request: Request) {
     // Fetch all orders with user and address details, including first_name, last_name, and phone_number
     const [orders]: any = await conn.query(
       `SELECT 
-         o.*, 
-         u.username, 
-         u.email, 
-         u.first_name, 
-         u.last_name, 
-         u.phone_number, 
-         a.province, 
-         a.city, 
-         a.street, 
-         a.building_number, 
-         a.alley, 
-         a.unit, 
-         a.postal_code
-       FROM orders o 
-       JOIN users u ON o.user_id = u.id 
-       JOIN addresses a ON o.address_id = a.id`
+  o.*,
+  u.username, 
+  u.email,
+  a.first_name,
+  a.last_name,
+  a.phone_number,
+  a.province, 
+  a.city, 
+  a.street, 
+  a.alley,
+  a.building_number,
+  a.unit,
+  a.postal_code,
+  a.extra_details
+FROM orders o 
+JOIN users u ON o.user_id = u.id 
+JOIN addresses a ON o.address_id = a.id`
     );
 
     // Fetch items for each order

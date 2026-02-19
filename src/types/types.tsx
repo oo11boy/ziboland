@@ -296,6 +296,7 @@ export interface Order {
   unit?: string;
   postal_code?: string;
   items: OrderItem[];
+  extra_details:string;
 }
 
 export interface OrdersContentProps {

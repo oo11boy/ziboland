@@ -43,7 +43,7 @@ const Section = ({
   title: string;
   children: React.ReactNode;
 }) => (
-  <div className="space-y-3">
+  <div className="space-y-3 mt-4">
     <h3 className="font-bold text-lg text-gray-800 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700 pb-1">
       {title}
     </h3>
@@ -591,7 +591,7 @@ const copyToClipboard = (text: any) => {
 
               <Typography
                 variant="h4"
-                className="text-center font-bold text-purple-700 mb-8"
+                className="text-center font-bold yekan !text-lg  text-purple-700 pb-8"
               >
                 جزئیات سفارش #{selectedOrder.order_code}
               </Typography>
@@ -639,7 +639,7 @@ const copyToClipboard = (text: any) => {
                   }
                 />
               </div>
-
+  
               <Section title="آدرس تحویل">
                 {`${selectedOrder.province}، ${selectedOrder.city}، ${selectedOrder.street}`}
                 {selectedOrder.alley && `، کوچه ${selectedOrder.alley}`}
@@ -692,6 +692,12 @@ const copyToClipboard = (text: any) => {
                   ))}
                 </div>
               </Section>
+
+       {selectedOrder.extra_details &&
+          <Section title="توضیحات اختیاری">
+{selectedOrder.extra_details}
+            </Section>
+       }
 
               <div className="text-center mt-10">
                 <Button

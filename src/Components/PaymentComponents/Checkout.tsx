@@ -23,7 +23,9 @@ interface FormData {
 }
 
 export default function Checkout() {
-  const { state: { cartItems } } = useCart();
+  const {
+    state: { cartItems },
+  } = useCart();
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState<boolean>(false);
@@ -134,7 +136,7 @@ export default function Checkout() {
   };
 
   const handleInputChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -159,8 +161,13 @@ export default function Checkout() {
     if (!formData.street) newErrors.street = "خیابان الزامی است";
     if (!formData.building_number)
       newErrors.building_number = "پلاک الزامی است";
-    if (!/^\d{10}$/.test(formData.postal_code))
+
+    // تغییر در اعتبارسنجی کدپستی:
+    // فقط اگر پر شده بود، چک کن که ۱۰ رقم باشد
+    if (formData.postal_code && !/^\d{10}$/.test(formData.postal_code)) {
       newErrors.postal_code = "کدپستی باید 10 رقم باشد";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -279,7 +286,9 @@ export default function Checkout() {
           <div className="lg:col-span-2 space-y-8">
             {/* روش ارسال */}
             <section className="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4">روش ارسال</h2>
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">
+                روش ارسال
+              </h2>
               <div className="space-y-3">
                 <label className="flex items-center p-3 sm:p-4 border rounded-lg cursor-pointer hover:border-gray-900 transition">
                   <input
@@ -291,8 +300,12 @@ export default function Checkout() {
                     className="form-radio text-gray-900"
                   />
                   <div className="mr-3 sm:mr-4">
-                    <div className="font-semibold text-sm sm:text-base">ارسال عادی</div>
-                    <div className="text-xs sm:text-sm text-gray-600">رایگان • ۳-۵ روز کاری</div>
+                    <div className="font-semibold text-sm sm:text-base">
+                      ارسال عادی
+                    </div>
+                    <div className="text-xs sm:text-sm text-gray-600">
+                      رایگان • ۳-۵ روز کاری
+                    </div>
                   </div>
                 </label>
                 <label className="flex items-center p-3 sm:p-4 border rounded-lg cursor-pointer hover:border-gray-900 transition">
@@ -305,8 +318,12 @@ export default function Checkout() {
                     className="form-radio text-gray-900"
                   />
                   <div className="mr-3 sm:mr-4">
-                    <div className="font-semibold text-sm sm:text-base">ارسال پیشتاز</div>
-                    <div className="text-xs sm:text-sm text-gray-600">129,900 تومان • ۱-۲ روز کاری</div>
+                    <div className="font-semibold text-sm sm:text-base">
+                      ارسال پیشتاز
+                    </div>
+                    <div className="text-xs sm:text-sm text-gray-600">
+                      129,900 تومان • ۱-۲ روز کاری
+                    </div>
                   </div>
                 </label>
               </div>
@@ -322,15 +339,17 @@ export default function Checkout() {
                     {selectedAddress.first_name} {selectedAddress.last_name}
                   </p>
                   <p className="text-gray-700 text-sm">
-                    {selectedAddress.street}, {selectedAddress.alley || ""}, پلاک{" "}
-                    {selectedAddress.building_number}
+                    {selectedAddress.street}, {selectedAddress.alley || ""},
+                    پلاک {selectedAddress.building_number}
                   </p>
                   <p className="text-gray-700 text-sm">
                     {selectedAddress.city}, {selectedAddress.province}
                   </p>
-                  <p className="text-gray-700 text-sm">
-                    کدپستی: {selectedAddress.postal_code}
-                  </p>
+                  {selectedAddress.postal_code && (
+                    <p className="text-gray-700 text-sm">
+                      کدپستی: {selectedAddress.postal_code}
+                    </p>
+                  )}
                   <p className="text-gray-700 text-sm">
                     شماره همراه: {selectedAddress.phone_number}
                   </p>
@@ -412,7 +431,9 @@ export default function Checkout() {
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
                   />
                   {errors.phone_number && (
-                    <p className="text-red-500 text-xs">{errors.phone_number}</p>
+                    <p className="text-red-500 text-xs">
+                      {errors.phone_number}
+                    </p>
                   )}
 
                   <select
@@ -484,7 +505,9 @@ export default function Checkout() {
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
                   />
                   {errors.building_number && (
-                    <p className="text-red-500 text-xs">{errors.building_number}</p>
+                    <p className="text-red-500 text-xs">
+                      {errors.building_number}
+                    </p>
                   )}
 
                   <input
@@ -492,7 +515,7 @@ export default function Checkout() {
                     name="postal_code"
                     value={formData.postal_code}
                     onChange={handleInputChange}
-                    placeholder="کدپستی *"
+                    placeholder="کدپستی (اختیاری)" // تغییر متن راهنما
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
                   />
                   {errors.postal_code && (
@@ -540,7 +563,9 @@ export default function Checkout() {
           {/* خلاصه سفارش */}
           <div className="lg:col-span-1">
             <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm sticky top-4">
-              <h2 className="text-lg sm:text-xl font-semibold mb-4">خلاصه سفارش</h2>
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">
+                خلاصه سفارش
+              </h2>
 
               {cartItems.length > 0 ? (
                 <>
@@ -555,20 +580,26 @@ export default function Checkout() {
                         className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg"
                       />
                       <div className="flex-1">
-                        <h3 className="font-medium text-sm sm:text-base">{item.title}</h3>
+                        <h3 className="font-medium text-sm sm:text-base">
+                          {item.title}
+                        </h3>
                         {item.color && (
                           <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                            رنگ: {item.color.persianName} ({item.color.englishName})
+                            رنگ: {item.color.persianName} (
+                            {item.color.englishName})
                           </p>
                         )}
-                        <p className="text-xs sm:text-sm text-gray-600">تعداد: {item.quantity}</p>
+                        <p className="text-xs sm:text-sm text-gray-600">
+                          تعداد: {item.quantity}
+                        </p>
                         <p className="text-xs sm:text-sm text-gray-600">
                           قیمت واحد: {item.price} تومان
                         </p>
                         <p className="font-medium text-sm sm:text-base mt-1">
-                          {(parseInt(item.price.replace(/,/g, "")) * item.quantity).toLocaleString(
-                            "fa-IR"
-                          )}{" "}
+                          {(
+                            parseInt(item.price.replace(/,/g, "")) *
+                            item.quantity
+                          ).toLocaleString("fa-IR")}{" "}
                           تومان
                         </p>
                       </div>
@@ -583,7 +614,9 @@ export default function Checkout() {
                     <div className="flex justify-between text-sm sm:text-base">
                       <span className="text-gray-600">هزینه ارسال</span>
                       <span className="text-green-600">
-                        {deliveryCost === 0 ? "رایگان" : `${deliveryCost.toLocaleString("fa-IR")} تومان`}
+                        {deliveryCost === 0
+                          ? "رایگان"
+                          : `${deliveryCost.toLocaleString("fa-IR")} تومان`}
                       </span>
                     </div>
                   </div>
@@ -594,7 +627,9 @@ export default function Checkout() {
                   </div>
 
                   {submissionError && (
-                    <p className="text-red-500 text-sm mb-4">{submissionError}</p>
+                    <p className="text-red-500 text-sm mb-4">
+                      {submissionError}
+                    </p>
                   )}
 
                   <button
@@ -606,7 +641,9 @@ export default function Checkout() {
                   </button>
                 </>
               ) : (
-                <p className="text-gray-600 text-center">سبد خرید شما خالی است</p>
+                <p className="text-gray-600 text-center">
+                  سبد خرید شما خالی است
+                </p>
               )}
             </div>
           </div>
@@ -650,8 +687,8 @@ export default function Checkout() {
                     {addr.province}
                   </p>
                   <p className="text-gray-600">
-                    {addr.street}, {addr.alley || ""}, پلاک {addr.building_number},{" "}
-                    کدپستی {addr.postal_code}
+                    {addr.street}, {addr.alley || ""}, پلاک{" "}
+                    {addr.building_number}, کدپستی {addr.postal_code}
                   </p>
                   {addr.is_default && <p className="text-green-600">پیش‌فرض</p>}
                 </div>
