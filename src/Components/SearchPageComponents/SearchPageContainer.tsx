@@ -66,15 +66,34 @@ export default function SearchPageContainer({
   const productsRef = useRef<HTMLDivElement>(null);
 
   // تابع آپدیت URL
+// تابع آپدیت URL - اصلاح شده برای جلوگیری از حذف فاصله در هنگام تایپ
   const updateSearchQuery = (newValue: string) => {
-    const trimmed = newValue.trim();
+    // برای نمایش در URL فواصل ابتدا و انتها را حذف می‌کنیم
+    const trimmedValue = newValue.trim();
     const newParams = new URLSearchParams(searchParams.toString());
-    if (trimmed) newParams.set("q", encodeURIComponent(trimmed));
-    else newParams.delete("q");
+    
+    if (trimmedValue) {
+      newParams.set("q", encodeURIComponent(trimmedValue));
+    } else {
+      newParams.delete("q");
+    }
+    
+    // استفاده از { scroll: false } برای جلوگیری از پرش صفحه به بالا
     const newUrl = newParams.toString() ? `/search?${newParams.toString()}` : "/search";
     router.push(newUrl, { scroll: false });
   };
+// این useEffect را جایگزین منطق قبلی آپدیت URL کنید
+useEffect(() => {
+  // اگر مقدار جدید با مقدار فعلی URL یکی نیست، آپدیت کن
+  const delayDebounceFn = setTimeout(() => {
+    const currentQ = searchParams.get("q") || "";
+    if (searchTerm.trim() !== decodeURIComponent(currentQ).trim()) {
+      updateSearchQuery(searchTerm);
+    }
+  }, 200); // تاخیر برای اینکه کاربر بتواند Space بزند و کلمه بعدی را بنویسد
 
+  return () => clearTimeout(delayDebounceFn);
+}, [searchTerm]);
   // همگام‌سازی searchTerm از URL
   useEffect(() => {
     const q = searchParams.get("q");
@@ -394,6 +413,11 @@ export default function SearchPageContainer({
     setSelectedItemIds([]);
     setPriceRange([0, 100000000]);
     setRating(0);
+    // ۲. پاکسازی کامل URL (حذف تمام پارامترها و بازگشت به مسیر /search)
+    router.push("/search", { scroll: false });
+    
+    // ۳. اختیاری: نمایش پیام به کاربر
+    toast.info("تمام فیلترها پاک شدند");
     setDiscount(false);
     setInStock(false);
   };
@@ -408,32 +432,80 @@ export default function SearchPageContainer({
   const toggleSubcatExpansion = (id: number) =>
     setExpandedSubcats((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
 
-  const getSortedProducts = () => {
-    const filtered = products.filter((p) => {
-      const activeVariant = selectedVariants[p.id] || p.variants?.[0];
-      const currentPrice = activeVariant ? activeVariant.price_single : 0;
+const getSortedProducts = () => {
+    // نرمال‌سازی متن جستجو (حذف فضاها و کوچک کردن حروف)
+    const searchLower = searchTerm.trim().toLowerCase();
 
-      const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase());
+    const filtered = products.filter((p) => {
+      // ۱. منطق جستجوی فوق پیشرفته (Omnisearch)
+      // اگر کادر جستجو خالی باشد، همه محصولات تایید می‌شوند
+      const matchesSearch = searchLower === "" || (
+        p.title?.toLowerCase().includes(searchLower) ||
+        p.brandDetails?.title?.toLowerCase().includes(searchLower) ||
+        p.motherCategoryName?.toLowerCase().includes(searchLower) ||
+        p.category?.toLowerCase().includes(searchLower) ||
+        p.content?.toLowerCase().includes(searchLower) ||
+        p.features?.some(f => f.toLowerCase().includes(searchLower)) ||
+        // جستجو در تمام واریانت‌ها (رنگ و رایحه/مشخصات فنی)
+        p.variants?.some(v => 
+          v.color_persianName?.toLowerCase().includes(searchLower) || 
+          v.color_englishName?.toLowerCase().includes(searchLower) ||
+          v.infotable?.some(info => 
+            info.name.toLowerCase().includes(searchLower) || 
+            info.value.toLowerCase().includes(searchLower)
+          )
+        )
+      );
+
+      // ۲. مدیریت قیمت و واریانت فعال
+      const activeVariant = selectedVariants[p.id] || p.variants?.[0];
+      const currentPrice = activeVariant?.price_single || p.numericPrice || 0;
+      
+      // ۳. بررسی فیلترهای انتخابی (اگر آرایه خالی باشد یعنی فیلتر اعمال نشده)
       const matchesBrand = selectedBrands.length === 0 || (p.brandDetails && selectedBrands.includes(p.brandDetails.title));
       const matchesMothercat = selectedMothercatIds.length === 0 || selectedMothercatIds.includes(p.mothercatId);
       const matchesSubcat = selectedSubcatIds.length === 0 || selectedSubcatIds.includes(p.subcatId);
-      const matchesItem = selectedItemIds.length === 0 || (p.itemId && selectedItemIds.includes(p.itemId));
+      const matchesItem = selectedItemIds.length === 0 || (p.itemId !== null && selectedItemIds.includes(p.itemId));
+      
+      // ۴. فیلترهای بازه‌ای و وضعیتی
       const matchesPrice = currentPrice >= priceRange[0] && currentPrice <= priceRange[1];
       const matchesDiscount = !discount || (activeVariant && activeVariant.discount_percent > 0);
       const matchesRating = p.rating >= rating;
       const matchesStock = !inStock || p.variants?.some(v => v.stock_quantity > 0);
 
-      return matchesSearch && matchesBrand && matchesMothercat && matchesSubcat &&
-             matchesItem && matchesPrice && matchesDiscount && matchesRating && matchesStock;
+      // ترکیب نهایی تمام شرط‌ها
+      return (
+        matchesSearch && 
+        matchesBrand && 
+        matchesMothercat && 
+        matchesSubcat && 
+        matchesItem && 
+        matchesPrice && 
+        matchesDiscount && 
+        matchesRating && 
+        matchesStock
+      );
     });
 
-    switch (sortOption) {
-      case "گران‌ترین": return filtered.sort((a, b) => (selectedVariants[b.id]?.price_single || 0) - (selectedVariants[a.id]?.price_single || 0));
-      case "ارزان‌ترین": return filtered.sort((a, b) => (selectedVariants[a.id]?.price_single || 0) - (selectedVariants[b.id]?.price_single || 0));
-      case "محبوب‌ترین": return filtered.sort((a, b) => b.rating - a.rating);
-      case "پرفروش‌ترین": return filtered.sort((a, b) => (b.sales || 0) - (a.sales || 0));
-      default: return filtered.sort((a, b) => b.id - a.id);
-    }
+    // ۵. عملیات مرتب‌سازی (Sorting)
+    return [...filtered].sort((a, b) => {
+      const priceA = selectedVariants[a.id]?.price_single || a.numericPrice || 0;
+      const priceB = selectedVariants[b.id]?.price_single || b.numericPrice || 0;
+
+      switch (sortOption) {
+        case "ارزان‌ترین":
+          return priceA - priceB;
+        case "گران‌ترین":
+          return priceB - priceA;
+        case "محبوب‌ترین":
+          return (b.rating || 0) - (a.rating || 0);
+        case "پرفروش‌ترین":
+          return (b.sales || 0) - (a.sales || 0);
+        case "جدیدترین":
+        default:
+          return b.id - a.id;
+      }
+    });
   };
 
   const filteredProducts = getSortedProducts();

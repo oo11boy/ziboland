@@ -108,14 +108,11 @@ className="hidden lg:flex flex-col w-full lg:w-1/4 h-[calc(100vh-140px)] rounded
             <Category className="text-[#805B99]" /> جستجو
           </label>
           <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => {
-              const value = e.target.value;
-              setSearchTerm(value);
-              updateSearchQuery(value);
-            }}
-            placeholder="نام محصول..."
+       type="text"
+  value={searchTerm}
+  onChange={(e) => setSearchTerm(e.target.value)} // فقط استیت را تغییر دهید
+
+            placeholder="نام، رنگ، رایجه و... محصول"
             className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#805B99] outline-none transition"
           />
         </div>

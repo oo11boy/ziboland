@@ -76,9 +76,7 @@ export default function MobileFilterPanel({
   inStock,
   setInStock,
   filterVariants,
-  searchTerm,
-  setSearchTerm,
-  updateSearchQuery,
+
 }: MobileFilterPanelProps) {
   return (
     <motion.div
@@ -106,23 +104,6 @@ export default function MobileFilterPanel({
           </button>
         </div>
 
-        {/* جستجوی کلی محصولات */}
-        <div className="mb-6">
-          <label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-2">
-            <Category className="text-[#805b99]" /> جستجو
-          </label>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => {
-              const value = e.target.value;
-              setSearchTerm(value);
-              updateSearchQuery(value); // آپدیت URL همزمان با تایپ
-            }}
-            placeholder="نام محصول..."
-            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#805b99] outline-none transition"
-          />
-        </div>
 
         {/* دسته‌بندی‌ها */}
         <div className="mb-6">

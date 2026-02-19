@@ -30,19 +30,19 @@ export default function MobileHeader({
             className="p-2 text-white hover:bg-[#6b4e82] rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/50"
             aria-label={showFilters ? "بستن فیلترها" : "نمایش فیلترها"}
           >
-            {showFilters ? <Close fontSize="medium" /> : <Tune fontSize="medium" />}
+            {showFilters ? (
+              <Close fontSize="medium" />
+            ) : (
+              <Tune fontSize="medium" />
+            )}
           </button>
 
           <div className="relative flex items-center w-full">
             <input
               type="text"
               value={searchTerm}
-              onChange={(e) => {
-                const value = e.target.value;
-                setSearchTerm(value);
-                updateSearchQuery(value); // حالا URL همزمان آپدیت می‌شه
-              }}
-              placeholder="جستجوی محصول..."
+              onChange={(e) => setSearchTerm(e.target.value)} // فقط استیت را تغییر دهید
+              placeholder="نام، رنگ، رایجه و... محصول"
               className="w-full p-3 pr-10 bg-white/10 text-white border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-white/50 transition-all duration-200"
               aria-label="جستجوی محصول"
             />
