@@ -198,7 +198,7 @@ const ProductsPage = () => {
                         className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                       >
                         <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-end gap-2">
+                          <div className="flex items-center justify-start gap-2">
                             <button
                               onClick={() => copyToClipboard(product.title)}
                               className="text-gray-500 hover:text-purple-600 transition"
@@ -206,10 +206,9 @@ const ProductsPage = () => {
                             >
                               <Copy className="h-4 w-4" />
                             </button>
-                            <span className="font-medium">
-                              {product.title.length > 30
-                                ? product.title.slice(0, 30) + "..."
-                                : product.title}
+                            <span className="font-medium text-right">
+                              {
+                                 product.title}
                             </span>
                           </div>
                         </td>
