@@ -304,6 +304,7 @@ export interface OrdersContentProps {
   isOrderModalOpen: boolean;
   setIsOrderModalOpen: (open: boolean) => void;
   handleViewOrderDetails: (order: Order) => void;
+  handleDeleteOrder: (id: number) => void;
   modalStyle: any;
 }
 

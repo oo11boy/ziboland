@@ -8,12 +8,13 @@ export default function OrdersContent({
   isOrderModalOpen,
   setIsOrderModalOpen,
   handleViewOrderDetails,
+  handleDeleteOrder,
   modalStyle,
 }: OrdersContentProps) {
   const translateStatus = (status: string) => {
     switch (status) {
       case "pending":
-        return "در انتظار";
+        return "در انتظار پرداخت";
       case "processing":
         return "در حال پردازش";
       case "shipped":
@@ -28,7 +29,7 @@ export default function OrdersContent({
   };
 
   return (
-    <div className="ud-animate-slide-in-up p-4">
+    <div className="ud-animate-slide-in-up p-4 yekannew">
       <h2 className="ud-main-title text-2xl font-bold mb-6">سفارش‌های شما</h2>
 
       {orders.length === 0 ? (
@@ -104,21 +105,39 @@ export default function OrdersContent({
                   </span>
                 </div>
               </div>
+<div className="ud-order-buttons yekan mt-4 flex gap-2"> {/* اضافه کردن flex برای دو دکمه */}
+      <Button
+        variant="contained"
+        color="primary"
+        className="flex-1 yekan"
+        onClick={() => handleViewOrderDetails(order)}
+      >
+        جزئیات
+      </Button>
 
-              <div className="ud-order-buttons mt-4">
-                <Button
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  onClick={() => handleViewOrderDetails(order)}
-                  aria-label={`مشاهده جزئیات سفارش ${order.order_code}`}
-                >
-                  مشاهده جزئیات
-                </Button>
-              </div>
+      {/* دکمه حذف فقط برای وضعیت pending */}
+      {order.status === "pending" && (
+        <Button
+          variant="outlined"
+          color="error"
+          className="flex-1 yekan"
+          onClick={(e) => {
+            e.stopPropagation(); // جلوگیری از باز شدن مودال در صورت کلیک روی کارت
+            handleDeleteOrder(order.id);
+          }}
+        >
+          حذف سفارش
+        </Button>
+      )}
+    </div>
+        
             </div>
+            
           ))}
+          
         </div>
+
+
       )}
 
       {/* Modal */}
@@ -183,6 +202,7 @@ export default function OrdersContent({
               {selectedOrder.items && selectedOrder.items.length > 0 ? (
                 <ul className="space-y-2 mt-1">
                   {selectedOrder.items.map((item) => (
+                    
                     <li key={item.id} className="border-b pb-2">
                       <p>
                         <strong>محصول:</strong> {item.title}
@@ -214,6 +234,7 @@ export default function OrdersContent({
                 <Button
                   variant="contained"
                   color="error"
+                  className="yekan"
                   onClick={() => setIsOrderModalOpen(false)}
                   aria-label="بستن جزئیات سفارش"
                 >

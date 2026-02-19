@@ -12,7 +12,7 @@ import {
   AccountInfo,
   Address,
   Order,
-  RecentActivity,
+
   SupportTicket,
   TrackingResult,
   WishlistItem,
@@ -33,9 +33,7 @@ export default function UserDashboardContainer({
   initialAddresses,
   initialAccountInfo,
   initialOrders,
-  // initialWishlist,
   initialSupportTickets,
-  // initialRecentActivities,
 }: UserDashboardContainerProps) {
   const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [orderTrackingId, setOrderTrackingId] = useState<string>("");
@@ -45,6 +43,7 @@ export default function UserDashboardContainer({
   const [trackingError, setTrackingError] = useState<string>("");
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [addresses, setAddresses] = useState<Address[]>(initialAddresses);
+const [orders, setOrders] = useState<Order[]>(initialOrders);// مقدار اولیه را در استیت بریزید
   const [newAddress, setNewAddress] = useState<Address>({
     id: "",
     userId: initialAccountInfo.userId || "",
@@ -81,7 +80,6 @@ export default function UserDashboardContainer({
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>(
     initialSupportTickets
   );
-  const [orders] = useState<Order[]>(initialOrders);
   // const [wishlist, setWishlist] = useState<WishlistItem[]>(initialWishlist);
   // const [recentActivities] = useState<RecentActivity[]>(
   //   initialRecentActivities
@@ -90,7 +88,28 @@ export default function UserDashboardContainer({
 
   const token = Cookies.get("authToken");
 
+const handleDeleteOrder = async (orderId: number) => {
+  if (!confirm("آیا از حذف این سفارش اطمینان دارید؟")) return;
 
+  try {
+    const res = await fetch(`/api/orders/${orderId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.ok) {
+      // به‌روزرسانی لیست سفارشات در استیت
+      setOrders((prevOrders) => prevOrders.filter((o) => o.id !== orderId));
+      alert("سفارش با موفقیت حذف شد.");
+    } else {
+      const errorData = await res.json();
+      alert(errorData.error || "خطا در حذف سفارش");
+    }
+  } catch (err) {
+    console.error("Failed to delete order:", err);
+    alert("خطا در برقراری ارتباط با سرور");
+  }
+};
   // تابع برای به‌روزرسانی آدرس‌ها
   const fetchAddresses = async () => {
     try {
@@ -441,6 +460,7 @@ export default function UserDashboardContainer({
         {activeTab === "orders" && (
           <OrdersContent
             orders={orders}
+            handleDeleteOrder={handleDeleteOrder}
             selectedOrder={selectedOrder}
             isOrderModalOpen={isOrderModalOpen}
             setIsOrderModalOpen={setIsOrderModalOpen}
