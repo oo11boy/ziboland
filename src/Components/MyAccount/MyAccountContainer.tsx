@@ -1,366 +1,338 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
-import { Email, Lock, Person, Phone, VpnKey } from "@mui/icons-material";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/ContextApi/AuthContext";
 
 export default function MyAccountContainer() {
-  const [formType, setFormType] = useState<"login" | "register" | "forgot" | "verify">("login");
-  const [verificationStep, setVerificationStep] = useState(false);
-  const [verificationEmail, setVerificationEmail] = useState("");
-  const [verificationCode, setVerificationCode] = useState("");
+  const [step, setStep] = useState<"phone" | "code" | "profile">("phone");
+
+  const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
-  const [isResending, setIsResending] = useState(false);
-
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    firstName: "",
-    lastName: "",
-    phoneNumber: "",
-  });
-
-  const [error, setError] = useState<string>("");
-  const [success, setSuccess] = useState<string>("");
+  const [loading, setLoading] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectPath = searchParams.get("redirect") || "/userdashboard";
   const { login } = useAuth();
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData({ ...formData, [field]: value });
-    setError("");
-  };
-
-  // تایمر ارسال مجدد کد
   useEffect(() => {
     if (resendTimer > 0) {
-      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
-      return () => clearTimeout(timer);
+      const t = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+      return () => clearTimeout(t);
     }
   }, [resendTimer]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const normalizePhone = (p) => p.replace(/\D/g, "");
+
+  const handleSendCode = async (e) => {
     e.preventDefault();
     setError("");
     setSuccess("");
+    setLoading(true);
 
-    if (!formData.email || !formData.password) {
-      setError("ایمیل و رمز عبور الزامی هستند");
+    const cleanPhone = normalizePhone(phone);
+
+    if (cleanPhone.length !== 11 || !cleanPhone.startsWith("09")) {
+      setError("شماره موبایل باید با ۰۹ شروع شود و ۱۱ رقم باشد");
+      setLoading(false);
       return;
     }
 
     try {
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email, password: formData.password }),
+        body: JSON.stringify({ phone: cleanPhone }),
       });
 
       const data = await res.json();
 
-      if (res.ok) {
-        login();
-        setSuccess("ورود با موفقیت انجام شد. در حال انتقال...");
-        setTimeout(() => router.push(redirectPath), 1500);
-      } else {
-        setError(data.error || "خطا در ورود");
+      if (!res.ok) {
+        setError(data.error || "خطا در ارسال کد تأیید");
+        return;
       }
-    } catch (err) {
-      setError("خطا در ارتباط با سرور");
-    }
-  };
 
-const handleRegister = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setError("");
-  setSuccess("");
-
-  // اعتبارسنجی سمت کلاینت
-  if (!formData.username || !formData.email || !formData.password || !formData.firstName || !formData.lastName) {
-    setError("همه فیلدهای الزامی را پر کنید");
-    return;
-  }
-
-  if (formData.password !== formData.confirmPassword) {
-    setError("رمزهای عبور مطابقت ندارند");
-    return;
-  }
-
-  if (formData.password.length < 6) {
-    setError("رمز عبور باید حداقل ۶ کاراکتر باشد");
-    return;
-  }
-
-  try {
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        username: formData.username,
-        password: formData.password,
-        email: formData.email,
-        phone_number: formData.phoneNumber || null,
-        first_name: formData.firstName,
-        last_name: formData.lastName,
-      }),
-    });
-
-    const data = await res.json();
-
-    // فقط اگر ثبت‌نام موفق بود و نیاز به تأیید داشت → برو مرحله verify
-    if (res.ok && data.requireVerification) {
-      setVerificationEmail(data.email);
-      setFormType("verify");
-      setSuccess("کد تأیید به ایمیل شما ارسال شد");
+      setSuccess("کد تأیید برای شما ارسال شد");
+      setStep("code");
       setResendTimer(120);
-      return; // مهم: خارج شو تا بقیه اجرا نشه
-    }
-
-    // اگر ثبت‌نام موفق بود ولی نیازی به تأیید نداشت (مثلاً ادمین مستقیم فعال کنه)
-    if (res.ok) {
-      setSuccess("ثبت‌نام با موفقیت انجام شد");
-      setTimeout(() => setFormType("login"), 2000);
-      return;
-    }
-
-    // در همه حالات خطا (تکراری بودن، خطای سرور و...)
-    setError(data.error || "خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.");
-
-  } catch (err) {
-    setError("خطا در ارتباط با سرور. لطفاً اینترنت خود را بررسی کنید.");
-  }
-};
-
-  const handleVerifyCode = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-
-    if (verificationCode.length !== 6) {
-      setError("کد باید ۶ رقمی باشد");
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/auth/verify-code", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: verificationEmail, code: verificationCode }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setSuccess("حساب شما فعال شد! در حال انتقال به ورود...");
-        setTimeout(() => {
-          setFormType("login");
-          setVerificationStep(false);
-          setVerificationCode("");
-        }, 2000);
-      } else {
-        setError(data.error || "کد نامعتبر است");
-      }
     } catch (err) {
       setError("خطا در ارتباط با سرور");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleResendCode = async () => {
-    setIsResending(true);
+  const handleVerifyCode = async (e) => {
+    e.preventDefault();
     setError("");
-    setSuccess("");
+    setLoading(true);
+
+    if (code.length !== 6) {
+      setError("کد باید دقیقاً ۶ رقم باشد");
+      setLoading(false);
+      return;
+    }
 
     try {
-      const res = await fetch("/api/auth/resend-code", {
+      const res = await fetch("/api/auth/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: verificationEmail }),
+        body: JSON.stringify({ phone, code }),
       });
 
       const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "کد تأیید اشتباه یا منقضی شده است");
+        return;
+      }
+
+      if (data.isNew) {
+        setStep("profile");
+        setSuccess("لطفاً نام و نام خانوادگی خود را وارد کنید");
+      } else {
+        setSuccess("ورود با موفقیت انجام شد");
+        login?.();
+        setTimeout(() => {
+          router.push(redirectPath);
+        }, 1200);
+      }
+    } catch (err) {
+      setError("خطا در ارتباط با سرور");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCompleteProfile = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    if (!firstName.trim() || !lastName.trim()) {
+      setError("نام و نام خانوادگی الزامی است");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/auth/complete-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          phone,
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "خطا در تکمیل ثبت‌نام");
+        return;
+      }
+
+      setSuccess("ثبت‌نام با موفقیت تکمیل شد");
+      login?.();
+      setTimeout(() => {
+        router.push(redirectPath);
+      }, 1400);
+    } catch (err) {
+      setError("خطا در ارتباط با سرور");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError("");
+    setSuccess("");
+
+    const cleanPhone = normalizePhone(phone);
+
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: cleanPhone }),
+      });
 
       if (res.ok) {
         setSuccess("کد جدید ارسال شد");
         setResendTimer(120);
       } else {
+        const data = await res.json();
         setError(data.error || "خطا در ارسال مجدد");
       }
-    } catch (err) {
-      setError("خطا در ارتباط با سرور");
-    } finally {
-      setIsResending(false);
-    }
-  };
-
-  const handleForgot = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setSuccess("");
-
-    if (!formData.email) {
-      setError("ایمیل الزامی است");
-      return;
-    }
-
-    try {
-      const res = await fetch("/api/auth/forgot", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setSuccess("لینک بازیابی رمز عبور به ایمیل شما ارسال شد");
-        setTimeout(() => setFormType("login"), 3000);
-      } else {
-        setError(data.error || "خطا در ارسال لینک");
-      }
-    } catch (err) {
+    } catch {
       setError("خطا در ارتباط با سرور");
     }
   };
 
   return (
-    <div className="flex justify-center items-center mb-4 lg:min-h-[85vh] mx-2 py-10">
-      <div className="bg-white shadow-2xl rounded-2xl overflow-hidden w-full max-w-lg">
-        <div className="bg-gradient-to-r from-[#805B99] to-[#a078b8] p-6 text-center">
-          <h2 className="text-2xl font-bold text-white">
-            {formType === "login" && "ورود به حساب"}
-            {formType === "register" && "ثبت‌نام در زیبولند"}
-            {formType === "forgot" && "بازیابی رمز عبور"}
-            {formType === "verify" && "تأیید ایمیل"}
-          </h2>
-          <p className="text-sm text-purple-100 mt-2">
-            {formType === "login" && "خوشحالیم دوباره دیدارتون داریم"}
-            {formType === "register" && "همین حالا عضو خانواده زیبولند شوید"}
-            {formType === "forgot" && "لینک بازیابی به ایمیل شما ارسال می‌شود"}
-            {formType === "verify" && `کد ارسال شده به ${verificationEmail} را وارد کنید`}
+    <div className="flex justify-center items-center min-h-[70vh] px-4 py-12">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+        {/* هدر */}
+        <div className="bg-gradient-to-r from-[#805B99] to-[#9f79c0] p-8 text-center">
+          <h1 className="text-3xl font-bold text-white mb-2">زیبولند</h1>
+          <p className="text-purple-100 text-sm">
+            {step === "phone" && "ورود / ثبت‌نام سریع با شماره موبایل"}
+            {step === "code" && "کد تأیید را وارد کنید"}
+            {step === "profile" && "تکمیل اطلاعات کاربری"}
           </p>
         </div>
 
-        <div className="p-6 space-y-6">
-          {success && <p className="text-green-600 text-center font-medium bg-green-50 py-3 rounded-lg">{success}</p>}
-          {error && <p className="text-red-600 text-center font-medium bg-red-50 py-3 rounded-lg">{error}</p>}
-
-          {/* فرم ورود */}
-          {formType === "login" && (
-            <form onSubmit={handleLogin} className="space-y-5">
-              <div className="relative">
-                <Email className="absolute left-3 top-4 text-gray-400" />
-                <input type="email" placeholder="ایمیل" value={formData.email} onChange={(e) => handleInputChange("email", e.target.value)} className="w-full pl-12 pr-4 py-4 border rounded-xl focus:ring-2 focus:ring-[#805B99] outline-none" required />
-              </div>
-              <div className="relative">
-                <Lock className="absolute left-3 top-4 text-gray-400" />
-                <input type="password" placeholder="رمز عبور" value={formData.password} onChange={(e) => handleInputChange("password", e.target.value)} className="w-full pl-12 pr-4 py-4 border rounded-xl focus:ring-2 focus:ring-[#805B99] outline-none" required />
-              </div>
-              <button type="submit" className="w-full bg-[#805B99] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#6a4d80] transition">
-                ورود
-              </button>
-              <div className="text-center space-y-3">
-                <button type="button" onClick={() => setFormType("forgot")} className="text-sm text-[#805B99] hover:underline">
-                  فراموشی رمز عبور؟
-                </button>
-              </div>
-            </form>
+        <div className="p-8 space-y-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-center text-sm">
+              {error}
+            </div>
           )}
 
-          {/* فرم ثبت‌نام */}
-          {formType === "register" && (
-            <form onSubmit={handleRegister} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <input type="text" placeholder="نام" value={formData.firstName} onChange={(e) => handleInputChange("firstName", e.target.value)} className="w-full px-4 py-4 border rounded-xl" required />
-                <input type="text" placeholder="نام خانوادگی" value={formData.lastName} onChange={(e) => handleInputChange("lastName", e.target.value)} className="w-full px-4 py-4 border rounded-xl" required />
-              </div>
-              <input type="text" placeholder="نام کاربری" value={formData.username} onChange={(e) => handleInputChange("username", e.target.value)} className="w-full px-4 py-4 border rounded-xl" required />
-              <input type="email" placeholder="ایمیل" value={formData.email} onChange={(e) => handleInputChange("email", e.target.value)} className="w-full px-4 py-4 border rounded-xl" required />
-              <input type="tel" placeholder="شماره موبایل (اختیاری)" value={formData.phoneNumber} onChange={(e) => handleInputChange("phoneNumber", e.target.value)} className="w-full px-4 py-4 border rounded-xl" />
-              <div className="grid grid-cols-2 gap-4">
-                <input type="password" placeholder="رمز عبور" value={formData.password} onChange={(e) => handleInputChange("password", e.target.value)} className="w-full px-4 py-4 border rounded-xl" required />
-                <input type="password" placeholder="تکرار رمز عبور" value={formData.confirmPassword} onChange={(e) => handleInputChange("confirmPassword", e.target.value)} className="w-full px-4 py-4 border rounded-xl" required />
-              </div>
-              <button type="submit" className="w-full bg-[#805B99] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#6a4d80] transition">
-                ثبت‌نام
-              </button>
-            </form>
+          {success && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-center text-sm">
+              {success}
+            </div>
           )}
 
-          {/* فراموشی رمز عبور */}
-          {formType === "forgot" && (
-            <form onSubmit={handleForgot} className="space-y-5">
-              <input type="email" placeholder="ایمیل خود را وارد کنید" value={formData.email} onChange={(e) => handleInputChange("email", e.target.value)} className="w-full px-4 py-4 border rounded-xl" required />
-              <button type="submit" className="w-full bg-[#805B99] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#6a4d80] transition">
-                ارسال لینک بازیابی
+          {/* مرحله ۱ - شماره موبایل */}
+          {step === "phone" && (
+            <form onSubmit={handleSendCode} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  شماره موبایل
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="۰۹۱۲xxxxxxx"
+                  maxLength={11}
+                  pattern="09[0-9]{9}"
+                  className="w-full px-5 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#805B99] focus:border-[#805B99] outline-none text-lg"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full py-4 px-6 rounded-xl text-white font-bold text-lg transition-all ${
+                  loading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-[#805B99] hover:bg-[#6f4a82] shadow-md hover:shadow-lg"
+                }`}
+              >
+                {loading ? "در حال ارسال ..." : "دریافت کد تأیید"}
               </button>
             </form>
           )}
 
-          {/* تأیید کد */}
-          {formType === "verify" && (
+          {/* مرحله ۲ - وارد کردن کد */}
+          {step === "code" && (
             <form onSubmit={handleVerifyCode} className="space-y-6">
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-4">کد ۶ رقمی ارسال شده به ایمیل زیر را وارد کنید:</p>
-                <p className="font-bold text-[#805B99] break-all">{verificationEmail}</p>
+                <p className="text-gray-600 mb-3">کد ۶ رقمی ارسال شده به</p>
+                <p className="font-bold text-xl text-[#805B99]">{phone}</p>
               </div>
+
               <input
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 maxLength={6}
-                value={verificationCode}
-                onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ""))}
-                placeholder="------"
-                className="w-full text-center text-3xl tracking-widest letter-spacing-8 py-5 border-2 rounded-xl font-mono"
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                placeholder="──────"
+                className="w-full text-center text-5xl tracking-[1.2rem] font-mono border-2 border-gray-300 rounded-xl py-6 focus:border-[#805B99] focus:ring-2 focus:ring-[#805B99] outline-none"
+                required
                 autoFocus
               />
-              <button type="submit" className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition">
-                تأیید و فعال‌سازی حساب
+
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full py-4 px-6 rounded-xl text-white font-bold text-lg transition-all ${
+                  loading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-[#805B99] hover:bg-[#6f4a82] shadow-md hover:shadow-lg"
+                }`}
+              >
+                {loading ? "در حال بررسی ..." : "تأیید کد"}
               </button>
 
-              <div className="text-center">
+              <div className="text-center text-sm">
                 {resendTimer > 0 ? (
-                  <p className="text-sm text-gray-500">ارسال مجدد کد پس از {resendTimer} ثانیه</p>
+                  <span className="text-gray-500">
+                    ارسال مجدد پس از {resendTimer} ثانیه
+                  </span>
                 ) : (
                   <button
                     type="button"
-                    onClick={handleResendCode}
-                    disabled={isResending}
-                    className="text-sm text-[#805B99] hover:underline disabled:opacity-50"
+                    onClick={handleResend}
+                    className="text-[#805B99] font-medium hover:underline"
                   >
-                    {isResending ? "در حال ارسال..." : "ارسال مجدد کد"}
+                    ارسال مجدد کد
                   </button>
                 )}
               </div>
             </form>
           )}
 
-          {/* تغییر بین فرم‌ها */}
-          <div className="text-center pt-4">
-            {formType === "login" && (
-              <p className="text-gray-600">
-                حساب ندارید؟{" "}
-                <button type="button" onClick={() => setFormType("register")} className="text-[#805B99] font-bold hover:underline">
-                  ثبت‌نام کنید
-                </button>
-              </p>
-            )}
-            {(formType === "register" || formType === "forgot") && (
-              <p className="text-gray-600">
-                قبلاً ثبت‌نام کردید؟{" "}
-                <button type="button" onClick={() => setFormType("login")} className="text-[#805B99] font-bold hover:underline">
-                  وارد شوید
-                </button>
-              </p>
-            )}
-            {formType === "verify" && (
-              <button type="button" onClick={() => setFormType("login")} className="text-sm text-gray-500 hover:underline">
-                بازگشت به ورود
+          {/* مرحله ۳ - تکمیل پروفایل (کاربران جدید) */}
+          {step === "profile" && (
+            <form onSubmit={handleCompleteProfile} className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  نام
+                </label>
+                <input
+                  type="text"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="نام خود را وارد کنید"
+                  className="w-full px-5 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#805B99] focus:border-[#805B99] outline-none"
+                  required
+                  autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  نام خانوادگی
+                </label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="نام خانوادگی خود را وارد کنید"
+                  className="w-full px-5 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#805B99] focus:border-[#805B99] outline-none"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className={`w-full py-4 px-6 rounded-xl text-white font-bold text-lg transition-all ${
+                  loading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-[#805B99] hover:bg-[#6f4a82] shadow-md hover:shadow-lg"
+                }`}
+              >
+                {loading ? "در حال ثبت ..." : "تکمیل ثبت‌نام و ورود"}
               </button>
-            )}
-          </div>
+            </form>
+          )}
         </div>
       </div>
     </div>

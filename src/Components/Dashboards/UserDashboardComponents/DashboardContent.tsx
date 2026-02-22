@@ -59,22 +59,22 @@ export default function DashboardContent({
           <h3 className="ud-card-title">تعداد کل سفارش‌ها</h3>
           <p className="ud-card-value">{orders.length.toLocaleString("fa-IR")}</p>
         </div>
-        <div className="ud-card" role="region" aria-label="تعداد علاقه‌مندی‌ها">
+        {/* <div className="ud-card" role="region" aria-label="تعداد علاقه‌مندی‌ها">
           <div className="ud-card-dot ud-card-dot-yellow"></div>
           <h3 className="ud-card-title">تعداد علاقه‌مندی‌ها</h3>
           <p className="ud-card-value">0</p>
           <p className="ud-card-info">آخرین افزودن: 
-            {/* {recentActivities[0]?.date ? new Date(recentActivities[0].date).toLocaleDateString("fa-IR") : "نامشخص"}
-             */}
+            {recentActivities[0]?.date ? new Date(recentActivities[0].date).toLocaleDateString("fa-IR") : "نامشخص"}
+            
             نامشخص
             </p>
-        </div>
-        <div className="ud-card" role="region" aria-label="وضعیت پروفایل">
+        </div> */}
+        {/* <div className="ud-card" role="region" aria-label="وضعیت پروفایل">
           <div className="ud-card-dot ud-card-dot-green"></div>
           <h3 className="ud-card-title">وضعیت پروفایل</h3>
           <p className="ud-card-profile-status">{accountInfo.email ? "تکمیل‌شده" : "ناقص"}</p>
           <p className="ud-card-info">ایمیل: {accountInfo.email}</p>
-        </div>
+        </div> */}
         <div className="ud-card" role="region" aria-label="تیکت‌های پشتیبانی">
           <div className="ud-card-dot ud-card-dot-blue"></div>
           <h3 className="ud-card-title">تیکت‌های پشتیبانی</h3>

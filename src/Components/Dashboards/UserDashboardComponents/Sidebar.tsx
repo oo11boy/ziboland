@@ -18,8 +18,8 @@ export default function Sidebar({
         <div className="ud-mobile-header-user">
           <Avatar alt={accountInfo.first_name} />
           <div>
-            <h1 className="ud-mobile-header-title">{accountInfo.first_name}</h1>
-            <p className="ud-mobile-header-email">{accountInfo.email}</p>
+            <h1 className="ud-mobile-header-title">{accountInfo.phone_number}</h1>
+            {/* <p className="ud-mobile-header-email">{accountInfo.email}</p> */}
           </div>
         </div>
         <button
@@ -34,8 +34,8 @@ export default function Sidebar({
         <div className="ud-sidebar-user">
           <Avatar alt={accountInfo.first_name} />
           <div>
-            <h1 className="ud-mobile-header-title">{accountInfo.first_name}</h1>
-            <p className="ud-mobile-header-email">{accountInfo.email}</p>
+            <h1 className="ud-mobile-header-title">{accountInfo.phone_number}</h1>
+            {/* <p className="ud-mobile-header-email">{accountInfo.email}</p> */}
           </div>
         </div>
         <nav className="ud-sidebar-nav">
@@ -45,7 +45,7 @@ export default function Sidebar({
             // { tab: "wishlist", label: "لیست‌ها", Icon: Favorite },
             { tab: "tickets", label: "تیکت پشتیبانی", Icon: FireTruck },
             { tab: "addresses", label: "آدرس", Icon: Settings },
-            { tab: "account", label: "اطلاعات حساب کاربری", Icon: Settings },
+            // { tab: "account", label: "اطلاعات حساب کاربری", Icon: Settings },
           ].map(({ tab, label, Icon }) => (
             <button
               key={tab}
