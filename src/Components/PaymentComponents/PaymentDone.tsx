@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useCart } from "@/ContextApi/CartContext";
 
 interface OrderItem {
   id: number;
@@ -54,7 +55,7 @@ const formatPrice = (priceInRials: number): string => {
 export default function PaymentDone() {
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
-
+const { dispatch } = useCart();
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const orderId = urlParams.get("orderId");
@@ -72,12 +73,14 @@ export default function PaymentDone() {
       .then((data) => {
         setOrder(data);
         setLoading(false);
+        dispatch({ type: "CLEAR_CART" });
+        localStorage.removeItem("cartItems");
       })
       .catch((err) => {
         console.error(err);
         setLoading(false);
       });
-  }, []);
+  }, [dispatch]);
 
   if (loading) {
     return (

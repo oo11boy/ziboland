@@ -1,4 +1,5 @@
 "use client";
+
 import React, { createContext, useContext, useReducer, useEffect } from "react";
 
 interface CartItem {
@@ -18,7 +19,7 @@ interface CartItem {
   baseWholesalePrice: number;
   retailDiscountPercent: number;
   minWholesale: number;
-  stock_quantity: number; // اضافه شد برای کنترل سقف خرید
+  stock_quantity: number;
   addedAt: number;
 }
 
@@ -45,6 +46,7 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 const CART_STORAGE_KEY = "cartItems";
+const ONE_DAY_IN_MS = 24 * 60 * 60 * 1000; // ۲۴ ساعت
 
 const getItemKey = (item: { id: number; color?: CartItem["color"] }) =>
   `${item.id}-${item.color?.englishName || "default"}`;
@@ -61,7 +63,6 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         const updatedItems = [...state.cartItems];
         const existingItem = updatedItems[existingItemIndex];
 
-        // کنترل موجودی در هنگام اضافه کردن مجدد
         let totalQuantity = existingItem.quantity + action.payload.quantity;
         if (totalQuantity > action.payload.stock_quantity) {
           totalQuantity = action.payload.stock_quantity;
@@ -70,6 +71,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         const isWholesale =
           totalQuantity >= action.payload.minWholesale &&
           action.payload.baseWholesalePrice > 0;
+
         let newUnitPrice = isWholesale
           ? action.payload.baseWholesalePrice
           : Math.round(
@@ -86,6 +88,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
             ? "0"
             : `${action.payload.retailDiscountPercent}%`,
         };
+
         return { ...state, cartItems: updatedItems };
       }
 
@@ -107,7 +110,6 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       if (itemIndex >= 0) {
         const item = state.cartItems[itemIndex];
 
-        // اگر تعداد درخواستی بیشتر از موجودی انبار بود، روی سقف انبار قفل شود
         const finalQuantity =
           newQuantity > item.stock_quantity ? item.stock_quantity : newQuantity;
 
@@ -120,6 +122,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
         const isWholesale =
           finalQuantity >= item.minWholesale && item.baseWholesalePrice > 0;
+
         let newUnitPrice = isWholesale
           ? item.baseWholesalePrice
           : Math.round(
@@ -134,6 +137,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
           price: newUnitPrice.toString(),
           discount: isWholesale ? "0" : `${item.retailDiscountPercent}%`,
         };
+
         return { ...state, cartItems: updatedItems };
       }
       return state;
@@ -160,20 +164,44 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [state, dispatch] = useReducer(cartReducer, { cartItems: [] });
 
+  // لود سبد خرید + حذف خودکار آیتم‌های قدیمی‌تر از ۲۴ ساعت
   useEffect(() => {
     const saved = localStorage.getItem(CART_STORAGE_KEY);
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        parsed.forEach((item: any) =>
+        const parsed: CartItem[] = JSON.parse(saved);
+        const now = Date.now();
+
+        // حذف آیتم‌هایی که بیش از ۲۴ ساعت از اضافه شدنشان گذشته
+        const validItems = parsed.filter((item) => {
+          const age = now - (item.addedAt || 0);
+          return age <= ONE_DAY_IN_MS;
+        });
+
+        // اگر آیتمی حذف شده، لاگ بزن (اختیاری - برای دیباگ)
+        if (validItems.length < parsed.length) {
+          console.log(
+            `${parsed.length - validItems.length} آیتم به دلیل گذشت بیش از ۲۴ ساعت از سبد خرید حذف شد`
+          );
+        }
+
+        // اضافه کردن آیتم‌های معتبر به state
+        validItems.forEach((item) =>
           dispatch({ type: "ADD_ITEM", payload: item })
         );
+
+        // اگر سبد بعد از فیلتر خالی شد، localStorage را هم پاک کن
+        if (validItems.length === 0) {
+          localStorage.removeItem(CART_STORAGE_KEY);
+        }
       } catch (e) {
-        console.error(e);
+        console.error("خطا در خواندن سبد خرید از localStorage:", e);
+        localStorage.removeItem(CART_STORAGE_KEY); // پاک کردن داده خراب
       }
     }
   }, []);
 
+  // ذخیره تغییرات سبد در localStorage
   useEffect(() => {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.cartItems));
   }, [state.cartItems]);
@@ -187,6 +215,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useCart = () => {
   const context = useContext(CartContext);
-  if (!context) throw new Error("useCart must be used within a CartProvider");
+  if (!context) {
+    throw new Error("useCart must be used within a CartProvider");
+  }
   return context;
 };

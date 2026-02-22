@@ -216,7 +216,7 @@ const ProductsPage = () => {
                           {product.brandDetails?.title || "-"}
                         </td>
                         <td className="px-6 py-4 text-right">
-                          {product.category}
+                          {product.motherCategoryName}
                         </td>
                         <td className="px-6 py-4 text-center">
                           <span className="inline-block px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm">

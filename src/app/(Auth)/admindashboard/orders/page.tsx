@@ -680,7 +680,7 @@ const copyToClipboard = (text: any) => {
                         )}
                         <p className="text-sm">تعداد: {item.quantity}</p>
                         <p className="text-sm font-medium">
-                          قیمت واحد: {(item.unit_price / 10).toLocaleString()}{" "}
+                          قیمت واحد: {(item.unit_price ).toLocaleString()}{" "}
                           تومان
                         </p>
                         <p className="text-xs text-gray-500">

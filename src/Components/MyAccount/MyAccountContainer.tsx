@@ -29,9 +29,9 @@ export default function MyAccountContainer() {
     }
   }, [resendTimer]);
 
-  const normalizePhone = (p) => p.replace(/\D/g, "");
+  const normalizePhone = (p:any) => p.replace(/\D/g, "");
 
-  const handleSendCode = async (e) => {
+  const handleSendCode = async (e:any) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -69,7 +69,7 @@ export default function MyAccountContainer() {
     }
   };
 
-  const handleVerifyCode = async (e) => {
+  const handleVerifyCode = async (e:any) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -111,7 +111,7 @@ export default function MyAccountContainer() {
     }
   };
 
-  const handleCompleteProfile = async (e) => {
+  const handleCompleteProfile = async (e:any) => {
     e.preventDefault();
     setError("");
     setLoading(true);
