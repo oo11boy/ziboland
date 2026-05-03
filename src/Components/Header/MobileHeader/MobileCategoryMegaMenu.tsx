@@ -6,53 +6,13 @@ import { PulseLoader } from "react-spinners";
 import { motion, AnimatePresence } from "framer-motion";
 import "react-toastify/dist/ReactToastify.css";
 import { Categoryapi } from "@/types/types";
+import { useCat } from "@/ContextApi/CategoriesContext";
 
 export default function MobileCategoryMegaMenu() {
   const [openCategory, setOpenCategory] = useState<Categoryapi | null>(null);
   const [openSubCategory, setOpenSubCategory] = useState<number | null>(null);
-  const [categories, setCategories] = useState<Categoryapi[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+const {loading,categories,error}=useCat()
 
-  // Function to get Google Material Icon
-  const getIconComponent = (iconName: string): JSX.Element => {
-    const formattedIconName = iconName
-      .replace(/([A-Z])/g, "_$1")
-      .toLowerCase()
-      .slice(1);
-
-    return (
-      <span className="material-icons text-[#805B99] text-4xl">
-        {formattedIconName}
-      </span>
-    );
-  };
-
-  // Fetch categories from API
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch("/api/categories");
-        if (!response.ok) throw new Error("Failed to fetch categories");
-
-        const categoriesData: Categoryapi[] = await response.json();
-        setCategories(categoriesData);
-      } catch (err) {
-        
-        setError("خطا در بارگذاری دسته‌بندی‌ها. لطفاً دوباره تلاش کنید."+err);
-        toast.error("خطا در بارگذاری دسته‌بندی‌ها", {
-          position: "top-center",
-          autoClose: 3000,
-          theme: "colored",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCategories();
-  }, []);
 
   // Toggle category
   const toggleCategory = useCallback((cat: Categoryapi) => {

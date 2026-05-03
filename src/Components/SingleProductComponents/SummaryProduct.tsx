@@ -4,20 +4,21 @@ import React from 'react';
 import { FavoriteBorderOutlined, ShareOutlined } from '@mui/icons-material';
 import './SingleProduct.css';
 import { Categoryapi, Product, Variant } from '@/types/types';
+import { useCat } from '@/ContextApi/CategoriesContext';
 
 interface SummaryProductProps {
   infoproduct: Product;
   selectedVariant?: Variant | null;
   onVariantChange?: (variant: Variant) => void;
-  categories:Categoryapi[],
+
 }
 
 const SummaryProduct: React.FC<SummaryProductProps> = ({
   infoproduct,
-categories
+
 }) => {
 
-console.log(categories)
+  const {categories}=useCat()
   const motherCat = categories.find(c => c.id === infoproduct.mothercatId);
 
   return (

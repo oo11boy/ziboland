@@ -4,14 +4,12 @@ import { ArrowDropDown, ArrowLeft, Close } from "@mui/icons-material";
 import Link from "next/link";
 import { Toaster } from "react-hot-toast";
 import { Categoryapi } from "@/types/types";
+import { useCat } from "@/ContextApi/CategoriesContext";
 
-interface MegaMenuWideHeaderProps {
-  categories: Categoryapi[];
-}
 
-export default function MegaMenuWideHeader({
-  categories,
-}: MegaMenuWideHeaderProps) {
+export default function MegaMenuWideHeader() {
+
+  const {categories}=useCat()
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);

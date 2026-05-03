@@ -5,15 +5,14 @@ import WideHeaderContactUs from "./WideHeaderContactUs";
 import WideHeaderMiddle from "./WideHeaderMiddle";
 import MegaMenuWideHeader from "./MegaMenuWideHeader";
 import { useAuth } from "@/ContextApi/AuthContext";
-import { Categoryapi } from "@/types/types";
 
 interface WideHeaderContainerProps {
-  categories: Categoryapi[];
+
   settings: any;
 }
 
 export default function WideHeaderContainer({
-  categories,
+  
   settings,
 }: WideHeaderContainerProps): React.JSX.Element | null {
   const { isAdminDashboard } = useAuth();
@@ -51,7 +50,7 @@ export default function WideHeaderContainer({
         }`}
       >
         <WideHeaderMiddle />
-        <MegaMenuWideHeader categories={categories} />
+        <MegaMenuWideHeader  />
       </div>
       
       {/* ایجاد یک فضای خالی (Spacer) برای جلوگیری از پرش صفحه هنگام چسبنده شدن */}

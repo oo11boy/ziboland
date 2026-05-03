@@ -1,14 +1,16 @@
 "use client";
-import React from 'react';
+
 import { Product, Categoryapi } from '@/types/types';
 import Link from 'next/link';
+import { useCat } from '@/ContextApi/CategoriesContext';
 
 interface BreadCrumbsProps {
   product: Product;
-  categories: Categoryapi[];
+
 }
 
-export default function BreadCrumbs({ product, categories }: BreadCrumbsProps) {
+export default function BreadCrumbs({ product }: BreadCrumbsProps) {
+const {categories}=useCat()
   const motherCat = categories.find(c => c.id === product.mothercatId);
   const subCat = motherCat?.subcat.find(s => s.id === product.subcatId);
   const item = subCat?.items.find(i => i.id === product.itemId);
