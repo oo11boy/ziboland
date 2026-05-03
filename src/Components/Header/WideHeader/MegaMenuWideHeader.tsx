@@ -5,11 +5,10 @@ import Link from "next/link";
 import { Toaster } from "react-hot-toast";
 import { Categoryapi } from "@/types/types";
 import { useCat } from "@/ContextApi/CategoriesContext";
-
+import { PulseLoader } from "react-spinners";
 
 export default function MegaMenuWideHeader() {
-
-  const {categories}=useCat()
+  const { categories } = useCat();
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -62,7 +61,7 @@ export default function MegaMenuWideHeader() {
   if (categories.length === 0) {
     return (
       <div className="flex h-[35px] items-center justify-center bg-black text-white font-yekan">
-        <p>خطا در بارگذاری دسته‌بندی‌ها.</p>
+        <PulseLoader color="#b7adad" speedMultiplier={1} size={10} />
       </div>
     );
   }
@@ -106,8 +105,8 @@ export default function MegaMenuWideHeader() {
       {/* بخش مگامنو (پنل باز شونده) */}
       <div
         className={`bg-white text-black w-full shadow-xl rounded-b-lg overflow-hidden absolute top-[35px] left-0 z-10 transition-all duration-300 ease-in-out ${
-          activeMenu !== null 
-            ? "max-h-[80vh] py-8 opacity-100 border-t border-gray-100" 
+          activeMenu !== null
+            ? "max-h-[80vh] py-8 opacity-100 border-t border-gray-100"
             : "max-h-0 py-0 opacity-0 pointer-events-none"
         }`}
       >

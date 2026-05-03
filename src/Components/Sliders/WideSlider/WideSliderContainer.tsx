@@ -1,7 +1,12 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { Swiper, SwiperSlide, SwiperRef } from "swiper/react";
-import { Navigation, Pagination, EffectCoverflow, Autoplay } from "swiper/modules";
+import {
+  Navigation,
+  Pagination,
+  EffectCoverflow,
+  Autoplay,
+} from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -10,26 +15,15 @@ import "./WideSlider.css";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import Link from "next/link";
+import { useSlider } from "@/ContextApi/SliderContext";
 
-interface Slide {
-  id: number;
-  imagewide: string;
-  imagemin: string;
-  alt: string;
-  link: string;
-}
-
-interface WideSliderContainerProps {
-  slides: Slide[]; // prop جدید برای داده‌ها
-}
-
-const WideSliderContainer: React.FC<WideSliderContainerProps> = ({ slides }) => {
+const WideSliderContainer = () => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [startTime, setStartTime] = useState(Date.now());
   const [windowWidth, setWindowWidth] = useState(0);
   const swiperRef = useRef<SwiperRef>(null);
-
+  const { slides } = useSlider();
   // useEffect برای fetch حذف شد، چون داده‌ها از props می‌آیند
 
   useEffect(() => {
@@ -87,38 +81,37 @@ const WideSliderContainer: React.FC<WideSliderContainerProps> = ({ slides }) => 
     }
   };
 
-  // اگر slides خالی باشد، می‌توانید یک پیام یا loading نشان دهید
-  if (slides.length === 0) {
-    return <div className="w-full py-5 text-center">در حال بارگذاری اسلایدرها...</div>;
-  }
-
   return (
     <div className="w-full mx-auto py-5 relative">
-     <Swiper
-  ref={swiperRef}
-  modules={[Navigation, Pagination, EffectCoverflow, Autoplay]}
-  effect="coverflow"
-  grabCursor={true}
-  centeredSlides={true}
-  slidesPerView={windowWidth >= 993 ? 1.1 : 1.13}
-  spaceBetween={windowWidth >= 993 ? 150 : 100}
-  loop={slides.length > 2} // فقط وقتی اسلاید بیشتر از 2 باشد loop فعال شود
-  autoplay={slides.length > 2 ? { delay: 6000, disableOnInteraction: false } : false} // autoplay هم مشابه
-  coverflowEffect={{
-    rotate: 0,
-    stretch: 50,
-    depth: 100,
-    modifier: 1,
-    slideShadows: false,
-  }}
-  pagination={{ clickable: true }}
-  navigation={{
-    prevEl: ".swiper-button-prev",
-    nextEl: ".swiper-button-next",
-  }}
-  onSlideChange={handleSlideChange}
-  className="py-5"
->
+      <Swiper
+        ref={swiperRef}
+        modules={[Navigation, Pagination, EffectCoverflow, Autoplay]}
+        effect="coverflow"
+        grabCursor={true}
+        centeredSlides={true}
+        slidesPerView={windowWidth >= 993 ? 1.1 : 1.13}
+        spaceBetween={windowWidth >= 993 ? 150 : 100}
+        loop={slides.length > 2} // فقط وقتی اسلاید بیشتر از 2 باشد loop فعال شود
+        autoplay={
+          slides.length > 2
+            ? { delay: 6000, disableOnInteraction: false }
+            : false
+        } // autoplay هم مشابه
+        coverflowEffect={{
+          rotate: 0,
+          stretch: 50,
+          depth: 100,
+          modifier: 1,
+          slideShadows: false,
+        }}
+        pagination={{ clickable: true }}
+        navigation={{
+          prevEl: ".swiper-button-prev",
+          nextEl: ".swiper-button-next",
+        }}
+        onSlideChange={handleSlideChange}
+        className="py-5"
+      >
         {slides.map((slide) => (
           <SwiperSlide
             key={slide.id}
@@ -139,7 +132,10 @@ const WideSliderContainer: React.FC<WideSliderContainerProps> = ({ slides }) => 
           </SwiperSlide>
         ))}
       </Swiper>
-      <div style={{ display: windowWidth <= 993 ? "flex" : "none" }} className="absolute z-[20] w-10 h-10 bg-white rounded-full top-8 right-[10%]">
+      <div
+        style={{ display: windowWidth <= 993 ? "flex" : "none" }}
+        className="absolute z-[20] w-10 h-10 bg-white rounded-full top-8 right-[10%]"
+      >
         <div className="progress-circle" onClick={toggleAutoplay}>
           <CircularProgressbar
             value={progress}

@@ -1,6 +1,6 @@
 import MobileCategoryMegaMenu from "@/Components/Header/MobileHeader/MobileCategoryMegaMenu";
 import { Metadata } from "next";
-import React from "react";
+
 export const metadata: Metadata = {
   title: "دسته بندی ها | زیبولند",
   description: "دسته بندی ها",

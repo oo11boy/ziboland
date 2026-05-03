@@ -2,8 +2,10 @@
 import React, { useState } from "react";
 import { toast } from "react-toastify";
 import { Loader2, Send } from "lucide-react";
+import { useSettings } from "@/ContextApi/SettingsContext";
 
-export default function ContactUsContainer({ settings }: { settings: any }) {
+export default function ContactUsContainer() {
+  const {settings}=useSettings()
   const [formData, setFormData] = useState({
     name: "",
     email: "",

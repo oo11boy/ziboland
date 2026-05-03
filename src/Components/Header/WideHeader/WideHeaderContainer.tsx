@@ -6,15 +6,7 @@ import WideHeaderMiddle from "./WideHeaderMiddle";
 import MegaMenuWideHeader from "./MegaMenuWideHeader";
 import { useAuth } from "@/ContextApi/AuthContext";
 
-interface WideHeaderContainerProps {
-
-  settings: any;
-}
-
-export default function WideHeaderContainer({
-  
-  settings,
-}: WideHeaderContainerProps): React.JSX.Element | null {
+export default function WideHeaderContainer(): React.JSX.Element | null {
   const { isAdminDashboard } = useAuth();
   const [isSticky, setIsSticky] = useState(false);
 
@@ -39,7 +31,7 @@ export default function WideHeaderContainer({
   return (
     <header className="max-lg-none WideHeaderContactUs yekan relative">
       {/* این بخش با اسکرول بالا می‌رود و غیب می‌شود */}
-      <WideHeaderContactUs settings={settings} />
+      <WideHeaderContactUs  />
 
       {/* این کانتینر وقتی اسکرول انجام شود، به بالای صفحه می‌چسبد */}
       <div

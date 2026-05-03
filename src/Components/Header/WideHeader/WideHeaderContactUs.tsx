@@ -8,10 +8,12 @@ import {
   LocalOffer,
 } from "@mui/icons-material";
 import Link from "next/link";
+import { useSettings } from "@/ContextApi/SettingsContext";
 
 
 
-export default function WideHeaderContactUs({ settings }: { settings: any }) {
+export default function WideHeaderContactUs() {
+  const {settings}=useSettings()
   return (
     <>
       {/* تزریق استایل‌های CSS */}

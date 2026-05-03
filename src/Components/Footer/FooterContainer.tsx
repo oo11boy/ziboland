@@ -1,10 +1,12 @@
 "use client";
 import { Favorite, Instagram, Telegram, WhatsApp } from "@mui/icons-material";
-import React from "react";
+
 import "./Footer.css";
 import Link from "next/link";
 import { useAuth } from "@/ContextApi/AuthContext";
-export default function FooterContainer({ settings }: { settings: any }) {
+import { useSettings } from "@/ContextApi/SettingsContext";
+export default function FooterContainer() {
+  const {settings}=useSettings()
   const { isAdminDashboard, ismyaccount } = useAuth();
 
   if (isAdminDashboard) {
@@ -29,7 +31,7 @@ export default function FooterContainer({ settings }: { settings: any }) {
               <p>شماره تماس:</p>
               <p> {settings.phone}</p>
             </div>
-            <h3 className="ziboland-hours-title">ساعت کاری</h3>
+            <span className="ziboland-hours-title ">ساعت کاری</span>
             <div className="ziboland-hours">
               <p>{settings.working_days}</p>
               <p>{settings.working_hours}</p>

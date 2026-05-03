@@ -1,3 +1,5 @@
+import { Metadata } from "next";
+import { API } from "@/lib/MainRoutes";
 import BenefitsContainer from "@/Components/Benefits/BenefitsContainer";
 import CategoriesContainer from "@/Components/Categories/CategoriesContainer";
 import ProductSliderContainer from "@/Components/Sliders/ProductSlider/ProductSliderContainer";
@@ -6,72 +8,67 @@ import TabProductsSliderContainer from "@/Components/Sliders/TabProductsSlider/T
 import ArticlesListContainer from "@/Components/Articles/ArticlesList/ArticlesListContainer";
 import BrandsContainer from "@/Components/Brands/BrandsContainer";
 import Banners from "@/Components/Banners/Banners";
-import { API } from "@/lib/MainRoutes";
-import { Metadata } from "next";
-
-interface Slide {
-  id: number;
-  imagewide: string;
-  imagemin: string;
-  alt: string;
-  link: string;
+// --- تابع کمکی برای فچ با تایم‌اوت جهت جلوگیری از خطای 502 ---
+async function fetchWithTimeout(
+  url: string,
+  options: any = {},
+  timeout = 3000,
+) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    throw error;
+  }
 }
 
-// 🟢 متادیتا داینامیک (در Next.js 15 باید async باشد)
+// 🟢 متادیتا با مدیریت خطا و تایم‌اوت
 export async function generateMetadata(): Promise<Metadata> {
+  const defaultMeta = {
+    title: "زیبولند | فروشگاه آنلاین",
+    description: "بهترین فروشگاه اینترنتی برای خرید محصولات باکیفیت",
+  };
   try {
-    const res = await fetch(`${API}/settings`, {
-      cache: "force-cache",
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) throw new Error("خطا در دریافت تنظیمات سایت");
-
-    const settings = await res.json();
-
+    const res = await fetchWithTimeout(
+      `${API}/settings`,
+      {
+        next: { revalidate: 3600 },
+      },
+      2500,
+    ); // تایم‌اوت ۲.۵ ثانیه برای متادیتا
+    if (!res.ok) return defaultMeta;
+    const text = await res.text();
+    const settings = JSON.parse(text);
     return {
-      title: settings.site_name || "زیبولند",
-      description:
-        settings.site_description ||
-        "بهترین فروشگاه اینترنتی برای خرید محصولات باکیفیت",
+      title: settings?.site_name || defaultMeta.title,
+      description: settings?.site_description || defaultMeta.description,
     };
   } catch (error) {
-    console.error("Error fetching metadata settings:", error);
-    return {
-      title: "زیبولند",
-      description: "بهترین فروشگاه اینترنتی برای خرید محصولات باکیفیت",
-    };
+    return defaultMeta;
   }
 }
-
-// 🟢 صفحه اصلی
+// 🟢 صفحه اصلی (Server Component)
 export default async function Page() {
-  let slidersData: Slide[] = [];
-
-  try {
-    const res = await fetch(`${API}/sliders`, {
-      cache: "force-cache",
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) throw new Error("Failed to fetch sliders");
-
-    slidersData = await res.json();
-  } catch (error) {
-    console.error("Error fetching sliders:", error);
-  }
 
   return (
     <>
-      <WideSliderContainer slides={slidersData} />
+      {/* اسلایدر اصلی */}
+      <WideSliderContainer />
+      {/* بخش‌های ثابت */}
       <CategoriesContainer />
       <BenefitsContainer />
       <Banners />
+      {/* بخش‌های محصولی با قابلیت کش داخلی خودشان */}
       <ProductSliderContainer vip={true} />
       <TabProductsSliderContainer title="محبوب‌ترین‌ها" sort="popular" />
-
       <TabProductsSliderContainer title="ارزان‌ترین‌ها" sort="cheapest" />
-
       <TabProductsSliderContainer title="جدیدترین‌ها" sort="newest" />
       <ArticlesListContainer ispage={false} />
       <BrandsContainer />
