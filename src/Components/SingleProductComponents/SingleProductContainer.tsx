@@ -6,7 +6,7 @@ import SummaryProduct from "./SummaryProduct";
 import { InfoTabs } from "./InfoTabs";
 import AddToCartInfo from "./AddToCartInfo";
 import "./SingleProduct.css";
-import { Categoryapi, Product, Variant } from "@/types/types";
+import { Product, Variant } from "@/types/types";
 import RelatedProductSlider from "../Sliders/RelatedProductSlider/RelatedProductSlider";
 
 export const SingleProductContainer: React.FC<{

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell, User, Moon, Sun, Check } from "lucide-react";
+import { Bell, User, Moon, Sun, Check, Menu } from "lucide-react";
 import { Badge } from "@/Components/ui/badge";
 import {
   DropdownMenu,
@@ -25,7 +25,11 @@ interface Notification {
   related_data?: string | null;
 }
 
-const Header = () => {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+const Header = ({ onMenuClick }: HeaderProps) => {
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -170,167 +174,190 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-30">
-      <div className="flex items-center mr-12 mt-4">
-        <div className="text-xl font-bold text-gray-800 dark:text-white">
-          Ziboland Admin
-        </div>
-      </div>
-
-      <div className="flex items-center space-x-2 sm:space-x-4">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 relative transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-              <Bell size={20} />
-              {unreadCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </Badge>
-              )}
-            </button>
-          </DropdownMenuTrigger>
-
-          <DropdownMenuContent
-            style={{ direction: "rtl" }}
-            className="w-96 max-h-96 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700"
+    <header className="bg-white dark:bg-gray-800 shadow-md border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30">
+      <div className="px-4 sm:px-6 py-3 flex items-center justify-between">
+        {/* سمت راست - لوگو و دکمه منو */}
+        <div className="flex items-center gap-3">
+          {/* دکمه منوی همبرگری برای موبایل */}
+          <button
+            onClick={onMenuClick}
+            className="md:hidden p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            aria-label="باز کردن منو"
           >
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                اعلان‌ها
-              </span>
-              {unreadCount > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={markAllAsRead}
-                  className="text-xs h-auto py-1 px-2"
-                >
-                  همه را خوانده شده کن
-                </Button>
-              )}
-            </div>
+            <Menu size={20} />
+          </button>
+          
+          {/* لوگو */}
+          <div className="text-lg sm:text-xl font-bold text-gray-800 dark:text-white whitespace-nowrap">
+            Ziboland Admin
+          </div>
+        </div>
 
-            {loading ? (
-              <DropdownMenuItem className="p-4 text-center text-gray-500 dark:text-gray-400">
-                در حال بارگذاری...
-              </DropdownMenuItem>
-            ) : notifications.length === 0 ? (
-              <DropdownMenuItem className="p-4 text-center text-gray-500 dark:text-gray-400">
-                هیچ اعلانی وجود ندارد
-              </DropdownMenuItem>
-            ) : (
-              notifications.map((notification) => (
-                <DropdownMenuItem
-                  key={notification.id}
-                  className={`p-4 border-b last:border-b-0 cursor-pointer transition-all rounded-lg hover:shadow-md ${
-                    notification.read
-                      ? "bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600"
-                      : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
-                  }`}
-                  onClick={() =>
-                    !notification.read && markAsRead(notification.id)
-                  }
-                >
-                  <div
-                    className="flex items-start space-x-3 space-x-reverse text-right"
-                    dir="rtl"
+        {/* سمت چپ - اکشن‌ها */}
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
+          {/* دکمه اعلان‌ها */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="relative p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <Badge className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs font-bold p-0">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </Badge>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+
+            <DropdownMenuContent
+              style={{ direction: "rtl" }}
+              className="w-[calc(100vw-2rem)] sm:w-96 max-h-96 overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 mx-4 sm:mx-0"
+              align="end"
+            >
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center sticky top-0 bg-white dark:bg-gray-800 z-10">
+                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                  اعلان‌ها
+                </span>
+                {unreadCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={markAllAsRead}
+                    className="text-xs h-auto py-1 px-2"
                   >
-                    <span
-                      className={`text-lg flex-shrink-0 ${getNotificationColor(
-                        notification.type,
-                      )}`}
+                    همه را خوانده شده کن
+                  </Button>
+                )}
+              </div>
+
+              <div className="max-h-80 overflow-y-auto">
+                {loading ? (
+                  <DropdownMenuItem className="p-4 text-center text-gray-500 dark:text-gray-400">
+                    در حال بارگذاری...
+                  </DropdownMenuItem>
+                ) : notifications.length === 0 ? (
+                  <DropdownMenuItem className="p-4 text-center text-gray-500 dark:text-gray-400">
+                    هیچ اعلانی وجود ندارد
+                  </DropdownMenuItem>
+                ) : (
+                  notifications.map((notification) => (
+                    <DropdownMenuItem
+                      key={notification.id}
+                      className={`p-4 border-b last:border-b-0 cursor-pointer transition-all ${
+                        notification.read
+                          ? "bg-gray-50 dark:bg-gray-700/50"
+                          : "bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
+                      onClick={() =>
+                        !notification.read && markAsRead(notification.id)
+                      }
                     >
-                      {getNotificationIcon(notification.type)}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
+                      <div
+                        className="flex items-start gap-3 text-right"
+                        dir="rtl"
+                      >
                         <span
-                          className={`text-sm font-medium ${getNotificationColor(
+                          className={`text-lg flex-shrink-0 ${getNotificationColor(
                             notification.type,
                           )}`}
                         >
-                          {translateType(notification.type)}
+                          {getNotificationIcon(notification.type)}
                         </span>
-                        {!notification.read && (
-                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+                            <span
+                              className={`text-sm font-medium ${getNotificationColor(
+                                notification.type,
+                              )}`}
+                            >
+                              {translateType(notification.type)}
+                            </span>
+                            {!notification.read && (
+                              <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                            )}
+                            {notification.read && (
+                              <Check className="h-3 w-3 text-green-500 flex-shrink-0" />
+                            )}
+                          </div>
+                          <p
+                            className={`text-sm ${
+                              notification.read
+                                ? "text-gray-600 dark:text-gray-300"
+                                : "text-gray-800 dark:text-gray-200"
+                            }`}
+                          >
+                            {notification.message}
+                            {notification.related_data && (
+                              <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">
+                                ({notification.related_data})
+                              </span>
+                            )}
+                          </p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {new Date(notification.created_at).toLocaleString(
+                              "fa-IR",
+                              {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              },
+                            )}
+                          </p>
+                        </div>
                       </div>
-                      <p
-                        className={`text-sm ${
-                          notification.read
-                            ? "text-gray-600 dark:text-gray-300"
-                            : "text-gray-800 dark:text-gray-200"
-                        }`}
-                      >
-                        {notification.message}
-                        {notification.related_data && (
-                          <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">
-                            ({notification.related_data})
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {new Date(notification.created_at).toLocaleString(
-                          "fa-IR",
-                          {
-                            year: "numeric",
-                            month: "short",
-                            day: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          },
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  {notification.read && (
-                    <Check className="h-4 w-4 text-green-500 mr-2" />
-                  )}
-                </DropdownMenuItem>
-              ))
-            )}
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </div>
 
-            <DropdownMenuItem className="p-2 text-center border-t border-gray-200 dark:border-gray-700">
-              <Button
-                variant="link"
-                onClick={fetchNotifications}
-                className="h-auto p-0 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+              <DropdownMenuItem className="p-2 text-center border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
+                <Button
+                  variant="link"
+                  onClick={fetchNotifications}
+                  className="h-auto p-0 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                >
+                  به‌روزرسانی اعلان‌ها
+                </Button>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* دکمه دارک مود */}
+          <button
+            onClick={toggleDarkMode}
+            className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+            title={darkMode ? "حالت روشن" : "حالت تاریک"}
+          >
+            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+
+          {/* منوی کاربر */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                <User size={20} className="text-gray-500" />
+                <span className="text-sm text-gray-700 dark:text-gray-300 hidden sm:inline-block">
+                  مدیر
+                </span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48" align="end">
+              <DropdownMenuItem className="justify-end cursor-pointer">
+                <span className="text-sm">پروفایل</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem className="justify-end cursor-pointer">
+                <span className="text-sm">تنظیمات</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="justify-end text-red-600 dark:text-red-400 cursor-pointer"
+                onClick={logout}
               >
-                به‌روزرسانی اعلان‌ها
-              </Button>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <button
-          onClick={toggleDarkMode}
-          className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-          title={darkMode ? "روشن کردن" : "تاریک کردن"}
-        >
-          {darkMode ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center space-x-2 space-x-reverse p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-              <User size={20} className="text-gray-500" />
-              <span className="text-sm text-gray-700 dark:text-gray-300 hidden sm:block">
-                مدیر
-              </span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-48 mr-2">
-            <DropdownMenuItem className="justify-end">
-              <span className="text-sm">پنل مدیریت</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="justify-end text-red-600 dark:text-red-400"
-              onClick={logout}
-            >
-              <span className="text-sm">خروج</span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+                <span className="text-sm">خروج</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );
