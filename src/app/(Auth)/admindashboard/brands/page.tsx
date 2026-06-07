@@ -8,6 +8,7 @@ import { Plus, Edit, Trash2, Search } from "lucide-react";
 import { toast } from "react-toastify";
 import { Brand } from "@/types/types";
 import { API } from "@/lib/MainRoutes";
+import Image from "next/image";
 
 const BrandsPage = () => {
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -31,7 +32,7 @@ const BrandsPage = () => {
 
   const fetchBrands = async () => {
     try {
-      const res = await fetch(`../api/brands`);
+      const res = await fetch(`/api/brands`);
       if (!res.ok) throw new Error("خطا در دریافت برندها");
       const data: Brand[] = await res.json();
       setBrands(data);
@@ -48,7 +49,7 @@ const BrandsPage = () => {
     if (!confirm("آیا مطمئن هستید که می‌خواهید این برند را حذف کنید؟")) return;
 
     try {
-      const res = await fetch(`../api/brands/${id}`, {
+      const res = await fetch(`/api/brands/${id}`, {
         method: "DELETE",
       });
 
@@ -134,7 +135,9 @@ const BrandsPage = () => {
                       </td>
                       <td className="px-4 py-2 text-right block md:table-cell">
                         <span className="font-medium md:hidden">تصویر: </span>
-                        <img
+                        <Image
+                          width={40}
+                          height={40}
                           src={brand.img}
                           alt={brand.title}
                           className="w-10 h-10 object-cover inline-block rounded"

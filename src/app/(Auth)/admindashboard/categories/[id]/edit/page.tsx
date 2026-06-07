@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { toast } from "react-hot-toast";
 import { API, SITE } from "@/lib/MainRoutes";
 import { Categoryapi } from "@/types/types";
+import Image from "next/image";
 
 interface SubcategoryItem {
   id?: number;
@@ -71,7 +72,7 @@ const EditCategoryPage = () => {
 
   // بارگذاری داده اولیه
   useEffect(() => {
-    fetch(`../api/categories/${id}`)
+    fetch(`/api/categories/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("خطا در دریافت دسته‌بندی");
         return res.json();
@@ -168,7 +169,7 @@ const EditCategoryPage = () => {
     }
     setLoading(true);
     try {
-      const response = await fetch(`../api/categories/${id}`, {
+      const response = await fetch(`/api/categories/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -343,7 +344,9 @@ const EditCategoryPage = () => {
 
                 {formData.link && (
                   <div className="mt-4">
-                    <img
+                    <Image
+                      width={160}
+                      height={160}
                       src={formData.link}
                       alt="پیش‌نمایش تصویر دسته‌بندی"
                       className="w-40 h-40 object-cover rounded-lg border shadow-md"

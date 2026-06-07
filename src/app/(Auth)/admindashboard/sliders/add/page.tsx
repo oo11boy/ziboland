@@ -12,6 +12,7 @@ import {
   CheckCircle,
   Loader2,
 } from "lucide-react";
+import Image from "next/image";
 
 interface SliderFormData {
   imagewide: string;
@@ -151,7 +152,7 @@ const AddSliderPage = () => {
       return;
     }
     try {
-      const response = await fetch(`../api/sliders`, {
+      const response = await fetch(`/api/sliders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -194,7 +195,9 @@ const AddSliderPage = () => {
             </Button>
           </div>
           {formData.imagewide && (
-            <img
+            <Image
+              width={160}
+              height={160}
               src={formData.imagewide}
               alt="پیش‌نمایش تصویر دسکتاپ"
               className="mt-2 h-24 w-24 object-cover rounded border"
@@ -230,7 +233,9 @@ const AddSliderPage = () => {
             </Button>
           </div>
           {formData.imagemin && (
-            <img
+            <Image
+              width={160}
+              height={160}
               src={formData.imagemin}
               alt="پیش‌نمایش تصویر موبایل"
               className="mt-2 h-24 w-24 object-cover rounded border"
@@ -351,7 +356,9 @@ const AddSliderPage = () => {
                         key={file.name}
                         className="relative bg-white dark:bg-gray-800 rounded-lg overflow-hidden group"
                       >
-                        <img
+                        <Image
+                          width={160}
+                          height={160}
                           src={previews[file.name] || ""}
                           alt={file.name}
                           className="w-full h-20 object-cover"
@@ -403,7 +410,9 @@ const AddSliderPage = () => {
                         key={file.name}
                         className="relative bg-green-50 dark:bg-green-900/20 rounded-lg p-2 text-center"
                       >
-                        <img
+                        <Image
+                          width={160}
+                          height={160}
                           src={file.url}
                           alt={file.name}
                           className="w-full h-16 object-cover rounded mb-1"

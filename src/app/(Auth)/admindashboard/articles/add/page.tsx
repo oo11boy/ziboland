@@ -142,7 +142,7 @@ export default function AddArticlePage() {
     }
 
     try {
-      const res = await fetch(`../api/articles`, {
+      const res = await fetch(`/api/articles`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

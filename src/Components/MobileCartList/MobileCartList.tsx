@@ -46,7 +46,7 @@ export default function MobileCartList() {
   const fetchProduct = async (id: number) => {
     if (productsMap[id]) return productsMap[id];
     try {
-      const res = await fetch(`../api/products/${id}`, { cache: "no-store" });
+      const res = await fetch(`/api/products/${id}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`Failed to fetch product ${id}`);
       const product: Product = await res.json();
       setProductsMap((prev) => ({ ...prev, [id]: product }));

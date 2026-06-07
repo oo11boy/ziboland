@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { API, SITE } from "@/lib/MainRoutes";
 import { toast } from "react-hot-toast";
+import Image from "next/image";
 
 interface BrandFormData {
   title: string;
@@ -129,7 +130,7 @@ const AddBrandPage = () => {
     }
     setLoading(true);
     try {
-      const response = await fetch(`../api/brands`, {
+      const response = await fetch(`/api/brands`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -208,7 +209,9 @@ const AddBrandPage = () => {
                 </div>
                 {formData.img && (
                   <div className="mt-2 md:mt-0">
-                    <img
+                    <Image
+                      width={100}
+                      height={100}
                       src={formData.img}
                       alt="پیش‌نمایش تصویر"
                       className="h-24 w-24 object-cover rounded border"
@@ -320,7 +323,9 @@ const AddBrandPage = () => {
                         key={file.name}
                         className="relative bg-white dark:bg-gray-800 rounded-lg overflow-hidden group"
                       >
-                        <img
+                        <Image
+                          width={100}
+                          height={100}
                           src={previews[file.name] || ""}
                           alt={file.name}
                           className="w-full h-20 object-cover"
@@ -373,7 +378,9 @@ const AddBrandPage = () => {
                         key={file.name}
                         className="relative bg-green-50 dark:bg-green-900/20 rounded-lg p-2 text-center"
                       >
-                        <img
+                        <Image
+                          width={100}
+                          height={100}
                           src={file.url}
                           alt={file.name}
                           className="w-full h-16 object-cover rounded mb-1"

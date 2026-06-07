@@ -40,7 +40,7 @@ export default function ArticlesPage() {
 
   const fetchArticles = async () => {
     try {
-      const res = await fetch(`../api/articles`);
+      const res = await fetch(`/api/articles`);
       if (!res.ok) throw new Error("خطا در دریافت مقالات");
       const data = await res.json();
       setArticles(data);
@@ -56,7 +56,7 @@ export default function ArticlesPage() {
   const handleDelete = async (slug: string) => {
     if (confirm("آیا مطمئن هستید؟")) {
       try {
-        const res = await fetch(`../api/articles/${slug}`, {
+        const res = await fetch(`/api/articles/${slug}`, {
           method: "DELETE",
         });
         if (!res.ok) throw new Error("خطا در حذف مقاله");

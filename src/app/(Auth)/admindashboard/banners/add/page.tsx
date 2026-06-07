@@ -4,7 +4,6 @@ import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
-import { API, SITE } from "@/lib/MainRoutes";
 import { toast } from "react-hot-toast";
 import {
   Upload,
@@ -13,6 +12,7 @@ import {
   CheckCircle,
   Loader2,
 } from "lucide-react";
+import Image from "next/image";
 
 interface BannerFormData {
   image: string;
@@ -99,7 +99,7 @@ export default function AddBannerPage() {
         });
         if (!res.ok) throw new Error("خطا در آپلود");
         const data = await res.json();
-        return { url: SITE + data.url, name: file.name };
+        return { url: data.url, name: file.name };
       } catch (error) {
         toast.error(`خطا در آپلود ${file.name}`);
         return null;
@@ -143,7 +143,7 @@ export default function AddBannerPage() {
     }
 
     try {
-      const response = await fetch(`../api/banners`, {
+      const response = await fetch(`/api/banners`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -190,7 +190,9 @@ export default function AddBannerPage() {
           </div>
           {formData.image && (
             <div className="mt-3">
-              <img
+              <Image
+                width={400}
+                height={200}
                 src={formData.image}
                 alt="پیش‌نمایش بنر"
                 className="h-32 w-full object-cover rounded border shadow-sm"
@@ -329,7 +331,9 @@ export default function AddBannerPage() {
                         key={file.name}
                         className="relative rounded-lg overflow-hidden border dark:border-gray-700 group bg-white dark:bg-gray-800 shadow-sm"
                       >
-                        <img
+                        <Image
+                          width={400}
+                          height={200}
                           src={previews[file.name]}
                           alt={file.name}
                           className="w-full h-28 object-cover"
@@ -376,7 +380,9 @@ export default function AddBannerPage() {
                         key={file.name}
                         className="relative rounded-lg overflow-hidden border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30"
                       >
-                        <img
+                        <Image
+                          width={400}
+                          height={200}
                           src={file.url}
                           alt={file.name}
                           className="w-full h-28 object-cover"

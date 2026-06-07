@@ -21,7 +21,7 @@ const SlidersPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`../api/sliders`)
+    fetch(`/api/sliders`)
       .then((res) => {
         if (!res.ok) throw new Error("خطا در دریافت اسلایدها");
         return res.json();
@@ -37,7 +37,7 @@ const SlidersPage = () => {
   const handleDelete = async (id: number) => {
     if (confirm("آیا مطمئن هستید؟")) {
       try {
-        const response = await fetch(`../api/sliders/${id}`, {
+        const response = await fetch(`/api/sliders/${id}`, {
           method: "DELETE",
         });
         if (!response.ok) throw new Error("خطا در حذف اسلاید");
@@ -89,8 +89,8 @@ const SlidersPage = () => {
                   >
                     <td className="px-4 py-2 text-right">
                       <Image
-                      width={64}
-                      height={64}
+                        width={64}
+                        height={64}
                         src={slide.imagemin}
                         alt={slide.alt}
                         className="h-16 w-16 object-cover rounded border"

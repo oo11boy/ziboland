@@ -37,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
   try {
     const res = await fetchWithTimeout(
-      `../api/settings`,
+      `/api/settings`,
       {
         next: { revalidate: 3600 },
       },

@@ -55,7 +55,7 @@ export default function EditArticlePage() {
   useEffect(() => {
     if (slug) {
       setLoadingArticle(true);
-      fetch(`../api/articles/${slug}`)
+      fetch(`/api/articles/${slug}`)
         .then((res) => {
           if (!res.ok) throw new Error("خطا در بارگذاری مقاله");
           return res.json();
@@ -174,7 +174,7 @@ export default function EditArticlePage() {
     }
 
     try {
-      const res = await fetch(`../api/articles/${slug}`, {
+      const res = await fetch(`/api/articles/${slug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

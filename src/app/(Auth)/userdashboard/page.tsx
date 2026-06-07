@@ -17,7 +17,7 @@ async function fetchData<T>(
   token: string | undefined,
 ): Promise<T> {
   try {
-    const res = await fetch(`../api${endpoint}`, {
+    const res = await fetch(`/api${endpoint}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

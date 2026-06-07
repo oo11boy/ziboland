@@ -38,7 +38,7 @@ const CommentsPage = () => {
 
   const fetchComments = async () => {
     try {
-      const res = await fetch(`../api/comments`);
+      const res = await fetch(`/api/comments`);
       if (!res.ok) throw new Error("Failed to fetch comments");
       const data: Comment[] = await res.json();
       // Add level and collapsed for frontend rendering
@@ -66,7 +66,7 @@ const CommentsPage = () => {
 
   const handleToggleStatus = async (id: number, currentStatus: number) => {
     try {
-      const res = await fetch(`../api/comments`, {
+      const res = await fetch(`/api/comments`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status: currentStatus ? 0 : 1 }),
@@ -98,7 +98,7 @@ const CommentsPage = () => {
     )
       return;
     try {
-      const res = await fetch(`../api/comments`, {
+      const res = await fetch(`/api/comments`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
@@ -114,7 +114,7 @@ const CommentsPage = () => {
   const handleReply = async () => {
     if (!replyText.trim() || !selectedParent) return;
     try {
-      const res = await fetch(`../api/comments`, {
+      const res = await fetch(`/api/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

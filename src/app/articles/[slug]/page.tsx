@@ -4,7 +4,7 @@ import { API } from "@/lib/MainRoutes";
 
 // تابع دریافت مقاله
 async function getArticle(slug: string) {
-  const res = await fetch(`../api/articles/${slug}`, { cache: "no-store" });
+  const res = await fetch(`/api/articles/${slug}`, { cache: "no-store" });
   if (!res.ok) throw new Error("خطا در دریافت مقاله");
   return res.json();
 }

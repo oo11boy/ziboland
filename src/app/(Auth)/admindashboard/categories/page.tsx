@@ -7,13 +7,14 @@ import { Plus, Edit, Trash2, View, Loader2 } from "lucide-react";
 import { Button } from "@/Components/ui/button";
 import { Categoryapi } from "@/types/types";
 import { API } from "@/lib/MainRoutes";
+import Image from "next/image";
 
 const CategoriesPage = () => {
   const [categories, setCategories] = useState<Categoryapi[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`../api/categories`)
+    fetch(`/api/categories`)
       .then((res) => {
         if (res.status >= 400) {
           throw new Error("خطا در دریافت دسته‌بندی‌ها");
@@ -36,7 +37,7 @@ const CategoriesPage = () => {
       return;
 
     try {
-      const res = await fetch(`../api/categories/${id}`, {
+      const res = await fetch(`/api/categories/${id}`, {
         method: "DELETE",
       });
 
@@ -127,7 +128,9 @@ const CategoriesPage = () => {
                       <td className="px-6 py-4 text-center block md:table-cell">
                         <span className="font-semibold md:hidden">تصویر: </span>
                         {category.link ? (
-                          <img
+                          <Image
+                            width={80}
+                            height={80}
                             src={category.link}
                             alt={category.name}
                             className="w-20 h-20 object-cover rounded-lg border shadow mx-auto"

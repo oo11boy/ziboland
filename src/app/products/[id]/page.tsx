@@ -6,7 +6,7 @@ import { Categoryapi, Product } from "@/types/types";
 import { API } from "@/lib/MainRoutes";
 
 async function getProduct(id: string): Promise<Product> {
-  const res = await fetch(`../api/products/${id}`, {
+  const res = await fetch(`/api/products/${id}`, {
     cache: "no-store",
   });
 

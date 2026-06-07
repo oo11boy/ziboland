@@ -5,11 +5,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://localhost:3000";
 
   // 🟢 دریافت لیست مقالات از API
-  const articlesRes = await fetch(`../api/articles`, { cache: "no-store" });
+  const articlesRes = await fetch(`/api/articles`, { cache: "no-store" });
   const articles = articlesRes.ok ? await articlesRes.json() : [];
 
   // 🟢 دریافت لیست محصولات از API
-  const productsRes = await fetch(`../api/products`, { cache: "no-store" });
+  const productsRes = await fetch(`/api/products`, { cache: "no-store" });
   const products = productsRes.ok ? await productsRes.json() : [];
 
   // 🏠 صفحه اصلی

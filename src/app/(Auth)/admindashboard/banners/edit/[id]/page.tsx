@@ -13,6 +13,7 @@ import {
   CheckCircle,
   Loader2,
 } from "lucide-react";
+import Image from "next/image";
 
 interface BannerFormData {
   image: string;
@@ -55,7 +56,7 @@ export default function EditBannerPage() {
 
     const fetchBanner = async () => {
       try {
-        const res = await fetch(`../api/banners/${id}`);
+        const res = await fetch(`/api/banners/${id}`);
         if (!res.ok) {
           throw new Error("بنر یافت نشد");
         }
@@ -175,7 +176,7 @@ export default function EditBannerPage() {
     }
 
     try {
-      const response = await fetch(`../api/banners/${id}`, {
+      const response = await fetch(`/api/banners/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -232,7 +233,9 @@ export default function EditBannerPage() {
 
           {formData.image && (
             <div className="mt-4">
-              <img
+              <Image
+                width={400}
+                height={200}
                 src={formData.image}
                 alt="پیش‌نمایش بنر فعلی"
                 className="max-h-48 w-full object-contain rounded border shadow-sm mx-auto"
@@ -381,7 +384,9 @@ export default function EditBannerPage() {
                         key={file.name}
                         className="relative rounded-lg overflow-hidden border dark:border-gray-700 group bg-white dark:bg-gray-800 shadow"
                       >
-                        <img
+                        <Image
+                          width={200}
+                          height={100}
                           src={previews[file.name] || ""}
                           alt={file.name}
                           className="w-full h-32 object-cover"
@@ -428,7 +433,9 @@ export default function EditBannerPage() {
                         key={file.name}
                         className="relative rounded-lg overflow-hidden border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-950/30 shadow-sm"
                       >
-                        <img
+                        <Image
+                          width={200}
+                          height={100}
                           src={file.url}
                           alt={file.name}
                           className="w-full h-32 object-cover"

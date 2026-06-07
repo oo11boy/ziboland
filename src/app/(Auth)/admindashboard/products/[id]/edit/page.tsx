@@ -25,9 +25,9 @@ import {
   CheckCircle,
 } from "lucide-react";
 import { Brand, Category, Subcategory, SubcategoryItem } from "@/types/types";
-import { API } from "@/lib/MainRoutes";
 import { toast } from "react-hot-toast";
 import { SITE } from "@/lib/MainRoutes";
+import Image from "next/image";
 
 interface VariantFormData {
   id?: number;
@@ -150,9 +150,10 @@ const EditProductPage = () => {
   };
 
   useEffect(() => {
-    fetch(`../api/products/${id}`)
+    fetch(`/api/products/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("خطا در دریافت محصول");
+        console.log("Product data response:", res);
         return res.json();
       })
       .then((data) => {
@@ -197,8 +198,8 @@ const EditProductPage = () => {
       });
 
     Promise.all([
-      fetch(`../api/brands`).then((res) => res.json()),
-      fetch(`../api/categories?mothercat=1`).then((res) => res.json()),
+      fetch(`/api/brands`).then((res) => res.json()),
+      fetch(`/api/categories?mothercat=1`).then((res) => res.json()),
     ])
       .then(([brandsData, categoriesData]) => {
         setBrands(brandsData);
@@ -209,7 +210,7 @@ const EditProductPage = () => {
 
   useEffect(() => {
     if (formData.mothercatId) {
-      fetch(`../api/subcategories?category_id=${formData.mothercatId}`)
+      fetch(`/api/subcategories?category_id=${formData.mothercatId}`)
         .then((res) => (res.ok ? res.json() : [])) // اگر 404 یا خطا بود، آرایه خالی
         .then((data) => setSubcategories(Array.isArray(data) ? data : []))
         .catch(() => setSubcategories([]));
@@ -222,7 +223,7 @@ const EditProductPage = () => {
 
   useEffect(() => {
     if (formData.subcatId) {
-      fetch(`../api/subcategory-items?subcategory_id=${formData.subcatId}`)
+      fetch(`/api/subcategory-items?subcategory_id=${formData.subcatId}`)
         .then((res) => (res.ok ? res.json() : [])) // همینجا هم
         .then((data) => setItems(Array.isArray(data) ? data : []))
         .catch(() => setItems([]));
@@ -501,7 +502,7 @@ const EditProductPage = () => {
         variants: cleanedVariants,
       };
 
-      const response = await fetch(`../api/products/${id}`, {
+      const response = await fetch(`/api/products/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -624,7 +625,9 @@ const EditProductPage = () => {
                     </div>
                     {formData.image && (
                       <div className="mt-4">
-                        <img
+                        <Image
+                          width={160}
+                          height={160}
                           src={formData.image}
                           alt="پیش‌نمایش تصویر اصلی"
                           className="h-48 rounded-lg border object-cover"
@@ -973,7 +976,9 @@ const EditProductPage = () => {
                           </Button>
                         </div>
                         {variant.image_main && (
-                          <img
+                            <Image
+                          width={160}
+                          height={160}
                             src={variant.image_main}
                             alt="تصویر واریانت"
                             className="mt-4 h-48 rounded-lg border object-cover"
@@ -1000,7 +1005,9 @@ const EditProductPage = () => {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {variant.images.map((img, i) => (
                               <div key={i} className="relative group">
-                                <img
+                                  <Image
+                          width={160}
+                          height={160}
                                   src={img}
                                   alt={`گالری ${i + 1}`}
                                   className="h-32 rounded border object-cover"
@@ -1216,7 +1223,9 @@ const EditProductPage = () => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     {files.map((file) => (
                       <div key={file.name} className="relative group">
-                        <img
+                          <Image
+                          width={160}
+                          height={160}
                           src={previews[file.name]}
                           alt={file.name}
                           className="h-40 rounded-xl border-2 object-cover"
@@ -1254,7 +1263,9 @@ const EditProductPage = () => {
                   </h3>
                   <div className="grid grid-cols-3 md:grid-cols-5 gap-6">
                     {uploadedFiles.map((file) => (
-                      <img
+                        <Image
+                          width={160}
+                          height={160}
                         key={file.name}
                         src={file.url}
                         alt={file.name}

@@ -32,7 +32,7 @@ export default function SettingsPage() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch(`../api/settings`);
+      const res = await fetch(`/api/settings`);
       if (!res.ok) throw new Error("خطا در دریافت تنظیمات");
       const data = await res.json();
       setForm((prev) => ({ ...prev, ...data }));
@@ -53,7 +53,7 @@ export default function SettingsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch(`../api/settings`, {
+      const res = await fetch(`/api/settings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),

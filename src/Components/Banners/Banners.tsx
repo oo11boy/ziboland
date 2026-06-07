@@ -16,7 +16,7 @@ export default function Banners() {
   const [banners, setBanners] = useState<Banner[]>([]);
 
   useEffect(() => {
-    fetch(`../api/banners`)
+    fetch(`/api/banners`)
       .then((res) => res.json())
       .then(setBanners)
       .catch((err) => console.error("Error fetching banners:", err));

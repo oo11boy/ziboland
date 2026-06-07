@@ -19,6 +19,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { toast } from "react-hot-toast";
 import { API, SITE } from "@/lib/MainRoutes";
+import Image from "next/image";
 
 interface CategoryFormData {
   name: string;
@@ -123,7 +124,7 @@ const AddCategoryPage = () => {
     }
     setLoading(true);
     try {
-      const response = await fetch(`../api/categories`, {
+      const response = await fetch(`/api/categories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -275,7 +276,9 @@ const AddCategoryPage = () => {
 
                 {formData.link && (
                   <div className="mt-4">
-                    <img
+                    <Image
+                      width={160}
+                      height={160}
                       src={formData.link}
                       alt="پیش‌نمایش تصویر دسته‌بندی"
                       className="w-40 h-40 object-cover rounded-lg border shadow-md"
@@ -448,7 +451,9 @@ const AddCategoryPage = () => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {files.map((file) => (
                       <div key={file.name} className="relative group">
-                        <img
+                        <Image
+                          width={160}
+                          height={160}
                           src={previews[file.name]}
                           alt={file.name}
                           className="w-full h-32 object-cover rounded border"
@@ -495,7 +500,9 @@ const AddCategoryPage = () => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {uploadedFiles.map((file) => (
                       <div key={file.name} className="text-center">
-                        <img
+                        <Image
+                          width={160}
+                          height={160}
                           src={file.url}
                           alt={file.name}
                           className="w-full h-32 object-cover rounded border mx-auto"

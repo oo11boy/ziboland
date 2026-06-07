@@ -78,7 +78,7 @@ const OrdersPage = () => {
 
     try {
       const token = Cookies.get("authToken");
-      const res = await fetch(`../api/admin/orders/${orderId}`, {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -99,7 +99,7 @@ const OrdersPage = () => {
         return;
       }
 
-      const response = await fetch(`../api/admin/orders`, {
+      const response = await fetch(`/api/admin/orders`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -191,7 +191,7 @@ const OrdersPage = () => {
 
     try {
       const token = Cookies.get("authToken");
-      const res = await fetch(`../api/admin/orders/${orderId}`, {
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

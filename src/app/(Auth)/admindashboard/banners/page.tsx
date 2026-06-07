@@ -5,8 +5,8 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Plus, Edit, Trash2, View } from "lucide-react";
 import { Button } from "@/Components/ui/button";
-import { API } from "@/lib/MainRoutes";
 import { toast } from "react-hot-toast";
+import Image from "next/image";
 
 interface Banner {
   id: number;
@@ -22,7 +22,7 @@ const BannersPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`../api/banners`)
+    fetch(`/api/banners`)
       .then((res) => {
         if (!res.ok) throw new Error("خطا در دریافت بنرها");
         return res.json();
@@ -38,7 +38,7 @@ const BannersPage = () => {
   const handleDelete = async (id: number) => {
     if (confirm("آیا مطمئن هستید؟")) {
       try {
-        const response = await fetch(`../api/banners/${id}`, {
+        const response = await fetch(`/api/banners/${id}`, {
           method: "DELETE",
         });
         if (!response.ok) throw new Error("خطا در حذف بنر");
@@ -72,10 +72,13 @@ const BannersPage = () => {
               <Card key={banner.id}>
                 <CardContent className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <img
+                    <Image
+                      width={80}
+                      height={80}
                       src={banner.image}
                       alt={banner.alt}
                       className="w-20 h-20 object-cover mr-4"
+                   
                       onError={() =>
                         toast.error(`تصویر بنر ${banner.alt} قابل نمایش نیست`)
                       }

@@ -28,6 +28,7 @@ import { Brand, Category, Subcategory, SubcategoryItem } from "@/types/types";
 import { API } from "@/lib/MainRoutes";
 import { toast } from "react-hot-toast";
 import { SITE } from "@/lib/MainRoutes";
+import Image from "next/image";
 
 interface VariantFormData {
   color_englishName: string;
@@ -146,8 +147,8 @@ const AddProductPage = () => {
 
   useEffect(() => {
     Promise.all([
-      fetch(`../api/brands`).then((res) => res.json()),
-      fetch(`../api/categories?mothercat=1`).then((res) => res.json()),
+      fetch(`/api/brands`).then((res) => res.json()),
+      fetch(`/api/categories?mothercat=1`).then((res) => res.json()),
     ])
       .then(([brandsData, categoriesData]) => {
         setBrands(brandsData);
@@ -159,7 +160,7 @@ const AddProductPage = () => {
   // مقاوم‌سازی در برابر 404 یا خطا (مانند Edit)
   useEffect(() => {
     if (formData.mothercatId) {
-      fetch(`../api/subcategories?category_id=${formData.mothercatId}`)
+      fetch(`/api/subcategories?category_id=${formData.mothercatId}`)
         .then((res) => (res.ok ? res.json() : []))
         .then((data) => setSubcategories(Array.isArray(data) ? data : []))
         .catch(() => setSubcategories([]));
@@ -172,7 +173,7 @@ const AddProductPage = () => {
 
   useEffect(() => {
     if (formData.subcatId) {
-      fetch(`../api/subcategory-items?subcategory_id=${formData.subcatId}`)
+      fetch(`/api/subcategory-items?subcategory_id=${formData.subcatId}`)
         .then((res) => (res.ok ? res.json() : []))
         .then((data) => setItems(Array.isArray(data) ? data : []))
         .catch(() => setItems([]));
@@ -452,7 +453,7 @@ const AddProductPage = () => {
         variants: cleanedVariants,
       };
 
-      const response = await fetch(`../api/products`, {
+      const response = await fetch(`/api/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -568,7 +569,9 @@ const AddProductPage = () => {
                     </div>
                     {formData.image && (
                       <div className="mt-4">
-                        <img
+                        <Image
+                          width={160}
+                          height={160}
                           src={formData.image}
                           alt="پیش‌نمایش تصویر اصلی"
                           className="h-48 rounded-lg border object-cover"
@@ -918,7 +921,9 @@ const AddProductPage = () => {
                           </Button>
                         </div>
                         {variant.image_main && (
-                          <img
+                          <Image
+                            width={160}
+                            height={160}
                             src={variant.image_main}
                             alt="تصویر واریانت"
                             className="mt-4 h-48 rounded-lg border object-cover"
@@ -945,7 +950,9 @@ const AddProductPage = () => {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {variant.images.map((img, i) => (
                               <div key={i} className="relative group">
-                                <img
+                                <Image
+                                  width={160}
+                                  height={160}
                                   src={img}
                                   alt={`گالری ${i + 1}`}
                                   className="h-32 rounded border object-cover"
@@ -1161,7 +1168,9 @@ const AddProductPage = () => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     {files.map((file) => (
                       <div key={file.name} className="relative group">
-                        <img
+                        <Image
+                          width={160}
+                          height={160}
                           src={previews[file.name]}
                           alt={file.name}
                           className="h-40 rounded-xl border-2 object-cover"
@@ -1199,7 +1208,9 @@ const AddProductPage = () => {
                   </h3>
                   <div className="grid grid-cols-3 md:grid-cols-5 gap-6">
                     {uploadedFiles.map((file) => (
-                      <img
+                      <Image
+                        width={160}
+                        height={160}
                         key={file.name}
                         src={file.url}
                         alt={file.name}

@@ -72,7 +72,7 @@ const ProductsPage = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch(`../api/products`);
+      const res = await fetch(`/api/products`);
       if (!res.ok) throw new Error("خطا در دریافت محصولات");
       const data: Product[] = await res.json();
       setProducts(data);
@@ -93,7 +93,7 @@ const ProductsPage = () => {
   // حذف واقعی (با یا بدون force)
   const handleDelete = async (id: number, force = false) => {
     try {
-      const res = await fetch(`../api/products/${id}`, {
+      const res = await fetch(`/api/products/${id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ force }),

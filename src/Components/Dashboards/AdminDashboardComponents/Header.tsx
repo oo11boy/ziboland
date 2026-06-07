@@ -51,7 +51,7 @@ const Header = () => {
     if (!token) return;
     try {
       setLoading(true);
-      const res = await fetch(`../api/notifications`, {
+      const res = await fetch(`/api/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok)
@@ -84,7 +84,7 @@ const Header = () => {
   const markAsRead = async (id: number) => {
     if (!token) return toast.error("لطفاً دوباره وارد شوید");
     try {
-      const res = await fetch(`../api/notifications/${id}`, {
+      const res = await fetch(`/api/notifications/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -114,7 +114,7 @@ const Header = () => {
       return toast.success("هیچ اعلان خوانده‌نشده‌ای وجود ندارد");
 
     try {
-      const res = await fetch(`../api/notifications`, {
+      const res = await fetch(`/api/notifications`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

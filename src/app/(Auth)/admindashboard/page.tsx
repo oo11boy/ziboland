@@ -15,6 +15,7 @@ import {
   Users,
   DollarSign,
 } from "lucide-react";
+import Image from "next/image";
 
 
 
@@ -166,7 +167,9 @@ const DashboardPage = () => {
                     className="flex items-center justify-between border-b pb-2"
                   >
                     <div className="flex items-center gap-3">
-                      <img
+                      <Image
+                      width={80}
+                      height={80}
                         src={p.image}
                         alt={p.title}
                         className="w-10 h-10 rounded object-cover"

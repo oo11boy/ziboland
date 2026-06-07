@@ -7,6 +7,7 @@ import { Input } from "@/Components/ui/input";
 import { Upload, X, Image as CheckCircle, Loader2, Trash2 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { SITE } from "@/lib/MainRoutes";
+import Image from "next/image";
 
 interface UploadedFile {
   url: string;
@@ -29,30 +30,36 @@ const MediaPage = () => {
         const data = await res.json();
         setUploadedFiles(data.files || []);
       } catch (err) {
-        toast.error("خطا در بارگذاری فایل‌ها"+err);
+        toast.error("خطا در بارگذاری فایل‌ها" + err);
       }
     };
     fetchFiles();
   }, []);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    setFiles((prev) => [...prev, ...selectedFiles]);
-    selectedFiles.forEach((file) => {
-      const previewUrl = URL.createObjectURL(file);
-      setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
-    });
-  }, []);
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = Array.from(e.target.files || []);
+      setFiles((prev) => [...prev, ...selectedFiles]);
+      selectedFiles.forEach((file) => {
+        const previewUrl = URL.createObjectURL(file);
+        setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
+      });
+    },
+    [],
+  );
 
-  const removeFile = useCallback((fileName: string) => {
-    setFiles((prev) => prev.filter((f) => f.name !== fileName));
-    setPreviews((prev) => {
-      const newPreviews = { ...prev };
-      delete newPreviews[fileName];
-      return newPreviews;
-    });
-    URL.revokeObjectURL(previews[fileName] || "");
-  }, [previews]);
+  const removeFile = useCallback(
+    (fileName: string) => {
+      setFiles((prev) => prev.filter((f) => f.name !== fileName));
+      setPreviews((prev) => {
+        const newPreviews = { ...prev };
+        delete newPreviews[fileName];
+        return newPreviews;
+      });
+      URL.revokeObjectURL(previews[fileName] || "");
+    },
+    [previews],
+  );
 
   const handleUpload = useCallback(async () => {
     if (files.length === 0) return;
@@ -69,7 +76,7 @@ const MediaPage = () => {
         const data = await res.json();
         return { url: data.url, name: file.name };
       } catch (error) {
-        toast.error(`خطا در آپلود ${file.name} `+error);
+        toast.error(`خطا در آپلود ${file.name} ` + error);
         return null;
       }
     });
@@ -91,7 +98,9 @@ const MediaPage = () => {
         body: JSON.stringify({ url: confirmDelete.url }),
       });
       if (!res.ok) throw new Error("خطا در حذف فایل");
-      setUploadedFiles((prev) => prev.filter((f) => f.url !== confirmDelete.url));
+      setUploadedFiles((prev) =>
+        prev.filter((f) => f.url !== confirmDelete.url),
+      );
       toast.success("فایل حذف شد");
     } catch {
       toast.error("خطا در حذف فایل");
@@ -139,11 +148,18 @@ const MediaPage = () => {
           {/* Selected Files Preview */}
           {files.length > 0 && (
             <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">فایل‌های انتخاب‌شده:</h3>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                فایل‌های انتخاب‌شده:
+              </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {files.map((file) => (
-                  <div key={file.name} className="relative bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden group">
-                    <img
+                  <div
+                    key={file.name}
+                    className="relative bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden group"
+                  >
+                    <Image
+                      width={160}
+                      height={160}
                       src={previews[file.name] || ""}
                       alt={file.name}
                       className="w-full h-32 object-cover"
@@ -198,8 +214,13 @@ const MediaPage = () => {
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {uploadedFiles.map((file, index) => (
-                <div key={index} className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 rounded-xl p-3 text-center shadow-md hover:shadow-lg transition-all">
-                  <img
+                <div
+                  key={index}
+                  className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 rounded-xl p-3 text-center shadow-md hover:shadow-lg transition-all"
+                >
+                  <Image
+                    width={160}
+                    height={160}
                     src={file.url}
                     alt={file.name}
                     className="w-full h-24 object-cover rounded-lg mb-2"
@@ -212,7 +233,9 @@ const MediaPage = () => {
                       variant="outline"
                       size="sm"
                       className="text-green-600 border-green-600"
-                      onClick={() => navigator.clipboard.writeText(SITE+'/'+ file.url)}
+                      onClick={() =>
+                        navigator.clipboard.writeText(SITE + "/" + file.url)
+                      }
                     >
                       کپی URL
                     </Button>
@@ -236,14 +259,21 @@ const MediaPage = () => {
       {confirmDelete && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
           <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg max-w-sm w-full">
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">آیا مطمئن هستید؟</h3>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
+              آیا مطمئن هستید؟
+            </h3>
             <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
-              این فایل برای همیشه حذف خواهد شد: <br /> 
+              این فایل برای همیشه حذف خواهد شد: <br />
               <span className="font-mono text-xs">{confirmDelete.name}</span>
             </p>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setConfirmDelete(null)}>انصراف</Button>
-              <Button className="bg-red-600 text-white hover:bg-red-700" onClick={handleDelete}>
+              <Button variant="outline" onClick={() => setConfirmDelete(null)}>
+                انصراف
+              </Button>
+              <Button
+                className="bg-red-600 text-white hover:bg-red-700"
+                onClick={handleDelete}
+              >
                 حذف فایل
               </Button>
             </div>
