@@ -37,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
   };
   try {
     const res = await fetchWithTimeout(
-      `${API}/settings`,
+      `../api/settings`,
       {
         next: { revalidate: 3600 },
       },
@@ -56,7 +56,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 // 🟢 صفحه اصلی (Server Component)
 export default async function Page() {
-
   return (
     <>
       {/* اسلایدر اصلی */}

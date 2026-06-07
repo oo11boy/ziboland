@@ -6,7 +6,14 @@ import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Label } from "@/Components/ui/label";
-import { AlertCircle, Loader2, Upload, X, Image as ImageIcon, CheckCircle } from "lucide-react";
+import {
+  AlertCircle,
+  Loader2,
+  Upload,
+  X,
+  Image as ImageIcon,
+  CheckCircle,
+} from "lucide-react";
 import { API, SITE } from "@/lib/MainRoutes";
 import { toast } from "react-hot-toast";
 
@@ -31,7 +38,9 @@ const EditBrandPage = () => {
     link: "",
   });
   const [loading, setLoading] = useState(true);
-  const [errors, setErrors] = useState<Partial<Record<keyof BrandFormData, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof BrandFormData, string>>
+  >({});
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<{ [key: string]: string }>({});
@@ -48,7 +57,7 @@ const EditBrandPage = () => {
   };
 
   useEffect(() => {
-    fetch(`${API}/brands/${id}`)
+    fetch(`../api/brands/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("خطا در دریافت برند");
         return res.json();
@@ -68,14 +77,17 @@ const EditBrandPage = () => {
       });
   }, [id]);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    setFiles((prev) => [...prev, ...selectedFiles]);
-    selectedFiles.forEach((file) => {
-      const previewUrl = URL.createObjectURL(file);
-      setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
-    });
-  }, []);
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = Array.from(e.target.files || []);
+      setFiles((prev) => [...prev, ...selectedFiles]);
+      selectedFiles.forEach((file) => {
+        const previewUrl = URL.createObjectURL(file);
+        setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
+      });
+    },
+    [],
+  );
 
   const removeFile = useCallback(
     (fileName: string) => {
@@ -89,7 +101,7 @@ const EditBrandPage = () => {
         URL.revokeObjectURL(previews[fileName]);
       }
     },
-    [previews]
+    [previews],
   );
 
   const handleUpload = useCallback(async () => {
@@ -140,7 +152,7 @@ const EditBrandPage = () => {
     }
     setLoading(true);
     try {
-      const response = await fetch(`${API}/brands/${id}`, {
+      const response = await fetch(`../api/brands/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -171,7 +183,9 @@ const EditBrandPage = () => {
     <div className="container mx-auto p-4 yekan">
       <Card className="bg-white dark:bg-gray-800 shadow-lg">
         <CardHeader className="pb-3">
-          <CardTitle className="text-2xl font-bold text-center">ویرایش برند</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">
+            ویرایش برند
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -183,7 +197,9 @@ const EditBrandPage = () => {
                 id="title"
                 placeholder="عنوان برند را وارد کنید"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, title: e.target.value })
+                }
                 required
                 aria-invalid={!!errors.title}
                 className={errors.title ? "border-red-500" : ""}
@@ -205,7 +221,9 @@ const EditBrandPage = () => {
                     id="img"
                     placeholder="https://example.com/image.jpg"
                     value={formData.img}
-                    onChange={(e) => setFormData({ ...formData, img: e.target.value })}
+                    onChange={(e) =>
+                      setFormData({ ...formData, img: e.target.value })
+                    }
                     required
                     aria-invalid={!!errors.img}
                     className={errors.img ? "border-red-500" : ""}
@@ -246,7 +264,9 @@ const EditBrandPage = () => {
                 id="link"
                 placeholder="لینک برند را وارد کنید"
                 value={formData.link}
-                onChange={(e) => setFormData({ ...formData, link: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, link: e.target.value })
+                }
                 required
                 aria-invalid={!!errors.link}
                 className={errors.link ? "border-red-500" : ""}
@@ -300,7 +320,9 @@ const EditBrandPage = () => {
             <div className="p-6 space-y-4">
               <div
                 className="border-2 border-dashed border-purple-300 dark:border-purple-600 rounded-lg p-6 text-center hover:border-purple-400 dark:hover:border-purple-500 transition-colors cursor-pointer bg-gray-50 dark:bg-gray-700"
-                onClick={() => document.getElementById("file-input-modal")?.click()}
+                onClick={() =>
+                  document.getElementById("file-input-modal")?.click()
+                }
               >
                 <Upload className="mx-auto h-8 w-8 text-purple-500 mb-2" />
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">
@@ -321,10 +343,15 @@ const EditBrandPage = () => {
               {/* Selected Files Preview */}
               {files.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-800 dark:text-white">فایل انتخاب‌شده:</h3>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-white">
+                    فایل انتخاب‌شده:
+                  </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {files.map((file) => (
-                      <div key={file.name} className="relative bg-white dark:bg-gray-800 rounded-lg overflow-hidden group">
+                      <div
+                        key={file.name}
+                        className="relative bg-white dark:bg-gray-800 rounded-lg overflow-hidden group"
+                      >
                         <img
                           src={previews[file.name] || ""}
                           alt={file.name}
@@ -369,10 +396,15 @@ const EditBrandPage = () => {
               {/* Uploaded Files */}
               {uploadedFiles.length > 0 && (
                 <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-800 dark:text-white">فایل آپلود شده:</h3>
+                  <h3 className="text-sm font-semibold text-gray-800 dark:text-white">
+                    فایل آپلود شده:
+                  </h3>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                     {uploadedFiles.map((file) => (
-                      <div key={file.name} className="relative bg-green-50 dark:bg-green-900/20 rounded-lg p-2 text-center">
+                      <div
+                        key={file.name}
+                        className="relative bg-green-50 dark:bg-green-900/20 rounded-lg p-2 text-center"
+                      >
                         <img
                           src={file.url}
                           alt={file.name}
@@ -393,7 +425,10 @@ const EditBrandPage = () => {
               )}
             </div>
             <div className="p-6 border-t flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowUploadModal(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowUploadModal(false)}
+              >
                 انصراف
               </Button>
             </div>

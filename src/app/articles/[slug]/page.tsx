@@ -4,7 +4,7 @@ import { API } from "@/lib/MainRoutes";
 
 // تابع دریافت مقاله
 async function getArticle(slug: string) {
-  const res = await fetch(`${API}/articles/${slug}`, { cache: "no-store" });
+  const res = await fetch(`../api/articles/${slug}`, { cache: "no-store" });
   if (!res.ok) throw new Error("خطا در دریافت مقاله");
   return res.json();
 }
@@ -15,10 +15,10 @@ interface PageProps {
 }
 
 // تابع متادیتای داینامیک
-export async function generateMetadata(
-  { params }: PageProps,
-): Promise<Metadata> {
-  const { slug } = await params;  // await کردن params
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { slug } = await params; // await کردن params
   let article;
 
   try {
@@ -46,7 +46,7 @@ export async function generateMetadata(
 
 // صفحه جزئیات مقاله
 export default async function ArticleDetailPage({ params }: PageProps) {
-  const { slug } = await params;  // await کردن params
+  const { slug } = await params; // await کردن params
   const article = await getArticle(slug);
 
   return (

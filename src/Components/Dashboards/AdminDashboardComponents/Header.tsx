@@ -51,10 +51,11 @@ const Header = () => {
     if (!token) return;
     try {
       setLoading(true);
-      const res = await fetch(`${API}/notifications`, {
+      const res = await fetch(`../api/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error(`Failed to fetch notifications: ${res.status}`);
+      if (!res.ok)
+        throw new Error(`Failed to fetch notifications: ${res.status}`);
       const data = await res.json();
       const normalized: Notification[] = data.map((n: any) => ({
         id: n.id,
@@ -83,7 +84,7 @@ const Header = () => {
   const markAsRead = async (id: number) => {
     if (!token) return toast.error("لطفاً دوباره وارد شوید");
     try {
-      const res = await fetch(`${API}/notifications/${id}`, {
+      const res = await fetch(`../api/notifications/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -98,7 +99,7 @@ const Header = () => {
       }
       if (!res.ok) throw new Error(`Failed: ${res.status}`);
       setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
       );
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch {
@@ -113,7 +114,7 @@ const Header = () => {
       return toast.success("هیچ اعلان خوانده‌نشده‌ای وجود ندارد");
 
     try {
-      const res = await fetch(`${API}/notifications`, {
+      const res = await fetch(`../api/notifications`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -230,10 +231,13 @@ const Header = () => {
                     !notification.read && markAsRead(notification.id)
                   }
                 >
-                  <div className="flex items-start space-x-3 space-x-reverse text-right" dir="rtl">
+                  <div
+                    className="flex items-start space-x-3 space-x-reverse text-right"
+                    dir="rtl"
+                  >
                     <span
                       className={`text-lg flex-shrink-0 ${getNotificationColor(
-                        notification.type
+                        notification.type,
                       )}`}
                     >
                       {getNotificationIcon(notification.type)}
@@ -242,7 +246,7 @@ const Header = () => {
                       <div className="flex items-center justify-between mb-1">
                         <span
                           className={`text-sm font-medium ${getNotificationColor(
-                            notification.type
+                            notification.type,
                           )}`}
                         >
                           {translateType(notification.type)}
@@ -266,13 +270,16 @@ const Header = () => {
                         )}
                       </p>
                       <p className="text-xs text-gray-400 mt-1">
-                        {new Date(notification.created_at).toLocaleString("fa-IR", {
-                          year: "numeric",
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {new Date(notification.created_at).toLocaleString(
+                          "fa-IR",
+                          {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          },
+                        )}
                       </p>
                     </div>
                   </div>

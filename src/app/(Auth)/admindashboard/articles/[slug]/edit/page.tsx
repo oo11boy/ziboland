@@ -55,7 +55,7 @@ export default function EditArticlePage() {
   useEffect(() => {
     if (slug) {
       setLoadingArticle(true);
-      fetch(`${API}/articles/${slug}`)
+      fetch(`../api/articles/${slug}`)
         .then((res) => {
           if (!res.ok) throw new Error("خطا در بارگذاری مقاله");
           return res.json();
@@ -108,7 +108,7 @@ export default function EditArticlePage() {
         setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
       });
     },
-    []
+    [],
   );
 
   const removeFile = useCallback(
@@ -123,7 +123,7 @@ export default function EditArticlePage() {
         URL.revokeObjectURL(previews[fileName]);
       }
     },
-    [previews]
+    [previews],
   );
 
   const handleUpload = useCallback(async () => {
@@ -174,7 +174,7 @@ export default function EditArticlePage() {
     }
 
     try {
-      const res = await fetch(`${API}/articles/${slug}`, {
+      const res = await fetch(`../api/articles/${slug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -189,7 +189,7 @@ export default function EditArticlePage() {
       } else {
         const errorData = await res.json();
         toast.error(
-          `خطا در به‌روزرسانی مقاله: ${errorData.message || "خطای ناشناخته"}`
+          `خطا در به‌روزرسانی مقاله: ${errorData.message || "خطای ناشناخته"}`,
         );
       }
     } catch (error) {
@@ -341,8 +341,12 @@ export default function EditArticlePage() {
                 محتوا <span className="text-red-500">*</span>
               </Label>
               <Editor
-                apiKey={process.env.TINY_KEY ? process.env.TINY_KEY  : "0nmwzbfoumioikgwvlx61cm3wkm7jzcko2c54ui40nc4850o"}
-               value={form.content}
+                apiKey={
+                  process.env.TINY_KEY
+                    ? process.env.TINY_KEY
+                    : "0nmwzbfoumioikgwvlx61cm3wkm7jzcko2c54ui40nc4850o"
+                }
+                value={form.content}
                 onEditorChange={(newValue) =>
                   setForm({ ...form, content: newValue })
                 }

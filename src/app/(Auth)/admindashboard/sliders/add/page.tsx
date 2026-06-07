@@ -5,7 +5,13 @@ import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { API, SITE } from "@/lib/MainRoutes";
 import { toast } from "react-hot-toast";
-import { Upload, X, Image as ImageIcon, CheckCircle, Loader2 } from "lucide-react";
+import {
+  Upload,
+  X,
+  Image as ImageIcon,
+  CheckCircle,
+  Loader2,
+} from "lucide-react";
 
 interface SliderFormData {
   imagewide: string;
@@ -30,12 +36,16 @@ const AddSliderPage = () => {
     slide_order: 0,
   });
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadType, setUploadType] = useState<"imagewide" | "imagemin" | null>(null);
+  const [uploadType, setUploadType] = useState<"imagewide" | "imagemin" | null>(
+    null,
+  );
   const [files, setFiles] = useState<File[]>([]);
   const [previews, setPreviews] = useState<{ [key: string]: string }>({});
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [errors, setErrors] = useState<Partial<Record<keyof SliderFormData, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof SliderFormData, string>>
+  >({});
 
   // اعتبارسنجی فرم
   const validateForm = () => {
@@ -43,20 +53,24 @@ const AddSliderPage = () => {
     if (!formData.imagewide) newErrors.imagewide = "تصویر دسکتاپ الزامی است";
     if (!formData.imagemin) newErrors.imagemin = "تصویر موبایل الزامی است";
     if (!formData.alt) newErrors.alt = "متن جایگزین (Alt) الزامی است";
-    if (formData.slide_order < 0) newErrors.slide_order = "ترتیب باید عدد غیرمنفی باشد";
+    if (formData.slide_order < 0)
+      newErrors.slide_order = "ترتیب باید عدد غیرمنفی باشد";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   // مدیریت آپلود فایل
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    setFiles((prev) => [...prev, ...selectedFiles]);
-    selectedFiles.forEach((file) => {
-      const previewUrl = URL.createObjectURL(file);
-      setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
-    });
-  }, []);
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = Array.from(e.target.files || []);
+      setFiles((prev) => [...prev, ...selectedFiles]);
+      selectedFiles.forEach((file) => {
+        const previewUrl = URL.createObjectURL(file);
+        setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
+      });
+    },
+    [],
+  );
 
   const removeFile = useCallback(
     (fileName: string) => {
@@ -70,7 +84,7 @@ const AddSliderPage = () => {
         URL.revokeObjectURL(previews[fileName]);
       }
     },
-    [previews]
+    [previews],
   );
 
   const handleUpload = useCallback(async () => {
@@ -88,7 +102,7 @@ const AddSliderPage = () => {
         const data = await res.json();
         return { url: SITE + data.url, name: file.name };
       } catch (error) {
-        toast.error(`خطا در آپلود ${file.name}`+error);
+        toast.error(`خطا در آپلود ${file.name}` + error);
         return null;
       }
     });
@@ -137,7 +151,7 @@ const AddSliderPage = () => {
       return;
     }
     try {
-      const response = await fetch(`${API}/sliders`, {
+      const response = await fetch(`../api/sliders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -164,7 +178,9 @@ const AddSliderPage = () => {
             <Input
               placeholder="آدرس تصویر دسکتاپ"
               value={formData.imagewide}
-              onChange={(e) => setFormData({ ...formData, imagewide: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, imagewide: e.target.value })
+              }
               className={errors.imagewide ? "border-red-500" : ""}
             />
             <Button
@@ -198,7 +214,9 @@ const AddSliderPage = () => {
             <Input
               placeholder="آدرس تصویر موبایل"
               value={formData.imagemin}
-              onChange={(e) => setFormData({ ...formData, imagemin: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, imagemin: e.target.value })
+              }
               className={errors.imagemin ? "border-red-500" : ""}
             />
             <Button
@@ -234,7 +252,9 @@ const AddSliderPage = () => {
             onChange={(e) => setFormData({ ...formData, alt: e.target.value })}
             className={errors.alt ? "border-red-500" : ""}
           />
-          {errors.alt && <p className="text-red-500 text-sm mt-1"> {errors.alt}</p>}
+          {errors.alt && (
+            <p className="text-red-500 text-sm mt-1"> {errors.alt}</p>
+          )}
         </div>
 
         <div>
@@ -255,7 +275,10 @@ const AddSliderPage = () => {
             placeholder="ترتیب نمایش"
             value={formData.slide_order}
             onChange={(e) =>
-              setFormData({ ...formData, slide_order: parseInt(e.target.value) || 0 })
+              setFormData({
+                ...formData,
+                slide_order: parseInt(e.target.value) || 0,
+              })
             }
             min="0"
             className={errors.slide_order ? "border-red-500" : ""}
@@ -274,7 +297,10 @@ const AddSliderPage = () => {
           >
             بازگشت
           </Button>
-          <Button type="submit" className="flex-1 bg-green-600 hover:bg-green-700">
+          <Button
+            type="submit"
+            className="flex-1 bg-green-600 hover:bg-green-700"
+          >
             افزودن اسلاید
           </Button>
         </div>
@@ -287,13 +313,16 @@ const AddSliderPage = () => {
             <div className="p-6 border-b">
               <h2 className="text-xl font-semibold flex items-center gap-2">
                 <ImageIcon className="h-5 w-5" />
-                آپلود {uploadType === "imagewide" ? "تصویر دسکتاپ" : "تصویر موبایل"}
+                آپلود{" "}
+                {uploadType === "imagewide" ? "تصویر دسکتاپ" : "تصویر موبایل"}
               </h2>
             </div>
             <div className="p-6 space-y-4">
               <div
                 className="border-2 border-dashed border-purple-300 dark:border-purple-600 rounded-lg p-6 text-center hover:border-purple-400 dark:hover:border-purple-500 transition-colors cursor-pointer bg-gray-50 dark:bg-gray-700"
-                onClick={() => document.getElementById("file-input-modal")?.click()}
+                onClick={() =>
+                  document.getElementById("file-input-modal")?.click()
+                }
               >
                 <Upload className="mx-auto h-8 w-8 text-purple-500 mb-2" />
                 <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">

@@ -22,7 +22,7 @@ const BannersPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API}/banners`)
+    fetch(`../api/banners`)
       .then((res) => {
         if (!res.ok) throw new Error("خطا در دریافت بنرها");
         return res.json();
@@ -38,7 +38,9 @@ const BannersPage = () => {
   const handleDelete = async (id: number) => {
     if (confirm("آیا مطمئن هستید؟")) {
       try {
-        const response = await fetch(`${API}/banners/${id}`, { method: "DELETE" });
+        const response = await fetch(`../api/banners/${id}`, {
+          method: "DELETE",
+        });
         if (!response.ok) throw new Error("خطا در حذف بنر");
         setBanners(banners.filter((b) => b.id !== id));
         toast.success("بنر با موفقیت حذف شد");
@@ -57,7 +59,9 @@ const BannersPage = () => {
           <CardTitle>بنرها</CardTitle>
         </CardHeader>
         <CardContent>
-          <Link href="/admindashboard/banners/add">  {/* اگر صفحه افزودن دارید، لینک دهید */}
+          <Link href="/admindashboard/banners/add">
+            {" "}
+            {/* اگر صفحه افزودن دارید، لینک دهید */}
             <Button className="mb-4">
               <Plus className="ml-2" /> افزودن بنر
             </Button>
@@ -72,7 +76,9 @@ const BannersPage = () => {
                       src={banner.image}
                       alt={banner.alt}
                       className="w-20 h-20 object-cover mr-4"
-                      onError={() => toast.error(`تصویر بنر ${banner.alt} قابل نمایش نیست`)}
+                      onError={() =>
+                        toast.error(`تصویر بنر ${banner.alt} قابل نمایش نیست`)
+                      }
                     />
                     <div>
                       <h3 className="font-bold">{banner.alt}</h3>
@@ -92,7 +98,11 @@ const BannersPage = () => {
                         <Edit className="h-4 w-4" />
                       </Button>
                     </Link>
-                    <Button variant="destructive" size="icon" onClick={() => handleDelete(banner.id)}>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => handleDelete(banner.id)}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>

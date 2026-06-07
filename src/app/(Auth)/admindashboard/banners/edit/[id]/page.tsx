@@ -55,7 +55,7 @@ export default function EditBannerPage() {
 
     const fetchBanner = async () => {
       try {
-        const res = await fetch(`${API}/banners/${id}`);
+        const res = await fetch(`../api/banners/${id}`);
         if (!res.ok) {
           throw new Error("بنر یافت نشد");
         }
@@ -175,7 +175,7 @@ export default function EditBannerPage() {
     }
 
     try {
-      const response = await fetch(`${API}/banners/${id}`, {
+      const response = await fetch(`../api/banners/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),

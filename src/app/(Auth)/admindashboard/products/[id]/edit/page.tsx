@@ -120,15 +120,18 @@ const EditProductPage = () => {
 
     if (!formData.title.trim()) newErrors.title = "نام محصول الزامی است";
     if (!formData.brand_id) newErrors.brand_id = "انتخاب برند الزامی است";
-    if (!formData.mothercatId) newErrors.mothercatId = "دسته‌بندی اصلی الزامی است";
+    if (!formData.mothercatId)
+      newErrors.mothercatId = "دسته‌بندی اصلی الزامی است";
     if (!formData.subcatId) newErrors.subcatId = "زیرمجموعه الزامی است";
     if (!formData.itemId) newErrors.itemId = "آیتم زیرمجموعه الزامی است";
     if (!formData.image.trim()) newErrors.image = "تصویر اصلی محصول الزامی است";
-    if (formData.variants.length === 0) newErrors.variants = "حداقل یک واریانت (رنگ) لازم است";
+    if (formData.variants.length === 0)
+      newErrors.variants = "حداقل یک واریانت (رنگ) لازم است";
 
     formData.variants.forEach((variant, index) => {
       if (!variant.color_englishName.trim())
-        newErrors[`variant_${index}_color_englishName`] = "نام انگلیسی رنگ الزامی است";
+        newErrors[`variant_${index}_color_englishName`] =
+          "نام انگلیسی رنگ الزامی است";
       if (!variant.color_hexCode.trim())
         newErrors[`variant_${index}_hex`] = "کد رنگ الزامی است";
       if (!variant.price_single.trim())
@@ -136,7 +139,8 @@ const EditProductPage = () => {
       if (!variant.price_wholesale.trim())
         newErrors[`variant_${index}_price_wholesale`] = "قیمت عمده الزامی است";
       if (parseInt(variant.min_wholesale || "1", 10) < 1)
-        newErrors[`variant_${index}_min_wholesale`] = "حداقل تعداد عمده باید حداقل ۱ باشد";
+        newErrors[`variant_${index}_min_wholesale`] =
+          "حداقل تعداد عمده باید حداقل ۱ باشد";
       if (parseInt(variant.stock_quantity || "0", 10) < 0)
         newErrors[`variant_${index}_stock`] = "موجودی نمی‌تواند منفی باشد";
     });
@@ -146,7 +150,7 @@ const EditProductPage = () => {
   };
 
   useEffect(() => {
-    fetch(`${API}/products/${id}`)
+    fetch(`../api/products/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("خطا در دریافت محصول");
         return res.json();
@@ -172,7 +176,9 @@ const EditProductPage = () => {
               color_persianName: v.color_persianName || "",
               color_hexCode: v.color_hexCode || "#000000",
               price_single: formatNumber(v.price_single?.toString() || ""),
-              price_wholesale: formatNumber(v.price_wholesale?.toString() || ""),
+              price_wholesale: formatNumber(
+                v.price_wholesale?.toString() || "",
+              ),
               discount_percent: v.discount_percent?.toString() || "0",
               min_wholesale: v.min_wholesale?.toString() || "1",
               in_stock: v.in_stock ?? true,
@@ -191,8 +197,8 @@ const EditProductPage = () => {
       });
 
     Promise.all([
-      fetch(`${API}/brands`).then((res) => res.json()),
-      fetch(`${API}/categories?mothercat=1`).then((res) => res.json()),
+      fetch(`../api/brands`).then((res) => res.json()),
+      fetch(`../api/categories?mothercat=1`).then((res) => res.json()),
     ])
       .then(([brandsData, categoriesData]) => {
         setBrands(brandsData);
@@ -201,31 +207,30 @@ const EditProductPage = () => {
       .catch(() => toast.error("خطا در بارگذاری داده‌های اولیه"));
   }, [id]);
 
-useEffect(() => {
-  if (formData.mothercatId) {
-    fetch(`${API}/subcategories?category_id=${formData.mothercatId}`)
-      .then((res) => res.ok ? res.json() : [])  // اگر 404 یا خطا بود، آرایه خالی
-      .then((data) => setSubcategories(Array.isArray(data) ? data : []))
-      .catch(() => setSubcategories([]));
-  } else {
-    setSubcategories([]);
-    setItems([]);
-    setFormData(prev => ({ ...prev, subcatId: "", itemId: "" }));
-  }
-}, [formData.mothercatId]);
+  useEffect(() => {
+    if (formData.mothercatId) {
+      fetch(`../api/subcategories?category_id=${formData.mothercatId}`)
+        .then((res) => (res.ok ? res.json() : [])) // اگر 404 یا خطا بود، آرایه خالی
+        .then((data) => setSubcategories(Array.isArray(data) ? data : []))
+        .catch(() => setSubcategories([]));
+    } else {
+      setSubcategories([]);
+      setItems([]);
+      setFormData((prev) => ({ ...prev, subcatId: "", itemId: "" }));
+    }
+  }, [formData.mothercatId]);
 
-useEffect(() => {
-  if (formData.subcatId) {
-    fetch(`${API}/subcategory-items?subcategory_id=${formData.subcatId}`)
-      .then((res) => res.ok ? res.json() : [])  // همینجا هم
-      .then((data) => setItems(Array.isArray(data) ? data : []))
-      .catch(() => setItems([]));
-  } else {
-    setItems([]);
-    setFormData(prev => ({ ...prev, itemId: "" }));
-  }
-}, [formData.subcatId]);
-
+  useEffect(() => {
+    if (formData.subcatId) {
+      fetch(`../api/subcategory-items?subcategory_id=${formData.subcatId}`)
+        .then((res) => (res.ok ? res.json() : [])) // همینجا هم
+        .then((data) => setItems(Array.isArray(data) ? data : []))
+        .catch(() => setItems([]));
+    } else {
+      setItems([]);
+      setFormData((prev) => ({ ...prev, itemId: "" }));
+    }
+  }, [formData.subcatId]);
 
   const addVariant = () => {
     setFormData((prev) => ({
@@ -250,7 +255,11 @@ useEffect(() => {
     }));
   };
 
-  const updateVariant = (index: number, field: keyof VariantFormData, value: any) => {
+  const updateVariant = (
+    index: number,
+    field: keyof VariantFormData,
+    value: any,
+  ) => {
     setFormData((prev) => {
       const newVariants = [...prev.variants];
       newVariants[index] = { ...newVariants[index], [field]: value };
@@ -283,7 +292,7 @@ useEffect(() => {
     variantIndex: number,
     infoIndex: number,
     field: "name" | "value",
-    value: string
+    value: string,
   ) => {
     setFormData((prev) => {
       const newVariants = [...prev.variants];
@@ -302,7 +311,7 @@ useEffect(() => {
 
   const openUploadModal = (
     type: "productImage" | "variantImage" | "variantGallery",
-    variantIndex?: number
+    variantIndex?: number,
   ) => {
     setUploadTarget({ type, variantIndex });
     setFiles([]);
@@ -325,7 +334,7 @@ useEffect(() => {
         setPreviews((prev) => ({ ...prev, [file.name]: url }));
       });
     },
-    []
+    [],
   );
 
   const removeFile = (name: string) => {
@@ -337,94 +346,109 @@ useEffect(() => {
       return newP;
     });
   };
-const handleUpload = async () => {
-  if (files.length === 0) {
-    toast.error("فایلی برای آپلود انتخاب نشده است");
-    return;
-  }
-  setUploading(true);
-  const promises = files.map(async (file) => {
-    const fd = new FormData();
-    fd.append("file", file);
-    try {
-      const res = await fetch("/api/media", { method: "POST", body: fd });
-      if (!res.ok) throw new Error("خطا در آپلود");
-      const data = await res.json();
-      return { url: SITE + data.url, name: file.name };
-    } catch (err) {
-      toast.error(`آپلود ${file.name} ناموفق بود`);
-      return null;
+  const handleUpload = async () => {
+    if (files.length === 0) {
+      toast.error("فایلی برای آپلود انتخاب نشده است");
+      return;
     }
-  });
-
-  const results = await Promise.all(promises);
-  const successful = results.filter(Boolean) as UploadedFile[];
-
-  if (successful.length === 0) {
-    toast.error("هیچ فایلی با موفقیت آپلود نشد");
-    setUploading(false);
-    return;
-  }
-
-  setUploadedFiles(successful);
-  // مهم: بعد از آپلود موفق، فایل‌های انتخاب‌شده رو پاک کن تا تکراری نشه
-  setFiles([]);
-  setPreviews({});
-  setUploading(false);
-  toast.success(`${successful.length} فایل با موفقیت آپلود شد`);
-};
-
-const confirmUpload = () => {
-  if (uploadedFiles.length === 0) {
-    toast.error("هیچ فایلی آپلود نشده است. ابتدا آپلود کنید.");
-    closeUploadModal();
-    return;
-  }
-
-  let hasApplied = false;
-  let allDuplicate = false;
-
-  if (uploadTarget?.type === "productImage") {
-    setFormData((prev) => ({ ...prev, image: uploadedFiles[0].url }));
-    hasApplied = true;
-  } 
-  else if (uploadTarget?.type === "variantImage" && uploadTarget.variantIndex !== undefined) {
-    updateVariant(uploadTarget.variantIndex, "image_main", uploadedFiles[0].url);
-    hasApplied = true;
-  } 
-  else if (uploadTarget?.type === "variantGallery" && uploadTarget.variantIndex !== undefined) {
-    const urls = uploadedFiles.map((f) => f.url);
-
-    setFormData((prev) => {
-      const newVariants = [...prev.variants];
-      const existingImages = newVariants[uploadTarget.variantIndex!].images;
-
-      // تشخیص تکراری بودن همه عکس‌ها
-      const uniqueNewUrls = urls.filter((url) => !existingImages.includes(url));
-
-      if (uniqueNewUrls.length === 0) {
-        allDuplicate = true;
-        return prev; // هیچ تغییری نده
+    setUploading(true);
+    const promises = files.map(async (file) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      try {
+        const res = await fetch("/api/media", { method: "POST", body: fd });
+        if (!res.ok) throw new Error("خطا در آپلود");
+        const data = await res.json();
+        return { url: SITE + data.url, name: file.name };
+      } catch (err) {
+        toast.error(`آپلود ${file.name} ناموفق بود`);
+        return null;
       }
-
-      newVariants[uploadTarget.variantIndex!].images = [...existingImages, ...uniqueNewUrls];
-      return { ...prev, variants: newVariants };
     });
 
-    hasApplied = true;
-  }
+    const results = await Promise.all(promises);
+    const successful = results.filter(Boolean) as UploadedFile[];
 
-  // مهم: toastها رو خارج از updater function فراخوانی کن
-  if (hasApplied) {
-    if (allDuplicate) {
-      toast.success("همه عکس‌ها قبلاً اضافه شده‌اند");
-    } else {
-      toast.success(`عکس${uploadedFiles.length > 1 ? 'ها' : ''} با موفقیت اعمال شدند`);
+    if (successful.length === 0) {
+      toast.error("هیچ فایلی با موفقیت آپلود نشد");
+      setUploading(false);
+      return;
     }
-  }
 
-  closeUploadModal();
-};
+    setUploadedFiles(successful);
+    // مهم: بعد از آپلود موفق، فایل‌های انتخاب‌شده رو پاک کن تا تکراری نشه
+    setFiles([]);
+    setPreviews({});
+    setUploading(false);
+    toast.success(`${successful.length} فایل با موفقیت آپلود شد`);
+  };
+
+  const confirmUpload = () => {
+    if (uploadedFiles.length === 0) {
+      toast.error("هیچ فایلی آپلود نشده است. ابتدا آپلود کنید.");
+      closeUploadModal();
+      return;
+    }
+
+    let hasApplied = false;
+    let allDuplicate = false;
+
+    if (uploadTarget?.type === "productImage") {
+      setFormData((prev) => ({ ...prev, image: uploadedFiles[0].url }));
+      hasApplied = true;
+    } else if (
+      uploadTarget?.type === "variantImage" &&
+      uploadTarget.variantIndex !== undefined
+    ) {
+      updateVariant(
+        uploadTarget.variantIndex,
+        "image_main",
+        uploadedFiles[0].url,
+      );
+      hasApplied = true;
+    } else if (
+      uploadTarget?.type === "variantGallery" &&
+      uploadTarget.variantIndex !== undefined
+    ) {
+      const urls = uploadedFiles.map((f) => f.url);
+
+      setFormData((prev) => {
+        const newVariants = [...prev.variants];
+        const existingImages = newVariants[uploadTarget.variantIndex!].images;
+
+        // تشخیص تکراری بودن همه عکس‌ها
+        const uniqueNewUrls = urls.filter(
+          (url) => !existingImages.includes(url),
+        );
+
+        if (uniqueNewUrls.length === 0) {
+          allDuplicate = true;
+          return prev; // هیچ تغییری نده
+        }
+
+        newVariants[uploadTarget.variantIndex!].images = [
+          ...existingImages,
+          ...uniqueNewUrls,
+        ];
+        return { ...prev, variants: newVariants };
+      });
+
+      hasApplied = true;
+    }
+
+    // مهم: toastها رو خارج از updater function فراخوانی کن
+    if (hasApplied) {
+      if (allDuplicate) {
+        toast.success("همه عکس‌ها قبلاً اضافه شده‌اند");
+      } else {
+        toast.success(
+          `عکس${uploadedFiles.length > 1 ? "ها" : ""} با موفقیت اعمال شدند`,
+        );
+      }
+    }
+
+    closeUploadModal();
+  };
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
@@ -467,14 +491,17 @@ const confirmUpload = () => {
         itemId: parseInt(formData.itemId),
         rating: parseFloat(formData.rating) || 0,
         features: formData.features
-          ? formData.features.split("\n").map((f) => f.trim()).filter(Boolean)
+          ? formData.features
+              .split("\n")
+              .map((f) => f.trim())
+              .filter(Boolean)
           : null,
         content: formData.content.trim() || null,
         media: formData.media.length > 0 ? formData.media : null,
         variants: cleanedVariants,
       };
 
-      const response = await fetch(`${API}/products/${id}`, {
+      const response = await fetch(`../api/products/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -527,16 +554,24 @@ const confirmUpload = () => {
                     <Label>نام محصول *</Label>
                     <Input
                       value={formData.title}
-                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, title: e.target.value })
+                      }
                       placeholder="نام محصول را وارد کنید"
                     />
-                    {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
+                    {errors.title && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.title}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>توضیحات محصول</Label>
                     <Textarea
                       value={formData.content}
-                      onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, content: e.target.value })
+                      }
                       rows={6}
                       placeholder="توضیحات کامل محصول..."
                     />
@@ -545,7 +580,9 @@ const confirmUpload = () => {
                     <Label>ویژگی‌ها (هر خط یک ویژگی)</Label>
                     <Textarea
                       value={formData.features}
-                      onChange={(e) => setFormData({ ...formData, features: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, features: e.target.value })
+                      }
                       rows={5}
                       placeholder="مثال: ضدآب\nباتری قوی\n..."
                     />
@@ -560,7 +597,9 @@ const confirmUpload = () => {
                 className="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 cursor-pointer"
                 onClick={() => toggleSection("media")}
               >
-                <h3 className="text-lg font-bold">تصویر اصلی محصول (پیش‌فرض واریانت‌ها)</h3>
+                <h3 className="text-lg font-bold">
+                  تصویر اصلی محصول (پیش‌فرض واریانت‌ها)
+                </h3>
                 {expandedSections.media ? <ChevronUp /> : <ChevronDown />}
               </div>
               {expandedSections.media && (
@@ -570,11 +609,16 @@ const confirmUpload = () => {
                     <div className="flex gap-4 items-end">
                       <Input
                         value={formData.image}
-                        onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                        onChange={(e) =>
+                          setFormData({ ...formData, image: e.target.value })
+                        }
                         placeholder="https://..."
                         className="flex-1"
                       />
-                      <Button type="button" onClick={() => openUploadModal("productImage")}>
+                      <Button
+                        type="button"
+                        onClick={() => openUploadModal("productImage")}
+                      >
                         <Upload className="h-5 w-5" />
                       </Button>
                     </div>
@@ -588,7 +632,11 @@ const confirmUpload = () => {
                         />
                       </div>
                     )}
-                    {errors.image && <p className="text-red-500 text-sm mt-2">{errors.image}</p>}
+                    {errors.image && (
+                      <p className="text-red-500 text-sm mt-2">
+                        {errors.image}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -610,7 +658,12 @@ const confirmUpload = () => {
                     <Select
                       value={formData.mothercatId}
                       onValueChange={(v) =>
-                        setFormData({ ...formData, mothercatId: v, subcatId: "", itemId: "" })
+                        setFormData({
+                          ...formData,
+                          mothercatId: v,
+                          subcatId: "",
+                          itemId: "",
+                        })
                       }
                     >
                       <SelectTrigger>
@@ -624,13 +677,19 @@ const confirmUpload = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.mothercatId && <p className="text-red-500 text-sm mt-1">{errors.mothercatId}</p>}
+                    {errors.mothercatId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.mothercatId}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>زیرمجموعه *</Label>
                     <Select
                       value={formData.subcatId}
-                      onValueChange={(v) => setFormData({ ...formData, subcatId: v, itemId: "" })}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, subcatId: v, itemId: "" })
+                      }
                       disabled={!formData.mothercatId}
                     >
                       <SelectTrigger>
@@ -644,13 +703,19 @@ const confirmUpload = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.subcatId && <p className="text-red-500 text-sm mt-1">{errors.subcatId}</p>}
+                    {errors.subcatId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.subcatId}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>آیتم زیرمجموعه *</Label>
                     <Select
                       value={formData.itemId}
-                      onValueChange={(v) => setFormData({ ...formData, itemId: v })}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, itemId: v })
+                      }
                       disabled={!formData.subcatId}
                     >
                       <SelectTrigger>
@@ -664,7 +729,11 @@ const confirmUpload = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.itemId && <p className="text-red-500 text-sm mt-1">{errors.itemId}</p>}
+                    {errors.itemId && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.itemId}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -689,9 +758,14 @@ const confirmUpload = () => {
                       <div className="flex justify-between items-center mb-6">
                         <h4 className="text-xl font-bold">
                           واریانت {vIndex + 1}:{" "}
-                          {variant.color_persianName || variant.color_englishName || "جدید"}
+                          {variant.color_persianName ||
+                            variant.color_englishName ||
+                            "جدید"}
                         </h4>
-                        <Button variant="destructive" onClick={() => removeVariant(vIndex)}>
+                        <Button
+                          variant="destructive"
+                          onClick={() => removeVariant(vIndex)}
+                        >
                           <Trash2 className="h-5 w-5" />
                         </Button>
                       </div>
@@ -702,7 +776,13 @@ const confirmUpload = () => {
                           <Label>نام انگلیسی رنگ *</Label>
                           <Input
                             value={variant.color_englishName}
-                            onChange={(e) => updateVariant(vIndex, "color_englishName", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "color_englishName",
+                                e.target.value,
+                              )
+                            }
                             placeholder="مثال: red"
                           />
                         </div>
@@ -710,7 +790,13 @@ const confirmUpload = () => {
                           <Label>نام فارسی رنگ</Label>
                           <Input
                             value={variant.color_persianName}
-                            onChange={(e) => updateVariant(vIndex, "color_persianName", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "color_persianName",
+                                e.target.value,
+                              )
+                            }
                             placeholder="مثال: قرمز"
                           />
                         </div>
@@ -720,12 +806,24 @@ const confirmUpload = () => {
                             <Input
                               type="color"
                               value={variant.color_hexCode}
-                              onChange={(e) => updateVariant(vIndex, "color_hexCode", e.target.value)}
+                              onChange={(e) =>
+                                updateVariant(
+                                  vIndex,
+                                  "color_hexCode",
+                                  e.target.value,
+                                )
+                              }
                               className="w-20 h-12"
                             />
                             <Input
                               value={variant.color_hexCode}
-                              onChange={(e) => updateVariant(vIndex, "color_hexCode", e.target.value)}
+                              onChange={(e) =>
+                                updateVariant(
+                                  vIndex,
+                                  "color_hexCode",
+                                  e.target.value,
+                                )
+                              }
                               placeholder="#FF0000"
                             />
                           </div>
@@ -739,38 +837,58 @@ const confirmUpload = () => {
                           <Input
                             value={variant.price_single}
                             onChange={(e) =>
-                              updateVariant(vIndex, "price_single", formatNumber(e.target.value.replace(/,/g, "")))
+                              updateVariant(
+                                vIndex,
+                                "price_single",
+                                formatNumber(e.target.value.replace(/,/g, "")),
+                              )
                             }
                             placeholder="1,200,000"
                           />
                         </div>
-                               <div>
+                        <div>
                           <Label>درصد تخفیف تکی</Label>
                           <Input
                             type="number"
                             min="0"
                             max="100"
                             value={variant.discount_percent}
-                            onChange={(e) => updateVariant(vIndex, "discount_percent", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "discount_percent",
+                                e.target.value,
+                              )
+                            }
                           />
-                                             {variant.price_single && parseInt(variant.discount_percent) > 0 && (
-      <p className="text-xs text-green-600 mt-2 font-bold">
-         قیمت نهایی تکی: {
-          formatNumber(
-            Math.round(
-              parseInt(variant.price_single.replace(/,/g, "")) * (1 - parseInt(variant.discount_percent) / 100)
-            ).toString()
-          )
-        } تومان
-      </p>
-    )}
+                          {variant.price_single &&
+                            parseInt(variant.discount_percent) > 0 && (
+                              <p className="text-xs text-green-600 mt-2 font-bold">
+                                قیمت نهایی تکی:{" "}
+                                {formatNumber(
+                                  Math.round(
+                                    parseInt(
+                                      variant.price_single.replace(/,/g, ""),
+                                    ) *
+                                      (1 -
+                                        parseInt(variant.discount_percent) /
+                                          100),
+                                  ).toString(),
+                                )}{" "}
+                                تومان
+                              </p>
+                            )}
                         </div>
                         <div>
                           <Label>قیمت عمده (تومان) *</Label>
                           <Input
                             value={variant.price_wholesale}
                             onChange={(e) =>
-                              updateVariant(vIndex, "price_wholesale", formatNumber(e.target.value.replace(/,/g, "")))
+                              updateVariant(
+                                vIndex,
+                                "price_wholesale",
+                                formatNumber(e.target.value.replace(/,/g, "")),
+                              )
                             }
                             placeholder="1,000,000"
                           />
@@ -781,11 +899,16 @@ const confirmUpload = () => {
                             type="number"
                             min="1"
                             value={variant.min_wholesale}
-                            onChange={(e) => updateVariant(vIndex, "min_wholesale", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "min_wholesale",
+                                e.target.value,
+                              )
+                            }
                             placeholder="1"
                           />
                         </div>
-                 
                       </div>
 
                       {/* موجودی */}
@@ -796,19 +919,31 @@ const confirmUpload = () => {
                             type="number"
                             min="0"
                             value={variant.stock_quantity}
-                            onChange={(e) => updateVariant(vIndex, "stock_quantity", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "stock_quantity",
+                                e.target.value,
+                              )
+                            }
                             placeholder="0"
                           />
                           <p className="text-sm text-gray-600 mt-2">
-                            {parseInt(variant.stock_quantity || "0") > 0 ? "موجود" : "ناموجود (خودکار)"}
+                            {parseInt(variant.stock_quantity || "0") > 0
+                              ? "موجود"
+                              : "ناموجود (خودکار)"}
                           </p>
                         </div>
                         <div className="flex items-center gap-4">
                           <Checkbox
                             checked={variant.in_stock}
-                            onCheckedChange={(c) => updateVariant(vIndex, "in_stock", !!c)}
+                            onCheckedChange={(c) =>
+                              updateVariant(vIndex, "in_stock", !!c)
+                            }
                           />
-                          <Label className="text-base">این رنگ موجود است (خودکار بر اساس موجودی)</Label>
+                          <Label className="text-base">
+                            این رنگ موجود است (خودکار بر اساس موجودی)
+                          </Label>
                         </div>
                       </div>
 
@@ -818,11 +953,22 @@ const confirmUpload = () => {
                         <div className="flex gap-4 items-end">
                           <Input
                             value={variant.image_main}
-                            onChange={(e) => updateVariant(vIndex, "image_main", e.target.value)}
+                            onChange={(e) =>
+                              updateVariant(
+                                vIndex,
+                                "image_main",
+                                e.target.value,
+                              )
+                            }
                             placeholder="URL تصویر"
                             className="flex-1"
                           />
-                          <Button type="button" onClick={() => openUploadModal("variantImage", vIndex)}>
+                          <Button
+                            type="button"
+                            onClick={() =>
+                              openUploadModal("variantImage", vIndex)
+                            }
+                          >
                             <Upload className="h-5 w-5" />
                           </Button>
                         </div>
@@ -838,8 +984,15 @@ const confirmUpload = () => {
                       {/* گالری واریانت */}
                       <div className="mb-8">
                         <div className="flex justify-between items-center mb-4">
-                          <Label className="text-lg">گالری تصاویر این رنگ</Label>
-                          <Button type="button" onClick={() => openUploadModal("variantGallery", vIndex)}>
+                          <Label className="text-lg">
+                            گالری تصاویر این رنگ
+                          </Label>
+                          <Button
+                            type="button"
+                            onClick={() =>
+                              openUploadModal("variantGallery", vIndex)
+                            }
+                          >
                             <Upload className="h-5 w-5 mr-2" /> آپلود گالری
                           </Button>
                         </div>
@@ -857,7 +1010,9 @@ const confirmUpload = () => {
                                   size="icon"
                                   className="absolute top-2 right-2 opacity-0 group-hover:opacity-100"
                                   onClick={() => {
-                                    const newImages = variant.images.filter((_, idx) => idx !== i);
+                                    const newImages = variant.images.filter(
+                                      (_, idx) => idx !== i,
+                                    );
                                     updateVariant(vIndex, "images", newImages);
                                   }}
                                 >
@@ -873,17 +1028,29 @@ const confirmUpload = () => {
                       <div>
                         <div className="flex justify-between items-center mb-4">
                           <Label className="text-lg">مشخصات فنی این رنگ</Label>
-                          <Button type="button" variant="outline" onClick={() => addVariantInfo(vIndex)}>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => addVariantInfo(vIndex)}
+                          >
                             <Plus className="h-5 w-5 mr-2" /> افزودن مشخصه
                           </Button>
                         </div>
                         {variant.infotable.map((info, infoIndex) => (
-                          <div key={infoIndex} className="flex gap-4 mb-4 items-center">
+                          <div
+                            key={infoIndex}
+                            className="flex gap-4 mb-4 items-center"
+                          >
                             <Input
                               placeholder="نام مشخصه (مثال: وزن)"
                               value={info.name}
                               onChange={(e) =>
-                                updateVariantInfo(vIndex, infoIndex, "name", e.target.value)
+                                updateVariantInfo(
+                                  vIndex,
+                                  infoIndex,
+                                  "name",
+                                  e.target.value,
+                                )
                               }
                               className="flex-1"
                             />
@@ -891,14 +1058,21 @@ const confirmUpload = () => {
                               placeholder="مقدار (مثال: 180 گرم)"
                               value={info.value}
                               onChange={(e) =>
-                                updateVariantInfo(vIndex, infoIndex, "value", e.target.value)
+                                updateVariantInfo(
+                                  vIndex,
+                                  infoIndex,
+                                  "value",
+                                  e.target.value,
+                                )
                               }
                               className="flex-1"
                             />
                             <Button
                               variant="destructive"
                               size="icon"
-                              onClick={() => removeVariantInfo(vIndex, infoIndex)}
+                              onClick={() =>
+                                removeVariantInfo(vIndex, infoIndex)
+                              }
                             >
                               <Trash2 className="h-5 w-5" />
                             </Button>
@@ -908,10 +1082,18 @@ const confirmUpload = () => {
                     </div>
                   ))}
 
-                  <Button type="button" onClick={addVariant} className="w-full text-lg py-6">
+                  <Button
+                    type="button"
+                    onClick={addVariant}
+                    className="w-full text-lg py-6"
+                  >
                     <Plus className="h-6 w-6 mr-3" /> افزودن واریانت جدید (رنگ)
                   </Button>
-                  {errors.variants && <p className="text-red-500 text-center text-lg">{errors.variants}</p>}
+                  {errors.variants && (
+                    <p className="text-red-500 text-center text-lg">
+                      {errors.variants}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -931,7 +1113,9 @@ const confirmUpload = () => {
                     <Label>برند *</Label>
                     <Select
                       value={formData.brand_id}
-                      onValueChange={(v) => setFormData({ ...formData, brand_id: v })}
+                      onValueChange={(v) =>
+                        setFormData({ ...formData, brand_id: v })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="انتخاب برند" />
@@ -944,7 +1128,11 @@ const confirmUpload = () => {
                         ))}
                       </SelectContent>
                     </Select>
-                    {errors.brand_id && <p className="text-red-500 text-sm mt-1">{errors.brand_id}</p>}
+                    {errors.brand_id && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.brand_id}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>امتیاز محصول (0 تا 5)</Label>
@@ -954,7 +1142,9 @@ const confirmUpload = () => {
                       max="5"
                       step="0.1"
                       value={formData.rating}
-                      onChange={(e) => setFormData({ ...formData, rating: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, rating: e.target.value })
+                      }
                     />
                   </div>
                 </div>
@@ -963,10 +1153,19 @@ const confirmUpload = () => {
 
             {/* دکمه‌ها */}
             <div className="flex gap-6 pt-8">
-              <Button type="button" variant="outline" onClick={() => router.back()} className="flex-1 text-lg py-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+                className="flex-1 text-lg py-6"
+              >
                 بازگشت
               </Button>
-              <Button type="submit" disabled={loading} className="flex-1 bg-green-600 hover:bg-green-700 text-lg py-6">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="flex-1 bg-green-600 hover:bg-green-700 text-lg py-6"
+              >
                 {loading ? (
                   <>
                     <Loader2 className="h-6 w-6 animate-spin mr-3" />
@@ -994,8 +1193,12 @@ const confirmUpload = () => {
                 onClick={() => document.getElementById("upload-input")?.click()}
               >
                 <Upload className="h-16 w-16 mx-auto text-purple-600 mb-6" />
-                <p className="text-xl font-bold">فایل‌ها را اینجا بکشید یا کلیک کنید</p>
-                <p className="text-sm text-gray-500 mt-2">حداکثر 10 مگابایت - تصاویر و ویدئو</p>
+                <p className="text-xl font-bold">
+                  فایل‌ها را اینجا بکشید یا کلیک کنید
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  حداکثر 10 مگابایت - تصاویر و ویدئو
+                </p>
                 <Input
                   id="upload-input"
                   type="file"
@@ -1007,7 +1210,9 @@ const confirmUpload = () => {
 
               {files.length > 0 && (
                 <div>
-                  <h3 className="text-xl font-bold mb-4">فایل‌های انتخاب شده ({files.length})</h3>
+                  <h3 className="text-xl font-bold mb-4">
+                    فایل‌های انتخاب شده ({files.length})
+                  </h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     {files.map((file) => (
                       <div key={file.name} className="relative group">
@@ -1024,19 +1229,29 @@ const confirmUpload = () => {
                         >
                           <X className="h-5 w-5" />
                         </Button>
-                        <p className="text-center text-sm mt-2 truncate">{file.name}</p>
+                        <p className="text-center text-sm mt-2 truncate">
+                          {file.name}
+                        </p>
                       </div>
                     ))}
                   </div>
-                  <Button onClick={handleUpload} disabled={uploading} className="w-full mt-6 text-lg py-6">
-                    {uploading ? "در حال آپلود..." : `آپلود ${files.length} فایل`}
+                  <Button
+                    onClick={handleUpload}
+                    disabled={uploading}
+                    className="w-full mt-6 text-lg py-6"
+                  >
+                    {uploading
+                      ? "در حال آپلود..."
+                      : `آپلود ${files.length} فایل`}
                   </Button>
                 </div>
               )}
 
               {uploadedFiles.length > 0 && (
                 <div>
-                  <h3 className="text-xl font-bold mb-4">فایل‌های آپلود شده ({uploadedFiles.length})</h3>
+                  <h3 className="text-xl font-bold mb-4">
+                    فایل‌های آپلود شده ({uploadedFiles.length})
+                  </h3>
                   <div className="grid grid-cols-3 md:grid-cols-5 gap-6">
                     {uploadedFiles.map((file) => (
                       <img
@@ -1047,7 +1262,10 @@ const confirmUpload = () => {
                       />
                     ))}
                   </div>
-                  <Button onClick={confirmUpload} className="w-full mt-6 bg-green-600 hover:bg-green-700 text-lg py-6">
+                  <Button
+                    onClick={confirmUpload}
+                    className="w-full mt-6 bg-green-600 hover:bg-green-700 text-lg py-6"
+                  >
                     <CheckCircle className="h-6 w-6 mr-3" /> تأیید و اعمال
                   </Button>
                 </div>

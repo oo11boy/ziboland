@@ -5,11 +5,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://localhost:3000";
 
   // 🟢 دریافت لیست مقالات از API
-  const articlesRes = await fetch(`${API}/articles`, { cache: "no-store" });
+  const articlesRes = await fetch(`../api/articles`, { cache: "no-store" });
   const articles = articlesRes.ok ? await articlesRes.json() : [];
 
   // 🟢 دریافت لیست محصولات از API
-  const productsRes = await fetch(`${API}/products`, { cache: "no-store" });
+  const productsRes = await fetch(`../api/products`, { cache: "no-store" });
   const products = productsRes.ok ? await productsRes.json() : [];
 
   // 🏠 صفحه اصلی
@@ -38,7 +38,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   articles.forEach((article: any) => {
     urls.push({
       url: `${baseUrl}/articles/${article.slug}`,
-      lastModified: new Date(article.updated_at || article.created_at || Date.now()),
+      lastModified: new Date(
+        article.updated_at || article.created_at || Date.now(),
+      ),
       changeFrequency: "monthly",
       priority: 0.7,
     });
@@ -48,7 +50,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   products.forEach((product: any) => {
     urls.push({
       url: `${baseUrl}/products/${product.id}`,
-      lastModified: new Date(product.updated_at || product.created_at || Date.now()),
+      lastModified: new Date(
+        product.updated_at || product.created_at || Date.now(),
+      ),
       changeFrequency: "monthly",
       priority: 0.7,
     });

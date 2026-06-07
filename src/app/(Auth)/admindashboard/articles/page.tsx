@@ -32,14 +32,15 @@ export default function ArticlesPage() {
     const filtered = articles.filter(
       (article) =>
         article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (article.author && article.author.toLowerCase().includes(searchTerm.toLowerCase()))
+        (article.author &&
+          article.author.toLowerCase().includes(searchTerm.toLowerCase())),
     );
     setFilteredArticles(filtered);
   }, [articles, searchTerm]);
 
   const fetchArticles = async () => {
     try {
-      const res = await fetch(`${API}/articles`);
+      const res = await fetch(`../api/articles`);
       if (!res.ok) throw new Error("خطا در دریافت مقالات");
       const data = await res.json();
       setArticles(data);
@@ -55,7 +56,9 @@ export default function ArticlesPage() {
   const handleDelete = async (slug: string) => {
     if (confirm("آیا مطمئن هستید؟")) {
       try {
-        const res = await fetch(`${API}/articles/${slug}`, { method: "DELETE" });
+        const res = await fetch(`../api/articles/${slug}`, {
+          method: "DELETE",
+        });
         if (!res.ok) throw new Error("خطا در حذف مقاله");
         setArticles(articles.filter((a) => a.slug !== slug));
         setFilteredArticles(filteredArticles.filter((a) => a.slug !== slug));
@@ -78,7 +81,9 @@ export default function ArticlesPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center flex-wrap gap-2 mb-6">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">مقالات</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
+          مقالات
+        </h1>
         <Link href="/admindashboard/articles/add">
           <Button className="bg-blue-500 hover:bg-blue-600 text-white">
             <Plus className="mr-2 h-4 w-4" /> افزودن مقاله
@@ -138,8 +143,15 @@ export default function ArticlesPage() {
                     </td>
                     <td className="px-4 py-2 block md:table-cell">
                       <div className="flex space-x-2 space-x-reverse">
-                        <Link href={`/admindashboard/articles/${article.slug}/edit`}>
-                          <Button variant="outline" size="sm" title="ویرایش مقاله" className="hover:bg-blue-50 dark:hover:bg-blue-900">
+                        <Link
+                          href={`/admindashboard/articles/${article.slug}/edit`}
+                        >
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            title="ویرایش مقاله"
+                            className="hover:bg-blue-50 dark:hover:bg-blue-900"
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
                         </Link>
@@ -157,7 +169,12 @@ export default function ArticlesPage() {
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          <Button variant="outline" size="sm" title="مشاهده مقاله" className="hover:bg-blue-50 dark:hover:bg-blue-900">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            title="مشاهده مقاله"
+                            className="hover:bg-blue-50 dark:hover:bg-blue-900"
+                          >
                             <View className="h-4 w-4" />
                           </Button>
                         </a>

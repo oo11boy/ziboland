@@ -14,15 +14,14 @@ import { Metadata } from "next";
 // تابع کمکی برای دریافت داده‌ها با مدیریت خطا
 async function fetchData<T>(
   endpoint: string,
-  token: string | undefined
+  token: string | undefined,
 ): Promise<T> {
   try {
-    const res = await fetch(`${API}${endpoint}`, {
+    const res = await fetch(`../api${endpoint}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      cache: "no-store", 
-     
+      cache: "no-store",
     });
     if (!res.ok) {
       throw new Error(`Failed to fetch data from ${endpoint}`);
@@ -36,7 +35,6 @@ async function fetchData<T>(
 export const metadata: Metadata = {
   title: "داشبورد کاربر | زیبولند",
   description: "داشبورد کاربر",
-
 };
 export default async function page() {
   // دریافت توکن از کوکی‌ها در سمت سرور
@@ -47,7 +45,7 @@ export default async function page() {
   const addresses: Address[] = await fetchData<Address[]>("/addresses", token);
   const accountInfo: AccountInfo = await fetchData<AccountInfo>(
     "/users/me",
-    token
+    token,
   );
   const orders: Order[] = await fetchData<Order[]>("/orders", token);
   // const wishlist: WishlistItem[] = await fetchData<WishlistItem[]>(
@@ -56,7 +54,7 @@ export default async function page() {
   // );
   const supportTickets: SupportTicket[] = await fetchData<SupportTicket[]>(
     "/tickets",
-    token
+    token,
   );
   // const recentActivities: RecentActivity[] = await fetchData<RecentActivity[]>(
   //   "/activities",
@@ -70,10 +68,10 @@ export default async function page() {
       ticket.status === "open"
         ? "باز"
         : ticket.status === "closed"
-        ? "بسته"
-        : ticket.status === "responded"
-        ? "پاسخ داده شده"
-        : "در انتظار",
+          ? "بسته"
+          : ticket.status === "responded"
+            ? "پاسخ داده شده"
+            : "در انتظار",
   }));
 
   return (

@@ -24,14 +24,14 @@ const BrandsPage = () => {
     const filtered = brands.filter(
       (brand) =>
         brand.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        brand.link.toLowerCase().includes(searchTerm.toLowerCase())
+        brand.link.toLowerCase().includes(searchTerm.toLowerCase()),
     );
     setFilteredBrands(filtered);
   }, [brands, searchTerm]);
 
   const fetchBrands = async () => {
     try {
-      const res = await fetch(`${API}/brands`);
+      const res = await fetch(`../api/brands`);
       if (!res.ok) throw new Error("خطا در دریافت برندها");
       const data: Brand[] = await res.json();
       setBrands(data);
@@ -44,30 +44,29 @@ const BrandsPage = () => {
     }
   };
 
-const handleDelete = async (id: number) => {
-  if (!confirm("آیا مطمئن هستید که می‌خواهید این برند را حذف کنید؟")) return;
+  const handleDelete = async (id: number) => {
+    if (!confirm("آیا مطمئن هستید که می‌خواهید این برند را حذف کنید؟")) return;
 
-  try {
-    const res = await fetch(`${API}/brands/${id}`, {
-      method: "DELETE",
-    });
+    try {
+      const res = await fetch(`../api/brands/${id}`, {
+        method: "DELETE",
+      });
 
-    if (!res.ok) {
-      const errorData = await res.json();
-      // نمایش پیام دقیق با نام محصولات
-      alert(errorData.details || errorData.error || "خطا در حذف برند");
-      return;
+      if (!res.ok) {
+        const errorData = await res.json();
+        // نمایش پیام دقیق با نام محصولات
+        alert(errorData.details || errorData.error || "خطا در حذف برند");
+        return;
+      }
+
+      setBrands(brands.filter((b) => b.id !== id));
+      setFilteredBrands(filteredBrands.filter((b) => b.id !== id));
+      toast.success("برند با موفقیت حذف شد");
+    } catch (err) {
+      console.error("Error deleting brand:", err);
+      toast.error("خطا در ارتباط با سرور");
     }
-
-    setBrands(brands.filter((b) => b.id !== id));
-    setFilteredBrands(filteredBrands.filter((b) => b.id !== id));
-    toast.success("برند با موفقیت حذف شد");
-  } catch (err) {
-    console.error("Error deleting brand:", err);
-    toast.error("خطا در ارتباط با سرور");
-  }
-};
-
+  };
 
   if (loading) {
     return (
@@ -135,7 +134,11 @@ const handleDelete = async (id: number) => {
                       </td>
                       <td className="px-4 py-2 text-right block md:table-cell">
                         <span className="font-medium md:hidden">تصویر: </span>
-                        <img src={brand.img} alt={brand.title} className="w-10 h-10 object-cover inline-block rounded" />
+                        <img
+                          src={brand.img}
+                          alt={brand.title}
+                          className="w-10 h-10 object-cover inline-block rounded"
+                        />
                       </td>
                       <td className="px-4 py-2 text-right block md:table-cell">
                         <span className="font-medium md:hidden">لینک: </span>
@@ -143,8 +146,15 @@ const handleDelete = async (id: number) => {
                       </td>
                       <td className="px-4 py-2 block md:table-cell">
                         <div className="flex space-x-2 space-x-reverse">
-                          <Link href={`/admindashboard/brands/${brand.id}/edit`}>
-                            <Button variant="outline" size="sm" title="ویرایش برند" className="hover:bg-blue-50 dark:hover:bg-blue-900">
+                          <Link
+                            href={`/admindashboard/brands/${brand.id}/edit`}
+                          >
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              title="ویرایش برند"
+                              className="hover:bg-blue-50 dark:hover:bg-blue-900"
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
                           </Link>

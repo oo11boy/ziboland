@@ -7,10 +7,6 @@ import {
   EffectCoverflow,
   Autoplay,
 } from "swiper/modules";
-import "swiper/css";
-import "swiper/css/navigation";
-import "swiper/css/pagination";
-import "swiper/css/effect-coverflow";
 import "./WideSlider.css";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
@@ -24,7 +20,6 @@ const WideSliderContainer = () => {
   const [windowWidth, setWindowWidth] = useState(0);
   const swiperRef = useRef<SwiperRef>(null);
   const { slides } = useSlider();
-  // useEffect برای fetch حذف شد، چون داده‌ها از props می‌آیند
 
   useEffect(() => {
     if (typeof window === "undefined") return;

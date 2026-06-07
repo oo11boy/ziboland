@@ -78,7 +78,7 @@ const OrdersPage = () => {
 
     try {
       const token = Cookies.get("authToken");
-      const res = await fetch(`${API}/admin/orders/${orderId}`, {
+      const res = await fetch(`../api/admin/orders/${orderId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -99,7 +99,7 @@ const OrdersPage = () => {
         return;
       }
 
-      const response = await fetch(`${API}/admin/orders`, {
+      const response = await fetch(`../api/admin/orders`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -191,7 +191,7 @@ const OrdersPage = () => {
 
     try {
       const token = Cookies.get("authToken");
-      const res = await fetch(`${API}/admin/orders/${orderId}`, {
+      const res = await fetch(`../api/admin/orders/${orderId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -247,10 +247,10 @@ const OrdersPage = () => {
     setSelectedOrder(order);
     setIsModalOpen(true);
   };
-const copyToClipboard = (text: any) => {
-  navigator.clipboard.writeText(text);
-  toast.success("شماره کاربر کپی شد", { autoClose: 2000 });
-};
+  const copyToClipboard = (text: any) => {
+    navigator.clipboard.writeText(text);
+    toast.success("شماره کاربر کپی شد", { autoClose: 2000 });
+  };
   // لودینگ
   if (loading) {
     return (
@@ -462,16 +462,17 @@ const copyToClipboard = (text: any) => {
                               {order.first_name} {order.last_name}
                             </p>
                             <p className="text-sm text-gray-500">
-                                   <button
-                              onClick={() =>   {copyToClipboard(order.phone_number)}}
-                              className="text-gray-500 hover:text-purple-600 flex gap-2 transition"
-                              title="کپی نام محصول"
-                            >
-                    <Copy className="h-4 w-4" />    {order.phone_number}  
-                            </button>
+                              <button
+                                onClick={() => {
+                                  copyToClipboard(order.phone_number);
+                                }}
+                                className="text-gray-500 hover:text-purple-600 flex gap-2 transition"
+                                title="کپی نام محصول"
+                              >
+                                <Copy className="h-4 w-4" />{" "}
+                                {order.phone_number}
+                              </button>
                             </p>
-
-                          
                           </div>
                         </td>
                         <td className="px-6 py-4 font-bold text-lg">
@@ -533,7 +534,6 @@ const copyToClipboard = (text: any) => {
                           >
                             <View className="w-5 h-5 text-blue-600" />
                           </Button>
-                      
 
                           <Button
                             size="sm"
@@ -639,7 +639,7 @@ const copyToClipboard = (text: any) => {
                   }
                 />
               </div>
-  
+
               <Section title="آدرس تحویل">
                 {`${selectedOrder.province}، ${selectedOrder.city}، ${selectedOrder.street}`}
                 {selectedOrder.alley && `، کوچه ${selectedOrder.alley}`}
@@ -680,8 +680,7 @@ const copyToClipboard = (text: any) => {
                         )}
                         <p className="text-sm">تعداد: {item.quantity}</p>
                         <p className="text-sm font-medium">
-                          قیمت واحد: {(item.unit_price ).toLocaleString()}{" "}
-                          تومان
+                          قیمت واحد: {item.unit_price.toLocaleString()} تومان
                         </p>
                         <p className="text-xs text-gray-500">
                           نوع قیمت:{" "}
@@ -693,11 +692,11 @@ const copyToClipboard = (text: any) => {
                 </div>
               </Section>
 
-       {selectedOrder.extra_details &&
-          <Section title="توضیحات اختیاری">
-{selectedOrder.extra_details}
-            </Section>
-       }
+              {selectedOrder.extra_details && (
+                <Section title="توضیحات اختیاری">
+                  {selectedOrder.extra_details}
+                </Section>
+              )}
 
               <div className="text-center mt-10">
                 <Button

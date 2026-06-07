@@ -13,7 +13,7 @@ const CategoriesPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API}/categories`)
+    fetch(`../api/categories`)
       .then((res) => {
         if (res.status >= 400) {
           throw new Error("خطا در دریافت دسته‌بندی‌ها");
@@ -32,10 +32,11 @@ const CategoriesPage = () => {
   }, []);
 
   const handleDelete = async (id: number) => {
-    if (!confirm("آیا مطمئن هستید که می‌خواهید این دسته‌بندی را حذف کنید؟")) return;
+    if (!confirm("آیا مطمئن هستید که می‌خواهید این دسته‌بندی را حذف کنید؟"))
+      return;
 
     try {
-      const res = await fetch(`${API}/categories/${id}`, {
+      const res = await fetch(`../api/categories/${id}`, {
         method: "DELETE",
       });
 
@@ -80,7 +81,9 @@ const CategoriesPage = () => {
 
       <Card className="bg-white dark:bg-gray-800 shadow-lg">
         <CardHeader className="border-b">
-          <CardTitle className="text-xl">لیست دسته‌بندی‌ها ({categories.length})</CardTitle>
+          <CardTitle className="text-xl">
+            لیست دسته‌بندی‌ها ({categories.length})
+          </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {categories.length === 0 ? (
@@ -134,12 +137,16 @@ const CategoriesPage = () => {
                           />
                         ) : (
                           <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center mx-auto">
-                            <span className="text-xs text-gray-500">بدون تصویر</span>
+                            <span className="text-xs text-gray-500">
+                              بدون تصویر
+                            </span>
                           </div>
                         )}
                       </td>
                       <td className="px-6 py-4 text-center block md:table-cell">
-                        <span className="font-semibold md:hidden">دسته اصلی: </span>
+                        <span className="font-semibold md:hidden">
+                          دسته اصلی:{" "}
+                        </span>
                         <span
                           className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
                             category.mothercat
@@ -151,17 +158,27 @@ const CategoriesPage = () => {
                         </span>
                       </td>
                       <td className="px-6 py-4 text-center block md:table-cell">
-                        <span className="font-semibold md:hidden">زیرمجموعه‌ها: </span>
+                        <span className="font-semibold md:hidden">
+                          زیرمجموعه‌ها:{" "}
+                        </span>
                         <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
                           {category.subcat.length}
                         </span>
                       </td>
                       <td className="px-6 py-4 block md:table-cell text-center">
                         <div className="flex justify-center gap-2 flex-wrap">
-                          <Link href={`/admindashboard/categories/${category.id}/edit`}>
-                            <Button variant="outline" size="sm" className="border-blue-500 text-blue-600 hover:bg-blue-50">
+                          <Link
+                            href={`/admindashboard/categories/${category.id}/edit`}
+                          >
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                            >
                               <Edit className="h-4 w-4" />
-                              <span className="hidden md:inline ml-1">ویرایش</span>
+                              <span className="hidden md:inline ml-1">
+                                ویرایش
+                              </span>
                             </Button>
                           </Link>
                           <Button
@@ -174,10 +191,20 @@ const CategoriesPage = () => {
                             <span className="hidden md:inline ml-1">حذف</span>
                           </Button>
                           {category.link && (
-                            <a href={category.link} target="_blank" rel="noopener noreferrer">
-                              <Button variant="outline" size="sm" className="border-green-500 text-green-600 hover:bg-green-50">
+                            <a
+                              href={category.link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-green-500 text-green-600 hover:bg-green-50"
+                              >
                                 <View className="h-4 w-4" />
-                                <span className="hidden md:inline ml-1">مشاهده</span>
+                                <span className="hidden md:inline ml-1">
+                                  مشاهده
+                                </span>
                               </Button>
                             </a>
                           )}

@@ -4,8 +4,8 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Plus, Edit, Trash2, View } from "lucide-react";
 import { Button } from "@/Components/ui/button";
-import { API } from "@/lib/MainRoutes";
 import { toast } from "react-hot-toast";
+import Image from "next/image";
 
 interface Slide {
   id: number;
@@ -21,7 +21,7 @@ const SlidersPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API}/sliders`)
+    fetch(`../api/sliders`)
       .then((res) => {
         if (!res.ok) throw new Error("خطا در دریافت اسلایدها");
         return res.json();
@@ -37,7 +37,9 @@ const SlidersPage = () => {
   const handleDelete = async (id: number) => {
     if (confirm("آیا مطمئن هستید؟")) {
       try {
-        const response = await fetch(`${API}/sliders/${id}`, { method: "DELETE" });
+        const response = await fetch(`../api/sliders/${id}`, {
+          method: "DELETE",
+        });
         if (!response.ok) throw new Error("خطا در حذف اسلاید");
         setSlides(slides.filter((s) => s.id !== id));
         toast.success("اسلاید با موفقیت حذف شد");
@@ -47,7 +49,10 @@ const SlidersPage = () => {
     }
   };
 
-  if (loading) return <div className="container mx-auto p-4 yekan">در حال بارگذاری...</div>;
+  if (loading)
+    return (
+      <div className="container mx-auto p-4 yekan">در حال بارگذاری...</div>
+    );
 
   return (
     <div className="container mx-auto p-4 yekan space-y-6">
@@ -69,7 +74,7 @@ const SlidersPage = () => {
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                   <th className="px-4 py-2 text-right">پیش‌نمایش</th>
-                
+
                   <th className="px-4 py-2 text-right">Alt</th>
                   <th className="px-4 py-2 text-right">لینک</th>
                   <th className="px-4 py-2 text-right">ترتیب</th>
@@ -78,19 +83,32 @@ const SlidersPage = () => {
               </thead>
               <tbody>
                 {slides.map((slide) => (
-                  <tr key={slide.id} className="border-b border-gray-200 dark:border-gray-700">
+                  <tr
+                    key={slide.id}
+                    className="border-b border-gray-200 dark:border-gray-700"
+                  >
                     <td className="px-4 py-2 text-right">
-                      <img
+                      <Image
+                      width={64}
+                      height={64}
                         src={slide.imagemin}
                         alt={slide.alt}
                         className="h-16 w-16 object-cover rounded border"
-                        onError={() => toast.error(`تصویر اسلاید ${slide.alt} قابل نمایش نیست`)}
+                        onError={() =>
+                          toast.error(
+                            `تصویر اسلاید ${slide.alt} قابل نمایش نیست`,
+                          )
+                        }
                       />
                     </td>
-                
+
                     <td className="px-4 py-2 text-right">{slide.alt}</td>
-                    <td className="px-4 py-2 text-right">{slide.link || "-"}</td>
-                    <td className="px-4 py-2 text-right">{slide.slide_order}</td>
+                    <td className="px-4 py-2 text-right">
+                      {slide.link || "-"}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      {slide.slide_order}
+                    </td>
                     <td className="px-4 py-2 text-right">
                       <div className="flex space-x-2 space-x-reverse">
                         <Link href={`/admindashboard/sliders/${slide.id}/edit`}>
@@ -104,7 +122,11 @@ const SlidersPage = () => {
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                        <a href={slide.imagewide} target="_blank" rel="noopener noreferrer">
+                        <a
+                          href={slide.imagewide}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           <Button variant="ghost">
                             <View className="h-4 w-4" />
                           </Button>

@@ -32,18 +32,20 @@ export default function SettingsPage() {
 
   const fetchSettings = async () => {
     try {
-      const res = await fetch(`${API}/settings`);
+      const res = await fetch(`../api/settings`);
       if (!res.ok) throw new Error("خطا در دریافت تنظیمات");
       const data = await res.json();
       setForm((prev) => ({ ...prev, ...data }));
     } catch (err) {
-      toast.error("❌ خطا در دریافت تنظیمات"+err);
+      toast.error("❌ خطا در دریافت تنظیمات" + err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
@@ -51,7 +53,7 @@ export default function SettingsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      const res = await fetch(`${API}/settings`, {
+      const res = await fetch(`../api/settings`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -60,7 +62,7 @@ export default function SettingsPage() {
       if (!res.ok) throw new Error("خطا در ذخیره تنظیمات");
       toast.success("✅ تنظیمات با موفقیت ذخیره شد");
     } catch (err) {
-      toast.error("❌ خطا در ذخیره تنظیمات"+err);
+      toast.error("❌ خطا در ذخیره تنظیمات" + err);
     } finally {
       setSaving(false);
     }
@@ -70,7 +72,9 @@ export default function SettingsPage() {
     return (
       <div className="flex items-center justify-center h-[70vh]">
         <Loader2 className="animate-spin w-8 h-8 text-blue-600" />
-        <span className="mr-2 text-gray-600 dark:text-gray-300">در حال بارگذاری...</span>
+        <span className="mr-2 text-gray-600 dark:text-gray-300">
+          در حال بارگذاری...
+        </span>
       </div>
     );
   }
@@ -87,7 +91,9 @@ export default function SettingsPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* نام سایت */}
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">نام سایت</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                نام سایت
+              </label>
               <Input
                 name="site_name"
                 value={form.site_name}
@@ -99,7 +105,9 @@ export default function SettingsPage() {
 
             {/* توضیحات سایت */}
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">توضیحات سایت</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                توضیحات سایت
+              </label>
               <Textarea
                 name="site_description"
                 value={form.site_description}
@@ -112,7 +120,9 @@ export default function SettingsPage() {
 
             {/* آیکون سایت */}
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">آیکون سایت (URL)</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                آیکون سایت (URL)
+              </label>
               <Input
                 name="site_icon"
                 value={form.site_icon}
@@ -125,7 +135,9 @@ export default function SettingsPage() {
             {/* شبکه‌های اجتماعی */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">تلگرام</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  تلگرام
+                </label>
                 <Input
                   name="telegram_link"
                   value={form.telegram_link}
@@ -135,7 +147,9 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">واتساپ</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  واتساپ
+                </label>
                 <Input
                   name="whatsapp_link"
                   value={form.whatsapp_link}
@@ -145,7 +159,9 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">اینستاگرام</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  اینستاگرام
+                </label>
                 <Input
                   name="instagram_link"
                   value={form.instagram_link}
@@ -155,7 +171,9 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">ایمیل</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  ایمیل
+                </label>
                 <Input
                   name="email"
                   value={form.email}
@@ -169,7 +187,9 @@ export default function SettingsPage() {
             {/* اطلاعات تماس */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">شماره تماس</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  شماره تماس
+                </label>
                 <Input
                   name="phone"
                   value={form.phone}
@@ -179,7 +199,9 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">آدرس فروشگاه</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  آدرس فروشگاه
+                </label>
                 <Input
                   name="address"
                   value={form.address}
@@ -193,7 +215,9 @@ export default function SettingsPage() {
             {/* ساعت و روز کاری */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">ساعت کاری</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  ساعت کاری
+                </label>
                 <Input
                   name="working_hours"
                   value={form.working_hours}
@@ -203,7 +227,9 @@ export default function SettingsPage() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">روزهای کاری</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  روزهای کاری
+                </label>
                 <Input
                   name="working_days"
                   value={form.working_days}

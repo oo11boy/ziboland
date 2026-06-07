@@ -6,7 +6,13 @@ import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
 import { API, SITE } from "@/lib/MainRoutes";
 import { toast } from "react-hot-toast";
-import { Upload, X, Image as ImageIcon, CheckCircle, Loader2 } from "lucide-react";
+import {
+  Upload,
+  X,
+  Image as ImageIcon,
+  CheckCircle,
+  Loader2,
+} from "lucide-react";
 
 interface BannerFormData {
   image: string;
@@ -37,27 +43,33 @@ export default function AddBannerPage() {
   const [previews, setPreviews] = useState<{ [key: string]: string }>({});
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [errors, setErrors] = useState<Partial<Record<keyof BannerFormData, string>>>({});
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof BannerFormData, string>>
+  >({});
 
   // اعتبارسنجی فرم
   const validateForm = useCallback(() => {
     const newErrors: Partial<Record<keyof BannerFormData, string>> = {};
     if (!formData.image) newErrors.image = "تصویر بنر الزامی است";
     if (!formData.alt) newErrors.alt = "متن جایگزین (Alt) الزامی است";
-    if (formData.banner_order < 0) newErrors.banner_order = "ترتیب باید عدد غیرمنفی باشد";
+    if (formData.banner_order < 0)
+      newErrors.banner_order = "ترتیب باید عدد غیرمنفی باشد";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [formData]);
 
   // مدیریت انتخاب فایل
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = Array.from(e.target.files || []);
-    setFiles((prev) => [...prev, ...selectedFiles]);
-    selectedFiles.forEach((file) => {
-      const previewUrl = URL.createObjectURL(file);
-      setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
-    });
-  }, []);
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFiles = Array.from(e.target.files || []);
+      setFiles((prev) => [...prev, ...selectedFiles]);
+      selectedFiles.forEach((file) => {
+        const previewUrl = URL.createObjectURL(file);
+        setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
+      });
+    },
+    [],
+  );
 
   const removeFile = useCallback(
     (fileName: string) => {
@@ -69,7 +81,7 @@ export default function AddBannerPage() {
       });
       if (previews[fileName]) URL.revokeObjectURL(previews[fileName]);
     },
-    [previews]
+    [previews],
   );
 
   // ارسال فایل به سرور (فرض بر وجود روت /api/media)
@@ -131,7 +143,7 @@ export default function AddBannerPage() {
     }
 
     try {
-      const response = await fetch(`${API}/banners`, {
+      const response = await fetch(`../api/banners`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -161,7 +173,9 @@ export default function AddBannerPage() {
             <Input
               placeholder="https://ziboland.co/api/files/..."
               value={formData.image}
-              onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, image: e.target.value })
+              }
               className={errors.image ? "border-red-500" : ""}
             />
             <Button
@@ -184,7 +198,9 @@ export default function AddBannerPage() {
               />
             </div>
           )}
-          {errors.image && <p className="text-red-500 text-sm mt-1">{errors.image}</p>}
+          {errors.image && (
+            <p className="text-red-500 text-sm mt-1">{errors.image}</p>
+          )}
         </div>
 
         {/* Alt */}
@@ -198,7 +214,9 @@ export default function AddBannerPage() {
             onChange={(e) => setFormData({ ...formData, alt: e.target.value })}
             className={errors.alt ? "border-red-500" : ""}
           />
-          {errors.alt && <p className="text-red-500 text-sm mt-1">{errors.alt}</p>}
+          {errors.alt && (
+            <p className="text-red-500 text-sm mt-1">{errors.alt}</p>
+          )}
         </div>
 
         {/* لینک */}
@@ -213,7 +231,9 @@ export default function AddBannerPage() {
 
         {/* متن روی بنر */}
         <div>
-          <label className="mb-2 block font-medium">متن روی بنر (اختیاری)</label>
+          <label className="mb-2 block font-medium">
+            متن روی بنر (اختیاری)
+          </label>
           <Input
             placeholder="وکس‌های گیاهی با کیفیت"
             value={formData.text}
@@ -231,7 +251,10 @@ export default function AddBannerPage() {
             min="0"
             value={formData.banner_order}
             onChange={(e) =>
-              setFormData({ ...formData, banner_order: parseInt(e.target.value) || 0 })
+              setFormData({
+                ...formData,
+                banner_order: parseInt(e.target.value) || 0,
+              })
             }
             className={errors.banner_order ? "border-red-500" : ""}
           />
@@ -274,7 +297,9 @@ export default function AddBannerPage() {
               {/* ناحیه درگ اند دراپ */}
               <div
                 className="border-2 border-dashed border-purple-400 dark:border-purple-600 rounded-xl p-8 text-center hover:border-purple-500 transition-colors cursor-pointer bg-purple-50/30 dark:bg-purple-950/20"
-                onClick={() => document.getElementById("banner-file-input")?.click()}
+                onClick={() =>
+                  document.getElementById("banner-file-input")?.click()
+                }
               >
                 <Upload className="mx-auto h-10 w-10 text-purple-500 mb-3" />
                 <p className="font-medium text-gray-700 dark:text-gray-200">
@@ -374,7 +399,10 @@ export default function AddBannerPage() {
             </div>
 
             <div className="p-6 border-t dark:border-gray-700 flex justify-end">
-              <Button variant="outline" onClick={() => setShowUploadModal(false)}>
+              <Button
+                variant="outline"
+                onClick={() => setShowUploadModal(false)}
+              >
                 بستن
               </Button>
             </div>

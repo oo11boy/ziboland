@@ -28,18 +28,10 @@ const DeleteDialog = ({
         محصول "{productTitle}" سفارش دارد. آیا می‌خواهید با سفارش‌ها حذف شود؟
       </p>
       <div className="flex justify-around gap-4">
-        <Button
-          variant="outline"
-          onClick={onCancel}
-          className="px-6"
-        >
+        <Button variant="outline" onClick={onCancel} className="px-6">
           لغو
         </Button>
-        <Button
-          variant="destructive"
-          onClick={onForceDelete}
-          className="px-6"
-        >
+        <Button variant="destructive" onClick={onForceDelete} className="px-6">
           حذف با سفارش‌ها
         </Button>
       </div>
@@ -73,14 +65,14 @@ const ProductsPage = () => {
         product.title.toLowerCase().includes(lowerSearch) ||
         (product.brandDetails?.title &&
           product.brandDetails.title.toLowerCase().includes(lowerSearch)) ||
-        product.category.toLowerCase().includes(lowerSearch)
+        product.category.toLowerCase().includes(lowerSearch),
     );
     setFilteredProducts(filtered);
   }, [products, searchTerm]);
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch(`${API}/products`);
+      const res = await fetch(`../api/products`);
       if (!res.ok) throw new Error("خطا در دریافت محصولات");
       const data: Product[] = await res.json();
       setProducts(data);
@@ -101,7 +93,7 @@ const ProductsPage = () => {
   // حذف واقعی (با یا بدون force)
   const handleDelete = async (id: number, force = false) => {
     try {
-      const res = await fetch(`${API}/products/${id}`, {
+      const res = await fetch(`../api/products/${id}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ force }),
@@ -188,7 +180,7 @@ const ProductsPage = () => {
                   {filteredProducts.map((product) => {
                     const totalStock = product.variants.reduce(
                       (sum, v) => sum + v.stock_quantity,
-                      0
+                      0,
                     );
                     const hasStock = totalStock > 0;
 
@@ -207,8 +199,7 @@ const ProductsPage = () => {
                               <Copy className="h-4 w-4" />
                             </button>
                             <span className="font-medium text-right">
-                              {
-                                 product.title}
+                              {product.title}
                             </span>
                           </div>
                         </td>
@@ -236,7 +227,9 @@ const ProductsPage = () => {
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center justify-center gap-3">
-                            <Link href={`/admindashboard/products/${product.id}/edit`}>
+                            <Link
+                              href={`/admindashboard/products/${product.id}/edit`}
+                            >
                               <Button
                                 variant="outline"
                                 size="sm"

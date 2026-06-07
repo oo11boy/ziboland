@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -32,16 +31,21 @@ interface DebugComment extends Comment {
 const CommentsPage = () => {
   const [comments, setComments] = useState<DebugComment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedParent, setSelectedParent] = useState<DebugComment | null>(null);
+  const [selectedParent, setSelectedParent] = useState<DebugComment | null>(
+    null,
+  );
   const [replyText, setReplyText] = useState("");
 
   const fetchComments = async () => {
     try {
-      const res = await fetch(`${API}/comments`);
+      const res = await fetch(`../api/comments`);
       if (!res.ok) throw new Error("Failed to fetch comments");
       const data: Comment[] = await res.json();
       // Add level and collapsed for frontend rendering
-      const addLevels = (comments: Comment[], level: number = 0): DebugComment[] =>
+      const addLevels = (
+        comments: Comment[],
+        level: number = 0,
+      ): DebugComment[] =>
         comments.map((comment) => ({
           ...comment,
           level,
@@ -62,7 +66,7 @@ const CommentsPage = () => {
 
   const handleToggleStatus = async (id: number, currentStatus: number) => {
     try {
-      const res = await fetch(`${API}/comments`, {
+      const res = await fetch(`../api/comments`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, status: currentStatus ? 0 : 1 }),
@@ -72,12 +76,13 @@ const CommentsPage = () => {
         prev.map((comment) => ({
           ...comment,
           status: comment.id === id ? (currentStatus ? 0 : 1) : comment.status,
-          replies: comment.replies?.map((reply) => ({
-            ...reply,
-            status: reply.id === id ? (currentStatus ? 0 : 1) : reply.status,
-            replies: reply.replies || [],
-          })) || [],
-        }))
+          replies:
+            comment.replies?.map((reply) => ({
+              ...reply,
+              status: reply.id === id ? (currentStatus ? 0 : 1) : reply.status,
+              replies: reply.replies || [],
+            })) || [],
+        })),
       );
       toast.success("وضعیت کامنت تغییر یافت");
     } catch {
@@ -86,9 +91,14 @@ const CommentsPage = () => {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("آیا مطمئن هستید؟ این عمل کامنت و تمام پاسخ‌های زیرین را حذف می‌کند.")) return;
+    if (
+      !confirm(
+        "آیا مطمئن هستید؟ این عمل کامنت و تمام پاسخ‌های زیرین را حذف می‌کند.",
+      )
+    )
+      return;
     try {
-      const res = await fetch(`${API}/comments`, {
+      const res = await fetch(`../api/comments`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
@@ -104,7 +114,7 @@ const CommentsPage = () => {
   const handleReply = async () => {
     if (!replyText.trim() || !selectedParent) return;
     try {
-      const res = await fetch(`${API}/comments`, {
+      const res = await fetch(`../api/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -132,12 +142,13 @@ const CommentsPage = () => {
       prev.map((comment: DebugComment) => ({
         ...comment,
         collapsed: comment.id === id ? !comment.collapsed : comment.collapsed,
-        replies: comment.replies?.map((reply: DebugComment) => ({
-          ...reply,
-          collapsed: reply.id === id ? !reply.collapsed : reply.collapsed,
-          replies: reply.replies || [],
-        })) || [],
-      }))
+        replies:
+          comment.replies?.map((reply: DebugComment) => ({
+            ...reply,
+            collapsed: reply.id === id ? !reply.collapsed : reply.collapsed,
+            replies: reply.replies || [],
+          })) || [],
+      })),
     );
   };
 
@@ -224,11 +235,15 @@ const CommentsPage = () => {
           <p className="text-sm text-gray-400 mt-2">
             {new Date(comment.date).toLocaleDateString("fa-IR")}
           </p>
-          {comment.replies && comment.replies.length > 0 && !comment.collapsed && (
-            <div className="mt-4 space-y-3">
-              {comment.replies.map((reply) => renderComment(reply, level + 1))}
-            </div>
-          )}
+          {comment.replies &&
+            comment.replies.length > 0 &&
+            !comment.collapsed && (
+              <div className="mt-4 space-y-3">
+                {comment.replies.map((reply) =>
+                  renderComment(reply, level + 1),
+                )}
+              </div>
+            )}
         </CardContent>
       </Card>
     );
@@ -256,7 +271,9 @@ const CommentsPage = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {comments.map((comment) => renderComment(comment, comment.level || 0))}
+            {comments.map((comment) =>
+              renderComment(comment, comment.level || 0),
+            )}
           </div>
         </CardContent>
       </Card>

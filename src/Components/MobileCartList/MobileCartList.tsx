@@ -46,7 +46,7 @@ export default function MobileCartList() {
   const fetchProduct = async (id: number) => {
     if (productsMap[id]) return productsMap[id];
     try {
-      const res = await fetch(`${API}/products/${id}`, { cache: "no-store" });
+      const res = await fetch(`../api/products/${id}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`Failed to fetch product ${id}`);
       const product: Product = await res.json();
       setProductsMap((prev) => ({ ...prev, [id]: product }));
@@ -71,15 +71,17 @@ export default function MobileCartList() {
 
   const handleQuantityChange = async (
     item: (typeof cartItems)[0],
-    delta: number
+    delta: number,
   ) => {
     const product = await fetchProduct(item.id);
     if (!product) return;
 
     // پیدا کردن واریانت مربوطه برای چک کردن موجودی دقیق
-    const variant = product.variants?.find(v => v.color_englishName === item.color?.englishName) 
-                   || product.variants?.[0];
-    
+    const variant =
+      product.variants?.find(
+        (v) => v.color_englishName === item.color?.englishName,
+      ) || product.variants?.[0];
+
     const stockQuantity = variant?.stock_quantity ?? 0;
     const newQuantity = item.quantity + delta;
 
@@ -97,7 +99,7 @@ export default function MobileCartList() {
     }
 
     const itemKey = `${item.id}-${item.color?.englishName || "default"}`;
-    
+
     dispatch({
       type: "UPDATE_QUANTITY",
       payload: {
@@ -115,7 +117,7 @@ export default function MobileCartList() {
 
   const totalAmount = cartItems.reduce(
     (total, item) => total + parsePrice(item.price) * item.quantity,
-    0
+    0,
   );
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -157,10 +159,7 @@ export default function MobileCartList() {
       <div ref={headerRef} className="fixed top-[60px] right-0 left-0 z-50">
         <div className="backdrop-blur-sm bg-gradient-to-r from-[#7f4f95]/95 to-[#8f66b0]/95 text-white shadow-md">
           <div className="flex items-center justify-between px-4 py-3">
-            <button
-              onClick={scrollToList}
-              className="flex items-center gap-2"
-            >
+            <button onClick={scrollToList} className="flex items-center gap-2">
               <div className="relative">
                 <ShoppingCart fontSize="small" className="text-white" />
                 {totalItems > 0 && (

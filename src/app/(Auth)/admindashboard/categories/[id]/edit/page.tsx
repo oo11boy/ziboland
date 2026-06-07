@@ -71,7 +71,7 @@ const EditCategoryPage = () => {
 
   // بارگذاری داده اولیه
   useEffect(() => {
-    fetch(`${API}/categories/${id}`)
+    fetch(`../api/categories/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("خطا در دریافت دسته‌بندی");
         return res.json();
@@ -142,7 +142,7 @@ const EditCategoryPage = () => {
   const handleSubcategoryItemChange = (
     subcatIndex: number,
     itemIndex: number,
-    value: string
+    value: string,
   ) => {
     const newSubcat = [...formData.subcat];
     newSubcat[subcatIndex].items[itemIndex].name = value;
@@ -151,11 +151,11 @@ const EditCategoryPage = () => {
 
   const handleRemoveSubcategoryItem = (
     subcatIndex: number,
-    itemIndex: number
+    itemIndex: number,
   ) => {
     const newSubcat = [...formData.subcat];
     newSubcat[subcatIndex].items = newSubcat[subcatIndex].items.filter(
-      (_, i) => i !== itemIndex
+      (_, i) => i !== itemIndex,
     );
     setFormData({ ...formData, subcat: newSubcat });
   };
@@ -168,7 +168,7 @@ const EditCategoryPage = () => {
     }
     setLoading(true);
     try {
-      const response = await fetch(`${API}/categories/${id}`, {
+      const response = await fetch(`../api/categories/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -178,15 +178,16 @@ const EditCategoryPage = () => {
 
       if (!response.ok) {
         // اولویت با details (پیام کامل ما)
-    const errorMessage = result.details || result.error || "خطا در بروزرسانی دسته‌بندی";
-       toast.error(errorMessage, {
+        const errorMessage =
+          result.details || result.error || "خطا در بروزرسانی دسته‌بندی";
+        toast.error(errorMessage, {
           duration: 8000, // طولانی‌تر بمونه تا کاربر بتونه بخونه
           style: {
-     whiteSpace: "pre-line", // این خط خیلی مهمه! بدون این، \n کار نمی‌کنه
-    maxWidth: "700px",
-    fontSize: "14px",
-    direction: "rtl",
-    textAlign: "right",
+            whiteSpace: "pre-line", // این خط خیلی مهمه! بدون این، \n کار نمی‌کنه
+            maxWidth: "700px",
+            fontSize: "14px",
+            direction: "rtl",
+            textAlign: "right",
           },
         });
         return;
@@ -221,7 +222,7 @@ const EditCategoryPage = () => {
         setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
       });
     },
-    []
+    [],
   );
 
   const removeFile = useCallback(
@@ -234,7 +235,7 @@ const EditCategoryPage = () => {
       });
       if (previews[fileName]) URL.revokeObjectURL(previews[fileName]);
     },
-    [previews]
+    [previews],
   );
 
   const handleUpload = useCallback(async () => {
@@ -320,9 +321,7 @@ const EditCategoryPage = () => {
               </div>
 
               <div>
-                <Label className="mb-2 block">
-                  تصویر دسته‌بندی (اختیاری)
-                </Label>
+                <Label className="mb-2 block">تصویر دسته‌بندی (اختیاری)</Label>
 
                 <div className="flex gap-4 items-center">
                   <Button
@@ -403,7 +402,7 @@ const EditCategoryPage = () => {
                             handleSubcategoryItemChange(
                               subcatIndex,
                               itemIndex,
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           required
@@ -496,7 +495,9 @@ const EditCategoryPage = () => {
                 }
               >
                 <Upload className="mx-auto h-12 w-12 text-purple-500 mb-4" />
-                <p className="text-sm font-semibold">فایل را بکشید یا کلیک کنید</p>
+                <p className="text-sm font-semibold">
+                  فایل را بکشید یا کلیک کنید
+                </p>
                 <p className="text-xs text-gray-500 mt-1">
                   فقط تصویر (حداکثر ۱۰ مگابایت)
                 </p>

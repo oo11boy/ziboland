@@ -6,7 +6,7 @@ import { Categoryapi, Product } from "@/types/types";
 import { API } from "@/lib/MainRoutes";
 
 async function getProduct(id: string): Promise<Product> {
-  const res = await fetch(`${API}/products/${id}`, {
+  const res = await fetch(`../api/products/${id}`, {
     cache: "no-store",
   });
 
@@ -16,7 +16,6 @@ async function getProduct(id: string): Promise<Product> {
 
   return res.json();
 }
-
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -88,10 +87,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   let categories: Categoryapi[] = [];
 
   try {
-    [product] = await Promise.all([
-      getProduct(id),
-    
-    ]);
+    [product] = await Promise.all([getProduct(id)]);
   } catch (error) {
     throw error;
   }
@@ -99,7 +95,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   return (
     <>
       <BreadCrumbs product={product} />
-      <SingleProductContainer infoproduct={product}  />
+      <SingleProductContainer infoproduct={product} />
     </>
   );
 }

@@ -97,7 +97,7 @@ const AddCategoryPage = () => {
   const handleSubcategoryItemChange = (
     subcatIndex: number,
     itemIndex: number,
-    value: string
+    value: string,
   ) => {
     const newSubcat = [...formData.subcat];
     newSubcat[subcatIndex].items[itemIndex].name = value;
@@ -106,11 +106,11 @@ const AddCategoryPage = () => {
 
   const handleRemoveSubcategoryItem = (
     subcatIndex: number,
-    itemIndex: number
+    itemIndex: number,
   ) => {
     const newSubcat = [...formData.subcat];
     newSubcat[subcatIndex].items = newSubcat[subcatIndex].items.filter(
-      (_, i) => i !== itemIndex
+      (_, i) => i !== itemIndex,
     );
     setFormData({ ...formData, subcat: newSubcat });
   };
@@ -123,7 +123,7 @@ const AddCategoryPage = () => {
     }
     setLoading(true);
     try {
-      const response = await fetch(`${API}/categories`, {
+      const response = await fetch(`../api/categories`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -162,7 +162,7 @@ const AddCategoryPage = () => {
         setPreviews((prev) => ({ ...prev, [file.name]: previewUrl }));
       });
     },
-    []
+    [],
   );
 
   const removeFile = useCallback(
@@ -175,7 +175,7 @@ const AddCategoryPage = () => {
       });
       if (previews[fileName]) URL.revokeObjectURL(previews[fileName]);
     },
-    [previews]
+    [previews],
   );
 
   const handleUpload = useCallback(async () => {
@@ -253,9 +253,7 @@ const AddCategoryPage = () => {
               </div>
 
               <div>
-                <Label className="mb-2 block">
-                  تصویر دسته‌بندی (اختیاری)
-                </Label>
+                <Label className="mb-2 block">تصویر دسته‌بندی (اختیاری)</Label>
 
                 <div className="flex gap-4 items-center">
                   <Button
@@ -336,7 +334,7 @@ const AddCategoryPage = () => {
                             handleSubcategoryItemChange(
                               subcatIndex,
                               itemIndex,
-                              e.target.value
+                              e.target.value,
                             )
                           }
                           required
@@ -424,11 +422,17 @@ const AddCategoryPage = () => {
             <div className="p-6 space-y-6">
               <div
                 className="border-2 border-dashed border-purple-300 dark:border-purple-600 rounded-lg p-8 text-center hover:border-purple-400 dark:hover:border-purple-500 transition-colors cursor-pointer bg-gray-50 dark:bg-gray-700"
-                onClick={() => document.getElementById("image-file-input")?.click()}
+                onClick={() =>
+                  document.getElementById("image-file-input")?.click()
+                }
               >
                 <Upload className="mx-auto h-12 w-12 text-purple-500 mb-4" />
-                <p className="text-sm font-semibold">فایل را بکشید یا کلیک کنید</p>
-                <p className="text-xs text-gray-500 mt-1">فقط تصویر (حداکثر ۱۰ مگابایت)</p>
+                <p className="text-sm font-semibold">
+                  فایل را بکشید یا کلیک کنید
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  فقط تصویر (حداکثر ۱۰ مگابایت)
+                </p>
                 <Input
                   id="image-file-input"
                   type="file"
@@ -459,11 +463,17 @@ const AddCategoryPage = () => {
                             <X className="h-5 w-5" />
                           </Button>
                         </div>
-                        <p className="text-xs text-center mt-2 truncate">{file.name}</p>
+                        <p className="text-xs text-center mt-2 truncate">
+                          {file.name}
+                        </p>
                       </div>
                     ))}
                   </div>
-                  <Button onClick={handleUpload} disabled={uploading} className="w-full">
+                  <Button
+                    onClick={handleUpload}
+                    disabled={uploading}
+                    className="w-full"
+                  >
                     {uploading ? (
                       <>
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -494,7 +504,10 @@ const AddCategoryPage = () => {
                       </div>
                     ))}
                   </div>
-                  <Button onClick={handleConfirmUpload} className="w-full bg-green-600 hover:bg-green-700">
+                  <Button
+                    onClick={handleConfirmUpload}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                  >
                     <CheckCircle className="h-4 w-4 mr-2" />
                     استفاده از این تصویر
                   </Button>
