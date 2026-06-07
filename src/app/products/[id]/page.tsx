@@ -1,36 +1,24 @@
-// app/product/[id]/page.tsx (کاملاً درست و بدون خطای TypeScript)
+// src/app/products/[id]/page.tsx
+
 import { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { getProductById } from "@/lib/products";
 import BreadCrumbs from "@/Components/Utils/BreadCrumbs";
 import { SingleProductContainer } from "@/Components/SingleProductComponents/SingleProductContainer";
-import { Categoryapi, Product } from "@/types/types";
-import { API } from "@/lib/MainRoutes";
-
-async function getProduct(id: string): Promise<Product> {
-  const res = await fetch(`/api/products/${id}`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    throw new Error("خطا در دریافت محصول");
-  }
-
-  return res.json();
-}
+import { Product } from "@/types/types";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+// تولید متا دیتا برای سئو
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { id } = await params;
+  const product = await getProductById(id);
 
-  let product: Product | null = null;
-
-  try {
-    product = await getProduct(id);
-  } catch {
+  if (!product) {
     return {
       title: "محصول یافت نشد",
       description: "محصول مورد نظر در حال حاضر در دسترس نیست.",
@@ -65,7 +53,7 @@ export async function generateMetadata({
       url: `https://yourdomain.com/product/${id}`,
       siteName: "زیبولند",
       locale: "fa_IR",
-      type: "website", // اینجا "website" استفاده شده (مجاز است)
+      type: "website",
     },
     twitter: {
       card: "summary_large_image",
@@ -83,13 +71,12 @@ export async function generateMetadata({
 export default async function ProductDetailPage({ params }: PageProps) {
   const { id } = await params;
 
-  let product: Product;
-  let categories: Categoryapi[] = [];
+  // دریافت داده مستقیماً از دیتابیس
+  const product = await getProductById(id);
 
-  try {
-    [product] = await Promise.all([getProduct(id)]);
-  } catch (error) {
-    throw error;
+  // اگر محصول در دیتابیس نبود، صفحه 404 نمایش داده می‌شود
+  if (!product) {
+    notFound();
   }
 
   return (

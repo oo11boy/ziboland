@@ -9,7 +9,6 @@ export async function generateMetadata(
   const params = await searchParams;
   const q = typeof params.q === "string" ? params.q.trim() : undefined;
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://ziboland.com"; // fallback برای توسعه محلی
 
   if (q) {
     // decode می‌کنیم تا متن واقعی فارسی (مثل "ی" یا "تستی") به دست بیاد
@@ -19,12 +18,12 @@ export async function generateMetadata(
       title: `${decodedQuery} | جستجوی محصولات در زیبولند`,
       description: `نتایج جستجو برای "${decodedQuery}" در فروشگاه آنلاین زیبولند – جدیدترین و بهترین محصولات`,
       alternates: {
-        canonical: `${siteUrl}/search?q=${encodeURIComponent(decodedQuery)}`,
+        canonical: `/search?q=${encodeURIComponent(decodedQuery)}`,
       },
       openGraph: {
         title: `${decodedQuery} | جستجوی محصولات در زیبولند`,
         description: `نتایج جستجو برای "${decodedQuery}" در زیبولند`,
-        url: `${siteUrl}/search?q=${encodeURIComponent(decodedQuery)}`,
+        url: `/search?q=${encodeURIComponent(decodedQuery)}`,
       },
     };
   }
@@ -34,12 +33,12 @@ export async function generateMetadata(
     title: "جستجو محصولات | زیبولند",
     description: "جستجو در جدیدترین و متنوع‌ترین محصولات زیبولند – سریع و آسان",
     alternates: {
-      canonical: `${siteUrl}/search`,
+      canonical: `/search`,
     },
     openGraph: {
       title: "جستجو محصولات | زیبولند",
       description: "جستجو در جدیدترین و متنوع‌ترین محصولات زیبولند",
-      url: `${siteUrl}/search`,
+      url: `/search`,
     },
   };
 }

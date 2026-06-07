@@ -1,3 +1,4 @@
+
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { Swiper, SwiperSlide, SwiperRef } from "swiper/react";
@@ -11,15 +12,26 @@ import "./WideSlider.css";
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
 import "react-circular-progressbar/dist/styles.css";
 import Link from "next/link";
-import { useSlider } from "@/ContextApi/SliderContext";
+import Image from "next/image";
 
-const WideSliderContainer = () => {
+interface Slide {
+  id: number;
+  link: string;
+  imagewide: string;
+  imagemin: string;
+  alt: string;
+}
+
+interface Props {
+  slides: Slide[];
+}
+
+const WideSliderContainer = ({ slides }: Props) => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
   const [startTime, setStartTime] = useState(Date.now());
   const [windowWidth, setWindowWidth] = useState(0);
   const swiperRef = useRef<SwiperRef>(null);
-  const { slides } = useSlider();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -84,14 +96,14 @@ const WideSliderContainer = () => {
         effect="coverflow"
         grabCursor={true}
         centeredSlides={true}
-        slidesPerView={windowWidth >= 993 ? 1.1 : 1.13}
-        spaceBetween={windowWidth >= 993 ? 150 : 100}
-        loop={slides.length > 2} // فقط وقتی اسلاید بیشتر از 2 باشد loop فعال شود
+        slidesPerView={windowWidth >= 993 ? 1.2 : 1.13}
+        spaceBetween={windowWidth >= 993 ? 80 : 100}
+        loop={slides.length > 2}
         autoplay={
           slides.length > 2
             ? { delay: 6000, disableOnInteraction: false }
             : false
-        } // autoplay هم مشابه
+        }
         coverflowEffect={{
           rotate: 0,
           stretch: 50,
@@ -114,13 +126,15 @@ const WideSliderContainer = () => {
           >
             <div className="w-full flex justify-center items-center">
               <Link href={slide.link}>
-                <img
+                <Image
+                width={1500}
+                height={500}
                   src={windowWidth >= 993 ? slide.imagewide : slide.imagemin}
                   alt={slide.alt}
                   className="w-full h-full rounded-lg object-cover transition-all duration-300 
-                           swiper-slide-active:scale-110 swiper-slide-active:h-[550px]
-                           swiper-slide-prev:scale-90 swiper-slide-prev:h-[450px]
-                           swiper-slide-next:scale-90 swiper-slide-next:h-[450px]"
+                             swiper-slide-active:scale-110 swiper-slide-active:h-[550px]
+                             swiper-slide-prev:scale-90 swiper-slide-prev:h-[450px]
+                             swiper-slide-next:scale-90 swiper-slide-next:h-[450px]"
                 />
               </Link>
             </div>
@@ -145,7 +159,7 @@ const WideSliderContainer = () => {
         </div>
       </div>
       <div
-        className="sliderbtns absolute bottom-8 z-50 right-40 flex items-center"
+        className="sliderbtns absolute bottom-8 z-50 right-60 flex items-center"
         style={{ display: windowWidth >= 993 ? "flex" : "none" }}
       >
         <div className="swiper-button-prev"></div>

@@ -8,39 +8,39 @@ export default function BenefitsContainer() {
       title: "ارسال رایگان سفارشات",
       description: "خرید بالای 4 میلیون",
       image:
-        "https://abzarreza.com/wp-content/uploads/2023/09/Delivery.png.webp",
-      link: "/faq",
+        "/images/car.webp",
+      link: "/#",
     },
     {
       id: 2,
       title: "ضمانت بازگشت کالا",
       description: "تا 30 روز پس از خرید",
       image:
-        "https://abzarreza.com/wp-content/uploads/2023/09/Free-Return.png.webp",
-      link: "/faq",
+         "/images/box.webp",
+      link: "/#",
     },
     {
       id: 3,
       title: "ضمانت اصالت کالا",
       description: "ابزار آلات اصیل و معتبر",
       image:
-        "https://abzarreza.com/wp-content/uploads/2023/09/Warranty.png.webp",
-      link: "/faq",
+    "/images/hand.webp",
+      link: "/",
     },
     {
       id: 4,
       title: "مشاوره تخصصی رایگان",
       description: "خرید آگاهانه ابزار آلات",
-      image:
-        "https://abzarreza.com/wp-content/uploads/2023/09/Support.png.webp",
+        image:
+    "/images/call.webp",
       link: "/faq",
     },
     {
       id: 5,
       title: "روش های پرداخت متنوع",
       description: "کلیه کارت های عضو شتاب",
-      image:
-        "https://abzarreza.com/wp-content/uploads/2023/09/Payment.png.webp",
+          image:
+    "/images/cash.webp",
       link: "/faq",
     },
   ];

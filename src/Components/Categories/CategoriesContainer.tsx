@@ -1,28 +1,18 @@
 "use client";
 import Link from "next/link";
-import React, { useState, useEffect, JSX } from "react";
+import React, { useState } from "react";
 import "./CategoriesContainer.css";
-import { PulseLoader } from "react-spinners";
-import { useCat } from "@/ContextApi/CategoriesContext";
+import { Categoryapi } from "@/types/types";
+import Image from "next/image";
 
-export default function CategoriesContainer() {
+interface Props {
+  categories: Categoryapi[];
+}
+
+export default function CategoriesContainer({ categories }: Props) {
   const [showAll, setShowAll] = useState(false);
 
-  const { loading, categories, error } = useCat();
-console.log(categories)
-  if (loading) {
-    return (
-      <div className="categories-container">
-        <PulseLoader color="#b7adad" speedMultiplier={1} size={10} />
-      </div>
-    );
-  }
-
-  if (error) {
-    return <div className="categories-container">خطا: {error}</div>;
-  }
-
-  if (categories.length === 0) {
+  if (!categories || categories.length === 0) {
     return <div className="categories-container">هیچ دسته‌بندی یافت نشد</div>;
   }
 
@@ -41,7 +31,9 @@ console.log(categories)
               href={`./search?mothercatId=${item.id}`}
               className="category-item"
             >
-              <img
+              <Image
+                width={60}
+                height={60}
                 className="w-[60px] h-[60px] object-cover"
                 src={item.link}
                 alt={item.name}
