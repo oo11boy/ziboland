@@ -274,12 +274,17 @@ const EditProductPage = () => {
     });
   };
 
-  const removeVariant = (index: number) => {
+const removeVariant = (index: number) => {
+  const isConfirmed = window.confirm("آیا مطمئن هستید که می‌خواهید این واریانت را حذف کنید؟");
+  
+  if (isConfirmed) {
     setFormData((prev) => ({
       ...prev,
       variants: prev.variants.filter((_, i) => i !== index),
     }));
-  };
+    toast.success("واریانت با موفقیت حذف شد");
+  }
+};
 
   const addVariantInfo = (variantIndex: number) => {
     setFormData((prev) => {

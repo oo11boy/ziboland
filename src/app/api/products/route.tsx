@@ -1,6 +1,6 @@
 // api/products/index.ts
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import { RowDataPacket } from "mysql2/promise";
 
 interface Variant {
@@ -75,7 +75,7 @@ export async function GET() {
       LEFT JOIN brands b ON p.brand_id = b.id
       LEFT JOIN categories c ON p.mothercatId = c.id
       ORDER BY p.id, m.id
-      `
+      `,
     );
 
     // سپس تمام واریانت‌ها رو می‌گیریم (حذف discount_wholesale_percent)
@@ -98,7 +98,7 @@ export async function GET() {
         pv.infotable
       FROM product_variants pv
       ORDER BY pv.id
-      `
+      `,
     );
 
     const productsMap: Record<number, Product> = {};
@@ -122,7 +122,7 @@ export async function GET() {
           content: row.content ?? null,
           media: [],
           variants: [],
-          motherCategoryName: row.mother_category_name || 'سایر',
+          motherCategoryName: row.mother_category_name || "سایر",
           brandDetails: row.brand_id
             ? {
                 id: row.brand_id,
@@ -182,7 +182,7 @@ export async function GET() {
     console.error("Error fetching products:", error);
     return NextResponse.json(
       { error: "Failed to fetch products", details: (error as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -209,10 +209,10 @@ export async function POST(request: Request) {
     } = data;
 
     // اعتبارسنجی فیلدهای اصلی محصول
-    if (!title || !image  || !mothercatId || !subcatId || !itemId) {
+    if (!title || !image || !mothercatId || !subcatId || !itemId) {
       return NextResponse.json(
         { error: "Missing required product fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -220,7 +220,7 @@ export async function POST(request: Request) {
     if (!Array.isArray(variants) || variants.length === 0) {
       return NextResponse.json(
         { error: "At least one variant is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -236,19 +236,19 @@ export async function POST(request: Request) {
             error:
               "Each variant must have color_englishName, color_hexCode, price_single and price_wholesale",
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
       if (variant.infotable && !Array.isArray(variant.infotable)) {
         return NextResponse.json(
           { error: "infotable in variant must be an array" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       if (variant.images && !Array.isArray(variant.images)) {
         return NextResponse.json(
           { error: "images in variant must be an array of URLs" },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -257,35 +257,35 @@ export async function POST(request: Request) {
     if (brand_id) {
       const [brandRows] = await pool.query<RowDataPacket[]>(
         "SELECT id FROM brands WHERE id = ?",
-        [brand_id]
+        [brand_id],
       );
       if (brandRows.length === 0)
         return NextResponse.json(
           { error: "Invalid brand_id" },
-          { status: 400 }
+          { status: 400 },
         );
     }
 
     const [catRows] = await pool.query<RowDataPacket[]>(
       "SELECT id FROM categories WHERE id = ?",
-      [mothercatId]
+      [mothercatId],
     );
     if (catRows.length === 0)
       return NextResponse.json(
         { error: "Invalid mothercatId" },
-        { status: 400 }
+        { status: 400 },
       );
 
     const [subcatRows] = await pool.query<RowDataPacket[]>(
       "SELECT id FROM subcategories WHERE id = ? AND category_id = ?",
-      [subcatId, mothercatId]
+      [subcatId, mothercatId],
     );
     if (subcatRows.length === 0)
       return NextResponse.json({ error: "Invalid subcatId" }, { status: 400 });
 
     const [itemRows] = await pool.query<RowDataPacket[]>(
       "SELECT id FROM subcategory_items WHERE id = ? AND subcategory_id = ?",
-      [itemId, subcatId]
+      [itemId, subcatId],
     );
     if (itemRows.length === 0)
       return NextResponse.json({ error: "Invalid itemId" }, { status: 400 });
@@ -307,7 +307,7 @@ export async function POST(request: Request) {
           brand_id || null,
           title,
           image,
-        
+
           mothercatId,
           subcatId,
           itemId,
@@ -316,20 +316,20 @@ export async function POST(request: Request) {
           sales,
           features ? JSON.stringify(features) : null,
           content || null,
-        ]
+        ],
       );
 
       const productId = (productResult as any).insertId;
 
-// 2. درج مدیای عمومی محصول
-if (Array.isArray(media) && media.length > 0) {
-  for (const item of media) {
-    await connection.query(
-      "INSERT INTO media (product_id, type, src, thumbnail, alt) VALUES (?, ?, ?, ?, ?)",
-      [productId, item.type, item.src, item.thumbnail || null, item.alt]
-    );
-  }
-}
+      // 2. درج مدیای عمومی محصول
+      if (Array.isArray(media) && media.length > 0) {
+        for (const item of media) {
+          await connection.query(
+            "INSERT INTO media (product_id, type, src, thumbnail, alt) VALUES (?, ?, ?, ?, ?)",
+            [productId, item.type, item.src, item.thumbnail || null, item.alt],
+          );
+        }
+      }
       // 3. درج واریانت‌ها (حذف discount_wholesale_percent از کوئری)
       for (const variant of variants) {
         await connection.query(
@@ -357,14 +357,14 @@ if (Array.isArray(media) && media.length > 0) {
             variant.image_main || null,
             variant.images ? JSON.stringify(variant.images) : null,
             variant.infotable ? JSON.stringify(variant.infotable) : null,
-          ]
+          ],
         );
       }
 
       await connection.commit();
       return NextResponse.json(
         { id: productId, message: "Product and variants created successfully" },
-        { status: 201 }
+        { status: 201 },
       );
     } catch (error) {
       await connection.rollback();
@@ -376,7 +376,7 @@ if (Array.isArray(media) && media.length > 0) {
     console.error("Error adding product:", error);
     return NextResponse.json(
       { error: "Failed to add product", details: (error as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

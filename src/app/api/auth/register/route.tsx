@@ -1,11 +1,11 @@
 // app/api/auth/register/route.ts
-import { NextResponse } from 'next/server';
-import pool from '@/lib/db';
-import bcrypt from 'bcryptjs';
-import nodemailer from 'nodemailer';
+import { NextResponse } from "next/server";
+import { pool } from "@/lib/db";
+import bcrypt from "bcryptjs";
+import nodemailer from "nodemailer";
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.gmail.com',
+  host: "smtp.gmail.com",
   port: 465,
   secure: true,
   auth: {
@@ -16,25 +16,35 @@ const transporter = nodemailer.createTransport({
 
 export async function POST(request: Request) {
   try {
-    const { username, password, email, phone_number, first_name, last_name } = await request.json();
+    const { username, password, email, phone_number, first_name, last_name } =
+      await request.json();
 
     // اعتبارسنجی
     if (!username || !password || !email || !first_name || !last_name) {
-      return NextResponse.json({ error: 'فیلدهای الزامی پر نشده‌اند' }, { status: 400 });
+      return NextResponse.json(
+        { error: "فیلدهای الزامی پر نشده‌اند" },
+        { status: 400 },
+      );
     }
 
     if (password.length < 6) {
-      return NextResponse.json({ error: 'رمز عبور باید حداقل ۶ کاراکتر باشد' }, { status: 400 });
+      return NextResponse.json(
+        { error: "رمز عبور باید حداقل ۶ کاراکتر باشد" },
+        { status: 400 },
+      );
     }
 
     // بررسی تکراری بودن
     const [existing] = await pool.query(
-      'SELECT id FROM users WHERE email = ? OR username = ?',
-      [email, username]
+      "SELECT id FROM users WHERE email = ? OR username = ?",
+      [email, username],
     );
 
     if ((existing as any[]).length > 0) {
-      return NextResponse.json({ error: 'ایمیل یا نام کاربری قبلاً استفاده شده' }, { status: 400 });
+      return NextResponse.json(
+        { error: "ایمیل یا نام کاربری قبلاً استفاده شده" },
+        { status: 400 },
+      );
     }
 
     // ایجاد کاربر با وضعیت غیرفعال (تا تأیید ایمیل)
@@ -45,26 +55,35 @@ export async function POST(request: Request) {
       `INSERT INTO users 
        (username, password_hash, email, phone_number, first_name, last_name, is_active) 
        VALUES (?, ?, ?, ?, ?, ?, 0)`,
-      [username, password_hash, email, phone_number || null, first_name, last_name]
+      [
+        username,
+        password_hash,
+        email,
+        phone_number || null,
+        first_name,
+        last_name,
+      ],
     );
 
     const userId = (result as any).insertId;
 
     // تولید کد ۶ رقمی
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCode = Math.floor(
+      100000 + Math.random() * 900000,
+    ).toString();
 
     // ذخیره کد در دیتابیس (معتبر برای ۱۰ دقیقه)
     await pool.query(
       `INSERT INTO verification_codes (user_id, email, code, expires_at) 
        VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))`,
-      [userId, email, verificationCode]
+      [userId, email, verificationCode],
     );
 
     // ارسال ایمیل تأیید
     await transporter.sendMail({
       from: `"زیبولند" <${process.env.GOOGLE_EMAIL}>`,
       to: email,
-      subject: 'کد تأیید ثبت‌نام در زیبولند',
+      subject: "کد تأیید ثبت‌نام در زیبولند",
       html: `
         <!DOCTYPE html>
         <html dir="rtl" lang="fa">
@@ -101,14 +120,19 @@ export async function POST(request: Request) {
       `,
     });
 
-    return NextResponse.json({
-      message: 'ثبت‌نام موفق! کد تأیید به ایمیل شما ارسال شد.',
-      requireVerification: true,
-      email: email
-    }, { status: 201 });
-
+    return NextResponse.json(
+      {
+        message: "ثبت‌نام موفق! کد تأیید به ایمیل شما ارسال شد.",
+        requireVerification: true,
+        email: email,
+      },
+      { status: 201 },
+    );
   } catch (error: any) {
-    console.error('Register error:', error);
-    return NextResponse.json({ error: 'خطا در ثبت‌نام. لطفاً دوباره تلاش کنید.' }, { status: 500 });
+    console.error("Register error:", error);
+    return NextResponse.json(
+      { error: "خطا در ثبت‌نام. لطفاً دوباره تلاش کنید." },
+      { status: 500 },
+    );
   }
 }

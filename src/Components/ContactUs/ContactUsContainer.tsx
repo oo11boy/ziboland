@@ -5,7 +5,7 @@ import { Loader2, Send } from "lucide-react";
 import { useSettings } from "@/ContextApi/SettingsContext";
 
 export default function ContactUsContainer() {
-  const {settings}=useSettings()
+  const { settings } = useSettings();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -15,7 +15,9 @@ export default function ContactUsContainer() {
   });
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -32,7 +34,7 @@ export default function ContactUsContainer() {
       toast.success("✅ پیام شما با موفقیت ارسال شد");
       setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
     } catch (err) {
-      toast.error("❌ ارسال پیام با خطا مواجه شد"+err);
+      toast.error("❌ ارسال پیام با خطا مواجه شد" + err);
     } finally {
       setLoading(false);
     }
@@ -47,22 +49,30 @@ export default function ContactUsContainer() {
           <div className="bg-[#071c34] p-8 rounded-2xl text-center text-white shadow-md hover:shadow-lg transition-all">
             <i className="fas fa-map-marker-alt text-[#fda40b] text-5xl mb-4"></i>
             <h3 className="text-xl font-semibold mb-2">آدرس فروشگاه</h3>
-            <p className="text-gray-300">{settings.address || "آدرس ثبت نشده"}</p>
+            <p className="text-gray-300">
+              {settings.address || "آدرس ثبت نشده"}
+            </p>
           </div>
 
           {/* ایمیل */}
           <div className="bg-[#071c34] p-8 rounded-2xl text-center text-white shadow-md hover:shadow-lg transition-all">
             <i className="fas fa-envelope text-[#fda40b] text-5xl mb-4"></i>
             <h3 className="text-xl font-semibold mb-2">ایمیل پشتیبانی</h3>
-            <p className="text-gray-300">{settings.email || "example@email.com"}</p>
+            <p className="text-gray-300">
+              {settings.email || "example@email.com"}
+            </p>
           </div>
 
           {/* ساعت کاری */}
           <div className="bg-[#071c34] p-8 rounded-2xl text-center text-white shadow-md hover:shadow-lg transition-all">
             <i className="fas fa-clock text-[#fda40b] text-5xl mb-4"></i>
             <h3 className="text-xl font-semibold mb-2">ساعات کاری</h3>
-            <p className="text-gray-300">{settings.working_hours || "9 تا 18"}</p>
-            <p className="text-gray-300 mt-1">{settings.working_days || "شنبه تا پنج‌شنبه"}</p>
+            <p className="text-gray-300">
+              {settings.working_hours || "9 تا 18"}
+            </p>
+            <p className="text-gray-300 mt-1">
+              {settings.working_days || "شنبه تا پنج‌شنبه"}
+            </p>
           </div>
         </div>
 
@@ -70,7 +80,9 @@ export default function ContactUsContainer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* فرم تماس */}
           <div className="md:col-span-2 bg-white p-8 rounded-2xl shadow-md hover:shadow-lg transition-all">
-            <h2 className="text-[#071c34] text-2xl font-bold mb-6 border-b pb-3">ارسال پیام به ما</h2>
+            <h2 className="text-[#071c34] text-2xl font-bold mb-6 border-b pb-3">
+              ارسال پیام به ما
+            </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <input
@@ -88,7 +100,6 @@ export default function ContactUsContainer() {
                   placeholder="ایمیل"
                   value={formData.email}
                   onChange={handleChange}
-                  required
                   className="w-full p-3 rounded-md bg-gray-100 border focus:ring-2 focus:ring-[#071c34]"
                 />
                 <input
@@ -96,6 +107,7 @@ export default function ContactUsContainer() {
                   name="phone"
                   placeholder="شماره تماس"
                   value={formData.phone}
+                  required
                   onChange={handleChange}
                   className="w-full p-3 rounded-md bg-gray-100 border focus:ring-2 focus:ring-[#071c34]"
                 />

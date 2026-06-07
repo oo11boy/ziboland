@@ -1,6 +1,6 @@
 // app/api/comments/recent/route.ts
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import { RowDataPacket } from "mysql2/promise";
 
 export async function GET() {
@@ -15,6 +15,9 @@ export async function GET() {
     return NextResponse.json(rows);
   } catch (error) {
     console.error("Error fetching recent comments:", error);
-    return NextResponse.json({ error: "خطا در دریافت نظرات اخیر" }, { status: 500 });
+    return NextResponse.json(
+      { error: "خطا در دریافت نظرات اخیر" },
+      { status: 500 },
+    );
   }
 }

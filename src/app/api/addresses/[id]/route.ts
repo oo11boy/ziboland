@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
 
 interface AddressData {
@@ -19,7 +19,15 @@ interface AddressData {
 
 // Helper برای بررسی فیلدهای اجباری
 function validateAddress(data: AddressData) {
-  const required = ["first_name", "last_name", "phone_number", "province", "city", "street", "postal_code"];
+  const required = [
+    "first_name",
+    "last_name",
+    "phone_number",
+    "province",
+    "city",
+    "street",
+    "postal_code",
+  ];
   for (const field of required) {
     if (!data[field as keyof AddressData]) {
       return false;
@@ -30,21 +38,29 @@ function validateAddress(data: AddressData) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const token = request.headers.get("Authorization")?.replace("Bearer ", "") || "";
+    const token =
+      request.headers.get("Authorization")?.replace("Bearer ", "") || "";
     const { userId } = verifyToken(token);
 
     // استخراج id از URL
     const id = request.nextUrl.pathname.split("/").pop();
-    if (!id) return NextResponse.json({ error: "آدرس یافت نشد" }, { status: 404 });
+    if (!id)
+      return NextResponse.json({ error: "آدرس یافت نشد" }, { status: 404 });
 
     const data: AddressData = await request.json();
 
     if (!validateAddress(data)) {
-      return NextResponse.json({ error: "فیلدهای الزامی پر نشده‌اند" }, { status: 400 });
+      return NextResponse.json(
+        { error: "فیلدهای الزامی پر نشده‌اند" },
+        { status: 400 },
+      );
     }
 
     if (data.is_default) {
-      await pool.query("UPDATE addresses SET is_default = 0 WHERE user_id = ?", [userId]);
+      await pool.query(
+        "UPDATE addresses SET is_default = 0 WHERE user_id = ?",
+        [userId],
+      );
     }
 
     const [result] = await pool.query(
@@ -66,7 +82,7 @@ export async function PUT(request: NextRequest) {
         data.is_default ? 1 : 0,
         id,
         userId,
-      ]
+      ],
     );
 
     if ((result as any).affectedRows === 0) {
@@ -76,21 +92,26 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ message: "آدرس با موفقیت به‌روزرسانی شد" });
   } catch (error) {
     console.error("Error updating address:", error);
-    return NextResponse.json({ error: "خطا در به‌روزرسانی آدرس" }, { status: 500 });
+    return NextResponse.json(
+      { error: "خطا در به‌روزرسانی آدرس" },
+      { status: 500 },
+    );
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const token = request.headers.get("Authorization")?.replace("Bearer ", "") || "";
+    const token =
+      request.headers.get("Authorization")?.replace("Bearer ", "") || "";
     const { userId } = verifyToken(token);
 
     const id = request.nextUrl.pathname.split("/").pop();
-    if (!id) return NextResponse.json({ error: "آدرس یافت نشد" }, { status: 404 });
+    if (!id)
+      return NextResponse.json({ error: "آدرس یافت نشد" }, { status: 404 });
 
     const [result] = await pool.query(
       "DELETE FROM addresses WHERE id = ? AND user_id = ?",
-      [id, userId]
+      [id, userId],
     );
 
     if ((result as any).affectedRows === 0) {

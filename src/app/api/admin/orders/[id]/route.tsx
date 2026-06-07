@@ -1,18 +1,27 @@
 //src\app\api\admin\orders\[id]\route.tsx
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import * as jose from "jose";
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { id } = await params;
   const token = request.headers.get("Authorization")?.replace("Bearer ", "");
   if (!token) {
-    return NextResponse.json({ error: "لطفاً توکن را ارائه دهید" }, { status: 401 });
+    return NextResponse.json(
+      { error: "لطفاً توکن را ارائه دهید" },
+      { status: 401 },
+    );
   }
 
   const secretKey = process.env.JWT_SECRET;
   if (!secretKey) {
-    return NextResponse.json({ error: "خطای سرور: تنظیمات نادرست" }, { status: 500 });
+    return NextResponse.json(
+      { error: "خطای سرور: تنظیمات نادرست" },
+      { status: 500 },
+    );
   }
 
   let userRole;
@@ -29,7 +38,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   }
 
   const { status } = await request.json();
-  if (!["pending", "processing", "shipped", "delivered", "cancelled"].includes(status)) {
+  if (
+    !["pending", "processing", "shipped", "delivered", "cancelled"].includes(
+      status,
+    )
+  ) {
     return NextResponse.json({ error: "وضعیت نامعتبر است" }, { status: 400 });
   }
 
@@ -38,7 +51,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const [result]: any = await conn.execute(
       `UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?`,
-      [status, id]
+      [status, id],
     );
 
     if (result.affectedRows === 0) {
@@ -46,26 +59,31 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     await conn.commit();
-    return NextResponse.json({ message: "وضعیت سفارش با موفقیت به‌روزرسانی شد" });
+    return NextResponse.json({
+      message: "وضعیت سفارش با موفقیت به‌روزرسانی شد",
+    });
   } catch (error: any) {
     await conn.rollback();
     console.error("Error updating order status:", error);
     return NextResponse.json(
       { error: "خطا در به‌روزرسانی وضعیت سفارش", details: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   } finally {
     conn.release();
   }
 }
 
-
 // اضافه کردن این بخش به انتهای فایل route.tsx موجود در پوشه [id]
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { id } = await params;
   const token = request.headers.get("Authorization")?.replace("Bearer ", "");
 
-  if (!token) return NextResponse.json({ error: "عدم احراز هویت" }, { status: 401 });
+  if (!token)
+    return NextResponse.json({ error: "عدم احراز هویت" }, { status: 401 });
 
   const conn = await pool.getConnection();
   try {
@@ -76,7 +94,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     await conn.execute(`DELETE FROM order_items WHERE order_id = ?`, [id]);
 
     // ۲. حذف خود سفارش
-    const [result]: any = await conn.execute(`DELETE FROM orders WHERE id = ?`, [id]);
+    const [result]: any = await conn.execute(
+      `DELETE FROM orders WHERE id = ?`,
+      [id],
+    );
 
     if (result.affectedRows === 0) {
       await conn.rollback();
@@ -87,7 +108,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     return NextResponse.json({ message: "سفارش با موفقیت حذف شد" });
   } catch (error: any) {
     await conn.rollback();
-    return NextResponse.json({ error: "خطا در حذف سفارش", details: error.message }, { status: 500 });
+    return NextResponse.json(
+      { error: "خطا در حذف سفارش", details: error.message },
+      { status: 500 },
+    );
   } finally {
     conn.release();
   }

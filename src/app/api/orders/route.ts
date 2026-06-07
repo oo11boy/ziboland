@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import * as jose from "jose";
 
 const ZIBAL_MERCHANT = process.env.ZIBAL_MERCHANT || "zibal";
@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   if (!userId || !address?.id || !items?.length || !deliveryType || !amount) {
     return NextResponse.json(
       { error: "داده‌های ورودی نامعتبر است" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
   if (!validDeliveryTypes.includes(deliveryType)) {
     return NextResponse.json(
       { error: "روش ارسال نامعتبر است" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -31,13 +31,13 @@ export async function POST(req: Request) {
   const itemsTotal = items.reduce(
     (sum: number, item: { price: number; quantity: number }) =>
       sum + item.price * item.quantity,
-    0
+    0,
   );
   const expectedAmount = (itemsTotal + deliveryCosts[deliveryType]) * 10;
   if (amount !== expectedAmount) {
     return NextResponse.json(
       { error: "مبلغ سفارش با آیتم‌ها مطابقت ندارد" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
         const [variantRows]: any = await conn.query(
           `SELECT stock_quantity FROM product_variants 
            WHERE product_id = ? AND color_hexCode = ?`,
-          [item.product_id, item.color.hexCode]
+          [item.product_id, item.color.hexCode],
         );
 
         if (
@@ -66,7 +66,7 @@ export async function POST(req: Request) {
                 item.color.persianName || item.color.hexCode
               } وجود ندارد`,
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
     while (!isUnique && attempts < 10) {
       const [existing]: any = await conn.query(
         "SELECT 1 FROM orders WHERE order_code = ?",
-        [orderCode]
+        [orderCode],
       );
       if (existing.length === 0) isUnique = true;
       else orderCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
       `INSERT INTO orders 
        (user_id, address_id, total_amount, shipping_method, status, payment_status, order_code)
        VALUES (?, ?, ?, ?, 'pending', 'pending', ?)`,
-      [userId, address.id, amount, shippingMethod, orderCode]
+      [userId, address.id, amount, shippingMethod, orderCode],
     );
     const orderId = orderResult.insertId;
 
@@ -111,14 +111,14 @@ export async function POST(req: Request) {
           item.price,
           item.price_type || "single",
           item.color ? JSON.stringify(item.color) : null,
-        ]
+        ],
       );
     }
 
     // نوتیفیکیشن ادمین
     await conn.query(
       "INSERT INTO notifications (type, message, related_id) VALUES ('order', ?, ?)",
-      [`سفارش جدید با کد ${orderCode} ثبت شد`, orderId]
+      [`سفارش جدید با کد ${orderCode} ثبت شد`, orderId],
     );
 
     // درخواست پرداخت زیبال
@@ -142,7 +142,7 @@ export async function POST(req: Request) {
       await conn.rollback();
       return NextResponse.json(
         { error: data.message || "خطا در اتصال به درگاه", result: data.result },
-        { status: 502 }
+        { status: 502 },
       );
     }
 
@@ -155,7 +155,7 @@ export async function POST(req: Request) {
 
     await conn.execute(
       `INSERT INTO payments (order_id, track_id, amount, status) VALUES (?, ?, ?, 'pending')`,
-      [orderId, trackId, amount]
+      [orderId, trackId, amount],
     );
 
     await conn.commit();
@@ -170,7 +170,7 @@ export async function POST(req: Request) {
     console.error("Error creating order:", error);
     return NextResponse.json(
       { error: "خطا در ثبت سفارش", details: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   } finally {
     conn.release();
@@ -182,7 +182,7 @@ export async function GET(request: Request) {
   if (!token) {
     return NextResponse.json(
       { error: "لطفاً توکن را ارائه دهید" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -191,7 +191,7 @@ export async function GET(request: Request) {
     console.error("JWT_SECRET is not set");
     return NextResponse.json(
       { error: "خطای سرور: تنظیمات نادرست" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 
@@ -204,7 +204,7 @@ export async function GET(request: Request) {
     console.error("JWT verification error:", error.message);
     return NextResponse.json(
       { error: "توکن نامعتبر است", details: error.message },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
@@ -216,7 +216,7 @@ export async function GET(request: Request) {
        FROM orders o 
        JOIN addresses a ON o.address_id = a.id 
        WHERE o.user_id = ?`,
-      [userId]
+      [userId],
     );
     // eslint-disable-next-line prefer-const
     for (let order of orders) {
@@ -225,7 +225,7 @@ export async function GET(request: Request) {
          FROM order_items oi 
          JOIN products p ON oi.product_id = p.id 
          WHERE oi.order_id = ?`,
-        [order.id]
+        [order.id],
       );
       // Parse color JSON
       order.items = items.map((item: any) => ({
@@ -239,7 +239,7 @@ export async function GET(request: Request) {
     console.error("Error fetching orders:", error);
     return NextResponse.json(
       { error: "خطا در دریافت اطلاعات سفارشات", details: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   } finally {
     conn.release();

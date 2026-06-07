@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import * as jose from "jose";
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -26,7 +26,7 @@ async function verifyAdminFromToken(req: Request) {
 // 🟡 PUT: علامت‌گذاری اعلان خاص به عنوان خوانده‌شده
 export async function PUT(
   request: Request,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
 
@@ -39,7 +39,7 @@ export async function PUT(
   try {
     const [result] = await pool.query(
       "UPDATE notifications SET `read` = 1 WHERE id = ?",
-      [id]
+      [id],
     );
 
     if ((result as any).affectedRows === 0) {
@@ -51,7 +51,7 @@ export async function PUT(
     console.error(`PUT /api/notifications/${id} error:`, error);
     return NextResponse.json(
       { error: "خطا در به‌روزرسانی اعلان", details: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

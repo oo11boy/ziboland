@@ -1,279 +1,217 @@
+
 "use client";
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
+import { Card } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
-import { Plus, Edit, Trash2, View, Search, Copy } from "lucide-react";
+import { Plus, Edit, Trash2, View, Search, ExternalLink, X, CheckCircle2, AlertCircle, Layers } from "lucide-react";
 import { toast } from "react-toastify";
-import { Product } from "@/types/types";
-import { API } from "@/lib/MainRoutes";
+import { Product } from "@/types/types"; // مسیر دقیق فایل تایپ‌های شما
 
-// دیالوگ حذف محصول
-const DeleteDialog = ({
-  productTitle,
-  onCancel,
-  onForceDelete,
-}: {
-  productTitle: string;
-  onCancel: () => void;
-  onForceDelete: () => void;
-}) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-96 p-6 text-center">
-      <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-white">
-        حذف محصول
-      </h2>
-      <p className="mb-6 text-gray-600 dark:text-gray-300">
-        محصول "{productTitle}" سفارش دارد. آیا می‌خواهید با سفارش‌ها حذف شود؟
-      </p>
-      <div className="flex justify-around gap-4">
-        <Button variant="outline" onClick={onCancel} className="px-6">
-          لغو
-        </Button>
-        <Button variant="destructive" onClick={onForceDelete} className="px-6">
-          حذف با سفارش‌ها
-        </Button>
+// --- دیالوگ حذف محصول ---
+const DeleteDialog = ({ productTitle, onCancel, onForceDelete }: { productTitle: string; onCancel: () => void; onForceDelete: () => void; }) => (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center animate-in zoom-in-95 duration-200">
+      <h2 className="text-xl font-bold mb-4 text-gray-800">حذف محصول</h2>
+      <p className="mb-6 text-gray-600">آیا مطمئنید می‌خواهید محصول "{productTitle}" را حذف کنید؟ این عمل غیرقابل بازگشت است.</p>
+      <div className="flex justify-center gap-4">
+        <Button variant="outline" onClick={onCancel} className="px-6 rounded-xl">لغو</Button>
+        <Button variant="destructive" onClick={onForceDelete} className="px-6 rounded-xl">تایید حذف</Button>
       </div>
     </div>
   </div>
 );
 
-const copyToClipboard = (text: string) => {
-  navigator.clipboard.writeText(text);
-  toast.success("نام محصول کپی شد", { autoClose: 2000 });
+// --- مودال مشاهده سریع (Quick View) ---
+const QuickViewModal = ({ product, onClose }: { product: Product | null; onClose: () => void }) => {
+  if (!product) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg p-6 animate-in fade-in zoom-in duration-200">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-bold text-gray-800">جزئیات واریانت‌ها: {product.title}</h3>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition"><X size={20} /></button>
+        </div>
+        
+        <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+          {product.variants.map((v, i) => {
+            const stock = Number(v.stock_quantity || 0);
+            const isAvailable = stock > 0;
+            return (
+              <div key={i} className={`flex justify-between items-center p-4 rounded-xl border ${isAvailable ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+                <span className="font-medium text-gray-700">{v.color_persianName || v.color_englishName || 'بدون نام'}</span>
+                <span className={`text-sm font-bold flex items-center gap-1 ${isAvailable ? 'text-green-600' : 'text-red-600'}`}>
+                  {isAvailable ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+                  {isAvailable ? `موجود (${stock})` : "ناموجود"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <Button onClick={onClose} className="w-full mt-6 bg-gray-900 hover:bg-black text-white rounded-xl">بستن</Button>
+      </div>
+    </div>
+  );
 };
 
+// --- صفحه اصلی مدیریت محصولات ---
 const ProductsPage = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [deleteDialog, setDeleteDialog] = useState<{
-    visible: boolean;
-    product: Product | null;
-  }>({ visible: false, product: null });
+  const [filter, setFilter] = useState<"all" | "inStock" | "outOfStock">("all");
+  const [deleteDialog, setDeleteDialog] = useState<{ visible: boolean; product: Product | null }>({ visible: false, product: null });
+  const [viewModalProduct, setViewModalProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  useEffect(() => {
-    const lowerSearch = searchTerm.toLowerCase();
-    const filtered = products.filter(
-      (product) =>
-        product.title.toLowerCase().includes(lowerSearch) ||
-        (product.brandDetails?.title &&
-          product.brandDetails.title.toLowerCase().includes(lowerSearch)) ||
-        product.category.toLowerCase().includes(lowerSearch),
-    );
-    setFilteredProducts(filtered);
-  }, [products, searchTerm]);
-
   const fetchProducts = async () => {
     try {
+      setLoading(true);
       const res = await fetch(`/api/products`);
-      if (!res.ok) throw new Error("خطا در دریافت محصولات");
+      if (!res.ok) throw new Error("خطا در دریافت اطلاعات");
       const data: Product[] = await res.json();
       setProducts(data);
-      setFilteredProducts(data);
-      setLoading(false);
     } catch (err) {
-      console.error("Error fetching products:", err);
-      toast.error("خطا در دریافت محصولات");
+      toast.error("خطا در بارگذاری محصولات");
+    } finally {
       setLoading(false);
     }
   };
 
-  // کلیک روی دکمه حذف
-  const handleDeleteClick = (product: Product) => {
-    setDeleteDialog({ visible: true, product });
-  };
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      // محاسبه مجموع موجودی از آرایه variants
+      const totalStock = p.variants.reduce((acc, v) => acc + Number(v.stock_quantity || 0), 0);
+      
+      const matchesSearch = 
+        p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (p.brandDetails?.title?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        p.category.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      if (filter === "inStock") return matchesSearch && totalStock > 0;
+      if (filter === "outOfStock") return matchesSearch && totalStock === 0;
+      return matchesSearch;
+    });
+  }, [products, searchTerm, filter]);
 
-  // حذف واقعی (با یا بدون force)
-  const handleDelete = async (id: number, force = false) => {
+  const handleDelete = async (id: number) => {
     try {
-      const res = await fetch(`/api/products/${id}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ force }),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || "خطا در حذف محصول");
-      }
-
-      setProducts((prev) => prev.filter((p) => p.id !== id));
-      setFilteredProducts((prev) => prev.filter((p) => p.id !== id));
+      const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("خطا در حذف");
+      setProducts(prev => prev.filter(p => p.id !== id));
       setDeleteDialog({ visible: false, product: null });
       toast.success("محصول با موفقیت حذف شد");
-    } catch (err: any) {
-      toast.error(err.message || "خطا در حذف محصول");
+    } catch (err) {
+      toast.error("خطا در عملیات حذف");
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-600"></div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-600"></div>
+    </div>
+  );
 
   return (
-    <div className="container mx-auto px-4 py-8 yekan">
-      {/* دیالوگ حذف */}
+    <div className="container mx-auto px-4 py-8 max-w-7xl yekan">
+      <QuickViewModal product={viewModalProduct} onClose={() => setViewModalProduct(null)} />
       {deleteDialog.visible && deleteDialog.product && (
         <DeleteDialog
           productTitle={deleteDialog.product.title}
           onCancel={() => setDeleteDialog({ visible: false, product: null })}
-          onForceDelete={() => handleDelete(deleteDialog.product!.id, true)}
+          onForceDelete={() => handleDelete(deleteDialog.product!.id)}
         />
       )}
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
-          مدیریت محصولات ({filteredProducts.length})
-        </h1>
+      {/* هدر */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">مدیریت محصولات</h1>
+          <p className="text-gray-500 mt-1">مشاهده، ویرایش و مدیریت موجودی انبار</p>
+        </div>
         <Link href="/admindashboard/products/add">
-          <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-            <Plus className="ml-2 h-5 w-5" /> افزودن محصول جدید
+          <Button className="bg-purple-600 hover:bg-purple-700 text-white rounded-xl h-12 px-6 shadow-lg">
+            <Plus className="ml-2" size={20} /> افزودن محصول جدید
           </Button>
         </Link>
       </div>
 
-      {/* جستجو */}
-      <div className="relative mb-8">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-        <Input
-          placeholder="جستجو در نام محصول، برند یا دسته‌بندی..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 pr-4 py-6 text-lg border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-purple-500"
-        />
+      {/* ابزار فیلتر و جستجو */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute right-3 top-3.5 text-gray-400" size={20} />
+          <Input placeholder="جستجو نام محصول، برند یا دسته‌بندی..." className="pl-4 pr-10 py-6 rounded-xl border-gray-200" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+        </div>
+        <div className="flex bg-white border border-gray-200 p-1 rounded-xl shadow-sm">
+          {["all", "inStock", "outOfStock"].map((f) => (
+            <button key={f} onClick={() => setFilter(f as any)} className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === f ? 'bg-purple-100 text-purple-700' : 'text-gray-600 hover:bg-gray-50'}`}>
+              {f === "all" ? "همه" : f === "inStock" ? "موجود" : "ناموجود"}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <Card className="bg-white dark:bg-gray-800 shadow-xl rounded-xl overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
-          <CardTitle className="text-2xl">لیست محصولات</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {filteredProducts.length === 0 ? (
-            <div className="text-center py-16 text-gray-500 dark:text-gray-400 text-xl">
-              هیچ محصولی یافت نشد
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm md:text-base">
-                <thead className="bg-gray-50 dark:bg-gray-700">
-                  <tr className="text-gray-700 dark:text-gray-300">
-                    <th className="px-6 py-4 text-right">نام محصول</th>
-                    <th className="px-6 py-4 text-right">برند</th>
-                    <th className="px-6 py-4 text-right">دسته‌بندی</th>
-                    <th className="px-6 py-4 text-right">تعداد واریانت</th>
-                    <th className="px-6 py-4 text-right">وضعیت موجودی</th>
-                    <th className="px-6 py-4 text-right">عملیات</th>
+      {/* جدول نمایش محصولات */}
+      <Card className="rounded-3xl border-none shadow-xl bg-white overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-right">
+            <thead className="bg-gray-50 border-b border-gray-100">
+              <tr>
+                <th className="px-6 py-4 text-sm font-bold text-gray-600">نام محصول</th>
+                <th className="px-6 py-4 text-sm font-bold text-gray-600">برند</th>
+                <th className="px-6 py-4 text-sm font-bold text-gray-600">دسته‌بندی</th>
+                <th className="px-6 py-4 text-sm font-bold text-gray-600">تعداد واریانت</th>
+                <th className="px-6 py-4 text-sm font-bold text-gray-600">وضعیت موجودی</th>
+                <th className="px-6 py-4 text-center text-sm font-bold text-gray-600">عملیات</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredProducts.map((product) => {
+                const totalStock = product.variants.reduce((acc, v) => acc + Number(v.stock_quantity || 0), 0);
+                return (
+                  <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 font-semibold text-gray-800">{product.title}</td>
+                    <td className="px-6 py-4 text-gray-600">{product.brandDetails?.title || "-"}</td>
+                    <td className="px-6 py-4 text-gray-600">{product.category}</td>
+                    <td className="px-6 py-4 text-gray-600">
+                        <span className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs font-bold">
+                            {product.variants.length} مورد
+                        </span>
+                    </td>
+                    <td className="px-6 py-4 flex justify-between">
+                      <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${totalStock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                        {totalStock > 0 ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                        {totalStock > 0 ? "موجود" : "ناموجود"}
+                      </span>
+                             {/* جزئیات سریع */}
+                        <Button variant="ghost" size="sm" onClick={() => setViewModalProduct(product)} title="جزئیات واریانت"><Layers size={18} /></Button>
+                        
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex justify-center gap-2">
+                 
+                        {/* ویرایش */}
+                        <Link href={`/admindashboard/products/${product.id}/edit`}><Button variant="ghost" size="sm" title="ویرایش"><Edit size={18} /></Button></Link>
+                        
+                        {/* مشاهده در سایت */}
+                        <a href={`/products/${product.id}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="sm" title="مشاهده در سایت"><ExternalLink size={18} /></Button></a>
+                        
+                        {/* حذف */}
+                        <Button variant="ghost" size="sm" className="text-red-500" onClick={() => setDeleteDialog({ visible: true, product })} title="حذف"><Trash2 size={18} /></Button>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {filteredProducts.map((product) => {
-                    const totalStock = product.variants.reduce(
-                      (sum, v) => sum + v.stock_quantity,
-                      0,
-                    );
-                    const hasStock = totalStock > 0;
-
-                    return (
-                      <tr
-                        key={product.id}
-                        className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                      >
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex items-center justify-start gap-2">
-                            <button
-                              onClick={() => copyToClipboard(product.title)}
-                              className="text-gray-500 hover:text-purple-600 transition"
-                              title="کپی نام محصول"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </button>
-                            <span className="font-medium text-right">
-                              {product.title}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {product.brandDetails?.title || "-"}
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          {product.motherCategoryName}
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="inline-block px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-sm">
-                            {product.variants.length} واریانت
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-center">
-                          <span
-                            className={`inline-block px-3 py-1 rounded-full text-sm ${
-                              hasStock
-                                ? "bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200"
-                                : "bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200"
-                            }`}
-                          >
-                            {hasStock ? "موجود" : "ناموجود"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center justify-center gap-3">
-                            <Link
-                              href={`/admindashboard/products/${product.id}/edit`}
-                            >
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="hover:bg-blue-50 dark:hover:bg-blue-900"
-                                title="ویرایش"
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </Link>
-
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDeleteClick(product)}
-                              className="hover:bg-red-50 dark:hover:bg-red-900"
-                              title="حذف"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-
-                            <a
-                              href={`/products/${product.id}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="hover:bg-green-50 dark:hover:bg-green-900"
-                                title="مشاهده در سایت"
-                              >
-                                <View className="h-4 w-4" />
-                              </Button>
-                            </a>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </Card>
     </div>
   );

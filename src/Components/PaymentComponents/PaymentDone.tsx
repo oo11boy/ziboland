@@ -132,7 +132,7 @@ const { dispatch } = useCart();
               <p className="text-gray-600 mb-2">شماره سفارش</p>
               <p className="text-3xl md:text-4xl font-black text-green-700 tracking-wider">{order.order_code}</p>
               <p className="text-2xl mt-6 text-gray-800">
-                مبلغ پرداختی: <span className="font-black text-green-700">{formatPrice(order.total_amount)} تومان</span>
+                مبلغ پرداختی: <span className="font-black text-green-700">{formatPrice(order.total_amount)} هزار تومان</span>
               </p>
             </div>
 

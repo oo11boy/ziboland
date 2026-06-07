@@ -1,9 +1,9 @@
 // api/brands/route.ts (add POST to existing GET)
 
-import { NextResponse } from 'next/server';
-import pool from '@/lib/db';
-import { Brand } from '@/types/types';
-import { RowDataPacket } from 'mysql2/promise';
+import { NextResponse } from "next/server";
+import { pool } from "@/lib/db";
+import { Brand } from "@/types/types";
+import { RowDataPacket } from "mysql2/promise";
 
 // Existing GET
 export async function GET() {
@@ -14,7 +14,7 @@ export async function GET() {
       ORDER BY id
     `);
 
-    const brands: Brand[] = rows.map(row => ({
+    const brands: Brand[] = rows.map((row) => ({
       id: row.id,
       title: row.title,
       img: row.img,
@@ -22,15 +22,15 @@ export async function GET() {
     }));
 
     if (brands.length === 0) {
-      return NextResponse.json({ error: 'No brands found' }, { status: 404 });
+      return NextResponse.json({ error: "No brands found" }, { status: 404 });
     }
 
     return NextResponse.json(brands);
   } catch (error) {
-    console.error('Error fetching brands:', error);
+    console.error("Error fetching brands:", error);
     return NextResponse.json(
-      { error: 'Failed to fetch brands', details: (error as Error).message },
-      { status: 500 }
+      { error: "Failed to fetch brands", details: (error as Error).message },
+      { status: 500 },
     );
   }
 }
@@ -44,24 +44,24 @@ export async function POST(request: Request) {
     // Validate required fields
     if (!title || !img || !link) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
+        { error: "Missing required fields" },
+        { status: 400 },
       );
     }
 
     const [result] = await pool.query(
-      'INSERT INTO brands (title, img, link) VALUES (?, ?, ?)',
-      [title, img, link]
+      "INSERT INTO brands (title, img, link) VALUES (?, ?, ?)",
+      [title, img, link],
     );
 
     const brandId = (result as any).insertId;
 
     return NextResponse.json({ id: brandId }, { status: 201 });
   } catch (error) {
-    console.error('Error adding brand:', error);
+    console.error("Error adding brand:", error);
     return NextResponse.json(
-      { error: 'Failed to add brand', details: (error as Error).message },
-      { status: 500 }
+      { error: "Failed to add brand", details: (error as Error).message },
+      { status: 500 },
     );
   }
 }

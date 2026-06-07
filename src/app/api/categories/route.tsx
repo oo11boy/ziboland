@@ -1,6 +1,6 @@
 // pages/api/categories/index.ts
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import { Categoryapi, CategoryRow } from "@/types/types";
 
 export async function GET(request: Request) {
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
       if (isNaN(parseInt(mothercat))) {
         return NextResponse.json(
           { error: "پارامتر mothercat نامعتبر است" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       conditions.push("c.mothercat = ?");
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
       if (isNaN(parseInt(categoryId))) {
         return NextResponse.json(
           { error: "شناسه دسته‌بندی نامعتبر است" },
-          { status: 400 }
+          { status: 400 },
         );
       }
       conditions.push("c.id = ?");
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
       if (!categoriesMap[catId]) {
         if (!row.cat_name || !row.link || !row.icon) {
           console.warn(
-            `فیلدهای مورد نیاز برای دسته‌بندی با شناسه ${catId} وجود ندارد`
+            `فیلدهای مورد نیاز برای دسته‌بندی با شناسه ${catId} وجود ندارد`,
           );
           return;
         }
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
 
       if (row.item_id && !itemIds.has(row.item_id)) {
         const subcat = categoriesMap[catId].subcat.find(
-          (sc) => sc.id === row.subcat_id
+          (sc) => sc.id === row.subcat_id,
         );
         if (subcat) {
           subcat.items.push({
@@ -109,7 +109,7 @@ export async function GET(request: Request) {
         error: "خطا در دریافت دسته‌بندی‌ها",
         details: (error as Error).message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
     if (!name || !link || !icon) {
       return NextResponse.json(
         { error: "فیلدهای name، link و icon الزامی هستند" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -132,7 +132,7 @@ export async function POST(request: Request) {
 
       const [result] = await connection.query(
         "INSERT INTO categories (name, link, mothercat, icon) VALUES (?, ?, ?, ?)",
-        [name, link, mothercat ? 1 : 0, icon]
+        [name, link, mothercat ? 1 : 0, icon],
       );
 
       const categoryId = (result as any).insertId;
@@ -144,7 +144,7 @@ export async function POST(request: Request) {
           }
           const [subResult] = await connection.query(
             "INSERT INTO subcategories (category_id, name) VALUES (?, ?)",
-            [categoryId, sub.name]
+            [categoryId, sub.name],
           );
           const subcatId = (subResult as any).insertId;
 
@@ -155,7 +155,7 @@ export async function POST(request: Request) {
               }
               await connection.query(
                 "INSERT INTO subcategory_items (subcategory_id, name) VALUES (?, ?)",
-                [subcatId, item.name]
+                [subcatId, item.name],
               );
             }
           }
@@ -174,7 +174,7 @@ export async function POST(request: Request) {
     console.error("خطا در افزودن دسته‌بندی:", error);
     return NextResponse.json(
       { error: "خطا در افزودن دسته‌بندی", details: (error as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import * as jose from "jose";
 import { RowDataPacket } from "mysql2";
 
@@ -64,7 +64,7 @@ export async function GET() {
     console.error("GET /api/notifications error:", error);
     return NextResponse.json(
       { error: "خطا در دریافت اعلان‌ها", details: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -78,19 +78,21 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const [result] = await pool.query(`UPDATE notifications SET \`read\` = 1 WHERE \`read\` = 0`);
+    const [result] = await pool.query(
+      `UPDATE notifications SET \`read\` = 1 WHERE \`read\` = 0`,
+    );
     return NextResponse.json(
       {
         message: "تمام اعلان‌ها خوانده‌شده علامت‌گذاری شدند",
         affected: (result as any).affectedRows,
       },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error: any) {
     console.error("PATCH /api/notifications error:", error);
     return NextResponse.json(
       { error: "خطا در به‌روزرسانی اعلان‌ها", details: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

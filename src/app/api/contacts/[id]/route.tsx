@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 
 interface Contact extends RowDataPacket {
@@ -16,18 +16,21 @@ interface Contact extends RowDataPacket {
 // GET: دریافت یک پیام خاص
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }  // ⚠ اینجا به صورت Promise
+  { params }: { params: Promise<{ id: string }> }, // ⚠ اینجا به صورت Promise
 ) {
-  const { id } = await params;   // ⚠ باید await شود
+  const { id } = await params; // ⚠ باید await شود
   const contactId = parseInt(id);
   if (isNaN(contactId)) {
-    return NextResponse.json({ error: "شناسه پیام نامعتبر است" }, { status: 400 });
+    return NextResponse.json(
+      { error: "شناسه پیام نامعتبر است" },
+      { status: 400 },
+    );
   }
 
   try {
     const [rows] = await pool.query<Contact[]>(
       "SELECT id, name, email, phone, subject, message, created_at, status FROM contacts WHERE id = ?",
-      [contactId]
+      [contactId],
     );
 
     if (rows.length === 0) {
@@ -39,7 +42,7 @@ export async function GET(
     console.error("خطا در دریافت پیام:", error);
     return NextResponse.json(
       { error: "خطا در دریافت پیام", details: (error as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -47,12 +50,15 @@ export async function GET(
 // PUT: به‌روزرسانی پیام (وضعیت یا اطلاعات)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   const contactId = parseInt(id);
   if (isNaN(contactId)) {
-    return NextResponse.json({ error: "شناسه پیام نامعتبر است" }, { status: 400 });
+    return NextResponse.json(
+      { error: "شناسه پیام نامعتبر است" },
+      { status: 400 },
+    );
   }
 
   try {
@@ -66,7 +72,7 @@ export async function PUT(
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return NextResponse.json(
         { error: "فرمت ایمیل نامعتبر است" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -80,7 +86,15 @@ export async function PUT(
         message = COALESCE(?, message),
         status = COALESCE(?, status)
       WHERE id = ?`,
-      [name || null, email || null, phone || null, subject || null, message || null, status || null, contactId]
+      [
+        name || null,
+        email || null,
+        phone || null,
+        subject || null,
+        message || null,
+        status || null,
+        contactId,
+      ],
     );
 
     if ((result as any).affectedRows === 0) {
@@ -92,7 +106,7 @@ export async function PUT(
     console.error("خطا در به‌روزرسانی پیام:", error);
     return NextResponse.json(
       { error: "خطا در به‌روزرسانی پیام", details: (error as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -100,16 +114,21 @@ export async function PUT(
 // DELETE: حذف یک پیام
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
   const contactId = parseInt(id);
   if (isNaN(contactId)) {
-    return NextResponse.json({ error: "شناسه پیام نامعتبر است" }, { status: 400 });
+    return NextResponse.json(
+      { error: "شناسه پیام نامعتبر است" },
+      { status: 400 },
+    );
   }
 
   try {
-    const [result] = await pool.query("DELETE FROM contacts WHERE id = ?", [contactId]);
+    const [result] = await pool.query("DELETE FROM contacts WHERE id = ?", [
+      contactId,
+    ]);
     if ((result as any).affectedRows === 0) {
       return NextResponse.json({ error: "پیام یافت نشد" }, { status: 404 });
     }
@@ -119,7 +138,7 @@ export async function DELETE(
     console.error("خطا در حذف پیام:", error);
     return NextResponse.json(
       { error: "خطا در حذف پیام", details: (error as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

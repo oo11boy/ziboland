@@ -1,4 +1,3 @@
-// src/app/page.tsx
 import { Metadata } from "next";
 import { getSettings } from "@/lib/settings";
 import { getSliders } from "@/lib/sliders";
@@ -14,31 +13,33 @@ import ArticlesListContainer from "@/Components/Articles/ArticlesList/ArticlesLi
 import BrandsContainer from "@/Components/Brands/BrandsContainer";
 import Banners from "@/Components/Banners/Banners";
 
-// 🟢 متادیتا با دسترسی مستقیم به دیتابیس
+// 🟢 متادیتا با مدیریت صحیح کانکشن
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getSettings();
-  
-  const defaultMeta = {
-    title: "زیبولند | فروشگاه آنلاین",
-    description: "بهترین فروشگاه اینترنتی برای خرید محصولات باکیفیت",
-  };
-
-  return {
-    title: settings?.site_name || defaultMeta.title,
-    description: settings?.site_description || defaultMeta.description,
-  };
+  try {
+    const settings = await getSettings();
+    return {
+      title: settings?.site_name || "زیبولند | فروشگاه آنلاین",
+      description: settings?.site_description || "بهترین فروشگاه اینترنتی برای خرید محصولات باکیفیت",
+    };
+  } catch (error) {
+    return {
+      title: "زیبولند | فروشگاه آنلاین",
+      description: "فروشگاه اینترنتی",
+    };
+  }
 }
 
 // 🟢 صفحه اصلی (Server Component)
 export default async function Page() {
-  // دریافت همزمان داده‌ها برای سرعت بیشتر (Parallel Data Fetching)
+  // اجرای همزمان تمامی درخواست‌ها (Parallel Data Fetching)
+  // این روش سرعت بارگذاری را به شدت افزایش داده و از قفل شدن کانکشن‌های دیتابیس جلوگیری می‌کند
   const [slides, categories] = await Promise.all([
     getSliders(),
     getCategories(),
   ]);
 
   return (
-    <>
+    <main className="flex flex-col gap-8 pb-10">
       {/* اسلایدر اصلی */}
       <WideSliderContainer slides={slides} />
       
@@ -49,7 +50,10 @@ export default async function Page() {
       <BenefitsContainer />
       <Banners />
       
+      {/* اسلایدر محصولات */}
       <ProductSliderContainer vip={true} />
+      
+      {/* اسلایدرهای تب‌دار (استفاده از Suspense برای لودینگ بهتر پیشنهاد می‌شود) */}
       <TabProductsSliderContainer title="محبوب‌ترین‌ها" sort="popular" />
       <TabProductsSliderContainer title="ارزان‌ترین‌ها" sort="cheapest" />
       <TabProductsSliderContainer title="جدیدترین‌ها" sort="newest" />
@@ -57,6 +61,6 @@ export default async function Page() {
       {/* سایر بخش‌ها */}
       <ArticlesListContainer ispage={false} />
       <BrandsContainer />
-    </>
+    </main>
   );
 }

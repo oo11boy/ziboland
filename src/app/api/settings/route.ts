@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 
 // 🟢 GET تنظیمات
 export async function GET() {
@@ -11,7 +11,10 @@ export async function GET() {
     return NextResponse.json({});
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to fetch settings" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch settings" },
+      { status: 500 },
+    );
   }
 }
 
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest) {
           working_hours,
           working_days,
           id,
-        ]
+        ],
       );
     } else {
       await pool.query(
@@ -78,13 +81,16 @@ export async function POST(request: NextRequest) {
           address,
           working_hours,
           working_days,
-        ]
+        ],
       );
     }
 
     return NextResponse.json({ message: "Settings saved successfully" });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ error: "Failed to save settings" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to save settings" },
+      { status: 500 },
+    );
   }
 }

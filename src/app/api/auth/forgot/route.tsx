@@ -1,6 +1,6 @@
 // app/api/auth/forgot/route.ts
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import nodemailer from "nodemailer";
 import jwt from "jsonwebtoken";
 
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     // بررسی وجود کاربر
     const [rows] = await pool.query(
       "SELECT id, first_name FROM users WHERE email = ?",
-      [email]
+      [email],
     );
     const user = (rows as any[])[0];
 
@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     const resetToken = jwt.sign(
       { userId: user.id, purpose: "password-reset" },
       JWT_SECRET,
-      { expiresIn: "15m" }
+      { expiresIn: "15m" },
     );
 
     const resetLink = `${BASE_URL}/reset-password?token=${resetToken}`;
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
     console.error("Forgot password email error:", error);
     return NextResponse.json(
       { error: "خطا در ارسال ایمیل. لطفاً دوباره تلاش کنید." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

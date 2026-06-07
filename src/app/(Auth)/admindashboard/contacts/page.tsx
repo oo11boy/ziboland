@@ -170,7 +170,7 @@ const fetchContacts = async () => {
                 <thead className="hidden md:table-header-group bg-gray-50 dark:bg-gray-700">
                   <tr className="text-gray-600 dark:text-gray-300">
                     <th className="px-4 py-3 text-right font-semibold">نام</th>
-                    <th className="px-4 py-3 text-right font-semibold">ایمیل</th>
+                    <th className="px-4 py-3 text-right font-semibold">شماره تماس</th>
                     <th className="px-4 py-3 text-right font-semibold">موضوع</th>
                     <th className="px-4 py-3 text-right font-semibold">تاریخ</th>
                     <th className="px-4 py-3 text-right font-semibold">وضعیت</th>
@@ -188,8 +188,8 @@ const fetchContacts = async () => {
                         {contact.name}
                       </td>
                       <td className="px-4 py-3 text-right block md:table-cell">
-                        <span className="font-medium md:hidden">ایمیل: </span>
-                        {contact.email}
+                        <span className="font-medium md:hidden">شماره تماس: </span>
+                        {contact.phone}
                       </td>
                       <td className="px-4 py-3 text-right block md:table-cell">
                         <span className="font-medium md:hidden">موضوع: </span>

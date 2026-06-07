@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import { Categoryapi, RowDataPacket } from "@/types/types";
 
 interface SubcategoryRow extends RowDataPacket {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   if (isNaN(categoryId)) {
     return NextResponse.json(
       { error: "شناسه دسته‌بندی نامعتبر است" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
       WHERE c.id = ?
       ORDER BY c.id, sc.id, sci.id
       `,
-      [categoryId]
+      [categoryId],
     );
 
     const categoriesMap: Record<number, Categoryapi> = {};
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
       if (row.item_id && !itemIds.has(row.item_id)) {
         const subcat = categoriesMap[catId].subcat.find(
-          (sc) => sc.id === row.subcat_id
+          (sc) => sc.id === row.subcat_id,
         );
         if (subcat) {
           subcat.items.push({
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
     console.error("خطا در دریافت دسته‌بندی:", error);
     return NextResponse.json(
       { error: "خطا در دریافت دسته‌بندی", details: (error as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -100,7 +100,7 @@ export async function PUT(request: NextRequest) {
   if (isNaN(categoryId)) {
     return NextResponse.json(
       { error: "شناسه دسته‌بندی نامعتبر است" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -111,7 +111,7 @@ export async function PUT(request: NextRequest) {
     if (!name?.trim()) {
       return NextResponse.json(
         { error: "نام دسته‌بندی الزامی است" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -123,13 +123,13 @@ export async function PUT(request: NextRequest) {
 
       await connection.query(
         "UPDATE categories SET name = ?, link = ?, mothercat = ?, icon = ? WHERE id = ?",
-        [name.trim(), link, mothercat ? 1 : 0, iconValue, categoryId]
+        [name.trim(), link, mothercat ? 1 : 0, iconValue, categoryId],
       );
 
       // فقط اولین عنصر (rows) را می‌گیریم و به نوع دلخواه تبدیل می‌کنیم
       const [currentSubcatsRows] = await connection.query<RowDataPacket[]>(
         "SELECT id, name FROM subcategories WHERE category_id = ?",
-        [categoryId]
+        [categoryId],
       );
       const currentSubcats = currentSubcatsRows as SubcategoryRow[];
 
@@ -149,14 +149,14 @@ export async function PUT(request: NextRequest) {
             if (oldName !== sub.name.trim()) {
               await connection.query(
                 "UPDATE subcategories SET name = ? WHERE id = ? AND category_id = ?",
-                [sub.name.trim(), sub.id, categoryId]
+                [sub.name.trim(), sub.id, categoryId],
               );
             }
             subcatId = sub.id;
           } else {
             const [result] = await connection.query(
               "INSERT INTO subcategories (category_id, name) VALUES (?, ?)",
-              [categoryId, sub.name.trim()]
+              [categoryId, sub.name.trim()],
             );
             subcatId = (result as any).insertId;
           }
@@ -165,12 +165,14 @@ export async function PUT(request: NextRequest) {
 
           const [currentItemsRows] = await connection.query<RowDataPacket[]>(
             "SELECT id, name FROM subcategory_items WHERE subcategory_id = ?",
-            [subcatId]
+            [subcatId],
           );
           const currentItems = currentItemsRows as SubcategoryRow[];
 
           const currentItemMap = new Map<number, string>();
-          currentItems.forEach((item) => currentItemMap.set(item.id, item.name));
+          currentItems.forEach((item) =>
+            currentItemMap.set(item.id, item.name),
+          );
 
           const usedItemIds = new Set<number>();
 
@@ -185,14 +187,14 @@ export async function PUT(request: NextRequest) {
                 if (oldName !== item.name.trim()) {
                   await connection.query(
                     "UPDATE subcategory_items SET name = ? WHERE id = ? AND subcategory_id = ?",
-                    [item.name.trim(), item.id, subcatId]
+                    [item.name.trim(), item.id, subcatId],
                   );
                 }
                 itemId = item.id;
               } else {
                 const [itemResult] = await connection.query(
                   "INSERT INTO subcategory_items (subcategory_id, name) VALUES (?, ?)",
-                  [subcatId, item.name.trim()]
+                  [subcatId, item.name.trim()],
                 );
                 itemId = (itemResult as any).insertId;
               }
@@ -212,14 +214,14 @@ export async function PUT(request: NextRequest) {
                WHERE id IN (${placeholders}) 
                AND subcategory_id = ? 
                AND id NOT IN (SELECT itemId FROM products WHERE itemId IS NOT NULL)`,
-              [...itemsToDelete, subcatId]
+              [...itemsToDelete, subcatId],
             );
           }
         }
       }
 
       const subcatsToDelete = currentSubcats.filter(
-        (sc) => !usedSubcatIds.has(sc.id)
+        (sc) => !usedSubcatIds.has(sc.id),
       );
 
       if (subcatsToDelete.length > 0) {
@@ -230,7 +232,7 @@ export async function PUT(request: NextRequest) {
           `SELECT p.id AS product_id, p.title AS product_name, p.subcatId 
            FROM products p 
            WHERE p.subcatId IN (${placeholders})`,
-          deleteIds
+          deleteIds,
         );
 
         if ((usedInProducts as any[]).length > 0) {
@@ -261,7 +263,8 @@ export async function PUT(request: NextRequest) {
             });
             message += "\n";
           });
-          message += "لطفاً ابتدا زیرمجموعه را از محصولات فوق حذف یا تغییر دهید.";
+          message +=
+            "لطفاً ابتدا زیرمجموعه را از محصولات فوق حذف یا تغییر دهید.";
 
           await connection.rollback();
           return NextResponse.json(
@@ -270,17 +273,17 @@ export async function PUT(request: NextRequest) {
               details: message,
               partialSuccess: true,
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
         await connection.query(
           `DELETE FROM subcategory_items WHERE subcategory_id IN (${placeholders})`,
-          deleteIds
+          deleteIds,
         );
         await connection.query(
           `DELETE FROM subcategories WHERE id IN (${placeholders}) AND category_id = ?`,
-          [...deleteIds, categoryId]
+          [...deleteIds, categoryId],
         );
       }
 
@@ -299,7 +302,7 @@ export async function PUT(request: NextRequest) {
         error: "خطا در بروزرسانی دسته‌بندی",
         details: (error as Error).message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -312,7 +315,7 @@ export async function DELETE(request: NextRequest) {
   if (isNaN(categoryId)) {
     return NextResponse.json(
       { error: "شناسه دسته‌بندی نامعتبر است" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -322,7 +325,7 @@ export async function DELETE(request: NextRequest) {
 
     const [subcatsRows] = await connection.query<RowDataPacket[]>(
       "SELECT id, name FROM subcategories WHERE category_id = ?",
-      [categoryId]
+      [categoryId],
     );
     const subcats = subcatsRows as SubcategoryRow[];
 
@@ -339,13 +342,16 @@ export async function DELETE(request: NextRequest) {
         WHERE p.subcatId IN (${placeholders})
         ORDER BY p.subcatId, p.title
         `,
-        subcatIds
+        subcatIds,
       );
 
       if (usedProducts.length > 0) {
         const conflicts = new Map<
           number,
-          { subcatName: string; products: { id: number; name: string; editUrl: string }[] }
+          {
+            subcatName: string;
+            products: { id: number; name: string; editUrl: string }[];
+          }
         >();
 
         usedProducts.forEach((prod: any) => {
@@ -367,7 +373,10 @@ export async function DELETE(request: NextRequest) {
 
         const conflictedProducts: Record<
           string,
-          { subcatName: string; products: { id: number; name: string; editUrl: string }[] }
+          {
+            subcatName: string;
+            products: { id: number; name: string; editUrl: string }[];
+          }
         > = {};
 
         conflicts.forEach(({ subcatName, products }, subcatId) => {
@@ -387,29 +396,32 @@ export async function DELETE(request: NextRequest) {
             details: message.trim(),
             conflictedProducts,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
       await connection.query(
         `DELETE FROM subcategory_items WHERE subcategory_id IN (${placeholders})`,
-        subcatIds
+        subcatIds,
       );
 
       await connection.query(
         `DELETE FROM subcategories WHERE id IN (${placeholders})`,
-        subcatIds
+        subcatIds,
       );
     }
 
     const [result] = await connection.query(
       "DELETE FROM categories WHERE id = ?",
-      [categoryId]
+      [categoryId],
     );
 
     if ((result as any).affectedRows === 0) {
       await connection.rollback();
-      return NextResponse.json({ error: "دسته‌بندی یافت نشد" }, { status: 404 });
+      return NextResponse.json(
+        { error: "دسته‌بندی یافت نشد" },
+        { status: 404 },
+      );
     }
 
     await connection.commit();
@@ -425,13 +437,13 @@ export async function DELETE(request: NextRequest) {
           details:
             "این دسته‌بندی یا زیرمجموعه‌های آن در محصولات استفاده شده است.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json(
       { error: "خطا در حذف دسته‌بندی", details: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   } finally {
     connection.release();

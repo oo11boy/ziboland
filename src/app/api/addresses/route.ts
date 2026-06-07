@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import { verifyToken } from "@/lib/auth";
 
 export async function GET(request: Request) {

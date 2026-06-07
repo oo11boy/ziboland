@@ -1,6 +1,6 @@
 // api/auth/verify-otp/route.ts
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import jwt from "jsonwebtoken";
 
 const SECRET = process.env.JWT_SECRET!;

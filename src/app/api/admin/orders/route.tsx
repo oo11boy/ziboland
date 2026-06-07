@@ -1,19 +1,25 @@
 // src\app\api\admin\orders\route.tsx
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import * as jose from "jose";
 
 export async function GET(request: Request) {
   // Extract and verify JWT token
   const token = request.headers.get("Authorization")?.replace("Bearer ", "");
   if (!token) {
-    return NextResponse.json({ error: "لطفاً توکن را ارائه دهید" }, { status: 401 });
+    return NextResponse.json(
+      { error: "لطفاً توکن را ارائه دهید" },
+      { status: 401 },
+    );
   }
 
   const secretKey = process.env.JWT_SECRET;
   if (!secretKey) {
     console.error("JWT_SECRET is not set");
-    return NextResponse.json({ error: "خطای سرور: تنظیمات نادرست" }, { status: 500 });
+    return NextResponse.json(
+      { error: "خطای سرور: تنظیمات نادرست" },
+      { status: 500 },
+    );
   }
 
   let userRole;
@@ -26,7 +32,10 @@ export async function GET(request: Request) {
     }
   } catch (error: any) {
     console.error("JWT verification error:", error.message);
-    return NextResponse.json({ error: "توکن نامعتبر است", details: error.message }, { status: 401 });
+    return NextResponse.json(
+      { error: "توکن نامعتبر است", details: error.message },
+      { status: 401 },
+    );
   }
 
   const conn = await pool.getConnection();
@@ -51,7 +60,7 @@ export async function GET(request: Request) {
   a.extra_details
 FROM orders o 
 JOIN users u ON o.user_id = u.id 
-JOIN addresses a ON o.address_id = a.id`
+JOIN addresses a ON o.address_id = a.id`,
     );
 
     // Fetch items for each order
@@ -62,7 +71,7 @@ JOIN addresses a ON o.address_id = a.id`
          FROM order_items oi 
          JOIN products p ON oi.product_id = p.id 
          WHERE oi.order_id = ?`,
-        [order.id]
+        [order.id],
       );
       // Parse color JSON
       order.items = items.map((item: any) => ({
@@ -76,7 +85,7 @@ JOIN addresses a ON o.address_id = a.id`
     console.error("Error fetching orders:", error);
     return NextResponse.json(
       { error: "خطا در دریافت اطلاعات سفارشات", details: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   } finally {
     conn.release();

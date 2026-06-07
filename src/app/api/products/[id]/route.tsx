@@ -1,6 +1,6 @@
 // api/products/[id].ts
 import { NextRequest, NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 import { RowDataPacket } from "mysql2/promise";
 
 interface Variant {
@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
       WHERE p.id = ?
       ORDER BY m.id
       `,
-      [productId]
+      [productId],
     );
 
     if (productRows.length === 0) {
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
       WHERE pv.product_id = ?
       ORDER BY pv.id
       `,
-      [productId]
+      [productId],
     );
 
     // ساخت آبجکت محصول
@@ -176,7 +176,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching product:", error);
     return NextResponse.json(
       { error: "Failed to fetch product", details: (error as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -212,7 +212,7 @@ export async function PUT(request: NextRequest) {
     if (!title || !image || !mothercatId || !subcatId || !itemId) {
       return NextResponse.json(
         { error: "Missing required product fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -220,7 +220,7 @@ export async function PUT(request: NextRequest) {
     if (!Array.isArray(variants) || variants.length === 0) {
       return NextResponse.json(
         { error: "At least one variant is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -236,7 +236,7 @@ export async function PUT(request: NextRequest) {
             error:
               "Each variant must have color_englishName, color_hexCode, price_single and price_wholesale",
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -258,7 +258,7 @@ export async function PUT(request: NextRequest) {
           brand_id || null,
           title,
           image,
-        
+
           mothercatId,
           subcatId,
           itemId,
@@ -268,26 +268,26 @@ export async function PUT(request: NextRequest) {
           features ? JSON.stringify(features) : null,
           content || null,
           productId,
-        ]
+        ],
       );
 
       // 2. جایگزینی مدیای عمومی
       await connection.query("DELETE FROM media WHERE product_id = ?", [
         productId,
       ]);
-if (Array.isArray(media) && media.length > 0) {
-  for (const item of media) {
-    await connection.query(
-      "INSERT INTO media (product_id, type, src, thumbnail, alt) VALUES (?, ?, ?, ?, ?)",
-      [productId, item.type, item.src, item.thumbnail || null, item.alt]
-    );
-  }
-}
+      if (Array.isArray(media) && media.length > 0) {
+        for (const item of media) {
+          await connection.query(
+            "INSERT INTO media (product_id, type, src, thumbnail, alt) VALUES (?, ?, ?, ?, ?)",
+            [productId, item.type, item.src, item.thumbnail || null, item.alt],
+          );
+        }
+      }
 
       // 3. جایگزینی کامل واریانت‌ها
       await connection.query(
         "DELETE FROM product_variants WHERE product_id = ?",
-        [productId]
+        [productId],
       );
 
       for (const variant of variants) {
@@ -316,7 +316,7 @@ if (Array.isArray(media) && media.length > 0) {
             variant.image_main || null,
             variant.images ? JSON.stringify(variant.images) : null,
             variant.infotable ? JSON.stringify(variant.infotable) : null,
-          ]
+          ],
         );
       }
 
@@ -334,7 +334,7 @@ if (Array.isArray(media) && media.length > 0) {
     console.error("Error updating product:", error);
     return NextResponse.json(
       { error: "Failed to update product", details: (error as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -356,7 +356,7 @@ export async function DELETE(request: NextRequest) {
     // بررسی سفارش‌ها
     const [orders] = await connection.query<RowDataPacket[]>(
       "SELECT COUNT(*) as count FROM order_items WHERE product_id = ?",
-      [productId]
+      [productId],
     );
     const orderCount = orders[0]?.count || 0;
 
@@ -367,7 +367,7 @@ export async function DELETE(request: NextRequest) {
           error:
             "این محصول سفارش دارد. برای حذف اجباری از force=true استفاده کنید.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -380,7 +380,7 @@ export async function DELETE(request: NextRequest) {
     // حذف محصول (واریانت‌ها به دلیل ON DELETE CASCADE خودکار حذف می‌شن)
     const [result] = await connection.query(
       "DELETE FROM products WHERE id = ?",
-      [productId]
+      [productId],
     );
 
     if ((result as any).affectedRows === 0) {
@@ -395,7 +395,7 @@ export async function DELETE(request: NextRequest) {
     console.error("Error deleting product:", error);
     return NextResponse.json(
       { error: "Failed to delete product", details: (error as Error).message },
-      { status: 500 }
+      { status: 500 },
     );
   } finally {
     connection.release();

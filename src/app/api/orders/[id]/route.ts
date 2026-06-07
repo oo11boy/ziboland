@@ -1,8 +1,11 @@
 // src\app\api\orders\[id]\route.ts
 import { NextResponse } from "next/server";
-import pool from "@/lib/db";
+import { pool } from "@/lib/db";
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const { id } = await params;
 
   const conn = await pool.getConnection();
@@ -13,7 +16,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
        FROM orders o 
        JOIN addresses a ON o.address_id = a.id 
        WHERE o.order_code = ?`,
-      [id]
+      [id],
     );
 
     if (!orders.length) {
@@ -25,7 +28,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
        FROM order_items oi 
        JOIN products p ON oi.product_id = p.id 
        WHERE oi.order_id = ?`,
-      [orders[0].id]
+      [orders[0].id],
     );
 
     // Parse JSON برای color
@@ -39,30 +42,28 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     console.error("Error fetching order:", error);
     return NextResponse.json(
       { error: "خطا در دریافت اطلاعات سفارش", details: error.message },
-      { status: 500 }
+      { status: 500 },
     );
   } finally {
     conn.release();
   }
 }
 
-
-
 export async function DELETE(
-  request: Request, 
-  { params }: { params: Promise<{ id: string }> } // تغییر تایپ به Promise
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }, // تغییر تایپ به Promise
 ) {
   // مرحله حیاتی: await کردن params برای استخراج id
-  const { id } = await params; 
-  
+  const { id } = await params;
+
   const conn = await pool.getConnection();
 
   try {
     // ۱. بررسی وجود و وضعیت سفارش
     // دقت کنید در دیتابیس شما فیلد کلید اصلی id است
     const [orders]: any = await conn.query(
-      "SELECT status FROM orders WHERE id = ?", 
-      [id]
+      "SELECT status FROM orders WHERE id = ?",
+      [id],
     );
 
     if (orders.length === 0) {
@@ -74,8 +75,8 @@ export async function DELETE(
     // ۲. بررسی شرط "در انتظار" بودن
     if (orderStatus !== "pending") {
       return NextResponse.json(
-        { error: "تنها سفارش‌های در حالت 'در انتظار' قابل حذف هستند" }, 
-        { status: 400 }
+        { error: "تنها سفارش‌های در حالت 'در انتظار' قابل حذف هستند" },
+        { status: 400 },
       );
     }
 
@@ -84,20 +85,22 @@ export async function DELETE(
 
     // حذف آیتم‌های سفارش
     await conn.query("DELETE FROM order_items WHERE order_id = ?", [id]);
-    
+
     // حذف خود سفارش
     await conn.query("DELETE FROM orders WHERE id = ?", [id]);
 
     await conn.commit();
 
-    return NextResponse.json({ message: "سفارش با موفقیت حذف شد" }, { status: 200 });
-
+    return NextResponse.json(
+      { message: "سفارش با موفقیت حذف شد" },
+      { status: 200 },
+    );
   } catch (error: any) {
     if (conn) await conn.rollback();
     console.error("Error deleting order:", error);
     return NextResponse.json(
-      { error: "خطا در حذف سفارش", details: error.message }, 
-      { status: 500 }
+      { error: "خطا در حذف سفارش", details: error.message },
+      { status: 500 },
     );
   } finally {
     if (conn) conn.release();

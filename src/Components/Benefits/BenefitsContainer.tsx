@@ -25,7 +25,7 @@ export default function BenefitsContainer() {
       description: "ابزار آلات اصیل و معتبر",
       image:
     "/images/hand.webp",
-      link: "/",
+      link: "/#",
     },
     {
       id: 4,
@@ -33,7 +33,7 @@ export default function BenefitsContainer() {
       description: "خرید آگاهانه ابزار آلات",
         image:
     "/images/call.webp",
-      link: "/faq",
+      link: "/#",
     },
     {
       id: 5,
@@ -41,7 +41,7 @@ export default function BenefitsContainer() {
       description: "کلیه کارت های عضو شتاب",
           image:
     "/images/cash.webp",
-      link: "/faq",
+      link: "/#",
     },
   ];
 
