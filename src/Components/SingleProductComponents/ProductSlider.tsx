@@ -90,8 +90,8 @@ const ProductSlider: React.FC<ProductSliderProps> = ({
   if (!isClient) return <div className="woocommerce-product-gallery max-w-[450px] mx-auto aspect-[3/2] bg-gray-200 animate-pulse rounded-xl" />;
 
   return (
-    <div className="woocommerce-product-gallery lg:max-w-[450px]" dir="rtl">
-      {!hasMultipleImages ? (
+    <div className="woocommerce-product-gallery lg:max-w-[450px] w-full" dir="rtl">
+      {!hasMultipleImages ? ( 
         <motion.div
           className="relative w-full aspect-[3/2] rounded-xl overflow-hidden bg-gray-50 cursor-zoom-in shadow-lg"
           onMouseMove={handleMouseMove}
