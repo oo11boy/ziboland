@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -6,9 +5,9 @@ import Link from "next/link";
 import { Card } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
-import { Plus, Edit, Trash2, View, Search, ExternalLink, X, CheckCircle2, AlertCircle, Layers } from "lucide-react";
+import { Plus, Edit, Trash2, Search, ExternalLink, X, CheckCircle2, AlertCircle, Layers } from "lucide-react";
 import { toast } from "react-toastify";
-import { Product } from "@/types/types"; // مسیر دقیق فایل تایپ‌های شما
+import { Product } from "@/types/types";
 
 // --- دیالوگ حذف محصول ---
 const DeleteDialog = ({ productTitle, onCancel, onForceDelete }: { productTitle: string; onCancel: () => void; onForceDelete: () => void; }) => (
@@ -65,7 +64,7 @@ const ProductsPage = () => {
   const [filter, setFilter] = useState<"all" | "inStock" | "outOfStock">("all");
   const [deleteDialog, setDeleteDialog] = useState<{ visible: boolean; product: Product | null }>({ visible: false, product: null });
   const [viewModalProduct, setViewModalProduct] = useState<Product | null>(null);
-
+console.log(products)
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -85,14 +84,18 @@ const ProductsPage = () => {
   };
 
   const filteredProducts = useMemo(() => {
+    const lowerSearch = searchTerm.toLowerCase();
+
     return products.filter((p) => {
-      // محاسبه مجموع موجودی از آرایه variants
       const totalStock = p.variants.reduce((acc, v) => acc + Number(v.stock_quantity || 0), 0);
       
-      const matchesSearch = 
-        p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        (p.brandDetails?.title?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        p.category.toLowerCase().includes(searchTerm.toLowerCase());
+      // جستجوی ایمن (جلوگیری از خطای null)
+      const idMatch = String(p.id || "").includes(searchTerm);
+      const titleMatch = (p.title || "").toLowerCase().includes(lowerSearch);
+      const brandMatch = (p.brandDetails?.title || "").toLowerCase().includes(lowerSearch);
+      const categoryMatch = (p.motherCategoryName || "").toLowerCase().includes(lowerSearch);
+      
+      const matchesSearch = idMatch || titleMatch || brandMatch || categoryMatch;
       
       if (filter === "inStock") return matchesSearch && totalStock > 0;
       if (filter === "outOfStock") return matchesSearch && totalStock === 0;
@@ -114,7 +117,7 @@ const ProductsPage = () => {
 
   if (loading) return (
     <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-600"></div>
+       <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-600"></div>
     </div>
   );
 
@@ -146,7 +149,12 @@ const ProductsPage = () => {
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="relative flex-1">
           <Search className="absolute right-3 top-3.5 text-gray-400" size={20} />
-          <Input placeholder="جستجو نام محصول، برند یا دسته‌بندی..." className="pl-4 pr-10 py-6 rounded-xl border-gray-200" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          <Input 
+            placeholder="جستجو نام محصول، آیدی، برند یا دسته‌بندی..." 
+            className="pl-4 pr-10 py-6 rounded-xl border-gray-200" 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+          />
         </div>
         <div className="flex bg-white border border-gray-200 p-1 rounded-xl shadow-sm">
           {["all", "inStock", "outOfStock"].map((f) => (
@@ -163,10 +171,10 @@ const ProductsPage = () => {
           <table className="w-full text-right">
             <thead className="bg-gray-50 border-b border-gray-100">
               <tr>
+                <th className="px-6 py-4 text-sm font-bold text-gray-600">آیدی</th>
                 <th className="px-6 py-4 text-sm font-bold text-gray-600">نام محصول</th>
                 <th className="px-6 py-4 text-sm font-bold text-gray-600">برند</th>
                 <th className="px-6 py-4 text-sm font-bold text-gray-600">دسته‌بندی</th>
-                <th className="px-6 py-4 text-sm font-bold text-gray-600">تعداد واریانت</th>
                 <th className="px-6 py-4 text-sm font-bold text-gray-600">وضعیت موجودی</th>
                 <th className="px-6 py-4 text-center text-sm font-bold text-gray-600">عملیات</th>
               </tr>
@@ -176,33 +184,21 @@ const ProductsPage = () => {
                 const totalStock = product.variants.reduce((acc, v) => acc + Number(v.stock_quantity || 0), 0);
                 return (
                   <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 text-gray-500 font-mono text-sm">{product.id}</td>
                     <td className="px-6 py-4 font-semibold text-gray-800">{product.title}</td>
                     <td className="px-6 py-4 text-gray-600">{product.brandDetails?.title || "-"}</td>
-                    <td className="px-6 py-4 text-gray-600">{product.category}</td>
-                    <td className="px-6 py-4 text-gray-600">
-                        <span className="bg-purple-50 text-purple-700 px-3 py-1 rounded-full text-xs font-bold">
-                            {product.variants.length} مورد
-                        </span>
-                    </td>
-                    <td className="px-6 py-4 flex justify-between">
+                    <td className="px-6 py-4 text-gray-600">{product.motherCategoryName}</td>
+                    <td className="px-6 py-4 flex items-center gap-3">
                       <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold ${totalStock > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                         {totalStock > 0 ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
                         {totalStock > 0 ? "موجود" : "ناموجود"}
                       </span>
-                             {/* جزئیات سریع */}
-                        <Button variant="ghost" size="sm" onClick={() => setViewModalProduct(product)} title="جزئیات واریانت"><Layers size={18} /></Button>
-                        
+                      <Button variant="ghost" size="sm" onClick={() => setViewModalProduct(product)} title="جزئیات واریانت"><Layers size={18} /></Button>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex justify-center gap-2">
-                 
-                        {/* ویرایش */}
                         <Link href={`/admindashboard/products/${product.id}/edit`}><Button variant="ghost" size="sm" title="ویرایش"><Edit size={18} /></Button></Link>
-                        
-                        {/* مشاهده در سایت */}
                         <a href={`/products/${product.id}`} target="_blank" rel="noopener noreferrer"><Button variant="ghost" size="sm" title="مشاهده در سایت"><ExternalLink size={18} /></Button></a>
-                        
-                        {/* حذف */}
                         <Button variant="ghost" size="sm" className="text-red-500" onClick={() => setDeleteDialog({ visible: true, product })} title="حذف"><Trash2 size={18} /></Button>
                       </div>
                     </td>
