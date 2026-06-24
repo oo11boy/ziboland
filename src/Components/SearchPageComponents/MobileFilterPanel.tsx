@@ -110,13 +110,7 @@ export default function MobileFilterPanel({
           <label className="block text-sm font-medium mb-2 text-[#374151] items-center">
             <Category className="ml-2 text-[#805b99]" /> دسته‌بندی‌ها
           </label>
-          <input
-            type="text"
-            value={categorySearch}
-            onChange={(e) => setCategorySearch(e.target.value)}
-            placeholder="جستجو در دسته‌بندی‌ها..."
-            className="w-full p-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805b99] mb-3"
-          />
+ 
           <div className="max-h-[50vh] overflow-y-auto space-y-3">
             {filteredCategories.map((cat) => (
               <div key={cat.id} className="border-b border-gray-100 pb-3 last:border-0">

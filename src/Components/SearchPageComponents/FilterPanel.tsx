@@ -122,13 +122,7 @@ className="hidden lg:flex flex-col w-full lg:w-1/4 h-[calc(100vh-140px)] rounded
           <label className="text-sm font-medium text-gray-700 flex items-center gap-2 mb-2">
             <Category className="text-[#805B99]" /> دسته‌بندی‌ها
           </label>
-          <input
-            type="text"
-            value={categorySearch}
-            onChange={(e) => setCategorySearch(e.target.value)}
-            placeholder="جستجو در دسته‌ها..."
-            className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg mb-3 focus:ring-2 focus:ring-[#805B99] outline-none"
-          />
+
           <div className="space-y-2">
             {filteredCategories.map((cat) => (
               <div key={cat.id} className="bg-white rounded-lg border border-gray-100 p-2">

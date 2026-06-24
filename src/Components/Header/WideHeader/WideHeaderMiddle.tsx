@@ -15,6 +15,7 @@ import { motion, AnimatePresence, Variants } from "framer-motion";
 import { toast } from "react-toastify";
 import { useCart } from "@/ContextApi/CartContext";
 import { useAuth } from "@/ContextApi/AuthContext";
+import { usePathname } from "next/navigation";
 
 export default function WideHeaderMiddle() {
   const {
@@ -23,6 +24,7 @@ export default function WideHeaderMiddle() {
   } = useCart();
   const { isLoggedIn } = useAuth();
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+  const pathname = usePathname();
 
   const toggleCartModal = () => setIsCartModalOpen((prev) => !prev);
 
@@ -41,7 +43,7 @@ export default function WideHeaderMiddle() {
       theme: "colored",
     });
   };
-// تابع handleQuantityChange را با این کد جایگزین کنید:
+
   const handleQuantityChange = (item: (typeof cartItems)[0], delta: number) => {
     const itemKey = `${item.id}-${item.color?.englishName || "default"}`;
     const newQuantity = item.quantity + delta;
@@ -92,6 +94,9 @@ export default function WideHeaderMiddle() {
     0
   );
 
+  // بررسی آیا در صفحه search هستیم
+  const isSearchPage = pathname === "/search";
+
   return (
     <section className="bg-[#F9F9F9] w-full py-2">
       <div className="flex justify-between h-auto items-center w-[90%] gap-2 m-auto">
@@ -100,19 +105,22 @@ export default function WideHeaderMiddle() {
             <span className="font-semibold neiriz text-xl ml-1">ز</span>
             <span className="font-semibold neiriz text-xl">یبولند</span>
           </Link>
-          <a
-            href="/search"
-            className="flex w-1/2 items-center border border-[#d9d6d6] rounded-lg overflow-hidden"
-          >
-            <input
-              className="w-full outline-0 px-2 text-base"
-              type="text"
-              placeholder="جستجو"
-            />
-            <button className="bg-[#EDEDED] p-2">
-              <SearchOutlined fontSize="medium" />
-            </button>
-          </a>
+          {/* باکس سرچ - فقط در صفحات غیر از search نمایش داده شود */}
+          {!isSearchPage && (
+            <a
+              href="/search"
+              className="flex w-1/2 items-center border border-[#d9d6d6] rounded-lg overflow-hidden"
+            >
+              <input
+                className="w-full outline-0 px-2 text-base"
+                type="text"
+                placeholder="جستجو"
+              />
+              <button className="bg-[#EDEDED] p-2">
+                <SearchOutlined fontSize="medium" />
+              </button>
+            </a>
+          )}
         </div>
         <div className="flex w-[33%] text-center justify-center gap-3 items-center">
           <Link href="/" className="font-semibold newyork text-xl">
@@ -190,116 +198,115 @@ export default function WideHeaderMiddle() {
                 <div className="flex-1 p-4 overflow-y-auto">
                   {cartItems.length > 0 ? (
                     <div className="space-y-4">
-             {cartItems.map((item) => {
-  // ۱. استخراج قیمت واحد اصلی (بدون تخفیف) از دیتای ذخیره شده در آیتم
-  const originalUnitPrice = item.priceType === "wholesale" 
-    ? (item.baseWholesalePrice || 0) 
-    : (item.baseRetailPrice || 0);
+                      {cartItems.map((item) => {
+                        // ۱. استخراج قیمت واحد اصلی (بدون تخفیف) از دیتای ذخیره شده در آیتم
+                        const originalUnitPrice = item.priceType === "wholesale" 
+                          ? (item.baseWholesalePrice || 0) 
+                          : (item.baseRetailPrice || 0);
 
-  // ۲. استخراج قیمت واحد پرداختی (که تخفیف قبلاً روی آن اعمال شده)
-  const payableUnitPrice = parseInt(item.price.replace(/,/g, ""), 10);
+                        // ۲. استخراج قیمت واحد پرداختی (که تخفیف قبلاً روی آن اعمال شده)
+                        const payableUnitPrice = parseInt(item.price.replace(/,/g, ""), 10);
 
-  // ۳. محاسبه مجموع کل برای این ردیف (تعداد ضربدر قیمت با تخفیف)
-  const itemTotalPayable = payableUnitPrice * item.quantity;
+                        // ۳. محاسبه مجموع کل برای این ردیف (تعداد ضربدر قیمت با تخفیف)
+                        const itemTotalPayable = payableUnitPrice * item.quantity;
 
-  return (
-    <div
-      key={`${item.id}-${item.color?.englishName || "default"}`}
-      className="flex items-start gap-4 border-b border-[#e5e7eb] pb-4"
-    >
-      {/* تصویر محصول */}
-      <img
-        src={item.image}
-        alt={item.title}
-        className="w-20 h-20 object-cover rounded-lg border flex-shrink-0"
-      />
+                        return (
+                          <div
+                            key={`${item.id}-${item.color?.englishName || "default"}`}
+                            className="flex items-start gap-4 border-b border-[#e5e7eb] pb-4"
+                          >
+                            {/* تصویر محصول */}
+                            <img
+                              src={item.image}
+                              alt={item.title}
+                              className="w-20 h-20 object-cover rounded-lg border flex-shrink-0"
+                            />
 
-      <div className="flex-1 min-w-0">
-        <h3 className="text-sm font-semibold text-[#374151] yekan line-clamp-2 leading-6">
-          {item.title}
-        </h3>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="text-sm font-semibold text-[#374151] yekan line-clamp-2 leading-6">
+                                {item.title}
+                              </h3>
 
-        {/* نمایش رنگ انتخاب شده */}
-        {item.color && (
-          <div className="flex items-center gap-2 mt-2">
-            <span className="text-xs text-[#6b7280] yekan">رنگ:</span>
-            <div className="flex items-center gap-1.5">
-              <div
-                className="w-4 h-4 rounded-full border border-gray-300"
-                style={{ backgroundColor: item.color.hexCode }}
-              />
-              <span className="text-xs text-[#6b7280] yekan">
-                {item.color.persianName || item.color.englishName}
-              </span>
-            </div>
-          </div>
-        )}
+                              {/* نمایش رنگ انتخاب شده */}
+                              {item.color && (
+                                <div className="flex items-center gap-2 mt-2">
+                                  <span className="text-xs text-[#6b7280] yekan">رنگ:</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <div
+                                      className="w-4 h-4 rounded-full border border-gray-300"
+                                      style={{ backgroundColor: item.color.hexCode }}
+                                    />
+                                    <span className="text-xs text-[#6b7280] yekan">
+                                      {item.color.persianName || item.color.englishName}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
 
-        {/* بخش جزئیات قیمت */}
-        <div className="mt-2 space-y-1 text-sm yekan">
-          <div className="flex justify-between items-center text-[#6b7280]">
-            <span>نوع خرید:</span>
-            <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">
-              {item.priceType === "single" ? "تکی" : "عمده"}
-            </span>
-          </div>
+                              {/* بخش جزئیات قیمت */}
+                              <div className="mt-2 space-y-1 text-sm yekan">
+                                <div className="flex justify-between items-center text-[#6b7280]">
+                                  <span>نوع خرید:</span>
+                                  <span className="bg-gray-100 px-2 py-0.5 rounded text-xs">
+                                    {item.priceType === "single" ? "تکی" : "عمده"}
+                                  </span>
+                                </div>
 
-          <div className="flex justify-between items-center text-[#6b7280]">
+                                <div className="flex justify-between items-center text-[#6b7280]">
+                                  <span>{item.priceType === "single" ? "قیمت واحد اصلی:" : "قیمت واحد عمده"}</span>
+                                  <span>{originalUnitPrice.toLocaleString("fa-IR")} تومان</span>
+                                </div>
 
-            <span>               {item.priceType === "single" ? "قیمت واحد اصلی:" :"قیمت واحد عمده" }</span>
-            <span>{originalUnitPrice.toLocaleString("fa-IR")} تومان</span>
-          </div>
+                                {/* نمایش درصد تخفیف فقط اگر وجود داشته باشد */}
+                                {item.discount !== "0" && (
+                                  <div className="flex justify-between items-center text-green-600 text-xs">
+                                    <span>تخفیف:</span>
+                                    <span className="font-bold">{item.discount}</span>
+                                  </div>
+                                )}
 
-          {/* نمایش درصد تخفیف فقط اگر وجود داشته باشد */}
-          {item.discount !== "0" && (
-            <div className="flex justify-between items-center text-green-600 text-xs">
-              <span>تخفیف:</span>
-              <span className="font-bold">{item.discount}</span>
-            </div>
-          )}
+                                <div className="flex justify-between items-center font-bold text-[#805B99] pt-1 border-t border-dashed border-gray-200 mt-1">
+                                  <span>مجموع آیتم:</span>
+                                  <span className="text-base">
+                                    {itemTotalPayable.toLocaleString("fa-IR")} تومان
+                                  </span>
+                                </div>
+                              </div>
 
-          <div className="flex justify-between items-center font-bold text-[#805B99] pt-1 border-t border-dashed border-gray-200 mt-1">
-            <span>مجموع آیتم:</span>
-            <span className="text-base">
-              {itemTotalPayable.toLocaleString("fa-IR")} تومان
-            </span>
-          </div>
-        </div>
+                              {/* دکمه‌های کنترل تعداد و حذف */}
+                              <div className="flex items-center justify-between mt-3">
+                                <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-2 py-1">
+                                  <button
+                                    onClick={() => handleQuantityChange(item, 1)}
+                                    className="text-[#805B99] hover:scale-110 transition-transform"
+                                    title="افزایش"
+                                  >
+                                    <AddCircleOutline fontSize="small" />
+                                  </button>
+                                  <span className="font-bold text-base w-6 text-center">
+                                    {item.quantity}
+                                  </span>
+                                  <button
+                                    onClick={() => handleQuantityChange(item, -1)}
+                                    className="text-[#805B99] hover:scale-110 transition-transform"
+                                    title="کاهش"
+                                  >
+                                    <RemoveCircleOutline fontSize="small" />
+                                  </button>
+                                </div>
 
-        {/* دکمه‌های کنترل تعداد و حذف */}
-        <div className="flex items-center justify-between mt-3">
-          <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-2 py-1">
-            <button
-              onClick={() => handleQuantityChange(item, 1)}
-              className="text-[#805B99] hover:scale-110 transition-transform"
-              title="افزایش"
-            >
-              <AddCircleOutline fontSize="small" />
-            </button>
-            <span className="font-bold text-base w-6 text-center">
-              {item.quantity}
-            </span>
-            <button
-              onClick={() => handleQuantityChange(item, -1)}
-              className="text-[#805B99] hover:scale-110 transition-transform"
-              title="کاهش"
-            >
-              <RemoveCircleOutline fontSize="small" />
-            </button>
-          </div>
-
-          <button
-            onClick={() => handleRemoveItem(item)}
-            className="text-red-500 hover:text-red-700 text-xs yekan font-medium flex items-center gap-1"
-          >
-            <Close fontSize="inherit" />
-            حذف از سبد
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-})}
+                                <button
+                                  onClick={() => handleRemoveItem(item)}
+                                  className="text-red-500 hover:text-red-700 text-xs yekan font-medium flex items-center gap-1"
+                                >
+                                  <Close fontSize="inherit" />
+                                  حذف از سبد
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
 
                       <div className="mt-6 pt-4 border-t-2 border-[#805B99]">
                         <p className="text-xl font-bold text-[#374151] yekan text-center">
