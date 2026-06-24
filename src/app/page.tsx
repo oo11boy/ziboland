@@ -20,6 +20,14 @@ export async function generateMetadata(): Promise<Metadata> {
     return {
       title: settings?.site_name || "زیبولند | فروشگاه آنلاین",
       description: settings?.site_description || "بهترین فروشگاه اینترنتی برای خرید محصولات باکیفیت",
+   icons: {
+        icon: [
+          { url: '/icons/favicon.ico', sizes: 'any' },
+          { url: '/icons/favicon.ico', type: 'image/x-icon' },
+        ],
+        shortcut: '/icons/favicon.ico',
+        apple: '/icons/favicon.ico', // یا می‌تونید یه آیکون جدا برای اپل بذارید
+      },
     };
   } catch (error) {
     return {

@@ -601,10 +601,7 @@ const OrdersPage = () => {
                   label="نام و نام خانوادگی"
                   value={`${selectedOrder.first_name} ${selectedOrder.last_name}`}
                 />
-                <InfoItem
-                  label="نام کاربری"
-                  value={`@${selectedOrder.username}`}
-                />
+          
                 <InfoItem label="ایمیل" value={selectedOrder.email} />
                 <InfoItem
                   label="شماره تلفن"
@@ -678,7 +675,24 @@ const OrdersPage = () => {
                             {item.color.englishName})
                           </p>
                         )}
-                        <p className="text-sm">تعداد: {item.quantity}</p>
+                      {/* فقط عدد تعداد */}
+<p className="text-sm flex items-center gap-2">
+  <span>تعداد:</span>
+  <span className={`
+    font-bold
+    ${item.quantity > 1 
+      ? 'text-2xl text-orange-500 dark:text-orange-400' 
+      : 'text-base text-gray-700 dark:text-gray-300'
+    }
+  `}>
+    {item.quantity}
+  </span>
+  {item.quantity > 1 && (
+    <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">
+      {item.quantity} عدد
+    </span>
+  )}
+</p>
                         <p className="text-sm font-medium">
                           قیمت واحد: {item.unit_price.toLocaleString()} تومان
                         </p>
