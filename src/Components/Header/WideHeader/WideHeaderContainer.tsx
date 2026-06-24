@@ -29,13 +29,13 @@ export default function WideHeaderContainer(): React.JSX.Element | null {
   }
 
   return (
-    <header className="max-lg-none WideHeaderContactUs yekan relative">
+    <header className="max-lg-none  z-[998]  WideHeaderContactUs yekan relative">
       {/* این بخش با اسکرول بالا می‌رود و غیب می‌شود */}
       <WideHeaderContactUs  />
 
       {/* این کانتینر وقتی اسکرول انجام شود، به بالای صفحه می‌چسبد */}
       <div
-        className={`w-full z-[1000] transition-all duration-300 ${
+        className={`w-full transition-all duration-300 ${
           isSticky 
             ? "fixed top-0 left-0 shadow-md animate-slideDown" 
             : "relative"
