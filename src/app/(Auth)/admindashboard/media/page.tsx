@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/Components/ui/card";
 import { Button } from "@/Components/ui/button";
 import { Input } from "@/Components/ui/input";
-import { Upload, X, Image as CheckCircle, Loader2, Trash2 } from "lucide-react";
+import { Upload, X, CheckCircle, Loader2, Trash2, PlayCircle } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { SITE } from "@/lib/MainRoutes";
 import Image from "next/image";
@@ -12,6 +12,7 @@ import Image from "next/image";
 interface UploadedFile {
   url: string;
   name: string;
+  type?: string;
 }
 
 const MediaPage = () => {
@@ -20,6 +21,17 @@ const MediaPage = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [confirmDelete, setConfirmDelete] = useState<UploadedFile | null>(null);
+
+  // تشخیص نوع فایل
+  const isVideo = (url: string): boolean => {
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv'];
+    return videoExtensions.some(ext => url.toLowerCase().includes(ext));
+  };
+
+  const isImage = (url: string): boolean => {
+    const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+    return imageExtensions.some(ext => url.toLowerCase().includes(ext));
+  };
 
   // 📌 گرفتن لیست فایل‌های قبلی
   useEffect(() => {
@@ -74,7 +86,11 @@ const MediaPage = () => {
         });
         if (!res.ok) throw new Error("خطا در آپلود");
         const data = await res.json();
-        return { url: data.url, name: file.name };
+        return { 
+          url: data.url, 
+          name: file.name,
+          type: file.type
+        };
       } catch (error) {
         toast.error(`خطا در آپلود ${file.name} ` + error);
         return null;
@@ -107,6 +123,70 @@ const MediaPage = () => {
     } finally {
       setConfirmDelete(null);
     }
+  };
+
+  // تابع کپی لینک کامل
+  const copyFullUrl = (fileUrl: string) => {
+    const fullUrl = `${SITE}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      toast.success("لینک با موفقیت کپی شد!");
+    }).catch(() => {
+      toast.error("خطا در کپی لینک");
+    });
+  };
+
+  // رندر پیش‌نمایش فایل (تصویر یا ویدیو)
+  const renderFilePreview = (file: UploadedFile, className: string = "w-full h-24 object-cover rounded-lg mb-2") => {
+    const fileUrl = file.url;
+    const fileName = file.name || "فایل";
+
+    if (isVideo(fileUrl)) {
+      return (
+        <div className={`relative ${className}`}>
+          <video
+            src={fileUrl}
+            className="w-full h-full object-cover rounded-lg"
+            muted
+            playsInline
+            preload="metadata"
+          />
+          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-lg">
+            <PlayCircle className="w-10 h-10 text-white opacity-80" />
+          </div>
+        </div>
+      );
+    }
+
+    if (isImage(fileUrl)) {
+      return (
+        <Image
+          width={160}
+          height={160}
+          src={fileUrl}
+          alt={fileName}
+          className={className}
+          onError={(e) => {
+            // اگر تصویر لود نشد، یک placeholder نمایش بده
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const parent = target.parentElement;
+            if (parent) {
+              const div = document.createElement('div');
+              div.className = `${className} flex items-center justify-center bg-gray-200 dark:bg-gray-700`;
+              div.textContent = '📄';
+              parent.appendChild(div);
+            }
+          }}
+        />
+      );
+    }
+
+    // برای سایر فایل‌ها
+    return (
+      <div className={`${className} flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-4xl`}>
+        📄
+      </div>
+    );
   };
 
   return (
@@ -152,33 +232,51 @@ const MediaPage = () => {
                 فایل‌های انتخاب‌شده:
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {files.map((file) => (
-                  <div
-                    key={file.name}
-                    className="relative bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden group"
-                  >
-                    <Image
-                      width={160}
-                      height={160}
-                      src={previews[file.name] || ""}
-                      alt={file.name}
-                      className="w-full h-32 object-cover"
-                    />
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-white hover:bg-red-500"
-                        onClick={() => removeFile(file.name)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                {files.map((file) => {
+                  const isVideoFile = file.type?.startsWith('video/');
+                  return (
+                    <div
+                      key={file.name}
+                      className="relative bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden group"
+                    >
+                      {isVideoFile ? (
+                        <div className="relative w-full h-32">
+                          <video
+                            src={previews[file.name] || ""}
+                            className="w-full h-full object-cover"
+                            muted
+                            playsInline
+                            preload="metadata"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30">
+                            <PlayCircle className="w-12 h-12 text-white opacity-80" />
+                          </div>
+                        </div>
+                      ) : (
+                        <Image
+                          width={160}
+                          height={160}
+                          src={previews[file.name] || ""}
+                          alt={file.name}
+                          className="w-full h-32 object-cover"
+                        />
+                      )}
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-white hover:bg-red-500"
+                          onClick={() => removeFile(file.name)}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <p className="p-2 text-xs text-gray-600 dark:text-gray-300 truncate text-right">
+                        {file.name}
+                      </p>
                     </div>
-                    <p className="p-2 text-xs text-gray-600 dark:text-gray-300 truncate text-right">
-                      {file.name}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <Button
                 onClick={handleUpload}
@@ -218,31 +316,43 @@ const MediaPage = () => {
                   key={index}
                   className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900 dark:to-green-800 rounded-xl p-3 text-center shadow-md hover:shadow-lg transition-all"
                 >
-                  <Image
-                    width={160}
-                    height={160}
-                    src={file.url}
-                    alt={file.name}
-                    className="w-full h-24 object-cover rounded-lg mb-2"
-                  />
-                  <p className="text-xs text-gray-700 dark:text-gray-300 truncate">
-                    {file.name}
+                  {/* پیش‌نمایش فایل */}
+                  {renderFilePreview(file)}
+                  
+                  <p className="text-xs text-gray-700 dark:text-gray-300 truncate mt-2">
+                    {file.name || "فایل"}
                   </p>
+                  
+                  {/* برچسب نوع فایل */}
+                  <div className="mt-1">
+                    {isVideo(file.url) ? (
+                      <span className="text-[10px] bg-purple-200 dark:bg-purple-700 text-purple-800 dark:text-purple-200 px-2 py-0.5 rounded-full">
+                        ویدیو
+                      </span>
+                    ) : isImage(file.url) ? (
+                      <span className="text-[10px] bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 px-2 py-0.5 rounded-full">
+                        تصویر
+                      </span>
+                    ) : (
+                      <span className="text-[10px] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-0.5 rounded-full">
+                        فایل
+                      </span>
+                    )}
+                  </div>
+
                   <div className="mt-2 flex justify-center gap-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-green-600 border-green-600"
-                      onClick={() =>
-                        navigator.clipboard.writeText(SITE + "/" + file.url)
-                      }
+                      className="text-green-600 border-green-600 hover:bg-green-50 dark:hover:bg-green-900"
+                      onClick={() => copyFullUrl(file.url)}
                     >
-                      کپی URL
+                      کپی لینک
                     </Button>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-red-600 border-red-600"
+                      className="text-red-600 border-red-600 hover:bg-red-50 dark:hover:bg-red-900"
                       onClick={() => setConfirmDelete(file)}
                     >
                       <Trash2 className="h-4 w-4" />
