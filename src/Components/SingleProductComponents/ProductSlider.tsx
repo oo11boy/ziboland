@@ -168,7 +168,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({
 
     return (
       <div 
-        className={`relative w-full aspect-[3/2] bg-gray-50 cursor-zoom-in ${className}`}
+        className={`relative w-full aspect-[3/2] bg-gray-50 cursor-zoom-in overflow-hidden rounded-xl ${className}`}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
@@ -248,9 +248,9 @@ const ProductSlider: React.FC<ProductSliderProps> = ({
             onSlideChange={(s) => setActiveIndex(s.realIndex)}
           >
             {allMediaItems.map((item, index) => (
-              <SwiperSlide key={index}>
+              <SwiperSlide key={index} className="overflow-hidden">
                 {item.type === "video" ? (
-                  <div className="w-full aspect-[3/2] bg-black">
+                  <div className="w-full aspect-[3/2] bg-black overflow-hidden">
                     <video
                       src={item.src}
                       className="w-full h-full object-contain"
@@ -264,8 +264,8 @@ const ProductSlider: React.FC<ProductSliderProps> = ({
                     </video>
                   </div>
                 ) : (
-                  <div className="w-full aspect-[3/2] cursor-zoom-in bg-gray-50 relative" onClick={toggleLightbox}>
-                    <div className="swiper-zoom-container flex items-center justify-center">
+                  <div className="w-full aspect-[3/2] cursor-zoom-in bg-gray-50 relative overflow-hidden" onClick={toggleLightbox}>
+                    <div className="swiper-zoom-container flex items-center justify-center w-full h-full overflow-hidden">
                       <Image
                         src={item.src}
                         alt={item.alt}
@@ -292,7 +292,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({
 
           {/* تصاویر کوچک ناوبری */}
           <Swiper 
-            className="thumbs-slider mt-4" 
+            className="thumbs-slider mt-4 overflow-hidden" 
             modules={[Thumbs]} 
             onSwiper={setThumbsSwiper} 
             spaceBetween={8} 
@@ -300,7 +300,7 @@ const ProductSlider: React.FC<ProductSliderProps> = ({
             watchSlidesProgress
           >
             {allMediaItems.map((item, index) => (
-              <SwiperSlide key={index} className="!w-auto">
+              <SwiperSlide key={index} className="!w-auto overflow-hidden">
                 {renderThumbnail(item, index)}
               </SwiperSlide>
             ))}

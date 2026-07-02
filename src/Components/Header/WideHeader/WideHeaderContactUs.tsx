@@ -122,14 +122,14 @@ export default function WideHeaderContactUs() {
                   target="_blank"
                   rel="noopener noreferrer"
                   href={link.link}
-                  className="border-2 hover:border-[#C7C7C7] bg-black hover:bg-[#005B99] p-2 rounded-full flex justify-center items-center transition-all duration-300"
+                  className="border-2 hover:border-[#C7C7C7] border-black  hover:bg-[#005B99] rounded-full flex justify-center items-center transition-all duration-300"
                   title={link.title}
                 >
                   {link.icon ? (
                     <img
                       src={link.icon}
                       alt={link.title}
-                      className="!w-[20px] !h-[20px] object-contain"
+                      className="!w-[30px] !h-[30px] object-contain"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
