@@ -167,16 +167,7 @@ export default function AddressesContent({
                   aria-required="true"
                 />
               </div>
-              <div className="sm:col-span-2">
-                <label className="ud-address-form-label">جزئیات اضافی (اختیاری)</label>
-                <textarea
-                  value={newAddress.extra_details}
-                  onChange={(e) => setNewAddress({ ...newAddress, extra_details: e.target.value })}
-                  className="ud-address-form-input"
-                  placeholder="جزئیات اضافی (مانند توضیحات تحویل)"
-                  rows={4}
-                />
-              </div>
+     
               <div>
                 <label className="ud-address-form-label">آدرس پیش‌فرض</label>
                 <input

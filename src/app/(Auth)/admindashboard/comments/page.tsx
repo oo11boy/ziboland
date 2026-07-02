@@ -59,7 +59,6 @@ const CommentsPage = () => {
       setLoading(false);
     }
   };
-
   useEffect(() => {
     fetchComments();
   }, []);
@@ -228,23 +227,54 @@ const CommentsPage = () => {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="transition-all duration-300">
-          <p className="text-gray-700 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
-            {comment.text}
-          </p>
-          <p className="text-sm text-gray-400 mt-2">
-            {new Date(comment.date).toLocaleDateString("fa-IR")}
-          </p>
-          {comment.replies &&
-            comment.replies.length > 0 &&
-            !comment.collapsed && (
-              <div className="mt-4 space-y-3">
-                {comment.replies.map((reply) =>
-                  renderComment(reply, level + 1),
-                )}
-              </div>
-            )}
-        </CardContent>
+  <CardContent className="transition-all duration-300">
+  {/* امتیاز */}
+  {comment.rating !== null && comment.rating !== undefined && (
+    <div className="flex items-center gap-1 mb-3">
+      <span className="text-sm text-gray-600 dark:text-gray-300 ml-2">
+        امتیاز:
+      </span>
+
+      {[1, 2, 3, 4, 5].map((star) => (
+        <span
+          key={star}
+          className={`text-xl ${
+            star <= (comment.rating ?? 0)
+              ? "text-yellow-500"
+              : "text-gray-300 dark:text-gray-600"
+          }`}
+        >
+          ★
+        </span>
+      ))}
+
+      <span className="text-sm text-gray-500 mr-2">
+        ({comment.rating ?? 0}/5)
+      </span>
+    </div>
+  )}
+
+  {/* متن کامنت */}
+  <p className="text-gray-700 dark:text-gray-200 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+    {comment.text}
+  </p>
+
+  {/* تاریخ */}
+  <p className="text-sm text-gray-400 mt-2">
+    {new Date(comment.date).toLocaleDateString("fa-IR")}
+  </p>
+
+  {/* ریپلای‌ها */}
+  {comment.replies &&
+    comment.replies.length > 0 &&
+    !comment.collapsed && (
+      <div className="mt-4 space-y-3">
+        {comment.replies.map((reply) =>
+          renderComment(reply, level + 1)
+        )}
+      </div>
+    )}
+</CardContent>
       </Card>
     );
   };

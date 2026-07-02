@@ -18,7 +18,6 @@ interface FormData {
   building_number: string;
   unit: string;
   postal_code: string;
-  extra_details: string;
   is_default: boolean;
 }
 
@@ -43,9 +42,9 @@ export default function Checkout() {
     building_number: "",
     unit: "",
     postal_code: "",
-    extra_details: "",
     is_default: false,
   });
+  const [extraDetails, setExtraDetails] = useState<string>(""); // فیلد جداگانه برای توضیحات اضافی
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [submissionError, setSubmissionError] = useState<string>("");
   const token = Cookies.get("authToken");
@@ -109,7 +108,6 @@ export default function Checkout() {
         building_number: addr.building_number || "",
         unit: addr.unit || "",
         postal_code: addr.postal_code,
-        extra_details: addr.extra_details || "",
         is_default: addr.is_default,
       });
       setShowAddressForm(false);
@@ -127,7 +125,6 @@ export default function Checkout() {
         building_number: "",
         unit: "",
         postal_code: "",
-        extra_details: "",
         is_default: false,
       });
     }
@@ -177,7 +174,6 @@ export default function Checkout() {
     const payload = {
       ...formData,
       unit: formData.unit || null,
-      extra_details: formData.extra_details || null,
     };
     try {
       const res = await fetch("/api/addresses", {
@@ -231,6 +227,7 @@ export default function Checkout() {
         color: item.color,
       })),
       deliveryType,
+      extraDetails: extraDetails, // اضافه کردن توضیحات جداگانه به payload
       amount: total * 10,
       callbackUrl: `${window.location.origin}/api/payment/verify`,
     };
@@ -276,7 +273,22 @@ export default function Checkout() {
     return total + price * item.quantity;
   }, 0);
 
-  const deliveryCost: number = deliveryType === "express" ? 129900 : 0;
+  // محاسبه هزینه ارسال بر اساس نوع انتخاب‌شده
+  const deliveryCost: number = (() => {
+    switch (deliveryType) {
+      case "normal_free":
+        return 0;
+      case "normal_express":
+        return 129900;
+      case "fast_tehran":
+        return 199900;
+      case "fast_other":
+        return 0; // هزینه توسط پشتیبان تعیین می‌شود
+      default:
+        return 0;
+    }
+  })();
+
   const total = subtotal + deliveryCost;
 
   return (
@@ -290,30 +302,33 @@ export default function Checkout() {
                 روش ارسال
               </h2>
               <div className="space-y-3">
+                {/* عادی - رایگان */}
                 <label className="flex items-center p-3 sm:p-4 border rounded-lg cursor-pointer hover:border-gray-900 transition">
                   <input
                     type="radio"
                     name="delivery"
-                    value="normal"
-                    checked={deliveryType === "normal"}
+                    value="normal_free"
+                    checked={deliveryType === "normal_free"}
                     onChange={handleDeliveryChange}
                     className="form-radio text-gray-900"
                   />
                   <div className="mr-3 sm:mr-4">
                     <div className="font-semibold text-sm sm:text-base">
-                      ارسال عادی
+                      ارسال عادی (رایگان)
                     </div>
                     <div className="text-xs sm:text-sm text-gray-600">
                       رایگان • ۳-۵ روز کاری
                     </div>
                   </div>
                 </label>
+
+                {/* عادی - پیشتاز */}
                 <label className="flex items-center p-3 sm:p-4 border rounded-lg cursor-pointer hover:border-gray-900 transition">
                   <input
                     type="radio"
                     name="delivery"
-                    value="express"
-                    checked={deliveryType === "express"}
+                    value="normal_express"
+                    checked={deliveryType === "normal_express"}
                     onChange={handleDeliveryChange}
                     className="form-radio text-gray-900"
                   />
@@ -322,7 +337,50 @@ export default function Checkout() {
                       ارسال پیشتاز
                     </div>
                     <div className="text-xs sm:text-sm text-gray-600">
-                      129,900 تومان • ۱-۲ روز کاری
+                      ۱۲۹,۹۰۰ تومان • ۱-۲ روز کاری
+                    </div>
+                  </div>
+                </label>
+
+                {/* سریع - تهران و مناطق ۲۲ گانه */}
+                <label className="flex items-center p-3 sm:p-4 border rounded-lg cursor-pointer hover:border-gray-900 transition">
+                  <input
+                    type="radio"
+                    name="delivery"
+                    value="fast_tehran"
+                    checked={deliveryType === "fast_tehran"}
+                    onChange={handleDeliveryChange}
+                    className="form-radio text-gray-900"
+                  />
+                  <div className="mr-3 sm:mr-4">
+                    <div className="font-semibold text-sm sm:text-base">
+                      ارسال سریع (شهر تهران و مناطق ۲۲ گانه)
+                    </div>
+                    <div className="text-xs sm:text-sm text-gray-600">
+                      ۱۹۹,۹۰۰ تومان • ۳-۵ ساعت
+                    </div>
+                    <div className="text-xs sm:text-sm text-blue-600 mt-1">
+                      ارسال همان روز در بازه ۹ تا ۲۲ در صورت ثبت سفارش تا قبل از ساعت ۱۶
+                    </div>
+                  </div>
+                </label>
+
+                {/* سریع - استان تهران (به جز شهر تهران) */}
+                <label className="flex items-center p-3 sm:p-4 border rounded-lg cursor-pointer hover:border-gray-900 transition">
+                  <input
+                    type="radio"
+                    name="delivery"
+                    value="fast_other"
+                    checked={deliveryType === "fast_other"}
+                    onChange={handleDeliveryChange}
+                    className="form-radio text-gray-900"
+                  />
+                  <div className="mr-3 sm:mr-4">
+                    <div className="font-semibold text-sm sm:text-base">
+                      ارسال سریع (استان تهران به جز شهر تهران)
+                    </div>
+                    <div className="text-xs sm:text-sm text-gray-600">
+                      تماس با پشتیبان جهت هزینه و زمان ارسال
                     </div>
                   </div>
                 </label>
@@ -515,7 +573,7 @@ export default function Checkout() {
                     name="postal_code"
                     value={formData.postal_code}
                     onChange={handleInputChange}
-                    placeholder="کدپستی (اختیاری)" // تغییر متن راهنما
+                    placeholder="کدپستی (اختیاری)"
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
                   />
                   {errors.postal_code && (
@@ -530,14 +588,6 @@ export default function Checkout() {
                     placeholder="واحد (اختیاری)"
                     className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
                   />
-                  <textarea
-                    name="extra_details"
-                    value={formData.extra_details}
-                    onChange={handleInputChange}
-                    placeholder="توضیحات اضافی (اختیاری)"
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-                    rows={3}
-                  ></textarea>
 
                   <div className="sm:col-span-2 flex justify-end gap-3">
                     <button
@@ -557,6 +607,20 @@ export default function Checkout() {
                   </div>
                 </form>
               )}
+            </section>
+
+            {/* بخش توضیحات اضافی - خارج از باکس آدرس */}
+            <section className="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">
+                توضیحات اضافی (اختیاری)
+              </h2>
+              <textarea
+                value={extraDetails}
+                onChange={(e) => setExtraDetails(e.target.value)}
+                placeholder="اگر نکته یا توضیح خاصی برای سفارش خود دارید، اینجا بنویسید..."
+                className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-300 text-sm sm:text-base min-h-[100px]"
+                rows={4}
+              />
             </section>
           </div>
 

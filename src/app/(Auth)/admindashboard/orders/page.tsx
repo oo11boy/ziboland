@@ -24,14 +24,14 @@ const InfoItem = ({
   value,
 }: {
   label: string;
-  value: string | number | null | undefined; // این خط رو اضافه کن
+  value: string | number | null | undefined;
 }) => (
   <p className="text-sm">
     <span className="font-semibold text-gray-700 dark:text-gray-300">
       {label}:
     </span>{" "}
     <span className="text-gray-800 dark:text-gray-100">
-      {value != null ? value : "-"} {/* این خط رو جایگزین کن */}
+      {value != null ? value : "-"}
     </span>
   </p>
 );
@@ -51,12 +51,31 @@ const Section = ({
   </div>
 );
 
+// تابع ترجمه روش ارسال
+const translateShippingMethod = (method: string) => {
+  const map: Record<string, string> = {
+    "normal_free": "عادی (رایگان)",
+    "normal_express": "پیشتاز",
+    "fast_tehran": "سریع (تهران و مناطق ۲۲ گانه)",
+    "fast_other": "سریع (استان تهران به جز شهر تهران)",
+    // برای سازگاری با روش‌های قدیمی
+    "عادی (رایگان)": "عادی (رایگان)",
+    "پیشتاز": "پیشتاز",
+    "سریع (تهران و مناطق ۲۲ گانه)": "سریع (تهران و مناطق ۲۲ گانه)",
+    "سریع (استان تهران به جز شهر تهران)": "سریع (استان تهران به جز شهر تهران)",
+    "عادی": "عادی",
+    "express": "اکسپرس",
+  };
+  return map[method] || method;
+};
+
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<{
     [key: number]: boolean;
@@ -91,6 +110,7 @@ const OrdersPage = () => {
       toast.error(err.message || "مشکلی در حذف رخ داد");
     }
   };
+
   const fetchOrders = async () => {
     try {
       const token = Cookies.get("authToken");
@@ -126,7 +146,6 @@ const OrdersPage = () => {
       setLoading(false);
     }
   };
-
   // فیلتر ترکیبی: جستجو + وضعیت پرداخت
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -148,7 +167,7 @@ const OrdersPage = () => {
     });
   }, [orders, searchTerm, paymentStatusFilter]);
 
-  // تغییر وضعیت سفارش — نسخه جدید و حرفه‌ای
+  // تغییر وضعیت سفارش
   const handleStatusChange = async (
     orderId: number,
     newStatus: Order["status"],
@@ -156,8 +175,7 @@ const OrdersPage = () => {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
 
-    // اگر پرداخت نشده و می‌خوای وضعیت رو به "ارسال شده" یا "تحویل داده شده" ببری → هشدار بده
-    if (
+  if (
       order.payment_status !== "paid" &&
       ["shipped", "delivered"].includes(newStatus)
     ) {
@@ -173,9 +191,6 @@ const OrdersPage = () => {
         return;
       }
     }
-
-    // اگر می‌خوای سفارش در انتظار پرداخت رو لغو کنی → اجازه بده
-    // اگر می‌خوای به "در حال پردازش" ببری → هم اجازه بده (مثلاً سفارش تلفنی)
 
     if (
       !confirm(
@@ -221,6 +236,7 @@ const OrdersPage = () => {
       setStatusUpdating((prev) => ({ ...prev, [orderId]: false }));
     }
   };
+
   // ترجمه وضعیت‌ها
   const translateStatus = (status: string) => {
     const map: Record<string, string> = {
@@ -247,10 +263,12 @@ const OrdersPage = () => {
     setSelectedOrder(order);
     setIsModalOpen(true);
   };
+
   const copyToClipboard = (text: any) => {
     navigator.clipboard.writeText(text);
     toast.success("شماره کاربر کپی شد", { autoClose: 2000 });
   };
+
   // لودینگ
   if (loading) {
     return (
@@ -353,6 +371,9 @@ const OrdersPage = () => {
                   <p>
                     <strong>وضعیت:</strong> {translateStatus(order.status)}
                   </p>
+                  <p>
+                    <strong>روش ارسال:</strong> {translateShippingMethod(order.shipping_method)}
+                  </p>
                   <p className="text-xs text-gray-500">
                     {new Date(order.created_at).toLocaleDateString("fa-IR")}
                   </p>
@@ -440,6 +461,9 @@ const OrdersPage = () => {
                         وضعیت پرداخت
                       </th>
                       <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        روش ارسال
+                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
                         تاریخ
                       </th>
                       <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
@@ -518,6 +542,11 @@ const OrdersPage = () => {
                             }`}
                           >
                             {translatePaymentStatus(order.payment_status)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="text-sm text-gray-700 dark:text-gray-300">
+                            {translateShippingMethod(order.shipping_method)}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
@@ -601,7 +630,6 @@ const OrdersPage = () => {
                   label="نام و نام خانوادگی"
                   value={`${selectedOrder.first_name} ${selectedOrder.last_name}`}
                 />
-          
                 <InfoItem label="ایمیل" value={selectedOrder.email} />
                 <InfoItem
                   label="شماره تلفن"
@@ -629,11 +657,7 @@ const OrdersPage = () => {
                 />
                 <InfoItem
                   label="روش ارسال"
-                  value={
-                    selectedOrder.shipping_method === "express"
-                      ? "اکسپرس"
-                      : "عادی"
-                  }
+                  value={translateShippingMethod(selectedOrder.shipping_method)}
                 />
               </div>
 
@@ -675,24 +699,23 @@ const OrdersPage = () => {
                             {item.color.englishName})
                           </p>
                         )}
-                      {/* فقط عدد تعداد */}
-<p className="text-sm flex items-center gap-2">
-  <span>تعداد:</span>
-  <span className={`
-    font-bold
-    ${item.quantity > 1 
-      ? 'text-2xl text-orange-500 dark:text-orange-400' 
-      : 'text-base text-gray-700 dark:text-gray-300'
-    }
-  `}>
-    {item.quantity}
-  </span>
-  {item.quantity > 1 && (
-    <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">
-      {item.quantity} عدد
-    </span>
-  )}
-</p>
+                        <p className="text-sm flex items-center gap-2">
+                          <span>تعداد:</span>
+                          <span className={`
+                            font-bold
+                            ${item.quantity > 1 
+                              ? 'text-2xl text-orange-500 dark:text-orange-400' 
+                              : 'text-base text-gray-700 dark:text-gray-300'
+                            }
+                          `}>
+                            {item.quantity}
+                          </span>
+                          {item.quantity > 1 && (
+                            <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">
+                              {item.quantity} عدد
+                            </span>
+                          )}
+                        </p>
                         <p className="text-sm font-medium">
                           قیمت واحد: {item.unit_price.toLocaleString()} تومان
                         </p>
@@ -706,11 +729,11 @@ const OrdersPage = () => {
                 </div>
               </Section>
 
-              {selectedOrder.extra_details && (
-                <Section title="توضیحات اختیاری">
-                  {selectedOrder.extra_details}
-                </Section>
-              )}
+      {selectedOrder.extra_details && (
+  <Section title="توضیحات اضافی سفارش">
+    {selectedOrder.extra_details}
+  </Section>
+)}
 
               <div className="text-center mt-10">
                 <Button

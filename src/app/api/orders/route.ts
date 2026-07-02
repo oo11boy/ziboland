@@ -7,7 +7,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export async function POST(req: Request) {
   const body = await req.json();
-  const { userId, address, items, deliveryType, amount } = body;
+  const { userId, address, items, deliveryType, amount, extraDetails } = body;
 
   if (!userId || !address?.id || !items?.length || !deliveryType || !amount) {
     return NextResponse.json(
@@ -16,7 +16,8 @@ export async function POST(req: Request) {
     );
   }
 
-  const validDeliveryTypes = ["normal", "express"];
+  // 1. اعتبارسنجی نوع ارسال - 4 گزینه جدید
+  const validDeliveryTypes = ["normal_free", "normal_express", "fast_tehran", "fast_other"];
   if (!validDeliveryTypes.includes(deliveryType)) {
     return NextResponse.json(
       { error: "روش ارسال نامعتبر است" },
@@ -24,16 +25,32 @@ export async function POST(req: Request) {
     );
   }
 
+  // 2. هزینه‌های ارسال برای هر 4 گزینه
   const deliveryCosts: { [key: string]: number } = {
-    normal: 0,
-    express: 129900,
+    normal_free: 0,
+    normal_express: 129900,
+    fast_tehran: 199900,
+    fast_other: 0, // هزینه توسط پشتیبان تعیین می‌شود
   };
+
+  // 3. نام روش ارسال برای ذخیره در دیتابیس
+  const shippingMethodNames: { [key: string]: string } = {
+    normal_free: "عادی (رایگان)",
+    normal_express: "پیشتاز",
+    fast_tehran: "سریع (تهران و مناطق ۲۲ گانه)",
+    fast_other: "سریع (استان تهران به جز شهر تهران)",
+  };
+
   const itemsTotal = items.reduce(
     (sum: number, item: { price: number; quantity: number }) =>
       sum + item.price * item.quantity,
     0,
   );
-  const expectedAmount = (itemsTotal + deliveryCosts[deliveryType]) * 10;
+  
+  // محاسبه مبلغ مورد انتظار
+  const deliveryCost = deliveryCosts[deliveryType] || 0;
+  const expectedAmount = (itemsTotal + deliveryCost) * 10;
+  
   if (amount !== expectedAmount) {
     return NextResponse.json(
       { error: "مبلغ سفارش با آیتم‌ها مطابقت ندارد" },
@@ -88,13 +105,13 @@ export async function POST(req: Request) {
     }
     if (!isUnique) throw new Error("ناتوانی در تولید کد سفارش");
 
-    const shippingMethod = deliveryType === "express" ? "پیشتاز" : "عادی";
+    const shippingMethod = shippingMethodNames[deliveryType] || deliveryType;
 
     const [orderResult]: any = await conn.execute(
       `INSERT INTO orders 
-       (user_id, address_id, total_amount, shipping_method, status, payment_status, order_code)
-       VALUES (?, ?, ?, ?, 'pending', 'pending', ?)`,
-      [userId, address.id, amount, shippingMethod, orderCode],
+       (user_id, address_id, total_amount, shipping_method, status, payment_status, order_code, extra_details)
+       VALUES (?, ?, ?, ?, 'pending', 'pending', ?, ?)`,
+      [userId, address.id, amount, shippingMethod, orderCode, extraDetails || null],
     );
     const orderId = orderResult.insertId;
 

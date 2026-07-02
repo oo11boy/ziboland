@@ -57,7 +57,7 @@ export async function GET(request: Request) {
   a.building_number,
   a.unit,
   a.postal_code,
-  a.extra_details
+o.extra_details
 FROM orders o 
 JOIN users u ON o.user_id = u.id 
 JOIN addresses a ON o.address_id = a.id`,

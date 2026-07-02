@@ -1,77 +1,84 @@
 import UserDashboardContainer from "@/Components/Dashboards/UserDashboardComponents/UserDashboardContainer";
-import { cookies } from "next/headers"; // برای دریافت کوکی‌ها در سمت سرور
-import { API } from "@/lib/MainRoutes";
+import { cookies, headers } from "next/headers";
 import {
   AccountInfo,
   Address,
   Order,
-  RecentActivity,
   SupportTicket,
-  // WishlistItem,
 } from "@/types/types";
 import { Metadata } from "next";
 
-// تابع کمکی برای دریافت داده‌ها با مدیریت خطا
-async function fetchData<T>(
-  endpoint: string,
-  token: string | undefined,
-): Promise<T> {
-  try {
-    const res = await fetch(`/api${endpoint}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      cache: "no-store",
-    });
-    if (!res.ok) {
-      throw new Error(`Failed to fetch data from ${endpoint}`);
-    }
-    return await res.json();
-  } catch (error) {
-    console.error(`Error fetching ${endpoint}:`, error);
-    return [] as T; // در صورت خطا، آرایه خالی یا مقدار پیش‌فرض
-  }
-}
 export const metadata: Metadata = {
   title: "داشبورد کاربر | زیبولند",
   description: "داشبورد کاربر",
 };
-export default async function page() {
-  // دریافت توکن از کوکی‌ها در سمت سرور
-  const cookieStore = cookies();
-  const token = (await cookieStore).get("authToken")?.value;
 
-  // دریافت داده‌ها
-  const addresses: Address[] = await fetchData<Address[]>("/addresses", token);
-  const accountInfo: AccountInfo = await fetchData<AccountInfo>(
+// تابع کمکی برای دریافت داده‌ها
+async function fetchData<T>(
+  endpoint: string,
+  token?: string,
+): Promise<T> {
+  try {
+    const headerList = await headers();
+
+    const host = headerList.get("host");
+    const protocol =
+      process.env.NODE_ENV === "development" ? "http" : "https";
+
+    const baseUrl = `${protocol}://${host}`;
+
+    const res = await fetch(`${baseUrl}/api${endpoint}`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      cache: "no-store",
+    });
+
+    if (!res.ok) {
+      throw new Error(
+        `Failed to fetch ${endpoint}: ${res.status} ${res.statusText}`,
+      );
+    }
+
+    return (await res.json()) as T;
+  } catch (error) {
+    console.error(`Error fetching ${endpoint}:`, error);
+
+    // اگر انتظار آرایه داریم آرایه خالی برمی‌گردانیم
+    return [] as T;
+  }
+}
+
+export default async function Page() {
+  // دریافت کوکی
+  const cookieStore = await cookies();
+  const token = cookieStore.get("authToken")?.value;
+
+  // دریافت اطلاعات
+  const addresses = await fetchData<Address[]>("/addresses", token);
+
+  const accountInfo = await fetchData<AccountInfo>(
     "/users/me",
     token,
   );
-  const orders: Order[] = await fetchData<Order[]>("/orders", token);
-  // const wishlist: WishlistItem[] = await fetchData<WishlistItem[]>(
-  //   "/wishlist",
-  //   token
-  // );
-  const supportTickets: SupportTicket[] = await fetchData<SupportTicket[]>(
+
+  const orders = await fetchData<Order[]>("/orders", token);
+
+  const supportTickets = await fetchData<SupportTicket[]>(
     "/tickets",
     token,
   );
-  // const recentActivities: RecentActivity[] = await fetchData<RecentActivity[]>(
-  //   "/activities",
-  //   token
-  // );
 
-  // تبدیل فرمت تیکت‌ها (مشابه کد اصلی)
   const formattedTickets = supportTickets.map((ticket) => ({
     ...ticket,
     status:
       ticket.status === "open"
         ? "باز"
         : ticket.status === "closed"
-          ? "بسته"
-          : ticket.status === "responded"
-            ? "پاسخ داده شده"
-            : "در انتظار",
+        ? "بسته"
+        : ticket.status === "responded"
+        ? "پاسخ داده شده"
+        : "در انتظار",
   }));
 
   return (
@@ -79,12 +86,10 @@ export default async function page() {
       initialAddresses={addresses}
       initialAccountInfo={{
         ...accountInfo,
-        userId: accountInfo.id, // برای استفاده در newAddress
+        userId: accountInfo?.id,
       }}
       initialOrders={orders}
-      // initialWishlist={wishlist}
       initialSupportTickets={formattedTickets}
-      // initialRecentActivities={recentActivities}
     />
   );
 }
