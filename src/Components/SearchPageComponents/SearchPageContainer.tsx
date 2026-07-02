@@ -75,7 +75,6 @@ export default function SearchPageContainer({
 
   // تابع آپدیت URL
   const updateSearchQuery = (newValue: string) => {
-    // برای نمایش در URL فواصل ابتدا و انتها را حذف می‌کنیم
     const trimmedValue = newValue.trim();
     const newParams = new URLSearchParams(searchParams.toString());
     
@@ -85,23 +84,9 @@ export default function SearchPageContainer({
       newParams.delete("q");
     }
     
-    // استفاده از { scroll: false } برای جلوگیری از پرش صفحه به بالا
     const newUrl = newParams.toString() ? `/search?${newParams.toString()}` : "/search";
     router.push(newUrl, { scroll: false });
   };
-
-  // این useEffect را جایگزین منطق قبلی آپدیت URL کنید
-  useEffect(() => {
-    // اگر مقدار جدید با مقدار فعلی URL یکی نیست، آپدیت کن
-    const delayDebounceFn = setTimeout(() => {
-      const currentQ = searchParams.get("q") || "";
-      if (searchTerm.trim() !== decodeURIComponent(currentQ).trim()) {
-        updateSearchQuery(searchTerm);
-      }
-    }, 200); // تاخیر برای اینکه کاربر بتواند Space بزند و کلمه بعدی را بنویسد
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm]);
 
   // همگام‌سازی searchTerm از URL
   useEffect(() => {
@@ -228,7 +213,6 @@ export default function SearchPageContainer({
         const minWholesale = activeVariant.min_wholesale || 1;
         newPriceType = newQuantity >= minWholesale ? "wholesale" : "single";
 
-        // چک تغییر نوع قیمت
         const prevType = priceTypes[productId] || "single";
         const lastShownType = lastPriceTypeRef.current[productId] || prevType;
 
@@ -479,10 +463,7 @@ export default function SearchPageContainer({
     setSelectedItemIds([]);
     setPriceRange([0, 100000000]);
     setRating(0);
-    // ۲. پاکسازی کامل URL (حذف تمام پارامترها و بازگشت به مسیر /search)
     router.push("/search", { scroll: false });
-    
-    // ۳. اختیاری: نمایش پیام به کاربر
     toast.info("تمام فیلترها پاک شدند");
     setDiscount(false);
     setInStock(false);
@@ -499,12 +480,9 @@ export default function SearchPageContainer({
     setExpandedSubcats((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
 
   const getSortedProducts = () => {
-    // نرمال‌سازی متن جستجو (حذف فضاها و کوچک کردن حروف)
     const searchLower = searchTerm.trim().toLowerCase();
 
     const filtered = products.filter((p) => {
-      // ۱. منطق جستجوی فوق پیشرفته (Omnisearch)
-      // اگر کادر جستجو خالی باشد، همه محصولات تایید می‌شوند
       const matchesSearch = searchLower === "" || (
         p.title?.toLowerCase().includes(searchLower) ||
         p.brandDetails?.title?.toLowerCase().includes(searchLower) ||
@@ -512,7 +490,6 @@ export default function SearchPageContainer({
         p.category?.toLowerCase().includes(searchLower) ||
         p.content?.toLowerCase().includes(searchLower) ||
         p.features?.some(f => f.toLowerCase().includes(searchLower)) ||
-        // جستجو در تمام واریانت‌ها (رنگ و رایحه/مشخصات فنی)
         p.variants?.some(v => 
           v.color_persianName?.toLowerCase().includes(searchLower) || 
           v.color_englishName?.toLowerCase().includes(searchLower) ||
@@ -523,23 +500,19 @@ export default function SearchPageContainer({
         )
       );
 
-      // ۲. مدیریت قیمت و واریانت فعال
       const activeVariant = selectedVariants[p.id] || p.variants?.[0];
       const currentPrice = activeVariant?.price_single || p.numericPrice || 0;
       
-      // ۳. بررسی فیلترهای انتخابی (اگر آرایه خالی باشد یعنی فیلتر اعمال نشده)
       const matchesBrand = selectedBrands.length === 0 || (p.brandDetails && selectedBrands.includes(p.brandDetails.title));
       const matchesMothercat = selectedMothercatIds.length === 0 || selectedMothercatIds.includes(p.mothercatId);
       const matchesSubcat = selectedSubcatIds.length === 0 || selectedSubcatIds.includes(p.subcatId);
       const matchesItem = selectedItemIds.length === 0 || (p.itemId !== null && selectedItemIds.includes(p.itemId));
       
-      // ۴. فیلترهای بازه‌ای و وضعیتی
       const matchesPrice = currentPrice >= priceRange[0] && currentPrice <= priceRange[1];
       const matchesDiscount = !discount || (activeVariant && activeVariant.discount_percent > 0);
       const matchesRating = p.rating >= rating;
       const matchesStock = !inStock || p.variants?.some(v => v.stock_quantity > 0);
 
-      // ترکیب نهایی تمام شرط‌ها
       return (
         matchesSearch && 
         matchesBrand && 
@@ -553,7 +526,6 @@ export default function SearchPageContainer({
       );
     });
 
-    // ۵. عملیات مرتب‌سازی (Sorting)
     return [...filtered].sort((a, b) => {
       const priceA = selectedVariants[a.id]?.price_single || a.numericPrice || 0;
       const priceB = selectedVariants[b.id]?.price_single || b.numericPrice || 0;
@@ -581,7 +553,6 @@ export default function SearchPageContainer({
     visible: { opacity: 1, y: 0 },
   };
 
-  // استایل مودال
   const modalStyle = {
     position: "absolute" as const,
     top: "50%",
@@ -706,7 +677,6 @@ export default function SearchPageContainer({
         </div>
       </div>
 
-      {/* مودال موجود شد خبرم کن */}
       <Modal
         open={notifyModalOpen}
         onClose={() => setNotifyModalOpen(false)}
@@ -745,9 +715,8 @@ export default function SearchPageContainer({
               variant="outlined"
               value={notifyName}
               onChange={(e) => setNotifyName(e.target.value)}
-           sx={{
-                "& .MuiInputLabel-root": { fontFamily: "yekannew",fontSize: "0.775rem" },
-              
+              sx={{
+                "& .MuiInputLabel-root": { fontFamily: "yekannew", fontSize: "0.875rem" },
               }}
             />
 
@@ -758,8 +727,7 @@ export default function SearchPageContainer({
               value={notifyPhone}
               onChange={(e) => setNotifyPhone(e.target.value)}
               sx={{
-                "& .MuiInputLabel-root": { fontFamily: "yekannew",fontSize: "0.875rem" },
-              
+                "& .MuiInputLabel-root": { fontFamily: "yekannew", fontSize: "0.875rem" },
               }}
             />
 

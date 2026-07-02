@@ -78,13 +78,27 @@ export default function FilterPanel({
   inStock,
   setInStock,
 }: FilterPanelProps) {
+  // تابع هندل کردن خروج از فیلد جستجو
+  const handleSearchBlur = () => {
+    updateSearchQuery(searchTerm);
+  };
+
+  // تابع هندل کردن فشار دادن کلید Enter
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      updateSearchQuery(searchTerm);
+      // خروج از فیلد با زدن Enter
+      e.currentTarget.blur();
+    }
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 40 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-   // در فایل FilterPanel.tsx
-className="hidden lg:flex flex-col w-full lg:w-1/4 h-[calc(100vh-140px)] rounded-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.06)] sticky top-[100px] overflow-hidden"    >
+      className="hidden lg:flex flex-col w-full lg:w-1/4 h-[calc(100vh-140px)] rounded-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.06)] sticky top-[100px] overflow-hidden"
+    >
       {/* Header - Fixed */}
       <div className="flex justify-between items-center p-4 border-b border-gray-100 z-10 bg-white">
         <h2 className="text-xl font-semibold text-gray-700 flex items-center gap-2">
@@ -108,11 +122,12 @@ className="hidden lg:flex flex-col w-full lg:w-1/4 h-[calc(100vh-140px)] rounded
             <Category className="text-[#805B99]" /> جستجو
           </label>
           <input
-       type="text"
-  value={searchTerm}
-  onChange={(e) => setSearchTerm(e.target.value)} // فقط استیت را تغییر دهید
-
-            placeholder="نام، رنگ، رایجه و... محصول"
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onBlur={handleSearchBlur} // هنگام خروج از فیلد
+            onKeyDown={handleSearchKeyDown} // هنگام فشار دادن Enter
+            placeholder="نام، رنگ، رایحه و... محصول"
             className="w-full text-sm px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#805B99] outline-none transition"
           />
         </div>

@@ -14,7 +14,7 @@ import { Categoryapi, Product } from "@/types/types";
 interface MobileFilterPanelProps {
   searchTerm: string;
   setSearchTerm: (value: string) => void;
-  updateSearchQuery: (value: string) => void; // جدید: برای آپدیت URL
+  updateSearchQuery: (value: string) => void;
   clearFilters: () => void;
   categorySearch: string;
   setCategorySearch: (value: string) => void;
@@ -76,8 +76,23 @@ export default function MobileFilterPanel({
   inStock,
   setInStock,
   filterVariants,
-
+  searchTerm,
+  setSearchTerm,
+  updateSearchQuery,
 }: MobileFilterPanelProps) {
+  // تابع هندل کردن خروج از فیلد جستجو در موبایل
+  const handleSearchBlur = () => {
+    updateSearchQuery(searchTerm);
+  };
+
+  // تابع هندل کردن فشار دادن کلید Enter در موبایل
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      updateSearchQuery(searchTerm);
+      e.currentTarget.blur();
+    }
+  };
+
   return (
     <motion.div
       variants={filterVariants}
@@ -104,6 +119,21 @@ export default function MobileFilterPanel({
           </button>
         </div>
 
+        {/* جستجو - اضافه شده */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium mb-2 text-[#374151] items-center">
+            <Category className="ml-2 text-[#805b99]" /> جستجو
+          </label>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onBlur={handleSearchBlur}
+            onKeyDown={handleSearchKeyDown}
+            placeholder="نام، رنگ، رایحه و... محصول"
+            className="w-full p-2 border border-[#e5e7eb] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#805b99]"
+          />
+        </div>
 
         {/* دسته‌بندی‌ها */}
         <div className="mb-6">
