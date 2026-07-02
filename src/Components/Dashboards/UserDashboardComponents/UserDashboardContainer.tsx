@@ -8,11 +8,11 @@ import OrdersContent from "./OrdersContent";
 import TicketsContent from "./TicketsContent";
 import AddressesContent from "./AddressesContent";
 import AccountContent from "./AccountContent";
+import WishlistContent from "./WishlistContent";
 import {
   AccountInfo,
   Address,
   Order,
-
   SupportTicket,
   TrackingResult,
   WishlistItem,
@@ -24,15 +24,15 @@ interface UserDashboardContainerProps {
   initialAddresses: Address[];
   initialAccountInfo: AccountInfo & { userId?: string };
   initialOrders: Order[];
-  // initialWishlist: WishlistItem[];
+  initialWishlist: WishlistItem[];
   initialSupportTickets: SupportTicket[];
-  // initialRecentActivities: RecentActivity[];
 }
 
 export default function UserDashboardContainer({
   initialAddresses,
   initialAccountInfo,
   initialOrders,
+  initialWishlist,
   initialSupportTickets,
 }: UserDashboardContainerProps) {
   const [activeTab, setActiveTab] = useState<string>("dashboard");
@@ -43,7 +43,9 @@ export default function UserDashboardContainer({
   const [trackingError, setTrackingError] = useState<string>("");
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [addresses, setAddresses] = useState<Address[]>(initialAddresses);
-const [orders, setOrders] = useState<Order[]>(initialOrders);// مقدار اولیه را در استیت بریزید
+  const [orders, setOrders] = useState<Order[]>(initialOrders);
+  const [wishlist, setWishlist] = useState<WishlistItem[]>(initialWishlist);
+  
   const [newAddress, setNewAddress] = useState<Address>({
     id: "",
     userId: initialAccountInfo.userId || "",
@@ -80,37 +82,32 @@ const [orders, setOrders] = useState<Order[]>(initialOrders);// مقدار او�
   const [supportTickets, setSupportTickets] = useState<SupportTicket[]>(
     initialSupportTickets
   );
-  // const [wishlist, setWishlist] = useState<WishlistItem[]>(initialWishlist);
-  // const [recentActivities] = useState<RecentActivity[]>(
-  //   initialRecentActivities
-  // );
   const { logout } = useAuth();
 
   const token = Cookies.get("authToken");
 
-const handleDeleteOrder = async (orderId: number) => {
-  if (!confirm("آیا از حذف این سفارش اطمینان دارید؟")) return;
+  const handleDeleteOrder = async (orderId: number) => {
+    if (!confirm("آیا از حذف این سفارش اطمینان دارید؟")) return;
 
-  try {
-    const res = await fetch(`/api/orders/${orderId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    if (res.ok) {
-      // به‌روزرسانی لیست سفارشات در استیت
-      setOrders((prevOrders) => prevOrders.filter((o) => o.id !== orderId));
-      alert("سفارش با موفقیت حذف شد.");
-    } else {
-      const errorData = await res.json();
-      alert(errorData.error || "خطا در حذف سفارش");
+      if (res.ok) {
+        setOrders((prevOrders) => prevOrders.filter((o) => o.id !== orderId));
+        alert("سفارش با موفقیت حذف شد.");
+      } else {
+        const errorData = await res.json();
+        alert(errorData.error || "خطا در حذف سفارش");
+      }
+    } catch (err) {
+      console.error("Failed to delete order:", err);
+      alert("خطا در برقراری ارتباط با سرور");
     }
-  } catch (err) {
-    console.error("Failed to delete order:", err);
-    alert("خطا در برقراری ارتباط با سرور");
-  }
-};
-  // تابع برای به‌روزرسانی آدرس‌ها
+  };
+
   const fetchAddresses = async () => {
     try {
       const res = await fetch("/api/addresses", {
@@ -125,24 +122,21 @@ const handleDeleteOrder = async (orderId: number) => {
     }
   };
 
+  // تابع برای به‌روزرسانی لیست علاقه‌مندی‌ها
+  const fetchWishlist = async () => {
+    try {
+      const res = await fetch("/api/wishlist", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setWishlist(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch wishlist:", err);
+    }
+  };
 
-
-  // // تابع برای به‌روزرسانی لیست علاقه‌مندی‌ها
-  // const fetchWishlist = async () => {
-  //   try {
-  //     const res = await fetch("/api/wishlist", {
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     if (res.ok) {
-  //       const data = await res.json();
-  //       setWishlist(data);
-  //     }
-  //   } catch (err) {
-  //     console.error("Failed to fetch wishlist:", err);
-  //   }
-  // };
-
-  // تابع برای به‌روزرسانی تیکت‌ها
   const fetchTickets = async () => {
     try {
       const res = await fetch("/api/tickets", {
@@ -377,20 +371,20 @@ const handleDeleteOrder = async (orderId: number) => {
     }
   };
 
-  // const handleRemoveFromWishlist = async (id: number) => {
-  //   try {
-  //     const res = await fetch(`/api/wishlist/${id}`, {
-  //       method: "DELETE",
-  //       headers: { Authorization: `Bearer ${token}` },
-  //     });
-  //     if (res.ok) {
-  //       fetchWishlist();
-  //       alert(`محصول با شناسه ${id} از لیست علاقه‌مندی‌ها حذف شد.`);
-  //     }
-  //   } catch (err) {
-  //     console.error("Failed to remove from wishlist:", err);
-  //   }
-  // };
+  const handleRemoveFromWishlist = async (id: number) => {
+    try {
+      const res = await fetch(`/api/wishlist/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        fetchWishlist();
+        alert(`محصول از لیست علاقه‌مندی‌ها حذف شد.`);
+      }
+    } catch (err) {
+      console.error("Failed to remove from wishlist:", err);
+    }
+  };
 
   const handleSaveAccountInfo = async () => {
     if (!accountInfo.first_name || !accountInfo.email) {
@@ -445,10 +439,9 @@ const handleDeleteOrder = async (orderId: number) => {
         {activeTab === "dashboard" && (
           <DashboardContent
             orders={orders}
-            // wishlist={wishlist}
+            wishlist={wishlist}
             accountInfo={accountInfo}
             supportTickets={supportTickets}
-            // recentActivities={recentActivities}
             orderTrackingId={orderTrackingId}
             setOrderTrackingId={setOrderTrackingId}
             trackingResult={trackingResult}
@@ -468,13 +461,13 @@ const handleDeleteOrder = async (orderId: number) => {
             modalStyle={modalStyle}
           />
         )}
-        {/* {activeTab === "wishlist" && (
+        {activeTab === "wishlist" && (
           <WishlistContent
             wishlist={wishlist}
             handleAddToCart={handleAddToCart}
             handleRemoveFromWishlist={handleRemoveFromWishlist}
           />
-        )} */}
+        )}
         {activeTab === "tickets" && (
           <TicketsContent
             supportTickets={supportTickets}

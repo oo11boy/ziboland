@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ProductSlider from "./ProductSlider";
 import SummaryProduct from "./SummaryProduct";
 import { InfoTabs } from "./InfoTabs";
@@ -11,7 +11,6 @@ import RelatedProductSlider from "../Sliders/RelatedProductSlider/RelatedProduct
 
 export const SingleProductContainer: React.FC<{
   infoproduct: Product | null;
-
 }> = ({ infoproduct }) => {
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(() => {
     if (infoproduct?.variants && infoproduct.variants.length > 0) {
@@ -26,6 +25,20 @@ export const SingleProductContainer: React.FC<{
     }
     return null;
   });
+
+  const [isMobile, setIsMobile] = useState(false);
+
+  // تشخیص حالت موبایل
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   if (!infoproduct) {
     return (
@@ -51,7 +64,6 @@ export const SingleProductContainer: React.FC<{
           />
 
           <SummaryProduct
- 
             infoproduct={infoproduct}
             selectedVariant={selectedVariant}
             onVariantChange={handleVariantChange}
@@ -59,10 +71,14 @@ export const SingleProductContainer: React.FC<{
         </div>
 
         <InfoTabs infoproduct={infoproduct} selectedVariant={selectedVariant} />
-        <RelatedProductSlider
-          mothercatId={infoproduct.mothercatId}
-          excludeId={infoproduct.id}
-        />
+        
+        {/* در حالت دسکتاپ: محصولات مشابه قبل از سبد خرید */}
+        {!isMobile && (
+          <RelatedProductSlider
+            mothercatId={infoproduct.mothercatId}
+            excludeId={infoproduct.id}
+          />
+        )}
       </div>
 
       <div className="sp-container-sidebar">
@@ -71,6 +87,16 @@ export const SingleProductContainer: React.FC<{
           selectedVariant={selectedVariant}
           onVariantChange={handleVariantChange}
         />
+        
+        {/* در حالت موبایل: محصولات مشابه بعد از سبد خرید */}
+        {isMobile && (
+          <div className="sp-mobile-related-products">
+            <RelatedProductSlider
+              mothercatId={infoproduct.mothercatId}
+              excludeId={infoproduct.id}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

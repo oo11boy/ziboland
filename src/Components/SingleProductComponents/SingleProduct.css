@@ -2,7 +2,22 @@
 .sp-product-info-container * {
     font-family: 'yekannew';
 }
+/* استایل برای حالت موبایل */
+.sp-mobile-related-products {
+  margin-top: 32px;
+}
 
+/* در حالت موبایل، سایدبار را به عرض کامل تغییر دهید */
+@media (max-width: 1023px) {
+  .sp-container-sidebar {
+    width: 100%;
+    margin-top: 24px;
+  }
+  
+  .sp-mobile-related-products {
+    width: 100%;
+  }
+}
 .sp-product-info-container {
     background-color: #f7f7f7;
     position: sticky;

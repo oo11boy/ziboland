@@ -1,10 +1,9 @@
-// src\app\dashboard\DashboardContent.tsx
 import { ShoppingCart, Favorite, Message } from "@mui/icons-material";
 import { Order, WishlistItem, AccountInfo, SupportTicket, RecentActivity, TrackingResult } from "@/types/types";
 
 interface DashboardContentProps {
   orders: Order[];
-  // wishlist: WishlistItem[];
+  wishlist: WishlistItem[];
   accountInfo: AccountInfo;
   supportTickets: SupportTicket[];
   // recentActivities: RecentActivity[];
@@ -18,7 +17,7 @@ interface DashboardContentProps {
 
 export default function DashboardContent({
   orders,
-  // wishlist,
+  wishlist,
   accountInfo,
   supportTickets,
   // recentActivities,
@@ -59,22 +58,12 @@ export default function DashboardContent({
           <h3 className="ud-card-title">تعداد کل سفارش‌ها</h3>
           <p className="ud-card-value">{orders.length.toLocaleString("fa-IR")}</p>
         </div>
-        {/* <div className="ud-card" role="region" aria-label="تعداد علاقه‌مندی‌ها">
+        <div className="ud-card" role="region" aria-label="تعداد علاقه‌مندی‌ها">
           <div className="ud-card-dot ud-card-dot-yellow"></div>
           <h3 className="ud-card-title">تعداد علاقه‌مندی‌ها</h3>
-          <p className="ud-card-value">0</p>
-          <p className="ud-card-info">آخرین افزودن: 
-            {recentActivities[0]?.date ? new Date(recentActivities[0].date).toLocaleDateString("fa-IR") : "نامشخص"}
-            
-            نامشخص
-            </p>
-        </div> */}
-        {/* <div className="ud-card" role="region" aria-label="وضعیت پروفایل">
-          <div className="ud-card-dot ud-card-dot-green"></div>
-          <h3 className="ud-card-title">وضعیت پروفایل</h3>
-          <p className="ud-card-profile-status">{accountInfo.email ? "تکمیل‌شده" : "ناقص"}</p>
-          <p className="ud-card-info">ایمیل: {accountInfo.email}</p>
-        </div> */}
+          <p className="ud-card-value">{wishlist.length.toLocaleString("fa-IR")}</p>
+          <p className="ud-card-info">محصولات در لیست علاقه‌مندی‌ها</p>
+        </div>
         <div className="ud-card" role="region" aria-label="تیکت‌های پشتیبانی">
           <div className="ud-card-dot ud-card-dot-blue"></div>
           <h3 className="ud-card-title">تیکت‌های پشتیبانی</h3>
@@ -130,22 +119,7 @@ export default function DashboardContent({
       </div>
       <div className="ud-activities-container">
         <h3 className="ud-activities-title">فعالیت اخیر</h3>
-        {/* {recentActivities.length === 0 ? (
-          <p className="ud-activities-empty">هیچ فعالیتی ثبت نشده است!</p>
-        ) : (
-          <ul className="ud-activities-list">
-            {recentActivities.slice(0, 5).map((activity, index) => (
-              <li key={index} className="ud-activities-item" role="listitem">
-                <span className="ud-activities-description">{activity.description}</span>
-                <span className="ud-activities-date">
-                  {new Date(activity.date).toLocaleDateString("fa-IR")}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )} */}
-           <p className="ud-activities-empty">هیچ فعالیتی ثبت نشده است!</p>
-       
+        <p className="ud-activities-empty">هیچ فعالیتی ثبت نشده است!</p>
       </div>
       <div className="ud-shortcuts-container">
         <h3 className="ud-shortcuts-title">میانبرهای سریع</h3>
@@ -158,14 +132,14 @@ export default function DashboardContent({
             <ShoppingCart className="ud-shortcuts-icon" />
             مشاهده سفارش‌ها
           </button>
-          {/* <button
+          <button
             onClick={() => setActiveTab("wishlist")}
             className="ud-shortcuts-button"
             aria-label="مشاهده علاقه‌مندی‌ها"
           >
             <Favorite className="ud-shortcuts-icon" />
             مشاهده علاقه‌مندی‌ها
-          </button> */}
+          </button>
           <button
             onClick={() => setActiveTab("tickets")}
             className="ud-shortcuts-button"

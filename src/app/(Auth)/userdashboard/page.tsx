@@ -5,6 +5,7 @@ import {
   Address,
   Order,
   SupportTicket,
+  WishlistItem,
 } from "@/types/types";
 import { Metadata } from "next";
 
@@ -43,8 +44,6 @@ async function fetchData<T>(
     return (await res.json()) as T;
   } catch (error) {
     console.error(`Error fetching ${endpoint}:`, error);
-
-    // اگر انتظار آرایه داریم آرایه خالی برمی‌گردانیم
     return [] as T;
   }
 }
@@ -56,18 +55,10 @@ export default async function Page() {
 
   // دریافت اطلاعات
   const addresses = await fetchData<Address[]>("/addresses", token);
-
-  const accountInfo = await fetchData<AccountInfo>(
-    "/users/me",
-    token,
-  );
-
+  const accountInfo = await fetchData<AccountInfo>("/users/me", token);
   const orders = await fetchData<Order[]>("/orders", token);
-
-  const supportTickets = await fetchData<SupportTicket[]>(
-    "/tickets",
-    token,
-  );
+  const supportTickets = await fetchData<SupportTicket[]>("/tickets", token);
+  const wishlist = await fetchData<WishlistItem[]>("/wishlist", token);
 
   const formattedTickets = supportTickets.map((ticket) => ({
     ...ticket,
@@ -90,6 +81,7 @@ export default async function Page() {
       }}
       initialOrders={orders}
       initialSupportTickets={formattedTickets}
+      initialWishlist={wishlist}
     />
   );
 }
