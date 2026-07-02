@@ -6,8 +6,8 @@ import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
-import "swiper/css";
-import "swiper/css/navigation";
+import { Modal, Typography, TextField, Button } from "@mui/material";
+
 import {
   AddCircleOutline,
   AddShoppingCart,
@@ -75,6 +75,13 @@ export default function TabProductsSliderContainer({
   const swiperRefs = useRef<{ [key: number]: SwiperCore | null }>({});
   const [products, setProducts] = useState<Product[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // State برای موجود شد خبرم کن
+  const [notifyModalOpen, setNotifyModalOpen] = useState(false);
+  const [notifyProductId, setNotifyProductId] = useState<number | null>(null);
+  const [notifyName, setNotifyName] = useState("");
+  const [notifyPhone, setNotifyPhone] = useState("");
+  const [isSubmittingNotify, setIsSubmittingNotify] = useState(false);
 
   const updateNavigationState = (swiper: SwiperCore) => {
     setIsBeginning(swiper.isBeginning);
@@ -317,7 +324,64 @@ export default function TabProductsSliderContainer({
     setShowQuantitySelector(null);
   };
 
-  const handleNotifyMe = () => toast.info("اطلاع‌رسانی فعال شد");
+  // تابع باز کردن مودال موجود شد خبرم کن
+  const handleNotifyMe = (productId: number) => {
+    setNotifyProductId(productId);
+    setNotifyName("");
+    setNotifyPhone("");
+    setNotifyModalOpen(true);
+  };
+
+  // تابع ارسال درخواست موجودی
+  const handleNotifySubmit = async () => {
+    if (!notifyName.trim()) {
+      toast.error("لطفاً نام خود را وارد کنید");
+      return;
+    }
+    if (!notifyPhone.trim() || !/^\d{11}$/.test(notifyPhone)) {
+      toast.error("لطفاً شماره تماس معتبر (۱۱ رقم) وارد کنید");
+      return;
+    }
+
+    const product = products.find(p => p.id === notifyProductId);
+    const variant = product ? selectedVariants[notifyProductId!] : null;
+
+    setIsSubmittingNotify(true);
+
+    try {
+      const res = await fetch("/api/notifications/stock-request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productId: notifyProductId,
+          variantId: variant?.id || null,
+          productTitle: product?.title || "",
+          variantColor: variant?.color_persianName || variant?.color_englishName || null,
+          name: notifyName,
+          phone: notifyPhone,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("درخواست شما با موفقیت ثبت شد. به محض موجود شدن، به شما اطلاع‌رسانی می‌شود.", {
+          autoClose: 5000,
+        });
+        setNotifyModalOpen(false);
+        setNotifyName("");
+        setNotifyPhone("");
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "خطا در ثبت درخواست");
+      }
+    } catch (err) {
+      toast.error("خطا در ارتباط با سرور");
+      console.error(err);
+    } finally {
+      setIsSubmittingNotify(false);
+    }
+  };
 
   const categoryCounts = products.reduce(
     (acc, p) => {
@@ -335,6 +399,21 @@ export default function TabProductsSliderContainer({
     products.filter((p) => (p.motherCategoryName || "سایر") === cat),
   );
 
+  // استایل مودال
+  const modalStyle = {
+    position: "absolute" as const,
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "90%",
+    maxWidth: 500,
+    bgcolor: "white",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+    p: 4,
+    borderRadius: "16px",
+    direction: "rtl",
+  };
+
   if (error) {
     return (
       <div className="text-red-500 text-center py-10 text-xl">{error}</div>
@@ -346,7 +425,7 @@ export default function TabProductsSliderContainer({
       className="w-full max-w-[1440px] mx-auto px-4 py-6 font-[yekannew]"
       dir="rtl"
     >
- 
+      <ToastContainer />
 
       <div className="flex justify-between items-center mb-6 px-1">
         <div className="border-r-4 border-[#805B99] pr-3">
@@ -540,7 +619,6 @@ export default function TabProductsSliderContainer({
                         </div>
 
                         {/* انتخاب رنگ */}
-                        {/* انتخاب رنگ */}
                         <div className="flex gap-1.5 justify-center mb-3 h-5 items-center">
                           {[...(item.variants || [])]
                             .sort((a, b) => {
@@ -598,100 +676,98 @@ export default function TabProductsSliderContainer({
                       </div>
 
                       {/* پایین کارت: قیمت + عملیات */}
-   <div className="mt-auto pt-2 border-t border-gray-50">
-  {!isInStock ? (
-    <div className="flex items-center justify-between">
-      <p className="text-xs md:text-sm text-gray-600 font-medium">
-        موجود شد خبرم کن
-      </p>
-      <button
-        onClick={handleNotifyMe}
-        className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
-      >
-        <NotificationAdd sx={{ fontSize: { xs: 18, md: 22 } }} />
-      </button>
-    </div>
-  ) : (
-    <>
-      <div className="flex flex-col mb-3">
-        {displayDiscount > 0 && (
-          <span className="text-[10px] md:text-xs text-gray-400 line-through italic font-medium">
-            {formatPrice(baseRetailPrice)}
-          </span>
-        )}
-        <div className="flex items-baseline gap-1">
-          <span className="text-sm md:text-xl font-black text-gray-900 leading-none">
-            {formatPrice(unitPriceAfterDiscount)}
-          </span>
-          <span className="text-[9px] md:text-[11px] font-medium text-gray-500">
-            تومان
-          </span>
-        </div>
-      </div>
+                      <div className="mt-auto pt-2 border-t border-gray-50">
+                        {!isInStock ? (
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs md:text-sm text-gray-600 font-medium">
+                              موجود شد خبرم کن
+                            </p>
+                            <button
+                              onClick={() => handleNotifyMe(item.id)}
+                              className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+                            >
+                              <NotificationAdd sx={{ fontSize: { xs: 18, md: 22 } }} />
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex flex-col mb-3">
+                              {displayDiscount > 0 && (
+                                <span className="text-[10px] md:text-xs text-gray-400 line-through italic font-medium">
+                                  {formatPrice(baseRetailPrice)}
+                                </span>
+                              )}
+                              <div className="flex items-baseline gap-1">
+                                <span className="text-sm md:text-xl font-black text-gray-900 leading-none">
+                                  {formatPrice(unitPriceAfterDiscount)}
+                                </span>
+                                <span className="text-[9px] md:text-[11px] font-medium text-gray-500">
+                                  تومان
+                                </span>
+                              </div>
+                            </div>
 
-      <div className="h-9 md:h-12 relative">
-        {showQuantitySelector !== item.id ? (
-          <button
-            onClick={() => handleShowQuantitySelector(item.id)}
-            className={`w-full h-full rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200 relative overflow-hidden ${
-              (getCartItem(item.id)?.quantity ?? 0) > 0
-                ? "bg-green-700 hover:bg-green-800 text-white"
-                : "bg-[#805B99] hover:bg-[#6b4e82] text-white"
-            }`}
-          >
-            <AddShoppingCart sx={{ fontSize: { xs: 16, md: 22 } }} />
+                            <div className="h-9 md:h-12 relative">
+                              {showQuantitySelector !== item.id ? (
+                                <button
+                                  onClick={() => handleShowQuantitySelector(item.id)}
+                                  className={`w-full h-full rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg shadow-gray-200 relative overflow-hidden ${
+                                    (getCartItem(item.id)?.quantity ?? 0) > 0
+                                      ? "bg-green-700 hover:bg-green-800 text-white"
+                                      : "bg-[#805B99] hover:bg-[#6b4e82] text-white"
+                                  }`}
+                                >
+                                  <AddShoppingCart sx={{ fontSize: { xs: 16, md: 22 } }} />
 
-            <span className="text-[11px] md:text-sm font-extrabold flex items-center gap-1.5">
-              {(getCartItem(item.id)?.quantity ?? 0) > 0 ? (
-                <>
-                  در سبد
-                  <span className="bg-white/30 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold min-w-[1.8rem] text-center">
-                    {getCartItem(item.id)?.quantity}
-                  </span>
-                </>
-              ) : (
-                "افزودن"
-              )}
-            </span>
+                                  <span className="text-[11px] md:text-sm font-extrabold flex items-center gap-1.5">
+                                    {(getCartItem(item.id)?.quantity ?? 0) > 0 ? (
+                                      <>
+                                        در سبد
+                                        <span className="bg-white/30 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold min-w-[1.8rem] text-center">
+                                          {getCartItem(item.id)?.quantity}
+                                        </span>
+                                      </>
+                                    ) : (
+                                      "افزودن"
+                                    )}
+                                  </span>
+                                </button>
+                              ) : (
+                                <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
+                                  <button
+                                    onClick={() => handleQuantityChange(item.id, 1)}
+                                    disabled={currentQty >= stockQuantity}
+                                    className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white transition-all disabled:opacity-50"
+                                  >
+                                    <AddCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
+                                  </button>
 
-          
-          </button>
-        ) : (
-          <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">
-            <button
-              onClick={() => handleQuantityChange(item.id, 1)}
-              disabled={currentQty >= stockQuantity}
-              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-[#805B99] shadow-sm hover:bg-[#805B99] hover:text-white transition-all disabled:opacity-50"
-            >
-              <AddCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
-            </button>
+                                  <div className="flex flex-col items-center">
+                                    <span className="text-xs md:text-sm font-black text-blue-900 leading-none">
+                                      {currentQty}
+                                    </span>
 
-            <div className="flex flex-col items-center">
-              <span className="text-xs md:text-sm font-black text-blue-900 leading-none">
-                {currentQty}
-              </span>
+                                    <button
+                                      onClick={() => handleAddToCart(item.id)}
+                                      className="text-[10px] border rounded bg-green-600 text-white px-2 md:text-[14px] font-black uppercase tracking-tighter mt-0.5 hover:bg-green-700 transition-colors"
+                                    >
+                                      ثبت
+                                    </button>
+                                  </div>
 
-              <button
-                onClick={() => handleAddToCart(item.id)}
-                className="text-[10px] border rounded bg-green-600 text-white px-2 md:text-[14px] font-black uppercase tracking-tighter mt-0.5 hover:bg-green-700 transition-colors"
-              >
-                ثبت
-              </button>
-            </div>
-
-            <button
-              onClick={() => handleQuantityChange(item.id, -1)}
-              disabled={currentQty <= 0}
-              className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
-            >
-              <RemoveCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
-            </button>
-          </div>
-        )}
-      </div>
-    </>
-  )}
-</div>
+                                  <button
+                                    onClick={() => handleQuantityChange(item.id, -1)}
+                                    disabled={currentQty <= 0}
+                                    className="w-7 h-7 md:w-10 md:h-10 flex items-center justify-center bg-white rounded-xl text-red-500 shadow-sm hover:bg-red-500 hover:text-white transition-all disabled:opacity-50"
+                                  >
+                                    <RemoveCircleOutline sx={{ fontSize: { xs: 18, md: 20 } }} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </SwiperSlide>
                 );
@@ -723,6 +799,100 @@ export default function TabProductsSliderContainer({
           </div>
         </div>
       </div>
+
+      {/* مودال موجود شد خبرم کن */}
+      <Modal
+        open={notifyModalOpen}
+        onClose={() => setNotifyModalOpen(false)}
+      >
+        <Box sx={modalStyle}>
+          <Typography
+            variant="h5"
+            component="h2"
+            sx={{
+              fontFamily: "yekannew",
+              fontWeight: "bold",
+              textAlign: "center",
+              mb: 2,
+              color: "#805b99",
+            }}
+          >
+            🔔 موجود شد خبرم کن
+          </Typography>
+
+          <Typography
+            variant="body1"
+            sx={{
+              fontFamily: "yekannew",
+              textAlign: "center",
+              mb: 3,
+              color: "#666",
+            }}
+          >
+            لطفاً نام و شماره تماس خود را وارد کنید تا به محض موجود شدن این محصول، به شما اطلاع‌رسانی کنیم.
+          </Typography>
+
+             <div className="gap-4 flex flex-col">
+            <TextField
+              fullWidth
+              label="نام و نام خانوادگی"
+              variant="outlined"
+              value={notifyName}
+              onChange={(e) => setNotifyName(e.target.value)}
+           sx={{
+                "& .MuiInputLabel-root": { fontFamily: "yekannew",fontSize: "0.775rem" },
+              
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="شماره تماس (۱۱ رقم)"
+              variant="outlined"
+              value={notifyPhone}
+              onChange={(e) => setNotifyPhone(e.target.value)}
+              sx={{
+                "& .MuiInputLabel-root": { fontFamily: "yekannew",fontSize: "0.875rem" },
+              
+              }}
+            />
+
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleNotifySubmit}
+                disabled={isSubmittingNotify}
+                sx={{
+                  fontFamily: "yekannew",
+                  bgcolor: "#805b99",
+                  "&:hover": { bgcolor: "#6d4c82" },
+                  borderRadius: "12px",
+                  py: 1.5,
+                }}
+              >
+                {isSubmittingNotify ? "در حال ثبت..." : "ثبت درخواست"}
+              </Button>
+
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => setNotifyModalOpen(false)}
+                sx={{
+                  fontFamily: "yekannew",
+                  borderColor: "#ccc",
+                  color: "#666",
+                  "&:hover": { borderColor: "#999" },
+                  borderRadius: "12px",
+                  py: 1.5,
+                }}
+              >
+                لغو
+              </Button>
+            </div>
+          </div>
+        </Box>
+      </Modal>
     </div>
   );
 }

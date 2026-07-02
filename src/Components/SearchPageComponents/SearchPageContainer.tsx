@@ -15,6 +15,7 @@ import MobileFilterPanel from "./MobileFilterPanel";
 import MobileHeader from "./MobileHeader";
 import SortBar from "./SortBar";
 import ProductGrid from "./ProductGrid";
+import { Modal, Box, Typography, TextField, Button } from "@mui/material";
 
 interface QueryParams {
   mothercatId?: string;
@@ -65,8 +66,14 @@ export default function SearchPageContainer({
 
   const productsRef = useRef<HTMLDivElement>(null);
 
+  // State برای موجود شد خبرم کن
+  const [notifyModalOpen, setNotifyModalOpen] = useState(false);
+  const [notifyProductId, setNotifyProductId] = useState<number | null>(null);
+  const [notifyName, setNotifyName] = useState("");
+  const [notifyPhone, setNotifyPhone] = useState("");
+  const [isSubmittingNotify, setIsSubmittingNotify] = useState(false);
+
   // تابع آپدیت URL
-// تابع آپدیت URL - اصلاح شده برای جلوگیری از حذف فاصله در هنگام تایپ
   const updateSearchQuery = (newValue: string) => {
     // برای نمایش در URL فواصل ابتدا و انتها را حذف می‌کنیم
     const trimmedValue = newValue.trim();
@@ -82,18 +89,20 @@ export default function SearchPageContainer({
     const newUrl = newParams.toString() ? `/search?${newParams.toString()}` : "/search";
     router.push(newUrl, { scroll: false });
   };
-// این useEffect را جایگزین منطق قبلی آپدیت URL کنید
-useEffect(() => {
-  // اگر مقدار جدید با مقدار فعلی URL یکی نیست، آپدیت کن
-  const delayDebounceFn = setTimeout(() => {
-    const currentQ = searchParams.get("q") || "";
-    if (searchTerm.trim() !== decodeURIComponent(currentQ).trim()) {
-      updateSearchQuery(searchTerm);
-    }
-  }, 200); // تاخیر برای اینکه کاربر بتواند Space بزند و کلمه بعدی را بنویسد
 
-  return () => clearTimeout(delayDebounceFn);
-}, [searchTerm]);
+  // این useEffect را جایگزین منطق قبلی آپدیت URL کنید
+  useEffect(() => {
+    // اگر مقدار جدید با مقدار فعلی URL یکی نیست، آپدیت کن
+    const delayDebounceFn = setTimeout(() => {
+      const currentQ = searchParams.get("q") || "";
+      if (searchTerm.trim() !== decodeURIComponent(currentQ).trim()) {
+        updateSearchQuery(searchTerm);
+      }
+    }, 200); // تاخیر برای اینکه کاربر بتواند Space بزند و کلمه بعدی را بنویسد
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
   // همگام‌سازی searchTerm از URL
   useEffect(() => {
     const q = searchParams.get("q");
@@ -402,7 +411,64 @@ useEffect(() => {
     setShowQuantitySelector(null);
   };
 
-  const handleNotifyMe = () => toast.info("اطلاع‌رسانی فعال شد");
+  // تابع باز کردن مودال موجود شد خبرم کن
+  const handleNotifyMe = (productId: number) => {
+    setNotifyProductId(productId);
+    setNotifyName("");
+    setNotifyPhone("");
+    setNotifyModalOpen(true);
+  };
+
+  // تابع ارسال درخواست موجودی
+  const handleNotifySubmit = async () => {
+    if (!notifyName.trim()) {
+      toast.error("لطفاً نام خود را وارد کنید");
+      return;
+    }
+    if (!notifyPhone.trim() || !/^\d{11}$/.test(notifyPhone)) {
+      toast.error("لطفاً شماره تماس معتبر (۱۱ رقم) وارد کنید");
+      return;
+    }
+
+    const product = products.find(p => p.id === notifyProductId);
+    const variant = product ? selectedVariants[notifyProductId!] : null;
+
+    setIsSubmittingNotify(true);
+
+    try {
+      const res = await fetch("/api/notifications/stock-request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productId: notifyProductId,
+          variantId: variant?.id || null,
+          productTitle: product?.title || "",
+          variantColor: variant?.color_persianName || variant?.color_englishName || null,
+          name: notifyName,
+          phone: notifyPhone,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("درخواست شما با موفقیت ثبت شد. به محض موجود شدن، به شما اطلاع‌رسانی می‌شود.", {
+          autoClose: 5000,
+        });
+        setNotifyModalOpen(false);
+        setNotifyName("");
+        setNotifyPhone("");
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "خطا در ثبت درخواست");
+      }
+    } catch (err) {
+      toast.error("خطا در ارتباط با سرور");
+      console.error(err);
+    } finally {
+      setIsSubmittingNotify(false);
+    }
+  };
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -432,7 +498,7 @@ useEffect(() => {
   const toggleSubcatExpansion = (id: number) =>
     setExpandedSubcats((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
 
-const getSortedProducts = () => {
+  const getSortedProducts = () => {
     // نرمال‌سازی متن جستجو (حذف فضاها و کوچک کردن حروف)
     const searchLower = searchTerm.trim().toLowerCase();
 
@@ -513,6 +579,21 @@ const getSortedProducts = () => {
   const cardVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 },
+  };
+
+  // استایل مودال
+  const modalStyle = {
+    position: "absolute" as const,
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "90%",
+    maxWidth: 500,
+    bgcolor: "white",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+    p: 4,
+    borderRadius: "16px",
+    direction: "rtl",
   };
 
   if (error) return <div className="text-center p-10 text-red-500">{error}</div>;
@@ -624,6 +705,100 @@ const getSortedProducts = () => {
           </div>
         </div>
       </div>
+
+      {/* مودال موجود شد خبرم کن */}
+      <Modal
+        open={notifyModalOpen}
+        onClose={() => setNotifyModalOpen(false)}
+      >
+        <Box sx={modalStyle}>
+          <Typography
+            variant="h5"
+            component="h2"
+            sx={{
+              fontFamily: "yekannew",
+              fontWeight: "bold",
+              textAlign: "center",
+              mb: 2,
+              color: "#805b99",
+            }}
+          >
+            🔔 موجود شد خبرم کن
+          </Typography>
+
+          <Typography
+            variant="body1"
+            sx={{
+              fontFamily: "yekannew",
+              textAlign: "center",
+              mb: 3,
+              color: "#666",
+            }}
+          >
+            لطفاً نام و شماره تماس خود را وارد کنید تا به محض موجود شدن این محصول، به شما اطلاع‌رسانی کنیم.
+          </Typography>
+
+          <div className="gap-4 flex flex-col">
+            <TextField
+              fullWidth
+              label="نام و نام خانوادگی"
+              variant="outlined"
+              value={notifyName}
+              onChange={(e) => setNotifyName(e.target.value)}
+           sx={{
+                "& .MuiInputLabel-root": { fontFamily: "yekannew",fontSize: "0.775rem" },
+              
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="شماره تماس (۱۱ رقم)"
+              variant="outlined"
+              value={notifyPhone}
+              onChange={(e) => setNotifyPhone(e.target.value)}
+              sx={{
+                "& .MuiInputLabel-root": { fontFamily: "yekannew",fontSize: "0.875rem" },
+              
+              }}
+            />
+
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleNotifySubmit}
+                disabled={isSubmittingNotify}
+                sx={{
+                  fontFamily: "yekannew",
+                  bgcolor: "#805b99",
+                  "&:hover": { bgcolor: "#6d4c82" },
+                  borderRadius: "12px",
+                  py: 1.5,
+                }}
+              >
+                {isSubmittingNotify ? "در حال ثبت..." : "ثبت درخواست"}
+              </Button>
+
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => setNotifyModalOpen(false)}
+                sx={{
+                  fontFamily: "yekannew",
+                  borderColor: "#ccc",
+                  color: "#666",
+                  "&:hover": { borderColor: "#999" },
+                  borderRadius: "12px",
+                  py: 1.5,
+                }}
+              >
+                لغو
+              </Button>
+            </div>
+          </div>
+        </Box>
+      </Modal>
     </div>
   );
 }

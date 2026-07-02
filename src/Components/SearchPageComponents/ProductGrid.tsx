@@ -25,11 +25,11 @@ interface ProductGridProps {
   handleShowQuantitySelector: (productId: number) => void;
   handleQuantityChange: (productId: number, delta: number) => void;
   handleAddToCart: (productId: number) => void;
-  handleNotifyMe: () => void;
- getCartItem: (productId: number) => 
+  handleNotifyMe: (productId: number) => void; // تغییر: دریافت شناسه محصول
+  getCartItem: (productId: number) => 
     | { id: number; quantity: number; color?: { englishName: string } | null }
     | null
-    | undefined;   // ← undefined رو هم قبول کن
+    | undefined;
 }
 
 export default function ProductGrid({
@@ -248,7 +248,7 @@ export default function ProductGrid({
                         موجود شد خبرم کن
                       </p>
                       <button
-                        onClick={handleNotifyMe}
+                        onClick={() => handleNotifyMe(item.id)}
                         className="p-2 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
                       >
                         <NotificationAdd
@@ -300,8 +300,6 @@ export default function ProductGrid({
                                 "افزودن"
                               )}
                             </span>
-
-                         
                           </button>
                         ) : (
                           <div className="flex items-center justify-between bg-blue-50 rounded-2xl h-full p-1 border border-blue-100 shadow-inner">

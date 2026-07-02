@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { ShoppingCartOutlined } from "@mui/icons-material";
+import { ShoppingCartOutlined, Notifications } from "@mui/icons-material";
 import Link from "next/link";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./SingleProduct.css";
 import { Product, Variant } from "@/types/types";
 import { useCart } from "@/ContextApi/CartContext";
+import { Modal, Box, Typography, TextField, Button } from "@mui/material";
 
 interface BenefitItem {
   id: number;
@@ -33,6 +34,12 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
   const [quantity, setQuantity] = useState<number>(1);
   const [internalSelectedVariant, setInternalSelectedVariant] = useState<Variant | null>(null);
   const [isVariantChanging, setIsVariantChanging] = useState<boolean>(false);
+
+  // State برای فرم موجودی شد خبرم کن
+  const [isNotifyModalOpen, setIsNotifyModalOpen] = useState<boolean>(false);
+  const [notifyName, setNotifyName] = useState<string>("");
+  const [notifyPhone, setNotifyPhone] = useState<string>("");
+  const [isSubmittingNotify, setIsSubmittingNotify] = useState<boolean>(false);
 
   const wasWholesaleRef = useRef<boolean>(false);
   const prevQuantityRef = useRef<number>(1);
@@ -265,6 +272,55 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
     }
   };
 
+  // تابع ارسال درخواست موجودی شد خبرم کن
+  const handleNotifySubmit = async () => {
+    if (!notifyName.trim()) {
+      toast.error("لطفاً نام خود را وارد کنید", { position: "top-center" });
+      return;
+    }
+    if (!notifyPhone.trim() || !/^\d{11}$/.test(notifyPhone)) {
+      toast.error("لطفاً شماره تماس معتبر (۱۱ رقم) وارد کنید", { position: "top-center" });
+      return;
+    }
+
+    setIsSubmittingNotify(true);
+
+    try {
+      const res = await fetch("/api/notifications/stock-request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productId: infoproduct.id,
+          variantId: activeVariant?.id,
+          productTitle: infoproduct.title,
+          variantColor: activeVariant?.color_persianName || activeVariant?.color_englishName,
+          name: notifyName,
+          phone: notifyPhone,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("درخواست شما با موفقیت ثبت شد. به محض موجود شدن، به شما اطلاع‌رسانی می‌شود.", {
+          position: "top-center",
+          autoClose: 5000,
+        });
+        setIsNotifyModalOpen(false);
+        setNotifyName("");
+        setNotifyPhone("");
+      } else {
+        const error = await res.json();
+        toast.error(error.error || "خطا در ثبت درخواست", { position: "top-center" });
+      }
+    } catch (err) {
+      toast.error("خطا در ارتباط با سرور", { position: "top-center" });
+      console.error(err);
+    } finally {
+      setIsSubmittingNotify(false);
+    }
+  };
+
   const formatPrice = (price: number) => {
     return price.toLocaleString("fa-IR") + " تومان";
   };
@@ -311,10 +367,23 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
       : { tickColor: "#FFFFFF", borderColor: "#0000004d" };
   };
 
+  // استایل مودال
+  const modalStyle = {
+    position: "absolute" as const,
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "90%",
+    maxWidth: 500,
+    bgcolor: "white",
+    boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
+    p: 4,
+    borderRadius: "16px",
+    direction: "rtl",
+  };
+
   return (
     <>
-     
-
       <div className="sp-product-info-container overflow-auto">
         {/* بخش قیمت‌ها */}
         <div className="sp-pricing-grid">
@@ -376,7 +445,6 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
                       onClick={() => handleVariantSelect(variant)}
                       disabled={!variantInStock}
                       style={{
-                 
                         backgroundColor: variant.color_hexCode,
                         width: "28px",
                         height: "28px",
@@ -393,7 +461,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
                       {isSelected && variantInStock && (
                         <span
                           style={{
-                                   margin:"auto",
+                            margin: "auto",
                             color: tickColor,
                             fontSize: "14px",
                             fontWeight: "bold",
@@ -412,13 +480,12 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
                       {!variantInStock && (
                         <span
                           style={{
-                            
                             position: "absolute",
                             width: "2px",
                             height: "24px",
                             backgroundColor: "#ffff",
-                            border:"1px solid black",
-                            top:"0",
+                            border: "1px solid black",
+                            top: "0",
                             transform: "rotate(45deg)",
                           }}
                         />
@@ -428,21 +495,14 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
                 })}
             </div>
             
-<div className="flex flex-col mt-2">
-  
-      <span className="sp-selected-color text-lg">
-<span className="text-sm">
-      رنگ انتخابی: {" "}
-</span>
-
- 
-   
-              {activeVariant?.color_persianName ||
-                activeVariant?.color_englishName ||
-                "نامشخص"}
-            </span>
-</div>
-      
+            <div className="flex flex-col mt-2">
+              <span className="sp-selected-color text-lg">
+                <span className="text-sm">رنگ انتخابی: </span>
+                {activeVariant?.color_persianName ||
+                  activeVariant?.color_englishName ||
+                  "نامشخص"}
+              </span>
+            </div>
           </div>
         )}
 
@@ -479,22 +539,31 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={handleAddToCart}
-            className="sp-add-to-cart-button"
-            disabled={!isInStock}
-            style={{
-              backgroundColor: !isInStock ? "#cccccc" : "#805b99",
-              cursor: !isInStock ? "not-allowed" : "pointer",
-            }}
-          >
-            <ShoppingCartOutlined className="sp-cart-icon" />
-            {!isInStock
-              ? "ناموجود"
-              : quantity > 0
-                ? "ثبت در سبد"
-                : "افزودن به سبد خرید"}
-          </button>
+          {isInStock ? (
+            <button
+              onClick={handleAddToCart}
+              className="sp-add-to-cart-button"
+              style={{
+                backgroundColor: "#805b99",
+                cursor: "pointer",
+              }}
+            >
+              <ShoppingCartOutlined className="sp-cart-icon" />
+              {quantity > 0 ? "ثبت در سبد" : "افزودن به سبد خرید"}
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsNotifyModalOpen(true)}
+              className="sp-add-to-cart-button"
+              style={{
+                backgroundColor: "#f59e0b",
+                cursor: "pointer",
+              }}
+            >
+              <Notifications className="sp-cart-icon" />
+              موجود شد خبرم کن
+            </button>
+          )}
         </div>
 
         {/* مزایای خرید */}
@@ -514,6 +583,102 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
           ))}
         </div>
       </div>
+
+      {/* مودال موجود شد خبرم کن */}
+      <Modal
+        open={isNotifyModalOpen}
+        onClose={() => setIsNotifyModalOpen(false)}
+      >
+        <Box sx={modalStyle}>
+          <Typography
+            variant="h5"
+            component="h2"
+            sx={{
+              fontFamily: "yekannew",
+              fontWeight: "bold",
+              textAlign: "center",
+              mb: 2,
+              color: "#805b99",
+            }}
+          >
+            🔔 موجود شد خبرم کن
+          </Typography>
+
+          <Typography
+            variant="body1"
+            sx={{
+              fontFamily: "yekannew",
+              textAlign: "center",
+              mb: 3,
+              color: "#666",
+            }}
+          >
+            لطفاً نام و شماره تماس خود را وارد کنید تا به محض موجود شدن محصول، به شما اطلاع‌رسانی کنیم.
+          </Typography>
+
+          <div className="gap-4 flex flex-col">
+            <TextField
+              fullWidth
+              label="نام و نام خانوادگی"
+              variant="outlined"
+              value={notifyName}
+              onChange={(e) => setNotifyName(e.target.value)}
+           sx={{
+                "& .MuiInputLabel-root": { fontFamily: "yekannew",fontSize: "0.775rem" },
+                  "& .MuiInputLabel-input": { fontFamily: "yekannew",fontSize: "0.875rem" },
+              
+              }}
+            />
+
+            <TextField
+              fullWidth
+              label="شماره تماس (۱۱ رقم)"
+              variant="outlined"
+              value={notifyPhone}
+              onChange={(e) => setNotifyPhone(e.target.value)}
+              sx={{
+                "& .MuiInputLabel-root": { fontFamily: "yekannew",fontSize: "0.875rem" },
+                 "& .MuiInputLabel-input": { fontFamily: "yekannew",fontSize: "0.875rem" },
+              
+              }}
+            />
+
+            <div className="flex flex-col sm:flex-row gap-3 mt-4">
+              <Button
+                fullWidth
+                variant="contained"
+                onClick={handleNotifySubmit}
+                disabled={isSubmittingNotify}
+                sx={{
+                  fontFamily: "yekannew",
+                  bgcolor: "#805b99",
+                  "&:hover": { bgcolor: "#6d4c82" },
+                  borderRadius: "12px",
+                  py: 1.5,
+                }}
+              >
+                {isSubmittingNotify ? "در حال ثبت..." : "ثبت درخواست"}
+              </Button>
+
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => setIsNotifyModalOpen(false)}
+                sx={{
+                  fontFamily: "yekannew",
+                  borderColor: "#ccc",
+                  color: "#666",
+                  "&:hover": { borderColor: "#999" },
+                  borderRadius: "12px",
+                  py: 1.5,
+                }}
+              >
+                لغو
+              </Button>
+            </div>
+          </div>
+        </Box>
+      </Modal>
     </>
   );
 };
