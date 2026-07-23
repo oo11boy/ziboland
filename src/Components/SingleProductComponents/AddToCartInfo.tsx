@@ -398,35 +398,39 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
     <>
       <div className="sp-product-info-container overflow-auto">
         {/* بخش قیمت‌ها */}
-        <div className="sp-pricing-grid">
-          <div className="sp-pricing-item">
-            <span className="sp-pricing-label">قیمت تک فروشی</span>
-            <div className="sp-pricing-details">
-              <span className="sp-pricing-value">{formatPrice(baseRetailPrice)}</span>
-              {retailDiscountPercent > 0 && (
-                <span className="sp-discount-badge">{retailDiscountPercent}%</span>
-              )}
-            </div>
-          </div>
+  <div className="sp-pricing-grid">
+  <div className="sp-pricing-item">
+    <span className="sp-pricing-label">قیمت تک فروشی</span>
+    <div className="sp-pricing-details">
+   <span className={`sp-pricing-value ${retailDiscountPercent > 0 ? 'line-through text-red-500' : ''}`}>
+  {formatPrice(baseRetailPrice)}
+</span>
+      {retailDiscountPercent > 0 && (
+        <span className="sp-discount-badge">{retailDiscountPercent}%</span>
+      )}
+    </div>
+  </div>
 
-          {hasWholesalePrice && (
-            <div className="sp-pricing-item">
-              <span className="sp-pricing-label">{minWholesale} عدد به بالا</span>
-              <div className="sp-pricing-details">
-                <span className="sp-pricing-value">{formatPrice(baseWholesalePrice)}</span>
-                {wholesaleDifferencePercent > 0 && (
-                  <span className="sp-discount-badge text-green-600 bg-green-100">
-                    {wholesaleDifferencePercent}% ارزان‌تر
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
+  {hasWholesalePrice && (
+    <div className="sp-pricing-item">
+      <span className="sp-pricing-label">{minWholesale} عدد به بالا</span>
+      <div className="sp-pricing-details">
+        <span className={`sp-pricing-value`}>
+          {formatPrice(baseWholesalePrice)}
+        </span>
+        {wholesaleDifferencePercent > 0 && (
+          <span className="sp-discount-badge text-green-600 bg-green-100">
+            {wholesaleDifferencePercent}% ارزان‌تر
+          </span>
+        )}
+      </div>
+    </div>
+  )}
 
-          <div className="bg-[#F7F7F7] text-xl text-[#6D4C82] text-center p-2 rounded-xl">
-            <span>{formatPrice(finalTotalPrice)}</span>
-          </div>
-        </div>
+  <div className="bg-[#F7F7F7] text-xl text-[#6D4C82] text-center p-2 rounded-xl">
+    <span>{formatPrice(finalTotalPrice)}</span>
+  </div>
+</div>
 
         {/* انتخاب رنگ */}
         {infoproduct.variants && infoproduct.variants.length > 0 && (
