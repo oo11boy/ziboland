@@ -34,6 +34,10 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
   const [quantity, setQuantity] = useState<number>(1);
   const [internalSelectedVariant, setInternalSelectedVariant] = useState<Variant | null>(null);
   const [isVariantChanging, setIsVariantChanging] = useState<boolean>(false);
+  
+  // State جدید برای کنترل نمایش دکمه ادامه و پرداخت
+  const [showCheckout, setShowCheckout] = useState<boolean>(false);
+  const [lastAddedQuantity, setLastAddedQuantity] = useState<number>(1);
 
   // State برای فرم موجودی شد خبرم کن
   const [isNotifyModalOpen, setIsNotifyModalOpen] = useState<boolean>(false);
@@ -94,6 +98,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
   useEffect(() => {
     if (cartItem) {
       setQuantity(cartItem.quantity);
+      setLastAddedQuantity(cartItem.quantity);
       const shouldBeWholesale =
         cartItem.quantity >= minWholesale &&
         hasWholesalePrice &&
@@ -102,12 +107,20 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
       hasReachedMaxRef.current = cartItem.quantity >= stockQuantity;
     } else {
       setQuantity(1);
+      setLastAddedQuantity(1);
       wasWholesaleRef.current = false;
       hasReachedMaxRef.current = false;
     }
 
     prevQuantityRef.current = quantity;
   }, [cartItem, activeVariant?.id, minWholesale, hasWholesalePrice, stockQuantity]);
+
+  // اگر تعداد تغییر کرد، دکمه checkout را مخفی کن
+  useEffect(() => {
+    if (quantity !== lastAddedQuantity && showCheckout) {
+      setShowCheckout(false);
+    }
+  }, [quantity, lastAddedQuantity, showCheckout]);
 
   // toast تغییر نوع قیمت (تکی ↔ عمده)
   useEffect(() => {
@@ -206,6 +219,7 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
     }
     setIsVariantChanging(true); // flag برای skip toast
     wasWholesaleRef.current = false; // ریست وضعیت عمده
+    setShowCheckout(false); // مخفی کردن دکمه checkout هنگام تغییر رنگ
   };
 
   const handleAddToCart = () => {
@@ -270,6 +284,10 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
       });
       toast.success("به سبد خرید اضافه شد", { position: "top-center" });
     }
+
+    // ذخیره تعداد فعلی و نمایش دکمه checkout
+    setLastAddedQuantity(quantity);
+    setShowCheckout(true);
   };
 
   // تابع ارسال درخواست موجودی شد خبرم کن
@@ -540,17 +558,36 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
           </div>
 
           {isInStock ? (
-            <button
-              onClick={handleAddToCart}
-              className="sp-add-to-cart-button"
-              style={{
-                backgroundColor: "#805b99",
-                cursor: "pointer",
-              }}
-            >
-              <ShoppingCartOutlined className="sp-cart-icon" />
-              {quantity > 0 ? "ثبت در سبد" : "افزودن به سبد خرید"}
-            </button>
+            showCheckout && quantity > 0 ? (
+              // وقتی دکمه ثبت در سبد کلیک شد، به لینک ادامه و پرداخت تبدیل میشه با همین استایل
+              <Link href="../checkout" style={{ textDecoration: 'none', width: '100%' }}>
+                <button
+                  className="sp-add-to-cart-button"
+                  style={{
+                    backgroundColor: "#805b99",
+                    cursor: "pointer",
+                    width: "100%",
+                  }}
+                >
+                  <ShoppingCartOutlined className="sp-cart-icon" />
+                  ادامه و پرداخت
+                </button>
+              </Link>
+            ) : (
+              // حالت عادی - ثبت در سبد
+              <button
+                onClick={handleAddToCart}
+                className="sp-add-to-cart-button"
+                style={{
+                  backgroundColor: "#805b99",
+                  cursor: quantity > 0 ? "pointer" : "not-allowed",
+                }}
+                disabled={quantity <= 0}
+              >
+                <ShoppingCartOutlined className="sp-cart-icon" />
+                {quantity > 0 ? "ثبت در سبد" : "افزودن به سبد خرید"}
+              </button>
+            )
           ) : (
             <button
               onClick={() => setIsNotifyModalOpen(true)}
@@ -623,10 +660,9 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
               variant="outlined"
               value={notifyName}
               onChange={(e) => setNotifyName(e.target.value)}
-           sx={{
-                "& .MuiInputLabel-root": { fontFamily: "yekannew",fontSize: "0.775rem" },
-                  "& .MuiInputLabel-input": { fontFamily: "yekannew",fontSize: "0.875rem" },
-              
+              sx={{
+                "& .MuiInputLabel-root": { fontFamily: "yekannew", fontSize: "0.875rem" },
+                "& .MuiInputBase-input": { fontFamily: "yekannew", fontSize: "0.875rem" },
               }}
             />
 
@@ -637,9 +673,8 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
               value={notifyPhone}
               onChange={(e) => setNotifyPhone(e.target.value)}
               sx={{
-                "& .MuiInputLabel-root": { fontFamily: "yekannew",fontSize: "0.875rem" },
-                 "& .MuiInputLabel-input": { fontFamily: "yekannew",fontSize: "0.875rem" },
-              
+                "& .MuiInputLabel-root": { fontFamily: "yekannew", fontSize: "0.875rem" },
+                "& .MuiInputBase-input": { fontFamily: "yekannew", fontSize: "0.875rem" },
               }}
             />
 

@@ -483,12 +483,13 @@ export default function SearchPageContainer({
     const searchLower = searchTerm.trim().toLowerCase();
 
     const filtered = products.filter((p) => {
+      // جستجو در توضیحات (content) حذف شده است
       const matchesSearch = searchLower === "" || (
         p.title?.toLowerCase().includes(searchLower) ||
         p.brandDetails?.title?.toLowerCase().includes(searchLower) ||
         p.motherCategoryName?.toLowerCase().includes(searchLower) ||
         p.category?.toLowerCase().includes(searchLower) ||
-        p.content?.toLowerCase().includes(searchLower) ||
+        // p.content?.toLowerCase().includes(searchLower) - حذف شده
         p.features?.some(f => f.toLowerCase().includes(searchLower)) ||
         p.variants?.some(v => 
           v.color_persianName?.toLowerCase().includes(searchLower) || 
