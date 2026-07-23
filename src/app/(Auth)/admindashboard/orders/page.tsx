@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/Components/ui/select";
 import { Modal, Box, Typography } from "@mui/material";
-import { View, Search, Filter, Trash2, Copy } from "lucide-react";
+import { View, Search, Filter, Trash2, Copy, CheckCircle, Clock, XCircle, RefreshCw, Truck, Package, ShoppingBag } from "lucide-react";
 import { toast } from "react-toastify";
 import Image from "next/image";
 import { API } from "@/lib/MainRoutes";
@@ -19,12 +19,13 @@ import Cookies from "js-cookie";
 import { Order } from "@/types/types";
 
 // کامپوننت‌های کمکی برای مودال
+// کامپوننت کمکی برای مودال - اصلاح شده
 const InfoItem = ({
   label,
   value,
 }: {
   label: string;
-  value: string | number | null | undefined;
+  value: string | number | null | undefined | React.ReactNode;
 }) => (
   <p className="text-sm">
     <span className="font-semibold text-gray-700 dark:text-gray-300">
@@ -58,7 +59,6 @@ const translateShippingMethod = (method: string) => {
     "normal_express": "پیشتاز",
     "fast_tehran": "سریع (تهران و مناطق ۲۲ گانه)",
     "fast_other": "سریع (استان تهران به جز شهر تهران)",
-    // برای سازگاری با روش‌های قدیمی
     "عادی (رایگان)": "عادی (رایگان)",
     "پیشتاز": "پیشتاز",
     "سریع (تهران و مناطق ۲۲ گانه)": "سریع (تهران و مناطق ۲۲ گانه)",
@@ -69,11 +69,89 @@ const translateShippingMethod = (method: string) => {
   return map[method] || method;
 };
 
+// کامپوننت Badge وضعیت پرداخت
+const PaymentStatusBadge = ({ status }: { status: string }) => {
+  const configs: Record<string, { label: string; icon: any; className: string }> = {
+    paid: {
+      label: "پرداخت شده",
+      icon: CheckCircle,
+      className: "bg-green-100 text-green-700 border-green-200"
+    },
+    pending: {
+      label: "در انتظار پرداخت",
+      icon: Clock,
+      className: "bg-yellow-100 text-yellow-700 border-yellow-200"
+    },
+    failed: {
+      label: "پرداخت ناموفق",
+      icon: XCircle,
+      className: "bg-red-100 text-red-700 border-red-200"
+    },
+    refunded: {
+      label: "بازپرداخت شده",
+      icon: RefreshCw,
+      className: "bg-blue-100 text-blue-700 border-blue-200"
+    }
+  };
+
+  const config = configs[status] || configs.pending;
+  const Icon = config.icon;
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${config.className}`}>
+      <Icon size={14} />
+      {config.label}
+    </span>
+  );
+};
+
+// کامپوننت Badge وضعیت سفارش
+const OrderStatusBadge = ({ status }: { status: string }) => {
+  const configs: Record<string, { label: string; icon: any; className: string }> = {
+    pending: {
+      label: "در انتظار",
+      icon: Clock,
+      className: "bg-gray-100 text-gray-700 border-gray-200"
+    },
+    processing: {
+      label: "در حال پردازش",
+      icon: RefreshCw,
+      className: "bg-blue-100 text-blue-700 border-blue-200"
+    },
+    shipped: {
+      label: "ارسال شده",
+      icon: Truck,
+      className: "bg-purple-100 text-purple-700 border-purple-200"
+    },
+    delivered: {
+      label: "تحویل داده شده",
+      icon: Package,
+      className: "bg-green-100 text-green-700 border-green-200"
+    },
+    cancelled: {
+      label: "لغو شده",
+      icon: XCircle,
+      className: "bg-red-100 text-red-700 border-red-200"
+    }
+  };
+
+  const config = configs[status] || configs.pending;
+  const Icon = config.icon;
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${config.className}`}>
+      <Icon size={14} />
+      {config.label}
+    </span>
+  );
+};
+
 const OrdersPage = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all");
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -81,7 +159,6 @@ const OrdersPage = () => {
     [key: number]: boolean;
   }>({});
 
-  // دریافت سفارشات از سرور
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -132,7 +209,6 @@ const OrdersPage = () => {
 
       const data: Order[] = await response.json();
 
-      // مرتب‌سازی: جدیدترین‌ها اول
       const sortedData = data.sort(
         (a, b) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
@@ -146,7 +222,7 @@ const OrdersPage = () => {
       setLoading(false);
     }
   };
-  // فیلتر ترکیبی: جستجو + وضعیت پرداخت
+
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       const searchLower = searchTerm.toLowerCase();
@@ -163,11 +239,14 @@ const OrdersPage = () => {
         paymentStatusFilter === "all" ||
         order.payment_status === paymentStatusFilter;
 
-      return matchesSearch && matchesPaymentStatus;
-    });
-  }, [orders, searchTerm, paymentStatusFilter]);
+      const matchesOrderStatus =
+        orderStatusFilter === "all" ||
+        order.status === orderStatusFilter;
 
-  // تغییر وضعیت سفارش
+      return matchesSearch && matchesPaymentStatus && matchesOrderStatus;
+    });
+  }, [orders, searchTerm, paymentStatusFilter, orderStatusFilter]);
+
   const handleStatusChange = async (
     orderId: number,
     newStatus: Order["status"],
@@ -175,7 +254,7 @@ const OrdersPage = () => {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
 
-  if (
+    if (
       order.payment_status !== "paid" &&
       ["shipped", "delivered"].includes(newStatus)
     ) {
@@ -220,7 +299,6 @@ const OrdersPage = () => {
         throw new Error(error.error || "خطا در به‌روزرسانی");
       }
 
-      // بروزرسانی محلی
       setOrders((prev) =>
         prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
       );
@@ -237,7 +315,6 @@ const OrdersPage = () => {
     }
   };
 
-  // ترجمه وضعیت‌ها
   const translateStatus = (status: string) => {
     const map: Record<string, string> = {
       pending: "در انتظار",
@@ -269,55 +346,98 @@ const OrdersPage = () => {
     toast.success("شماره کاربر کپی شد", { autoClose: 2000 });
   };
 
-  // لودینگ
+  // آمار سفارشات
+  const stats = useMemo(() => {
+    const total = orders.length;
+    const paid = orders.filter(o => o.payment_status === "paid").length;
+    const pending = orders.filter(o => o.payment_status === "pending").length;
+    const failed = orders.filter(o => o.payment_status === "failed").length;
+    const shipped = orders.filter(o => o.status === "shipped" || o.status === "delivered").length;
+    return { total, paid, pending, failed, shipped };
+  }, [orders]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-600"></div>
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-purple-600"></div>
+          <p className="text-gray-500 text-sm">در حال بارگذاری سفارشات...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 yekan">
-      {/* عنوان */}
-      <h1 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-8 text-center md:text-right">
-        مدیریت سفارشات زیبولند
-      </h1>
+    <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-7xl yekan">
+      {/* عنوان و آمار */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-2">
+            <ShoppingBag className="w-7 h-7 sm:w-8 sm:h-8 text-purple-600" />
+            مدیریت سفارشات
+          </h1>
+          <p className="text-sm sm:text-base text-gray-500 mt-1">
+            {stats.total} سفارش | {stats.paid} پرداخت شده | {stats.pending} در انتظار | {stats.failed} ناموفق | {stats.shipped} ارسال شده
+          </p>
+        </div>
+      </div>
 
-      {/* فیلترها و جستجو - کاملاً ریسپانسیو */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* فیلترها و جستجو - ریسپانسیو */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
         {/* جستجو */}
         <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
           <Input
             placeholder="جستجو در سفارشات..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pr-10 bg-white dark:bg-gray-800"
+            className="pr-10 py-5 sm:py-6 bg-white dark:bg-gray-800 rounded-xl text-sm"
           />
         </div>
 
         {/* فیلتر وضعیت پرداخت */}
-        <Select
-          value={paymentStatusFilter}
-          onValueChange={setPaymentStatusFilter}
-        >
-          <SelectTrigger className="bg-white dark:bg-gray-800">
-            <Filter className="w-4 h-4 ml-2 text-gray-500" />
-            <SelectValue placeholder="فیلتر وضعیت پرداخت" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">همه پرداخت‌ها</SelectItem>
-            <SelectItem value="paid">پرداخت شده</SelectItem>
-            <SelectItem value="pending">در انتظار پرداخت</SelectItem>
-            <SelectItem value="failed">پرداخت ناموفق</SelectItem>
-            <SelectItem value="refunded">بازپرداخت شده</SelectItem>
-          </SelectContent>
-        </Select>
+        <div>
+          <Select
+            value={paymentStatusFilter}
+            onValueChange={setPaymentStatusFilter}
+          >
+            <SelectTrigger className="bg-white dark:bg-gray-800 rounded-xl h-11 sm:h-12">
+              <Filter className="w-4 h-4 ml-2 text-gray-500" />
+              <SelectValue placeholder="وضعیت پرداخت" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">✅ همه پرداخت‌ها</SelectItem>
+              <SelectItem value="paid">✅ پرداخت شده</SelectItem>
+              <SelectItem value="pending">⏳ در انتظار پرداخت</SelectItem>
+              <SelectItem value="failed">❌ پرداخت ناموفق</SelectItem>
+              <SelectItem value="refunded">🔄 بازپرداخت شده</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* فیلتر وضعیت سفارش */}
+        <div>
+          <Select
+            value={orderStatusFilter}
+            onValueChange={setOrderStatusFilter}
+          >
+            <SelectTrigger className="bg-white dark:bg-gray-800 rounded-xl h-11 sm:h-12">
+              <Package className="w-4 h-4 ml-2 text-gray-500" />
+              <SelectValue placeholder="وضعیت سفارش" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">📦 همه سفارشات</SelectItem>
+              <SelectItem value="pending">⏳ در انتظار</SelectItem>
+              <SelectItem value="processing">🔄 در حال پردازش</SelectItem>
+              <SelectItem value="shipped">🚚 ارسال شده</SelectItem>
+              <SelectItem value="delivered">✅ تحویل داده شده</SelectItem>
+              <SelectItem value="cancelled">❌ لغو شده</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* تعداد سفارشات */}
-        <div className="hidden lg:flex items-center justify-center text-sm text-gray-600 bg-gray-100 dark:bg-gray-800 rounded-lg px-4">
+        <div className="hidden lg:flex items-center justify-center text-sm text-gray-600 bg-gray-100 dark:bg-gray-800 rounded-xl px-4">
           نمایش {filteredOrders.length} از {orders.length} سفارش
         </div>
       </div>
@@ -325,62 +445,53 @@ const OrdersPage = () => {
       {/* نمایش موبایل: کارت‌های زیبا */}
       <div className="block lg:hidden space-y-4">
         {filteredOrders.length === 0 ? (
-          <Card className="text-center py-16 bg-gray-50 dark:bg-gray-900">
-            <p className="text-xl text-gray-500">هیچ سفارشی یافت نشد</p>
-            <p className="text-sm text-gray-400 mt-2">فیلترها را تغییر دهید</p>
+          <Card className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-2xl">
+            <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-lg text-gray-500">هیچ سفارشی یافت نشد</p>
+            <p className="text-sm text-gray-400 mt-1">فیلترها را تغییر دهید</p>
           </Card>
         ) : (
           filteredOrders.map((order) => (
             <Card
               key={order.id}
-              className="shadow-lg hover:shadow-xl transition-shadow"
+              className="shadow-lg hover:shadow-xl transition-shadow rounded-2xl border-0"
             >
-              <CardContent className="pt-6">
+              <CardContent className="p-4 sm:p-6">
                 {/* هدر کارت */}
                 <div className="flex justify-between items-start mb-4">
                   <div>
                     <p className="text-lg font-bold text-purple-600">
                       #{order.order_code}
                     </p>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm font-medium text-gray-700">
                       {order.first_name} {order.last_name}
                     </p>
-                    <p className="text-xs text-gray-500">@{order.username}</p>
+                    <p className="text-xs text-gray-400">@{order.username}</p>
                   </div>
-                  <div className="text-right">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        order.payment_status === "paid"
-                          ? "bg-green-100 text-green-800"
-                          : order.payment_status === "pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {translatePaymentStatus(order.payment_status)}
-                    </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <PaymentStatusBadge status={order.payment_status} />
+                    <OrderStatusBadge status={order.status} />
                   </div>
                 </div>
 
                 {/* اطلاعات اصلی */}
-                <div className="space-y-2 text-sm">
-                  <p>
-                    <strong>مبلغ:</strong>{" "}
-                    {(order.total_amount / 10).toLocaleString()} تومان
-                  </p>
-                  <p>
-                    <strong>وضعیت:</strong> {translateStatus(order.status)}
-                  </p>
-                  <p>
-                    <strong>روش ارسال:</strong> {translateShippingMethod(order.shipping_method)}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {new Date(order.created_at).toLocaleDateString("fa-IR")}
-                  </p>
+                <div className="grid grid-cols-2 gap-2 text-sm bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3">
+                  <div>
+                    <p className="text-gray-500 text-xs">مبلغ</p>
+                    <p className="font-bold">{(order.total_amount / 10).toLocaleString()} تومان</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs">روش ارسال</p>
+                    <p className="text-sm">{translateShippingMethod(order.shipping_method)}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-gray-500 text-xs">تاریخ</p>
+                    <p className="text-sm">{new Date(order.created_at).toLocaleDateString("fa-IR")}</p>
+                  </div>
                 </div>
 
                 {/* اکشن‌ها */}
-                <div className="flex gap-3 mt-5">
+                <div className="flex flex-wrap gap-2 mt-4">
                   <Select
                     value={order.status}
                     onValueChange={(newValue) => {
@@ -393,35 +504,39 @@ const OrdersPage = () => {
                     }}
                     disabled={statusUpdating[order.id]}
                   >
-                    <SelectTrigger className="flex-1 text-xs h-10">
+                    <SelectTrigger className="flex-1 min-w-[120px] text-xs h-10 rounded-xl">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">در انتظار</SelectItem>
-                      <SelectItem value="processing">در حال پردازش</SelectItem>
-                      <SelectItem value="shipped">ارسال شده</SelectItem>
-                      <SelectItem value="delivered">تحویل داده شده</SelectItem>
-                      <SelectItem value="cancelled">لغو شده</SelectItem>
+                      <SelectItem value="pending">⏳ در انتظار</SelectItem>
+                      <SelectItem value="processing">🔄 در حال پردازش</SelectItem>
+                      <SelectItem value="shipped">🚚 ارسال شده</SelectItem>
+                      <SelectItem value="delivered">✅ تحویل داده شده</SelectItem>
+                      <SelectItem value="cancelled">❌ لغو شده</SelectItem>
                     </SelectContent>
                   </Select>
 
-                  <Button
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700"
-                    onClick={() => handleViewDetails(order)}
-                  >
-                    <View className="w-4 h-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="hover:bg-red-100 dark:hover:bg-red-900"
-                    onClick={() =>
-                      handleDeleteOrder(order.id, order.order_code)
-                    }
-                  >
-                    <Trash2 className="w-5 h-5 text-red-600" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700 rounded-xl"
+                      onClick={() => handleViewDetails(order)}
+                      title="مشاهده جزئیات"
+                    >
+                      <View className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="hover:bg-red-100 dark:hover:bg-red-900/20 rounded-xl"
+                      onClick={() =>
+                        handleDeleteOrder(order.id, order.order_code)
+                      }
+                      title="حذف سفارش"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-600" />
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -429,153 +544,124 @@ const OrdersPage = () => {
         )}
       </div>
 
-      {/* نمایش دسکتاپ: جدول حرفه‌ای */}
+      {/* نمایش دسکتاپ: جدول */}
       <div className="hidden lg:block">
-        <Card className="shadow-xl">
-          <CardHeader className=" text-black rounded-t-lg">
-            <CardTitle className="text-xl">لیست کامل سفارشات </CardTitle>
+        <Card className="shadow-xl rounded-2xl border-0 overflow-hidden">
+          <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Package className="w-5 h-5 text-purple-600" />
+              لیست کامل سفارشات
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {filteredOrders.length === 0 ? (
-              <div className="text-center py-20 text-gray-500 text-lg">
-                هیچ سفارشی با این فیلتر یافت نشد
+              <div className="text-center py-20 text-gray-500">
+                <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-lg">هیچ سفارشی با این فیلتر یافت نشد</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
+                  <thead className="bg-gray-50 dark:bg-gray-800/50">
                     <tr>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
-                        شماره سفارش
-                      </th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
-                        کاربر
-                      </th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
-                        مبلغ
-                      </th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
-                        وضعیت سفارش
-                      </th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
-                        وضعیت پرداخت
-                      </th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
-                        روش ارسال
-                      </th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
-                        تاریخ
-                      </th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
-                        عملیات
-                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">شماره سفارش</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">کاربر</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">مبلغ</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">وضعیت سفارش</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">وضعیت پرداخت</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">روش ارسال</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">تاریخ</th>
+                      <th className="px-6 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-300">عملیات</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                     {filteredOrders.map((order) => (
                       <tr
                         key={order.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                       >
                         <td className="px-6 py-4 font-mono text-purple-600 font-bold">
                           #{order.order_code}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-right">
+                          <div>
                             <p className="font-medium">
                               {order.first_name} {order.last_name}
                             </p>
-                            <p className="text-sm text-gray-500">
-                              <button
-                                onClick={() => {
-                                  copyToClipboard(order.phone_number);
-                                }}
-                                className="text-gray-500 hover:text-purple-600 flex gap-2 transition"
-                                title="کپی نام محصول"
-                              >
-                                <Copy className="h-4 w-4" />{" "}
-                                {order.phone_number}
-                              </button>
-                            </p>
+                            <button
+                              onClick={() => copyToClipboard(order.phone_number)}
+                              className="text-sm text-gray-500 hover:text-purple-600 flex items-center gap-1 transition"
+                              title="کپی شماره تلفن"
+                            >
+                              <Copy className="h-3 w-3" />
+                              {order.phone_number}
+                            </button>
                           </div>
                         </td>
                         <td className="px-6 py-4 font-bold text-lg">
                           {(order.total_amount / 10).toLocaleString()} تومان
                         </td>
                         <td className="px-6 py-4">
-                          <Select
-                            value={order.status}
-                            onValueChange={(newValue) => {
-                              if (newValue !== order.status) {
-                                handleStatusChange(
-                                  order.id,
-                                  newValue as Order["status"],
-                                );
-                              }
-                            }}
-                            disabled={statusUpdating[order.id]}
-                          >
-                            <SelectTrigger className="w-44">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="pending">در انتظار</SelectItem>
-                              <SelectItem value="processing">
-                                در حال پردازش
-                              </SelectItem>
-                              <SelectItem value="shipped">ارسال شده</SelectItem>
-                              <SelectItem value="delivered">
-                                تحویل داده شده
-                              </SelectItem>
-                              <SelectItem value="cancelled">لغو شده</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex items-center gap-2">
+                            <OrderStatusBadge status={order.status} />
+                            <Select
+                              value={order.status}
+                              onValueChange={(newValue) => {
+                                if (newValue !== order.status) {
+                                  handleStatusChange(
+                                    order.id,
+                                    newValue as Order["status"],
+                                  );
+                                }
+                              }}
+                              disabled={statusUpdating[order.id]}
+                            >
+                              <SelectTrigger className="w-32 h-8 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="pending">⏳ در انتظار</SelectItem>
+                                <SelectItem value="processing">🔄 در حال پردازش</SelectItem>
+                                <SelectItem value="shipped">🚚 ارسال شده</SelectItem>
+                                <SelectItem value="delivered">✅ تحویل داده شده</SelectItem>
+                                <SelectItem value="cancelled">❌ لغو شده</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <span
-                            className={`px-4 py-2 rounded-full text-xs font-bold ${
-                              order.payment_status === "paid"
-                                ? "bg-green-100 text-green-800"
-                                : order.payment_status === "pending"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : "bg-red-100 text-red-800"
-                            }`}
-                          >
-                            {translatePaymentStatus(order.payment_status)}
-                          </span>
+                        <td className="px-6 py-4">
+                          <PaymentStatusBadge status={order.payment_status} />
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="text-sm text-gray-700 dark:text-gray-300">
-                            {translateShippingMethod(order.shipping_method)}
-                          </span>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {translateShippingMethod(order.shipping_method)}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
-                          {new Date(order.created_at).toLocaleDateString(
-                            "fa-IR",
-                          )}
+                          {new Date(order.created_at).toLocaleDateString("fa-IR")}
                         </td>
-                        <td className="px-6 py-4 text-center flex">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="hover:bg-blue-100 dark:hover:bg-blue-900"
-                            onClick={() => handleViewDetails(order)}
-                          >
-                            <View className="w-5 h-5 text-blue-600" />
-                          </Button>
-
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="hover:bg-red-100 dark:hover:bg-red-900"
-                            onClick={() =>
-                              handleDeleteOrder(order.id, order.order_code)
-                            }
-                          >
-                            <Trash2 className="w-5 h-5 text-red-600" />
-                          </Button>
+                        <td className="px-6 py-4">
+                          <div className="flex justify-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-xl"
+                              onClick={() => handleViewDetails(order)}
+                              title="مشاهده جزئیات"
+                            >
+                              <View className="w-5 h-5 text-blue-600" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="hover:bg-red-100 dark:hover:bg-red-900/20 rounded-xl"
+                              onClick={() =>
+                                handleDeleteOrder(order.id, order.order_code)
+                              }
+                              title="حذف سفارش"
+                            >
+                              <Trash2 className="w-5 h-5 text-red-600" />
+                            </Button>
+                          </div>
                         </td>
-                        <td className="px-6 py-4 text-center"></td>
                       </tr>
                     ))}
                   </tbody>
@@ -586,7 +672,7 @@ const OrdersPage = () => {
         </Card>
       </div>
 
-      {/* مودال جزئیات سفارش - کامل و ریسپانسیو */}
+      {/* مودال جزئیات سفارش */}
       <Modal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -598,7 +684,7 @@ const OrdersPage = () => {
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: { xs: "95%", sm: "80%", md: "70%", lg: "60%" },
+            width: { xs: "95%", sm: "85%", md: "75%", lg: "65%" },
             maxHeight: "90vh",
             overflowY: "auto",
             bgcolor: "background.paper",
@@ -610,50 +696,42 @@ const OrdersPage = () => {
         >
           {selectedOrder && (
             <div className="text-right">
-              {/* دکمه بستن */}
               <Button
                 onClick={() => setIsModalOpen(false)}
-                className="absolute top-4 left-4 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                className="absolute top-4 left-4 text-gray-500 hover:text-gray-700 text-2xl font-bold p-2 hover:bg-gray-100 rounded-full min-w-0 h-auto"
               >
-                ×
+                ✕
               </Button>
 
               <Typography
                 variant="h4"
-                className="text-center font-bold yekan !text-lg  text-purple-700 pb-8"
+                className="text-center font-bold yekan text-xl sm:text-2xl text-purple-700 pb-6"
               >
                 جزئیات سفارش #{selectedOrder.order_code}
               </Typography>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4">
                 <InfoItem
                   label="نام و نام خانوادگی"
                   value={`${selectedOrder.first_name} ${selectedOrder.last_name}`}
                 />
                 <InfoItem label="ایمیل" value={selectedOrder.email} />
-                <InfoItem
-                  label="شماره تلفن"
-                  value={selectedOrder.phone_number}
-                />
+                <InfoItem label="شماره تلفن" value={selectedOrder.phone_number} />
                 <InfoItem
                   label="تاریخ سفارش"
-                  value={new Date(selectedOrder.created_at).toLocaleDateString(
-                    "fa-IR",
-                  )}
+                  value={new Date(selectedOrder.created_at).toLocaleDateString("fa-IR")}
                 />
                 <InfoItem
                   label="مبلغ کل"
-                  value={`${(
-                    selectedOrder.total_amount / 10
-                  ).toLocaleString()} تومان`}
+                  value={`${(selectedOrder.total_amount / 10).toLocaleString()} تومان`}
                 />
                 <InfoItem
                   label="وضعیت سفارش"
-                  value={translateStatus(selectedOrder.status)}
+                  value={<OrderStatusBadge status={selectedOrder.status} />}
                 />
                 <InfoItem
                   label="وضعیت پرداخت"
-                  value={translatePaymentStatus(selectedOrder.payment_status)}
+                  value={<PaymentStatusBadge status={selectedOrder.payment_status} />}
                 />
                 <InfoItem
                   label="روش ارسال"
@@ -662,21 +740,23 @@ const OrdersPage = () => {
               </div>
 
               <Section title="آدرس تحویل">
-                {`${selectedOrder.province}، ${selectedOrder.city}، ${selectedOrder.street}`}
-                {selectedOrder.alley && `، کوچه ${selectedOrder.alley}`}
-                {selectedOrder.building_number &&
-                  `، پلاک ${selectedOrder.building_number}`}
-                {selectedOrder.unit && `، واحد ${selectedOrder.unit}`}
-                {selectedOrder.postal_code &&
-                  `، کد پستی: ${selectedOrder.postal_code}`}
+                <div className="bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4">
+                  {`${selectedOrder.province}، ${selectedOrder.city}، ${selectedOrder.street}`}
+                  {selectedOrder.alley && `، کوچه ${selectedOrder.alley}`}
+                  {selectedOrder.building_number &&
+                    `، پلاک ${selectedOrder.building_number}`}
+                  {selectedOrder.unit && `، واحد ${selectedOrder.unit}`}
+                  {selectedOrder.postal_code &&
+                    `، کد پستی: ${selectedOrder.postal_code}`}
+                </div>
               </Section>
 
               <Section title="محصولات سفارش داده شده">
-                <div className="grid gap-4">
+                <div className="space-y-3">
                   {selectedOrder.items.map((item) => (
                     <div
                       key={item.id}
-                      className="flex gap-4 items-start p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                      className="flex gap-4 items-start p-4 bg-gray-50 dark:bg-gray-800/30 rounded-xl"
                     >
                       {item.image ? (
                         <Image
@@ -684,61 +764,45 @@ const OrdersPage = () => {
                           alt={item.title}
                           width={80}
                           height={80}
-                          className="rounded-lg object-cover"
+                          className="rounded-lg object-cover w-20 h-20"
                         />
                       ) : (
                         <div className="w-20 h-20 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-500 text-xs">
                           بدون تصویر
                         </div>
                       )}
-                      <div className="flex-1 space-y-2">
+                      <div className="flex-1 space-y-1">
                         <p className="font-semibold">{item.title}</p>
                         {item.color && (
                           <p className="text-sm text-gray-600">
-                            رنگ: {item.color.persianName} (
-                            {item.color.englishName})
+                            رنگ: {item.color.persianName} ({item.color.englishName})
                           </p>
                         )}
-                        <p className="text-sm flex items-center gap-2">
-                          <span>تعداد:</span>
-                          <span className={`
-                            font-bold
-                            ${item.quantity > 1 
-                              ? 'text-2xl text-orange-500 dark:text-orange-400' 
-                              : 'text-base text-gray-700 dark:text-gray-300'
-                            }
-                          `}>
-                            {item.quantity}
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className="text-sm">تعداد: <span className={`font-bold ${item.quantity > 1 ? 'text-orange-500 text-xl' : ''}`}>{item.quantity}</span></span>
+                          <span className="text-sm font-medium">قیمت واحد: {item.unit_price.toLocaleString()} تومان</span>
+                          <span className="text-xs text-gray-500 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                            {item.price_type === "single" ? "تکی" : "عمده"}
                           </span>
-                          {item.quantity > 1 && (
-                            <span className="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-full">
-                              {item.quantity} عدد
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-sm font-medium">
-                          قیمت واحد: {item.unit_price.toLocaleString()} تومان
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          نوع قیمت:{" "}
-                          {item.price_type === "single" ? "تکی" : "عمده"}
-                        </p>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               </Section>
 
-      {selectedOrder.extra_details && (
-  <Section title="توضیحات اضافی سفارش">
-    {selectedOrder.extra_details}
-  </Section>
-)}
+              {selectedOrder.extra_details && (
+                <Section title="توضیحات اضافی سفارش">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 text-blue-700 dark:text-blue-300">
+                    {selectedOrder.extra_details}
+                  </div>
+                </Section>
+              )}
 
-              <div className="text-center mt-10">
+              <div className="text-center mt-8">
                 <Button
                   onClick={() => setIsModalOpen(false)}
-                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-10 py-3 text-lg rounded-xl"
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-3 text-lg rounded-xl"
                 >
                   بستن
                 </Button>
