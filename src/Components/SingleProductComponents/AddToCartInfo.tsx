@@ -45,6 +45,10 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
   const [notifyPhone, setNotifyPhone] = useState<string>("");
   const [isSubmittingNotify, setIsSubmittingNotify] = useState<boolean>(false);
 
+  // State برای مزایای داینامیک
+  const [benefits, setBenefits] = useState<BenefitItem[]>([]);
+  const [loadingBenefits, setLoadingBenefits] = useState<boolean>(true);
+
   const wasWholesaleRef = useRef<boolean>(false);
   const prevQuantityRef = useRef<number>(1);
   const hasReachedMaxRef = useRef<boolean>(false);
@@ -78,6 +82,27 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
       item.id === infoproduct.id &&
       item.color?.englishName === activeVariant?.color_englishName
   );
+
+  // دریافت مزایا از دیتابیس
+  useEffect(() => {
+    fetchBenefits();
+  }, []);
+
+  const fetchBenefits = async () => {
+    try {
+      const res = await fetch("/api/benefits");
+      if (res.ok) {
+        const data = await res.json();
+        setBenefits(data);
+      } else {
+        console.error("Error fetching benefits");
+      }
+    } catch (error) {
+      console.error("Error fetching benefits:", error);
+    } finally {
+      setLoadingBenefits(false);
+    }
+  };
 
   // مقداردهی اولیه واریانت پیش‌فرض
   useEffect(() => {
@@ -343,37 +368,6 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
     return price.toLocaleString("fa-IR") + " تومان";
   };
 
-  const benefitdata: BenefitItem[] = [
-    {
-      id: 1,
-      title: "ارسال رایگان سفارشات",
-      description: "خرید بالای ۴ میلیون تومان",
-      image: "https://abzarreza.com/wp-content/uploads/2023/09/Delivery.png.webp",
-      link: "/faq",
-    },
-    {
-      id: 2,
-      title: "ضمانت بازگشت کالا",
-      description: "تا ۳۰ روز پس از خرید",
-      image: "https://abzarreza.com/wp-content/uploads/2023/09/Free-Return.png.webp",
-      link: "/faq",
-    },
-    {
-      id: 3,
-      title: "ضمانت اصالت کالا",
-      description: "ابزارآلات اصیل و معتبر",
-      image: "https://abzarreza.com/wp-content/uploads/2023/09/Warranty.png.webp",
-      link: "/faq",
-    },
-    {
-      id: 4,
-      title: "مشاوره تخصصی رایگان",
-      description: "خرید آگاهانه ابزارآلات",
-      image: "https://abzarreza.com/wp-content/uploads/2023/09/Support.png.webp",
-      link: "/faq",
-    },
-  ];
-
   const getContrastColor = (hexCode: string) => {
     const hex = hexCode.replace("#", "");
     const r = parseInt(hex.substring(0, 2), 16);
@@ -603,21 +597,37 @@ const AddToCartInfo: React.FC<AddToCartInfoProps> = ({
           )}
         </div>
 
-        {/* مزایای خرید */}
+        {/* مزایای خرید - داینامیک */}
         <div className="sp-benefits-grid">
-          {benefitdata.map((item) => (
-            <Link key={item.id} href={item.link} className="sp-benefit-item">
-              <img
-                src={item.image}
-                alt={item.title}
-                className="sp-benefit-image"
-              />
-              <div className="sp-benefit-text">
-                <h3 className="sp-benefit-title">{item.title}</h3>
-                <p className="sp-benefit-description">{item.description}</p>
+          {loadingBenefits ? (
+            // حالت لودینگ
+            Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className="sp-benefit-item opacity-50">
+                <div className="w-12 h-12 bg-gray-200 rounded-full animate-pulse"></div>
+                <div className="sp-benefit-text">
+                  <div className="h-4 bg-gray-200 rounded w-20 animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 rounded w-16 animate-pulse mt-1"></div>
+                </div>
               </div>
-            </Link>
-          ))}
+            ))
+          ) : benefits.length > 0 ? (
+            benefits.map((item) => (
+              <Link key={item.id} href={item.link || "/#"} className="sp-benefit-item">
+                <img
+                  src={item.image}
+                  alt={item.title}
+                  className="sp-benefit-image"
+                />
+                <div className="sp-benefit-text">
+                  <h3 className="sp-benefit-title">{item.title}</h3>
+                  <p className="sp-benefit-description">{item.description}</p>
+                </div>
+              </Link>
+            ))
+          ) : (
+            // اگر مزیتی وجود نداشت، هیچ چیزی نمایش نده
+            null
+          )}
         </div>
       </div>
 

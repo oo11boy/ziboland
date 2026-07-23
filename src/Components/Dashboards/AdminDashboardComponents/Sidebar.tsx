@@ -17,7 +17,8 @@ import {
   Image,
   LucideSliders,
   Mail,
-  Send, // اضافه شده
+  Send,
+  Award, // اضافه شده
 } from "lucide-react";
 import { useAuth } from "@/ContextApi/AuthContext";
 
@@ -53,7 +54,8 @@ const Sidebar = () => {
     { href: "/admindashboard/brands", label: "برندها", icon: Building },
     { href: "/admindashboard/comments", label: "نظرات", icon: MessageCircle },
       { href: "/admindashboard/shipping-methods", label: "مدیریت ارسال", icon: Send },
-  
+ { href: "/admindashboard/benefits", label: "مدیریت مزایا", icon: Award }, // اضافه شده
+
     { href: "/admindashboard/contacts", label: "پیام‌های تماس", icon: Mail }, // اضافه شده
     { href: "/admindashboard/tickets", label: "تیکت‌ها", icon: Ticket },
     { href: "/admindashboard/settings", label: "تنظیمات", icon: Settings },
