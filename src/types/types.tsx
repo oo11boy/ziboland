@@ -286,6 +286,7 @@ export interface Order {
   payment_status: "pending" | "paid" | "failed" | "refunded";
   shipping_method: string;
   tracking_code: string | null;
+  tracking_info?: string | null; // اضافه شده - اطلاعات رهگیری (کد رهگیری یا شماره پیک)
   created_at: string;
   updated_at: string;
   province?: string;
@@ -296,7 +297,7 @@ export interface Order {
   unit?: string;
   postal_code?: string;
   items: OrderItem[];
-  extra_details:string;
+  extra_details: string;
 }
 
 export interface OrdersContentProps {

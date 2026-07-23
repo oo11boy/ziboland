@@ -24,15 +24,13 @@ import {
   Truck,
   Package,
   ShoppingBag,
+  Edit,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import Image from "next/image";
-import { API } from "@/lib/MainRoutes";
 import Cookies from "js-cookie";
 import { Order } from "@/types/types";
 
-// کامپوننت‌های کمکی برای مودال
-// کامپوننت کمکی برای مودال - اصلاح شده
 const InfoItem = ({
   label,
   value,
@@ -80,6 +78,12 @@ const translateShippingMethod = (method: string) => {
     express: "اکسپرس",
   };
   return map[method] || method;
+};
+
+// تابع تشخیص روش ارسال سریع
+const isExpressShipping = (method: string) => {
+  const expressMethods = ["fast_tehran", "fast_other", "express", "پیشتاز", "normal_express"];
+  return expressMethods.includes(method);
 };
 
 // کامپوننت Badge وضعیت پرداخت
@@ -269,6 +273,76 @@ const OrdersPage = () => {
     });
   }, [orders, searchTerm, paymentStatusFilter, orderStatusFilter]);
 
+  // تابع ویرایش اطلاعات رهگیری
+  const handleEditTrackingInfo = async (orderId: number) => {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+
+    // فقط اگر وضعیت ارسال شده باشد
+    if (order.status !== "shipped") {
+      toast.error("فقط سفارش‌های ارسال شده قابل ویرایش هستند");
+      return;
+    }
+
+    const isExpress = isExpressShipping(order.shipping_method);
+    const label = isExpress ? "شماره پیک" : "کد رهگیری";
+    const currentValue = order.tracking_info || "";
+    
+    const newTrackingInfo = prompt(`ویرایش ${label} برای سفارش #${order.order_code}:`, currentValue);
+    
+    if (newTrackingInfo === null) {
+      return; // کاربر انصراف داد
+    }
+    
+    if (!newTrackingInfo.trim()) {
+      toast.error(`لطفاً ${label} را وارد کنید`);
+      return;
+    }
+
+    setStatusUpdating((prev) => ({ ...prev, [orderId]: true }));
+
+    try {
+      const token = Cookies.get("authToken");
+      const res = await fetch(`/api/admin/orders/${orderId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          status: order.status,
+          tracking_info: newTrackingInfo.trim()
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "خطا در به‌روزرسانی");
+      }
+
+      setOrders((prev) =>
+        prev.map((o) => 
+          o.id === orderId 
+            ? { ...o, tracking_info: newTrackingInfo.trim() } 
+            : o
+        ),
+      );
+
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder({ 
+          ...selectedOrder, 
+          tracking_info: newTrackingInfo.trim()
+        });
+      }
+
+      toast.success("اطلاعات رهگیری با موفقیت به‌روزرسانی شد");
+    } catch (err: any) {
+      toast.error(err.message || "خطا در به‌روزرسانی");
+    } finally {
+      setStatusUpdating((prev) => ({ ...prev, [orderId]: false }));
+    }
+  };
+
   const handleStatusChange = async (
     orderId: number,
     newStatus: Order["status"],
@@ -293,6 +367,23 @@ const OrdersPage = () => {
       }
     }
 
+    // اگر وضعیت "ارسال شده" است، از کاربر اطلاعات رهگیری را بگیر
+    let trackingInfo = null;
+    if (newStatus === "shipped") {
+      const isExpress = isExpressShipping(order.shipping_method);
+      const label = isExpress ? "شماره پیک" : "کد رهگیری";
+      trackingInfo = prompt(`لطفاً ${label} را وارد کنید:`);
+      
+      if (trackingInfo === null) {
+        return; // کاربر انصراف داد
+      }
+      
+      if (!trackingInfo.trim()) {
+        toast.error(`لطفاً ${label} را وارد کنید`);
+        return;
+      }
+    }
+
     if (
       !confirm(
         `آیا از تغییر وضعیت سفارش #${order.order_code} به "${translateStatus(
@@ -313,7 +404,10 @@ const OrdersPage = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ 
+          status: newStatus,
+          tracking_info: trackingInfo 
+        }),
       });
 
       if (!res.ok) {
@@ -322,11 +416,19 @@ const OrdersPage = () => {
       }
 
       setOrders((prev) =>
-        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)),
+        prev.map((o) => 
+          o.id === orderId 
+            ? { ...o, status: newStatus, tracking_info: trackingInfo || o.tracking_info } 
+            : o
+        ),
       );
 
       if (selectedOrder?.id === orderId) {
-        setSelectedOrder({ ...selectedOrder, status: newStatus });
+        setSelectedOrder({ 
+          ...selectedOrder, 
+          status: newStatus,
+          tracking_info: trackingInfo || selectedOrder.tracking_info 
+        });
       }
 
       toast.success("وضعیت سفارش با موفقیت تغییر کرد");
@@ -519,6 +621,32 @@ const OrdersPage = () => {
                       {new Date(order.created_at).toLocaleDateString("fa-IR")}
                     </p>
                   </div>
+                  {order.tracking_info && order.status === "shipped" && (
+                    <div className="col-span-2">
+                      <div className="flex items-center gap-1">
+                        <p className="text-gray-500 text-xs">اطلاعات رهگیری</p>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <p className="text-sm text-blue-600 font-semibold">
+                          {isExpressShipping(order.shipping_method) 
+                            ? `شماره پیک: ${order.tracking_info}`
+                            : `کد رهگیری: ${order.tracking_info}`}
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditTrackingInfo(order.id);
+                          }}
+                          title="ویرایش اطلاعات رهگیری"
+                        >
+                          <Edit size={14} />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* اکشن‌ها */}
@@ -691,6 +819,27 @@ const OrdersPage = () => {
                               </SelectContent>
                             </Select>
                           </div>
+                          {order.tracking_info && order.status === "shipped" && (
+                            <div className="mt-1 flex items-center gap-1">
+                              <span className="text-xs text-blue-600 font-semibold">
+                                {isExpressShipping(order.shipping_method) 
+                                  ? `شماره پیک: ${order.tracking_info}`
+                                  : `کد رهگیری: ${order.tracking_info}`}
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditTrackingInfo(order.id);
+                                }}
+                                title="ویرایش اطلاعات رهگیری"
+                              >
+                                <Edit size={14} />
+                              </Button>
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <PaymentStatusBadge status={order.payment_status} />
@@ -810,6 +959,35 @@ const OrdersPage = () => {
                   value={translateShippingMethod(selectedOrder.shipping_method)}
                 />
               </div>
+
+              {/* نمایش اطلاعات رهگیری با دکمه ویرایش */}
+              {selectedOrder.tracking_info && selectedOrder.status === "shipped" && (
+                <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                      {isExpressShipping(selectedOrder.shipping_method) 
+                        ? "🚚 شماره پیک:"
+                        : "📦 کد رهگیری:"}
+                      <span className="font-bold mr-2 text-blue-800 dark:text-blue-200">
+                        {selectedOrder.tracking_info}
+                      </span>
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-full"
+                      onClick={() => {
+                        setIsModalOpen(false);
+                        handleEditTrackingInfo(selectedOrder.id);
+                      }}
+                      title="ویرایش اطلاعات رهگیری"
+                    >
+                      <Edit size={16} className="ml-1" />
+                      ویرایش
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <Section title="آدرس تحویل">
                 <div className="bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4">

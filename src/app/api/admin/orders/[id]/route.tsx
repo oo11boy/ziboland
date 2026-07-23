@@ -1,4 +1,3 @@
-//src\app\api\admin\orders\[id]\route.tsx
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import * as jose from "jose";
@@ -37,7 +36,8 @@ export async function PUT(
     return NextResponse.json({ error: "توکن نامعتبر است" }, { status: 401 });
   }
 
-  const { status } = await request.json();
+  const { status, tracking_info } = await request.json();
+  
   if (
     !["pending", "processing", "shipped", "delivered", "cancelled"].includes(
       status,
@@ -49,13 +49,23 @@ export async function PUT(
   const conn = await pool.getConnection();
 
   try {
-    const [result]: any = await conn.execute(
-      `UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?`,
-      [status, id],
-    );
-
-    if (result.affectedRows === 0) {
-      return NextResponse.json({ error: "سفارش یافت نشد" }, { status: 404 });
+    // اگر وضعیت "shipped" است، tracking_info را هم به‌روزرسانی کن
+    if (status === "shipped" && tracking_info) {
+      const [result]: any = await conn.execute(
+        `UPDATE orders SET status = ?, tracking_info = ?, updated_at = NOW() WHERE id = ?`,
+        [status, tracking_info, id],
+      );
+      if (result.affectedRows === 0) {
+        return NextResponse.json({ error: "سفارش یافت نشد" }, { status: 404 });
+      }
+    } else {
+      const [result]: any = await conn.execute(
+        `UPDATE orders SET status = ?, updated_at = NOW() WHERE id = ?`,
+        [status, id],
+      );
+      if (result.affectedRows === 0) {
+        return NextResponse.json({ error: "سفارش یافت نشد" }, { status: 404 });
+      }
     }
 
     await conn.commit();
@@ -74,7 +84,7 @@ export async function PUT(
   }
 }
 
-// اضافه کردن این بخش به انتهای فایل route.tsx موجود در پوشه [id]
+// DELETE - حذف سفارش
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -87,13 +97,10 @@ export async function DELETE(
 
   const conn = await pool.getConnection();
   try {
-    // شروع تراکنش برای حذف امن
     await conn.beginTransaction();
 
-    // ۱. حذف آیتم‌های سفارش (Order Items)
     await conn.execute(`DELETE FROM order_items WHERE order_id = ?`, [id]);
 
-    // ۲. حذف خود سفارش
     const [result]: any = await conn.execute(
       `DELETE FROM orders WHERE id = ?`,
       [id],

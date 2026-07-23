@@ -225,13 +225,14 @@ export async function GET(request: Request) {
   const conn = await pool.getConnection();
 
   try {
-    const [orders]: any = await conn.query(
-      `SELECT o.*, a.province, a.city, a.street, a.building_number, a.alley, a.unit, a.postal_code
-       FROM orders o 
-       JOIN addresses a ON o.address_id = a.id 
-       WHERE o.user_id = ?`,
-      [userId],
-    );
+// در بخش GET، فیلد tracking_info را به کوئری اضافه کنید
+const [orders]: any = await conn.query(
+  `SELECT o.*, a.province, a.city, a.street, a.building_number, a.alley, a.unit, a.postal_code, o.tracking_info
+   FROM orders o 
+   JOIN addresses a ON o.address_id = a.id 
+   WHERE o.user_id = ?`,
+  [userId],
+);
     
     for (let order of orders) {
       const [items]: any = await conn.query(
