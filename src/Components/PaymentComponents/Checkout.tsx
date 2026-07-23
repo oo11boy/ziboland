@@ -21,6 +21,18 @@ interface FormData {
   is_default: boolean;
 }
 
+interface ShippingMethod {
+  id: number;
+  name: string;
+  key: string | null;
+  description: string | null;
+  cost: number;
+  is_active: boolean;
+  delivery_time: string | null;
+  extra_note: string | null;
+  display_order: number;
+}
+
 export default function Checkout() {
   const {
     state: { cartItems },
@@ -44,15 +56,20 @@ export default function Checkout() {
     postal_code: "",
     is_default: false,
   });
-  const [extraDetails, setExtraDetails] = useState<string>(""); // فیلد جداگانه برای توضیحات اضافی
+  const [extraDetails, setExtraDetails] = useState<string>("");
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [submissionError, setSubmissionError] = useState<string>("");
   const token = Cookies.get("authToken");
+
+  // State برای روش‌های ارسال داینامیک
+  const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
+  const [loadingMethods, setLoadingMethods] = useState<boolean>(true);
 
   useEffect(() => {
     if (token) {
       fetchAddresses();
       fetchUser();
+      fetchShippingMethods();
     } else {
       setSubmissionError("لطفاً ابتدا وارد حساب کاربری خود شوید.");
     }
@@ -91,6 +108,27 @@ export default function Checkout() {
     } catch (err) {
       console.error("Error fetching user:", err);
       setSubmissionError("خطا در دریافت اطلاعات کاربر");
+    }
+  };
+
+  const fetchShippingMethods = async () => {
+    try {
+      const res = await fetch("/api/shipping-methods");
+      if (res.ok) {
+        const data: ShippingMethod[] = await res.json();
+        setShippingMethods(data);
+        // اگر روشی انتخاب نشده و روشی وجود دارد، اولین روش فعال را انتخاب کن
+        if (data.length > 0 && !deliveryType) {
+          const firstMethod = data[0];
+          setDeliveryType(firstMethod.key || firstMethod.id.toString());
+        }
+      } else {
+        console.error("Error fetching shipping methods");
+      }
+    } catch (error) {
+      console.error("Error fetching shipping methods:", error);
+    } finally {
+      setLoadingMethods(false);
     }
   };
 
@@ -159,8 +197,6 @@ export default function Checkout() {
     if (!formData.building_number)
       newErrors.building_number = "پلاک الزامی است";
 
-    // تغییر در اعتبارسنجی کدپستی:
-    // فقط اگر پر شده بود، چک کن که ۱۰ رقم باشد
     if (formData.postal_code && !/^\d{10}$/.test(formData.postal_code)) {
       newErrors.postal_code = "کدپستی باید 10 رقم باشد";
     }
@@ -226,8 +262,8 @@ export default function Checkout() {
         price_type: item.priceType || "single",
         color: item.color,
       })),
-      deliveryType,
-      extraDetails: extraDetails, // اضافه کردن توضیحات جداگانه به payload
+      deliveryType: deliveryType,
+      extraDetails: extraDetails,
       amount: total * 10,
       callbackUrl: `${window.location.origin}/api/payment/verify`,
     };
@@ -273,21 +309,15 @@ export default function Checkout() {
     return total + price * item.quantity;
   }, 0);
 
-  // محاسبه هزینه ارسال بر اساس نوع انتخاب‌شده
-  const deliveryCost: number = (() => {
-    switch (deliveryType) {
-      case "normal_free":
-        return 0;
-      case "normal_express":
-        return 129900;
-      case "fast_tehran":
-        return 199900;
-      case "fast_other":
-        return 0; // هزینه توسط پشتیبان تعیین می‌شود
-      default:
-        return 0;
-    }
-  })();
+  // محاسبه هزینه ارسال بر اساس روش انتخاب‌شده
+  const getSelectedMethod = () => {
+    return shippingMethods.find(
+      (m) => (m.key || m.id.toString()) === deliveryType
+    );
+  };
+
+  const deliveryCost = getSelectedMethod()?.cost || 0;
+  const selectedMethod = getSelectedMethod();
 
   const total = subtotal + deliveryCost;
 
@@ -296,95 +326,57 @@ export default function Checkout() {
       <main className="w-[90%] mx-auto py-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            {/* روش ارسال */}
+            {/* روش ارسال - داینامیک */}
             <section className="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
               <h2 className="text-lg sm:text-xl font-semibold mb-4">
                 روش ارسال
               </h2>
-              <div className="space-y-3">
-                {/* عادی - رایگان */}
-                <label className="flex items-center p-3 sm:p-4 border rounded-lg cursor-pointer hover:border-gray-900 transition">
-                  <input
-                    type="radio"
-                    name="delivery"
-                    value="normal_free"
-                    checked={deliveryType === "normal_free"}
-                    onChange={handleDeliveryChange}
-                    className="form-radio text-gray-900"
-                  />
-                  <div className="mr-3 sm:mr-4">
-                    <div className="font-semibold text-sm sm:text-base">
-                      ارسال عادی (رایگان)
-                    </div>
-                    <div className="text-xs sm:text-sm text-gray-600">
-                      رایگان • ۳-۵ روز کاری
-                    </div>
-                  </div>
-                </label>
-
-                {/* عادی - پیشتاز */}
-                <label className="flex items-center p-3 sm:p-4 border rounded-lg cursor-pointer hover:border-gray-900 transition">
-                  <input
-                    type="radio"
-                    name="delivery"
-                    value="normal_express"
-                    checked={deliveryType === "normal_express"}
-                    onChange={handleDeliveryChange}
-                    className="form-radio text-gray-900"
-                  />
-                  <div className="mr-3 sm:mr-4">
-                    <div className="font-semibold text-sm sm:text-base">
-                      ارسال پیشتاز
-                    </div>
-                    <div className="text-xs sm:text-sm text-gray-600">
-                      ۱۲۹,۹۰۰ تومان • ۱-۲ روز کاری
-                    </div>
-                  </div>
-                </label>
-
-                {/* سریع - تهران و مناطق ۲۲ گانه */}
-                <label className="flex items-center p-3 sm:p-4 border rounded-lg cursor-pointer hover:border-gray-900 transition">
-                  <input
-                    type="radio"
-                    name="delivery"
-                    value="fast_tehran"
-                    checked={deliveryType === "fast_tehran"}
-                    onChange={handleDeliveryChange}
-                    className="form-radio text-gray-900"
-                  />
-                  <div className="mr-3 sm:mr-4">
-                    <div className="font-semibold text-sm sm:text-base">
-                      ارسال سریع (شهر تهران و مناطق ۲۲ گانه)
-                    </div>
-                    <div className="text-xs sm:text-sm text-gray-600">
-                      ۱۹۹,۹۰۰ تومان • ۳-۵ ساعت
-                    </div>
-                    <div className="text-xs sm:text-sm text-blue-600 mt-1">
-                      ارسال همان روز در بازه ۹ تا ۲۲ در صورت ثبت سفارش تا قبل از ساعت ۱۶
-                    </div>
-                  </div>
-                </label>
-
-                {/* سریع - استان تهران (به جز شهر تهران) */}
-                <label className="flex items-center p-3 sm:p-4 border rounded-lg cursor-pointer hover:border-gray-900 transition">
-                  <input
-                    type="radio"
-                    name="delivery"
-                    value="fast_other"
-                    checked={deliveryType === "fast_other"}
-                    onChange={handleDeliveryChange}
-                    className="form-radio text-gray-900"
-                  />
-                  <div className="mr-3 sm:mr-4">
-                    <div className="font-semibold text-sm sm:text-base">
-                      ارسال سریع (استان تهران به جز شهر تهران)
-                    </div>
-                    <div className="text-xs sm:text-sm text-gray-600">
-                      تماس با پشتیبان جهت هزینه و زمان ارسال
-                    </div>
-                  </div>
-                </label>
-              </div>
+              {loadingMethods ? (
+                <div className="text-center py-4 text-gray-500">
+                  در حال بارگذاری روش‌های ارسال...
+                </div>
+              ) : shippingMethods.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
+                  هیچ روش ارسالی تعریف نشده است
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {shippingMethods.map((method) => (
+                    <label
+                      key={method.id}
+                      className="flex items-start p-3 sm:p-4 border rounded-lg cursor-pointer hover:border-gray-900 transition"
+                    >
+                      <input
+                        type="radio"
+                        name="delivery"
+                        value={method.key || method.id.toString()}
+                        checked={deliveryType === (method.key || method.id.toString())}
+                        onChange={handleDeliveryChange}
+                        className="form-radio text-gray-900 mt-1"
+                      />
+                      <div className="mr-3 sm:mr-4 flex-1">
+                        <div className="font-semibold text-sm sm:text-base">
+                          {method.name}
+                        </div>
+                        <div className="text-xs sm:text-sm text-gray-600">
+                          {method.cost === 0 ? "رایگان" : `${method.cost.toLocaleString("fa-IR")} تومان`}
+                          {method.delivery_time && ` • ${method.delivery_time}`}
+                        </div>
+                        {method.description && (
+                          <div className="text-xs text-gray-500 mt-1">
+                            {method.description}
+                          </div>
+                        )}
+                        {method.extra_note && (
+                          <div className="text-xs text-blue-600 mt-1">
+                            {method.extra_note}
+                          </div>
+                        )}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
             </section>
 
             {/* کارت آدرس انتخاب شده یا پیام */}
@@ -677,12 +669,17 @@ export default function Checkout() {
                     </div>
                     <div className="flex justify-between text-sm sm:text-base">
                       <span className="text-gray-600">هزینه ارسال</span>
-                      <span className="text-green-600">
+                      <span className={deliveryCost === 0 ? "text-green-600" : "text-gray-900"}>
                         {deliveryCost === 0
                           ? "رایگان"
                           : `${deliveryCost.toLocaleString("fa-IR")} تومان`}
                       </span>
                     </div>
+                    {selectedMethod?.extra_note && (
+                      <div className="text-xs text-blue-600 bg-blue-50 p-2 rounded">
+                        {selectedMethod.extra_note}
+                      </div>
+                    )}
                   </div>
 
                   <div className="flex justify-between items-center mb-6 text-base sm:text-lg font-semibold">

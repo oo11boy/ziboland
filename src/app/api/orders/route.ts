@@ -16,51 +16,48 @@ export async function POST(req: Request) {
     );
   }
 
-  // 1. اعتبارسنجی نوع ارسال - 4 گزینه جدید
-  const validDeliveryTypes = ["normal_free", "normal_express", "fast_tehran", "fast_other"];
-  if (!validDeliveryTypes.includes(deliveryType)) {
-    return NextResponse.json(
-      { error: "روش ارسال نامعتبر است" },
-      { status: 400 },
-    );
-  }
-
-  // 2. هزینه‌های ارسال برای هر 4 گزینه
-  const deliveryCosts: { [key: string]: number } = {
-    normal_free: 0,
-    normal_express: 129900,
-    fast_tehran: 199900,
-    fast_other: 0, // هزینه توسط پشتیبان تعیین می‌شود
-  };
-
-  // 3. نام روش ارسال برای ذخیره در دیتابیس
-  const shippingMethodNames: { [key: string]: string } = {
-    normal_free: "عادی (رایگان)",
-    normal_express: "پیشتاز",
-    fast_tehran: "سریع (تهران و مناطق ۲۲ گانه)",
-    fast_other: "سریع (استان تهران به جز شهر تهران)",
-  };
-
-  const itemsTotal = items.reduce(
-    (sum: number, item: { price: number; quantity: number }) =>
-      sum + item.price * item.quantity,
-    0,
-  );
-  
-  // محاسبه مبلغ مورد انتظار
-  const deliveryCost = deliveryCosts[deliveryType] || 0;
-  const expectedAmount = (itemsTotal + deliveryCost) * 10;
-  
-  if (amount !== expectedAmount) {
-    return NextResponse.json(
-      { error: "مبلغ سفارش با آیتم‌ها مطابقت ندارد" },
-      { status: 400 },
-    );
-  }
-
   const conn = await pool.getConnection();
 
   try {
+    // 1. دریافت روش‌های ارسال از دیتابیس - استفاده از backtick برای کلمه key
+    const [shippingMethods]: any = await conn.query(
+      `SELECT id, name, cost, \`key\` FROM shipping_methods WHERE is_active = 1`
+    );
+    
+    // 2. پیدا کردن روش ارسال انتخاب شده
+    const selectedMethod = shippingMethods.find(
+      (m: any) => m.key === deliveryType || m.id.toString() === deliveryType || m.name === deliveryType
+    );
+
+    if (!selectedMethod) {
+      await conn.release();
+      return NextResponse.json(
+        { error: "روش ارسال نامعتبر است" },
+        { status: 400 },
+      );
+    }
+
+    // 3. محاسبه هزینه ارسال
+    const deliveryCost = selectedMethod.cost || 0;
+    const shippingMethodName = selectedMethod.name;
+
+    // 4. محاسبه مبلغ کل
+    const itemsTotal = items.reduce(
+      (sum: number, item: { price: number; quantity: number }) =>
+        sum + item.price * item.quantity,
+      0,
+    );
+    
+    const expectedAmount = (itemsTotal + deliveryCost) * 10;
+    
+    if (amount !== expectedAmount) {
+      await conn.release();
+      return NextResponse.json(
+        { error: "مبلغ سفارش با آیتم‌ها مطابقت ندارد" },
+        { status: 400 },
+      );
+    }
+
     await conn.beginTransaction();
 
     // چک موجودی هر آیتم (واریانت رنگ)
@@ -77,6 +74,7 @@ export async function POST(req: Request) {
           variantRows[0].stock_quantity < item.quantity
         ) {
           await conn.rollback();
+          await conn.release();
           return NextResponse.json(
             {
               error: `موجودی کافی برای محصول ${item.product_id} با رنگ ${
@@ -105,13 +103,11 @@ export async function POST(req: Request) {
     }
     if (!isUnique) throw new Error("ناتوانی در تولید کد سفارش");
 
-    const shippingMethod = shippingMethodNames[deliveryType] || deliveryType;
-
     const [orderResult]: any = await conn.execute(
       `INSERT INTO orders 
        (user_id, address_id, total_amount, shipping_method, status, payment_status, order_code, extra_details)
        VALUES (?, ?, ?, ?, 'pending', 'pending', ?, ?)`,
-      [userId, address.id, amount, shippingMethod, orderCode, extraDetails || null],
+      [userId, address.id, amount, shippingMethodName, orderCode, extraDetails || null],
     );
     const orderId = orderResult.insertId;
 
@@ -157,6 +153,7 @@ export async function POST(req: Request) {
 
     if (data.result !== 100 || !data.trackId) {
       await conn.rollback();
+      await conn.release();
       return NextResponse.json(
         { error: data.message || "خطا در اتصال به درگاه", result: data.result },
         { status: 502 },
@@ -176,6 +173,7 @@ export async function POST(req: Request) {
     );
 
     await conn.commit();
+    await conn.release();
 
     return NextResponse.json({
       paymentUrl: `https://gateway.zibal.ir/start/${trackId}`,
@@ -184,13 +182,12 @@ export async function POST(req: Request) {
     });
   } catch (error: any) {
     await conn.rollback();
+    await conn.release();
     console.error("Error creating order:", error);
     return NextResponse.json(
       { error: "خطا در ثبت سفارش", details: error.message },
       { status: 500 },
     );
-  } finally {
-    conn.release();
   }
 }
 
@@ -235,7 +232,7 @@ export async function GET(request: Request) {
        WHERE o.user_id = ?`,
       [userId],
     );
-    // eslint-disable-next-line prefer-const
+    
     for (let order of orders) {
       const [items]: any = await conn.query(
         `SELECT oi.*, p.title, p.image, oi.color_json, oi.price_type
@@ -244,21 +241,20 @@ export async function GET(request: Request) {
          WHERE oi.order_id = ?`,
         [order.id],
       );
-      // Parse color JSON
       order.items = items.map((item: any) => ({
         ...item,
         color: item.color_json ? JSON.parse(item.color_json) : null,
       }));
     }
 
+    await conn.release();
     return NextResponse.json(orders);
   } catch (error: any) {
+    await conn.release();
     console.error("Error fetching orders:", error);
     return NextResponse.json(
       { error: "خطا در دریافت اطلاعات سفارشات", details: error.message },
       { status: 500 },
     );
-  } finally {
-    conn.release();
   }
 }
