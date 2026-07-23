@@ -11,7 +11,20 @@ import {
   SelectValue,
 } from "@/Components/ui/select";
 import { Modal, Box, Typography } from "@mui/material";
-import { View, Search, Filter, Trash2, Copy, CheckCircle, Clock, XCircle, RefreshCw, Truck, Package, ShoppingBag } from "lucide-react";
+import {
+  View,
+  Search,
+  Filter,
+  Trash2,
+  Copy,
+  CheckCircle,
+  Clock,
+  XCircle,
+  RefreshCw,
+  Truck,
+  Package,
+  ShoppingBag,
+} from "lucide-react";
 import { toast } from "react-toastify";
 import Image from "next/image";
 import { API } from "@/lib/MainRoutes";
@@ -55,50 +68,55 @@ const Section = ({
 // تابع ترجمه روش ارسال
 const translateShippingMethod = (method: string) => {
   const map: Record<string, string> = {
-    "normal_free": "عادی (رایگان)",
-    "normal_express": "پیشتاز",
-    "fast_tehran": "سریع (تهران و مناطق ۲۲ گانه)",
-    "fast_other": "سریع (استان تهران به جز شهر تهران)",
+    normal_free: "عادی (رایگان)",
+    normal_express: "پیشتاز",
+    fast_tehran: "سریع (تهران و مناطق ۲۲ گانه)",
+    fast_other: "سریع (استان تهران به جز شهر تهران)",
     "عادی (رایگان)": "عادی (رایگان)",
-    "پیشتاز": "پیشتاز",
+    پیشتاز: "پیشتاز",
     "سریع (تهران و مناطق ۲۲ گانه)": "سریع (تهران و مناطق ۲۲ گانه)",
     "سریع (استان تهران به جز شهر تهران)": "سریع (استان تهران به جز شهر تهران)",
-    "عادی": "عادی",
-    "express": "اکسپرس",
+    عادی: "عادی",
+    express: "اکسپرس",
   };
   return map[method] || method;
 };
 
 // کامپوننت Badge وضعیت پرداخت
 const PaymentStatusBadge = ({ status }: { status: string }) => {
-  const configs: Record<string, { label: string; icon: any; className: string }> = {
+  const configs: Record<
+    string,
+    { label: string; icon: any; className: string }
+  > = {
     paid: {
       label: "پرداخت شده",
       icon: CheckCircle,
-      className: "bg-green-100 text-green-700 border-green-200"
+      className: "bg-green-100 text-green-700 border-green-200",
     },
     pending: {
       label: "در انتظار پرداخت",
       icon: Clock,
-      className: "bg-yellow-100 text-yellow-700 border-yellow-200"
+      className: "bg-yellow-100 text-yellow-700 border-yellow-200",
     },
     failed: {
       label: "پرداخت ناموفق",
       icon: XCircle,
-      className: "bg-red-100 text-red-700 border-red-200"
+      className: "bg-red-100 text-red-700 border-red-200",
     },
     refunded: {
       label: "بازپرداخت شده",
       icon: RefreshCw,
-      className: "bg-blue-100 text-blue-700 border-blue-200"
-    }
+      className: "bg-blue-100 text-blue-700 border-blue-200",
+    },
   };
 
   const config = configs[status] || configs.pending;
   const Icon = config.icon;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${config.className}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${config.className}`}
+    >
       <Icon size={14} />
       {config.label}
     </span>
@@ -107,39 +125,44 @@ const PaymentStatusBadge = ({ status }: { status: string }) => {
 
 // کامپوننت Badge وضعیت سفارش
 const OrderStatusBadge = ({ status }: { status: string }) => {
-  const configs: Record<string, { label: string; icon: any; className: string }> = {
+  const configs: Record<
+    string,
+    { label: string; icon: any; className: string }
+  > = {
     pending: {
       label: "در انتظار",
       icon: Clock,
-      className: "bg-gray-100 text-gray-700 border-gray-200"
+      className: "bg-gray-100 text-gray-700 border-gray-200",
     },
     processing: {
       label: "در حال پردازش",
       icon: RefreshCw,
-      className: "bg-blue-100 text-blue-700 border-blue-200"
+      className: "bg-blue-100 text-blue-700 border-blue-200",
     },
     shipped: {
       label: "ارسال شده",
       icon: Truck,
-      className: "bg-purple-100 text-purple-700 border-purple-200"
+      className: "bg-purple-100 text-purple-700 border-purple-200",
     },
     delivered: {
       label: "تحویل داده شده",
       icon: Package,
-      className: "bg-green-100 text-green-700 border-green-200"
+      className: "bg-green-100 text-green-700 border-green-200",
     },
     cancelled: {
       label: "لغو شده",
       icon: XCircle,
-      className: "bg-red-100 text-red-700 border-red-200"
-    }
+      className: "bg-red-100 text-red-700 border-red-200",
+    },
   };
 
   const config = configs[status] || configs.pending;
   const Icon = config.icon;
 
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${config.className}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${config.className}`}
+    >
       <Icon size={14} />
       {config.label}
     </span>
@@ -240,8 +263,7 @@ const OrdersPage = () => {
         order.payment_status === paymentStatusFilter;
 
       const matchesOrderStatus =
-        orderStatusFilter === "all" ||
-        order.status === orderStatusFilter;
+        orderStatusFilter === "all" || order.status === orderStatusFilter;
 
       return matchesSearch && matchesPaymentStatus && matchesOrderStatus;
     });
@@ -349,10 +371,12 @@ const OrdersPage = () => {
   // آمار سفارشات
   const stats = useMemo(() => {
     const total = orders.length;
-    const paid = orders.filter(o => o.payment_status === "paid").length;
-    const pending = orders.filter(o => o.payment_status === "pending").length;
-    const failed = orders.filter(o => o.payment_status === "failed").length;
-    const shipped = orders.filter(o => o.status === "shipped" || o.status === "delivered").length;
+    const paid = orders.filter((o) => o.payment_status === "paid").length;
+    const pending = orders.filter((o) => o.payment_status === "pending").length;
+    const failed = orders.filter((o) => o.payment_status === "failed").length;
+    const shipped = orders.filter(
+      (o) => o.status === "shipped" || o.status === "delivered",
+    ).length;
     return { total, paid, pending, failed, shipped };
   }, [orders]);
 
@@ -377,7 +401,8 @@ const OrdersPage = () => {
             مدیریت سفارشات
           </h1>
           <p className="text-sm sm:text-base text-gray-500 mt-1">
-            {stats.total} سفارش | {stats.paid} پرداخت شده | {stats.pending} در انتظار | {stats.failed} ناموفق | {stats.shipped} ارسال شده
+            {stats.total} سفارش | {stats.paid} پرداخت شده | {stats.pending} در
+            انتظار | {stats.failed} ناموفق | {stats.shipped} ارسال شده
           </p>
         </div>
       </div>
@@ -478,15 +503,21 @@ const OrdersPage = () => {
                 <div className="grid grid-cols-2 gap-2 text-sm bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3">
                   <div>
                     <p className="text-gray-500 text-xs">مبلغ</p>
-                    <p className="font-bold">{(order.total_amount / 10).toLocaleString()} تومان</p>
+                    <p className="font-bold">
+                      {(order.total_amount / 10).toLocaleString()} تومان
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs">روش ارسال</p>
-                    <p className="text-sm">{translateShippingMethod(order.shipping_method)}</p>
+                    <p className="text-sm">
+                      {translateShippingMethod(order.shipping_method)}
+                    </p>
                   </div>
                   <div className="col-span-2">
                     <p className="text-gray-500 text-xs">تاریخ</p>
-                    <p className="text-sm">{new Date(order.created_at).toLocaleDateString("fa-IR")}</p>
+                    <p className="text-sm">
+                      {new Date(order.created_at).toLocaleDateString("fa-IR")}
+                    </p>
                   </div>
                 </div>
 
@@ -509,9 +540,13 @@ const OrdersPage = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pending">⏳ در انتظار</SelectItem>
-                      <SelectItem value="processing">🔄 در حال پردازش</SelectItem>
+                      <SelectItem value="processing">
+                        🔄 در حال پردازش
+                      </SelectItem>
                       <SelectItem value="shipped">🚚 ارسال شده</SelectItem>
-                      <SelectItem value="delivered">✅ تحویل داده شده</SelectItem>
+                      <SelectItem value="delivered">
+                        ✅ تحویل داده شده
+                      </SelectItem>
                       <SelectItem value="cancelled">❌ لغو شده</SelectItem>
                     </SelectContent>
                   </Select>
@@ -564,14 +599,30 @@ const OrdersPage = () => {
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-800/50">
                     <tr>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">شماره سفارش</th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">کاربر</th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">مبلغ</th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">وضعیت سفارش</th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">وضعیت پرداخت</th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">روش ارسال</th>
-                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">تاریخ</th>
-                      <th className="px-6 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-300">عملیات</th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        شماره سفارش
+                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        کاربر
+                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        مبلغ
+                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        وضعیت سفارش
+                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        وضعیت پرداخت
+                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        روش ارسال
+                      </th>
+                      <th className="px-6 py-4 text-right text-sm font-bold text-gray-700 dark:text-gray-300">
+                        تاریخ
+                      </th>
+                      <th className="px-6 py-4 text-center text-sm font-bold text-gray-700 dark:text-gray-300">
+                        عملیات
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
@@ -589,7 +640,9 @@ const OrdersPage = () => {
                               {order.first_name} {order.last_name}
                             </p>
                             <button
-                              onClick={() => copyToClipboard(order.phone_number)}
+                              onClick={() =>
+                                copyToClipboard(order.phone_number)
+                              }
                               className="text-sm text-gray-500 hover:text-purple-600 flex items-center gap-1 transition"
                               title="کپی شماره تلفن"
                             >
@@ -620,11 +673,21 @@ const OrdersPage = () => {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="pending">⏳ در انتظار</SelectItem>
-                                <SelectItem value="processing">🔄 در حال پردازش</SelectItem>
-                                <SelectItem value="shipped">🚚 ارسال شده</SelectItem>
-                                <SelectItem value="delivered">✅ تحویل داده شده</SelectItem>
-                                <SelectItem value="cancelled">❌ لغو شده</SelectItem>
+                                <SelectItem value="pending">
+                                  ⏳ در انتظار
+                                </SelectItem>
+                                <SelectItem value="processing">
+                                  🔄 در حال پردازش
+                                </SelectItem>
+                                <SelectItem value="shipped">
+                                  🚚 ارسال شده
+                                </SelectItem>
+                                <SelectItem value="delivered">
+                                  ✅ تحویل داده شده
+                                </SelectItem>
+                                <SelectItem value="cancelled">
+                                  ❌ لغو شده
+                                </SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -636,7 +699,9 @@ const OrdersPage = () => {
                           {translateShippingMethod(order.shipping_method)}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
-                          {new Date(order.created_at).toLocaleDateString("fa-IR")}
+                          {new Date(order.created_at).toLocaleDateString(
+                            "fa-IR",
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex justify-center gap-1">
@@ -716,10 +781,15 @@ const OrdersPage = () => {
                   value={`${selectedOrder.first_name} ${selectedOrder.last_name}`}
                 />
                 <InfoItem label="ایمیل" value={selectedOrder.email} />
-                <InfoItem label="شماره تلفن" value={selectedOrder.phone_number} />
+                <InfoItem
+                  label="شماره تلفن"
+                  value={selectedOrder.phone_number}
+                />
                 <InfoItem
                   label="تاریخ سفارش"
-                  value={new Date(selectedOrder.created_at).toLocaleDateString("fa-IR")}
+                  value={new Date(selectedOrder.created_at).toLocaleDateString(
+                    "fa-IR",
+                  )}
                 />
                 <InfoItem
                   label="مبلغ کل"
@@ -731,7 +801,9 @@ const OrdersPage = () => {
                 />
                 <InfoItem
                   label="وضعیت پرداخت"
-                  value={<PaymentStatusBadge status={selectedOrder.payment_status} />}
+                  value={
+                    <PaymentStatusBadge status={selectedOrder.payment_status} />
+                  }
                 />
                 <InfoItem
                   label="روش ارسال"
@@ -775,12 +847,22 @@ const OrdersPage = () => {
                         <p className="font-semibold">{item.title}</p>
                         {item.color && (
                           <p className="text-sm text-gray-600">
-                            رنگ: {item.color.persianName} ({item.color.englishName})
+                            رنگ: {item.color.persianName} (
+                            {item.color.englishName})
                           </p>
                         )}
                         <div className="flex flex-wrap items-center gap-3">
-                          <span className="text-sm">تعداد: <span className={`font-bold ${item.quantity > 1 ? 'text-orange-500 text-xl' : ''}`}>{item.quantity}</span></span>
-                          <span className="text-sm font-medium">قیمت واحد: {item.unit_price.toLocaleString()} تومان</span>
+                          <span className="text-sm">
+                            تعداد:{" "}
+                            <span
+                              className={`font-bold ${item.quantity > 1 ? "text-orange-500 text-xl" : ""}`}
+                            >
+                              {item.quantity}
+                            </span>
+                          </span>
+                          <span className="text-sm font-medium">
+                            قیمت واحد: {item.unit_price.toLocaleString()} تومان
+                          </span>
                           <span className="text-xs text-gray-500 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-full">
                             {item.price_type === "single" ? "تکی" : "عمده"}
                           </span>
