@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/ContextApi/AuthContext";
+import Cookies from "js-cookie";
 
 export default function MyAccountContainer() {
   const [step, setStep] = useState<"phone" | "code" | "profile">("phone");
@@ -29,9 +30,15 @@ export default function MyAccountContainer() {
     }
   }, [resendTimer]);
 
-  const normalizePhone = (p:any) => p.replace(/\D/g, "");
+  const normalizePhone = (p: any) => p.replace(/\D/g, "");
 
-  const handleSendCode = async (e:any) => {
+  // تابع برای ریدایرکت با رفرش کامل
+  const redirectWithRefresh = (path: string) => {
+    // رفرش کامل صفحه با استفاده از window.location
+    window.location.href = path;
+  };
+
+  const handleSendCode = async (e: any) => {
     e.preventDefault();
     setError("");
     setSuccess("");
@@ -69,7 +76,7 @@ export default function MyAccountContainer() {
     }
   };
 
-  const handleVerifyCode = async (e:any) => {
+  const handleVerifyCode = async (e: any) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -99,10 +106,32 @@ export default function MyAccountContainer() {
         setSuccess("لطفاً نام و نام خانوادگی خود را وارد کنید");
       } else {
         setSuccess("ورود با موفقیت انجام شد");
+        // فراخوانی تابع login از AuthContext
         login?.();
-        setTimeout(() => {
-          router.push(redirectPath);
-        }, 1200);
+        
+        // بررسی وجود توکن در کوکی
+        const token = Cookies.get("authToken");
+        if (token) {
+          // اگر توکن وجود دارد، با رفرش کامل ریدایرکت کن
+          setTimeout(() => {
+            redirectWithRefresh(redirectPath);
+          }, 500);
+        } else {
+          // اگر توکن وجود ندارد، یکبار دیگر چک کن
+          setTimeout(() => {
+            const tokenCheck = Cookies.get("authToken");
+            if (tokenCheck) {
+              redirectWithRefresh(redirectPath);
+            } else {
+              // اگر باز هم توکن وجود نداشت، از router.push استفاده کن
+              router.push(redirectPath);
+              // و بعد از 500ms رفرش کن
+              setTimeout(() => {
+                window.location.reload();
+              }, 600);
+            }
+          }, 300);
+        }
       }
     } catch (err) {
       setError("خطا در ارتباط با سرور");
@@ -111,7 +140,7 @@ export default function MyAccountContainer() {
     }
   };
 
-  const handleCompleteProfile = async (e:any) => {
+  const handleCompleteProfile = async (e: any) => {
     e.preventDefault();
     setError("");
     setLoading(true);
@@ -142,9 +171,26 @@ export default function MyAccountContainer() {
 
       setSuccess("ثبت‌نام با موفقیت تکمیل شد");
       login?.();
-      setTimeout(() => {
-        router.push(redirectPath);
-      }, 1400);
+      
+      // بررسی وجود توکن در کوکی
+      const token = Cookies.get("authToken");
+      if (token) {
+        setTimeout(() => {
+          redirectWithRefresh(redirectPath);
+        }, 500);
+      } else {
+        setTimeout(() => {
+          const tokenCheck = Cookies.get("authToken");
+          if (tokenCheck) {
+            redirectWithRefresh(redirectPath);
+          } else {
+            router.push(redirectPath);
+            setTimeout(() => {
+              window.location.reload();
+            }, 600);
+          }
+        }, 300);
+      }
     } catch (err) {
       setError("خطا در ارتباط با سرور");
     } finally {
