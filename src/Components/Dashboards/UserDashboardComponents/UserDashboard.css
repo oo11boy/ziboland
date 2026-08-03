@@ -1312,23 +1312,9 @@
   }
 }
 
-.ud-address-form-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
-}
 
-@media (min-width: 640px) {
-  .ud-address-form-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
 
-@media (min-width: 768px) {
-  .ud-address-form-grid {
-    gap: 1.5rem;
-  }
-}
+
 
 .ud-address-form-label {
   display: block;

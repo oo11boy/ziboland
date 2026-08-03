@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/ContextApi/AuthContext";
 import Cookies from "js-cookie";
+import { Pencil, ArrowRight, CheckCircle } from "lucide-react";
 
 export default function MyAccountContainer() {
   const [step, setStep] = useState<"phone" | "code" | "profile">("phone");
@@ -17,6 +18,7 @@ export default function MyAccountContainer() {
   const [success, setSuccess] = useState("");
   const [resendTimer, setResendTimer] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isEditingPhone, setIsEditingPhone] = useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -34,7 +36,6 @@ export default function MyAccountContainer() {
 
   // تابع برای ریدایرکت با رفرش کامل
   const redirectWithRefresh = (path: string) => {
-    // رفرش کامل صفحه با استفاده از window.location
     window.location.href = path;
   };
 
@@ -106,26 +107,20 @@ export default function MyAccountContainer() {
         setSuccess("لطفاً نام و نام خانوادگی خود را وارد کنید");
       } else {
         setSuccess("ورود با موفقیت انجام شد");
-        // فراخوانی تابع login از AuthContext
         login?.();
         
-        // بررسی وجود توکن در کوکی
         const token = Cookies.get("authToken");
         if (token) {
-          // اگر توکن وجود دارد، با رفرش کامل ریدایرکت کن
           setTimeout(() => {
             redirectWithRefresh(redirectPath);
           }, 500);
         } else {
-          // اگر توکن وجود ندارد، یکبار دیگر چک کن
           setTimeout(() => {
             const tokenCheck = Cookies.get("authToken");
             if (tokenCheck) {
               redirectWithRefresh(redirectPath);
             } else {
-              // اگر باز هم توکن وجود نداشت، از router.push استفاده کن
               router.push(redirectPath);
-              // و بعد از 500ms رفرش کن
               setTimeout(() => {
                 window.location.reload();
               }, 600);
@@ -172,7 +167,6 @@ export default function MyAccountContainer() {
       setSuccess("ثبت‌نام با موفقیت تکمیل شد");
       login?.();
       
-      // بررسی وجود توکن در کوکی
       const token = Cookies.get("authToken");
       if (token) {
         setTimeout(() => {
@@ -223,6 +217,15 @@ export default function MyAccountContainer() {
     }
   };
 
+  // تابع برای بازگشت به مرحله شماره و اصلاح شماره
+  const handleEditPhone = () => {
+    setIsEditingPhone(true);
+    setStep("phone");
+    setError("");
+    setSuccess("");
+    setCode("");
+  };
+
   return (
     <div className="flex justify-center items-center min-h-[70vh] px-4 py-12">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
@@ -256,17 +259,26 @@ export default function MyAccountContainer() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   شماره موبایل
                 </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="۰۹۱۲xxxxxxx"
-                  maxLength={11}
-                  pattern="09[0-9]{9}"
-                  className="w-full px-5 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#805B99] focus:border-[#805B99] outline-none text-lg"
-                  required
-                  autoFocus
-                />
+                <div className="relative">
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="۰۹۱۲xxxxxxx"
+                    maxLength={11}
+                    pattern="09[0-9]{9}"
+                    className="w-full px-5 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#805B99] focus:border-[#805B99] outline-none text-lg pr-12"
+                    required
+                    autoFocus
+                  />
+            
+                </div>
+                {isEditingPhone && (
+                  <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
+                    <Pencil className="w-3 h-3" />
+                    در حال ویرایش شماره تماس
+                  </p>
+                )}
               </div>
 
               <button
@@ -280,6 +292,20 @@ export default function MyAccountContainer() {
               >
                 {loading ? "در حال ارسال ..." : "دریافت کد تأیید"}
               </button>
+
+              {isEditingPhone && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingPhone(false);
+                    // اگر شماره قبلی وجود داشت، آن را بازیابی کن
+                    // (در اینجا می‌توانید شماره قبلی را از state ذخیره کنید)
+                  }}
+                  className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  انصراف از ویرایش
+                </button>
+              )}
             </form>
           )}
 
@@ -288,7 +314,17 @@ export default function MyAccountContainer() {
             <form onSubmit={handleVerifyCode} className="space-y-6">
               <div className="text-center">
                 <p className="text-gray-600 mb-3">کد ۶ رقمی ارسال شده به</p>
-                <p className="font-bold text-xl text-[#805B99]">{phone}</p>
+                <div className="flex items-center justify-center gap-2">
+                  <p className="font-bold text-xl text-[#805B99]">{phone}</p>
+                  <button
+                    type="button"
+                    onClick={handleEditPhone}
+                    className="text-sm text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                  >
+                    <Pencil className="w-3 h-3" />
+                    ویرایش
+                  </button>
+                </div>
               </div>
 
               <input
@@ -316,20 +352,30 @@ export default function MyAccountContainer() {
                 {loading ? "در حال بررسی ..." : "تأیید کد"}
               </button>
 
-              <div className="text-center text-sm">
-                {resendTimer > 0 ? (
-                  <span className="text-gray-500">
-                    ارسال مجدد پس از {resendTimer} ثانیه
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleResend}
-                    className="text-[#805B99] font-medium hover:underline"
-                  >
-                    ارسال مجدد کد
-                  </button>
-                )}
+              <div className="flex items-center justify-between text-sm">
+                <button
+                  type="button"
+                  onClick={handleEditPhone}
+                  className="text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                >
+                  <ArrowRight className="w-4 h-4" />
+                  اصلاح شماره تماس
+                </button>
+                <div>
+                  {resendTimer > 0 ? (
+                    <span className="text-gray-500">
+                      ارسال مجدد پس از {resendTimer} ثانیه
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResend}
+                      className="text-[#805B99] font-medium hover:underline"
+                    >
+                      ارسال مجدد کد
+                    </button>
+                  )}
+                </div>
               </div>
             </form>
           )}
@@ -337,6 +383,26 @@ export default function MyAccountContainer() {
           {/* مرحله ۳ - تکمیل پروفایل (کاربران جدید) */}
           {step === "profile" && (
             <form onSubmit={handleCompleteProfile} className="space-y-6">
+              <div className="text-center mb-4">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <p className="text-gray-600 text-sm">
+                  شماره شما تأیید شد. لطفاً اطلاعات خود را تکمیل کنید.
+                </p>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  <p className="text-sm text-gray-500">{phone}</p>
+                  <button
+                    type="button"
+                    onClick={handleEditPhone}
+                    className="text-xs text-blue-500 hover:text-blue-700 flex items-center gap-1 transition-colors"
+                  >
+                    <Pencil className="w-3 h-3" />
+                    ویرایش
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   نام
@@ -376,6 +442,15 @@ export default function MyAccountContainer() {
                 }`}
               >
                 {loading ? "در حال ثبت ..." : "تکمیل ثبت‌نام و ورود"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleEditPhone}
+                className="w-full py-2 text-sm text-blue-500 hover:text-blue-700 flex items-center justify-center gap-1 transition-colors"
+              >
+                <ArrowRight className="w-4 h-4" />
+                اصلاح شماره تماس
               </button>
             </form>
           )}

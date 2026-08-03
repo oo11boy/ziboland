@@ -1,6 +1,8 @@
 import { AddressesContentProps } from "@/types/types";
-import { Add } from "@mui/icons-material";
+import { Add, ExpandMore, Edit, Delete, Phone, LocationOn, Home, Person, PinDrop, CheckCircle,  } from "@mui/icons-material";
 import { Accordion, AccordionSummary, AccordionDetails, Typography } from "@mui/material";
+import { MapPin } from "lucide-react";
+import { useState } from "react";
 
 export default function AddressesContent({
   addresses,
@@ -20,13 +22,15 @@ export default function AddressesContent({
   expandedAccordion,
   handleAccordionChange,
 }: AddressesContentProps) {
+  // State برای مدیریت ادیت درون‌خطی
+  const [editingFormData, setEditingFormData] = useState<any>(null);
+
   // محدود کردن ورودی به اعداد فارسی و انگلیسی
   const handlePhoneInput = (value: string) => {
     const persianNumbers = /^[۰-۹0-9]*$/;
     if (persianNumbers.test(value)) {
       return value;
     }
-    // تبدیل اعداد فارسی به انگلیسی
     const persianToEnglish: { [key: string]: string } = {
       '۰': '0', '۱': '1', '۲': '2', '۳': '3', '۴': '4',
       '۵': '5', '۶': '6', '۷': '7', '۸': '8', '۹': '9'
@@ -38,7 +42,6 @@ export default function AddressesContent({
     return value.replace(/[^0-9]/g, '');
   };
 
-  // محدود کردن ورودی کدپستی به اعداد
   const handlePostalCodeInput = (value: string) => {
     const persianNumbers = /^[۰-۹0-9]*$/;
     if (persianNumbers.test(value)) {
@@ -55,7 +58,6 @@ export default function AddressesContent({
     return value.replace(/[^0-9]/g, '');
   };
 
-  // محدود کردن ورودی پلاک به اعداد
   const handleBuildingNumberInput = (value: string) => {
     const persianNumbers = /^[۰-۹0-9]*$/;
     if (persianNumbers.test(value)) {
@@ -72,7 +74,6 @@ export default function AddressesContent({
     return value.replace(/[^0-9]/g, '');
   };
 
-  // محدود کردن ورودی واحد به اعداد
   const handleUnitInput = (value: string) => {
     const persianNumbers = /^[۰-۹0-9]*$/;
     if (persianNumbers.test(value)) {
@@ -89,88 +90,161 @@ export default function AddressesContent({
     return value.replace(/[^0-9]/g, '');
   };
 
-  return (
-    <div className="ud-animate-slide-in-up font-yekannew">
-      <h2 className="ud-main-title text-2xl font-bold mb-6">آدرس‌ها</h2>
-      <div className="ud-addresses-container">
-        <div className="mb-6 flex justify-end">
-          <button
-            onClick={() => {
-              setShowAddressForm(!showAddressForm);
-              setEditingAddressId(null);
-              setAddressError("");
-            }}
-            className="ud-addresses-button bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-            aria-label="افزودن آدرس جدید"
-          >
-            <Add className="ud-addresses-button-icon" />
-            افزودن آدرس جدید
-          </button>
-        </div>
+  // تابع برای شروع ویرایش آدرس
+  const startEditAddress = (address: any) => {
+    setEditingFormData({
+      id: address.id,
+      first_name: address.first_name,
+      last_name: address.last_name,
+      phone_number: address.phone_number,
+      province: address.province,
+      city: address.city,
+      street: address.street,
+      alley: address.alley || "",
+      building_number: address.building_number || "",
+      unit: address.unit || "",
+      postal_code: address.postal_code,
+      is_default: address.is_default,
+      extra_details: address.extra_details || "",
+    });
+    setEditingAddressId(address.id);
+    setShowAddressForm(true);
+    setAddressError("");
+  };
 
-        {showAddressForm && (
-          <div className="ud-address-form bg-white rounded-xl shadow-lg p-6 mb-6">
-            <h3 className="ud-address-form-title text-xl font-bold mb-4">
+  // تابع برای ذخیره ویرایش
+  const saveEditAddress = () => {
+    if (editingFormData) {
+      handleAddAddress();
+      setEditingFormData(null);
+    }
+  };
+
+  return (
+    <div className="ud-animate-slide-in-up font-yekannew w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* هدر و عنوان */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <MapPin className="text-[#14B8A6] w-7 h-7" />
+            آدرس‌های من
+          </h2>
+          <p className="text-gray-500 text-sm mt-1 mr-10">
+            {addresses.length} آدرس ذخیره شده
+          </p>
+        </div>
+        
+        <button
+          onClick={() => {
+            setShowAddressForm(!showAddressForm);
+            setEditingAddressId(null);
+            setEditingFormData(null);
+            setAddressError("");
+          }}
+          className="bg-[#14B8A6] hover:bg-[#14b8a6] text-white px-5 py-2.5 rounded-xl flex items-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg text-sm font-medium w-full sm:w-auto justify-center"
+          aria-label="افزودن آدرس جدید"
+        >
+          <Add className="text-lg" />
+          افزودن آدرس جدید
+        </button>
+      </div>
+
+      {/* فرم افزودن/ویرایش آدرس - مدرن و کشویی */}
+      {showAddressForm && (
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 mb-8 overflow-hidden transition-all duration-300">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-100">
+            <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+              <Home className="text-[#14B8A6]" />
               {editingAddressId ? "ویرایش آدرس" : "افزودن آدرس جدید"}
             </h3>
-            <div className="ud-address-form-grid grid grid-cols-1 md:grid-cols-2 gap-4">
+          </div>
+          
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {/* نام */}
               <div>
-                <label className="ud-address-form-label block text-sm font-medium mb-1">نام *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  نام <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
-                  value={newAddress.first_name}
-                  onChange={(e) => setNewAddress({ ...newAddress, first_name: e.target.value })}
-                  className="ud-address-form-input w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={editingAddressId ? editingFormData?.first_name || "" : newAddress.first_name}
+                  onChange={(e) => {
+                    if (editingAddressId) {
+                      setEditingFormData({ ...editingFormData, first_name: e.target.value });
+                    } else {
+                      setNewAddress({ ...newAddress, first_name: e.target.value });
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm bg-gray-50 hover:bg-white"
                   placeholder="نام خود را وارد کنید"
                   required
-                  aria-required="true"
                 />
               </div>
 
               {/* نام خانوادگی */}
               <div>
-                <label className="ud-address-form-label block text-sm font-medium mb-1">نام خانوادگی *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  نام خانوادگی <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
-                  value={newAddress.last_name}
-                  onChange={(e) => setNewAddress({ ...newAddress, last_name: e.target.value })}
-                  className="ud-address-form-input w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={editingAddressId ? editingFormData?.last_name || "" : newAddress.last_name}
+                  onChange={(e) => {
+                    if (editingAddressId) {
+                      setEditingFormData({ ...editingFormData, last_name: e.target.value });
+                    } else {
+                      setNewAddress({ ...newAddress, last_name: e.target.value });
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm bg-gray-50 hover:bg-white"
                   placeholder="نام خانوادگی خود را وارد کنید"
                   required
-                  aria-required="true"
                 />
               </div>
 
-              {/* شماره همراه - فقط اعداد */}
+              {/* شماره همراه */}
               <div>
-                <label className="ud-address-form-label block text-sm font-medium mb-1">شماره همراه *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  <Phone className="inline-block w-4 h-4 ml-1" />
+                  شماره همراه <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  value={newAddress.phone_number}
+                  value={editingAddressId ? editingFormData?.phone_number || "" : newAddress.phone_number}
                   onChange={(e) => {
                     const value = handlePhoneInput(e.target.value);
-                    setNewAddress({ ...newAddress, phone_number: value });
+                    if (editingAddressId) {
+                      setEditingFormData({ ...editingFormData, phone_number: value });
+                    } else {
+                      setNewAddress({ ...newAddress, phone_number: value });
+                    }
                   }}
-                  className="ud-address-form-input w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="شماره همراه خود را وارد کنید"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm bg-gray-50 hover:bg-white"
+                  placeholder="۰۹۱۲xxxxxxx"
                   required
-                  aria-required="true"
                   maxLength={11}
                 />
               </div>
 
               {/* استان */}
               <div>
-                <label className="ud-address-form-label block text-sm font-medium mb-1">استان *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  استان <span className="text-red-500">*</span>
+                </label>
                 <select
-                  value={newAddress.province}
-                  onChange={(e) => setNewAddress({ ...newAddress, province: e.target.value, city: "" })}
-                  className="ud-address-form-select w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={editingAddressId ? editingFormData?.province || "" : newAddress.province}
+                  onChange={(e) => {
+                    if (editingAddressId) {
+                      setEditingFormData({ ...editingFormData, province: e.target.value, city: "" });
+                    } else {
+                      setNewAddress({ ...newAddress, province: e.target.value, city: "" });
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm bg-gray-50 hover:bg-white"
                   required
-                  aria-required="true"
                 >
                   <option value="">انتخاب کنید</option>
                   {provinces.map((province) => (
@@ -181,214 +255,378 @@ export default function AddressesContent({
 
               {/* شهر */}
               <div>
-                <label className="ud-address-form-label block text-sm font-medium mb-1">شهر *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  شهر <span className="text-red-500">*</span>
+                </label>
                 <select
-                  value={newAddress.city}
-                  onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                  className="ud-address-form-select w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={editingAddressId ? editingFormData?.city || "" : newAddress.city}
+                  onChange={(e) => {
+                    if (editingAddressId) {
+                      setEditingFormData({ ...editingFormData, city: e.target.value });
+                    } else {
+                      setNewAddress({ ...newAddress, city: e.target.value });
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm bg-gray-50 hover:bg-white"
                   required
-                  disabled={!newAddress.province}
-                  aria-required="true"
+                  disabled={!newAddress.province && !editingFormData?.province}
                 >
                   <option value="">ابتدا استان را انتخاب کنید</option>
-                  {newAddress.province &&
-                    cities[newAddress.province]?.map((city) => (
-                      <option key={city} value={city}>{city}</option>
-                    ))}
+                  {(editingAddressId ? cities[editingFormData?.province] : cities[newAddress.province])?.map((city) => (
+                    <option key={city} value={city}>{city}</option>
+                  ))}
                 </select>
               </div>
 
               {/* خیابان */}
               <div>
-                <label className="ud-address-form-label block text-sm font-medium mb-1">خیابان *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  خیابان <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
-                  value={newAddress.street}
-                  onChange={(e) => setNewAddress({ ...newAddress, street: e.target.value })}
-                  className="ud-address-form-input w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={editingAddressId ? editingFormData?.street || "" : newAddress.street}
+                  onChange={(e) => {
+                    if (editingAddressId) {
+                      setEditingFormData({ ...editingFormData, street: e.target.value });
+                    } else {
+                      setNewAddress({ ...newAddress, street: e.target.value });
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm bg-gray-50 hover:bg-white"
                   placeholder="خیابان را وارد کنید"
                   required
-                  aria-required="true"
                 />
               </div>
 
               {/* کوچه */}
               <div>
-                <label className="ud-address-form-label block text-sm font-medium mb-1">کوچه</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  کوچه
+                </label>
                 <input
                   type="text"
-                  value={newAddress.alley}
-                  onChange={(e) => setNewAddress({ ...newAddress, alley: e.target.value })}
-                  className="ud-address-form-input w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={editingAddressId ? editingFormData?.alley || "" : newAddress.alley}
+                  onChange={(e) => {
+                    if (editingAddressId) {
+                      setEditingFormData({ ...editingFormData, alley: e.target.value });
+                    } else {
+                      setNewAddress({ ...newAddress, alley: e.target.value });
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm bg-gray-50 hover:bg-white"
                   placeholder="کوچه را وارد کنید"
                 />
               </div>
 
-              {/* پلاک - فقط اعداد */}
+              {/* پلاک */}
               <div>
-                <label className="ud-address-form-label block text-sm font-medium mb-1">پلاک *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  پلاک <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  value={newAddress.building_number}
+                  value={editingAddressId ? editingFormData?.building_number || "" : newAddress.building_number}
                   onChange={(e) => {
                     const value = handleBuildingNumberInput(e.target.value);
-                    setNewAddress({ ...newAddress, building_number: value });
+                    if (editingAddressId) {
+                      setEditingFormData({ ...editingFormData, building_number: value });
+                    } else {
+                      setNewAddress({ ...newAddress, building_number: value });
+                    }
                   }}
-                  className="ud-address-form-input w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm bg-gray-50 hover:bg-white"
                   placeholder="پلاک را وارد کنید"
                   required
-                  aria-required="true"
                 />
               </div>
 
-              {/* واحد - فقط اعداد */}
+              {/* واحد */}
               <div>
-                <label className="ud-address-form-label block text-sm font-medium mb-1">واحد (اختیاری)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  واحد (اختیاری)
+                </label>
                 <input
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  value={newAddress.unit}
+                  value={editingAddressId ? editingFormData?.unit || "" : newAddress.unit}
                   onChange={(e) => {
                     const value = handleUnitInput(e.target.value);
-                    setNewAddress({ ...newAddress, unit: value });
+                    if (editingAddressId) {
+                      setEditingFormData({ ...editingFormData, unit: value });
+                    } else {
+                      setNewAddress({ ...newAddress, unit: value });
+                    }
                   }}
-                  className="ud-address-form-input w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm bg-gray-50 hover:bg-white"
                   placeholder="واحد را وارد کنید"
                 />
               </div>
 
-              {/* کدپستی - فقط اعداد */}
+              {/* کدپستی */}
               <div>
-                <label className="ud-address-form-label block text-sm font-medium mb-1">کدپستی *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  کدپستی <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  value={newAddress.postal_code}
+                  value={editingAddressId ? editingFormData?.postal_code || "" : newAddress.postal_code}
                   onChange={(e) => {
                     const value = handlePostalCodeInput(e.target.value);
-                    setNewAddress({ ...newAddress, postal_code: value });
+                    if (editingAddressId) {
+                      setEditingFormData({ ...editingFormData, postal_code: value });
+                    } else {
+                      setNewAddress({ ...newAddress, postal_code: value });
+                    }
                   }}
-                  className="ud-address-form-input w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 text-sm bg-gray-50 hover:bg-white"
                   placeholder="کدپستی را وارد کنید"
                   required
-                  aria-required="true"
                   maxLength={10}
                 />
               </div>
 
               {/* آدرس پیش‌فرض */}
-              <div className="flex items-center">
-                <label className="ud-address-form-label text-sm font-medium mr-2">آدرس پیش‌فرض</label>
+              <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
-                  checked={newAddress.is_default}
-                  onChange={(e) => setNewAddress({ ...newAddress, is_default: e.target.checked })}
-                  className="ud-address-form-checkbox w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              {addressError && (
-                <p className="ud-address-form-error text-red-500 text-sm col-span-2">{addressError}</p>
-              )}
-
-              <div className="ud-address-form-buttons col-span-2 flex gap-2 justify-end">
-                <button
-                  onClick={() => {
-                    setShowAddressForm(false);
-                    setAddressError("");
-                    setEditingAddressId(null);
+                  checked={editingAddressId ? editingFormData?.is_default || false : newAddress.is_default}
+                  onChange={(e) => {
+                    if (editingAddressId) {
+                      setEditingFormData({ ...editingFormData, is_default: e.target.checked });
+                    } else {
+                      setNewAddress({ ...newAddress, is_default: e.target.checked });
+                    }
                   }}
-                  className="ud-address-form-button-cancel px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                  aria-label="لغو افزودن آدرس"
-                >
-                  لغو
-                </button>
-                <button
-                  onClick={handleAddAddress}
-                  className="ud-address-form-button-save px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                  aria-label={editingAddressId ? "ذخیره تغییرات آدرس" : "ذخیره آدرس جدید"}
-                >
-                  {editingAddressId ? "ذخیره تغییرات" : "ذخیره آدرس"}
-                </button>
+                  className="w-5 h-5 text-[#14B8A6] rounded focus:ring-2 focus:ring-blue-500"
+                  id="is-default"
+                />
+                <label htmlFor="is-default" className="text-sm font-medium text-gray-700">
+                  آدرس پیش‌فرض
+                </label>
               </div>
             </div>
-          </div>
-        )}
 
-        <div className="space-y-4">
-          {addresses.length === 0 ? (
-            <p className="ud-addresses-empty text-center text-gray-500 py-10">
-              هیچ آدرسی ثبت نشده است!
-            </p>
-          ) : (
-            addresses.map((address) => (
-              <Accordion
-                key={address.id}
-                expanded={expandedAccordion === address.id}
-                onChange={handleAccordionChange(address.id)}
-                sx={{ fontFamily: "yekannew" }}
-                className="ud-address-accordion border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
+            {/* خطاها */}
+            {addressError && (
+              <div className="mt-4">
+                <p className="text-red-500 text-sm bg-red-50 p-3 rounded-xl border border-red-200">
+                  {addressError}
+                </p>
+              </div>
+            )}
+
+            {/* دکمه‌های فرم */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-end mt-6 pt-4 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  setShowAddressForm(false);
+                  setAddressError("");
+                  setEditingAddressId(null);
+                  setEditingFormData(null);
+                }}
+                className="px-6 py-2.5 border-2 border-gray-300 rounded-xl hover:bg-gray-50 transition-all duration-200 text-sm font-medium text-gray-700"
+                aria-label="لغو"
               >
-                <AccordionSummary
-                  expandIcon={<Add className="ud-addresses-button-icon" />}
-                  aria-controls={`address-panel-${address.id}`}
-                  id={`address-header-${address.id}`}
-                  className="hover:bg-gray-50 rounded-t-lg"
-                >
-                  <div className="ud-address-summary flex items-center justify-between w-full">
-                    <Typography sx={{ fontFamily: "yekannew" }} className="ud-address-title font-medium">
-                      {address.first_name} {address.last_name} - {address.city}
-                    </Typography>
-                    <span
-                      className={`ud-address-status px-3 py-1 rounded-full text-xs font-medium ${
-                        address.is_default 
-                          ? "ud-address-status-default bg-green-100 text-green-700" 
-                          : "ud-address-status-normal bg-gray-100 text-gray-700"
-                      }`}
-                    >
-                      {address.is_default ? "پیش‌فرض" : "معمولی"}
-                    </span>
-                  </div>
-                </AccordionSummary>
-                <AccordionDetails className="border-t border-gray-200">
-                  <div className="ud-address-details space-y-2">
-                    <p><strong>نام:</strong> {address.first_name} {address.last_name}</p>
-                    <p><strong>شماره همراه:</strong> {address.phone_number}</p>
-                    <p><strong>استان:</strong> {address.province}</p>
-                    <p><strong>شهر:</strong> {address.city}</p>
-                    <p><strong>خیابان:</strong> {address.street}</p>
-                    {address.alley && <p><strong>کوچه:</strong> {address.alley}</p>}
-                    {address.building_number && <p><strong>پلاک:</strong> {address.building_number}</p>}
-                    {address.unit && <p><strong>واحد:</strong> {address.unit}</p>}
-                    <p><strong>کدپستی:</strong> {address.postal_code}</p>
-                    {address.extra_details && <p><strong>جزئیات اضافی:</strong> {address.extra_details}</p>}
-                    <div className="ud-address-buttons flex gap-2 mt-4 pt-3 border-t border-gray-200">
-                      <button
-                        onClick={() => handleEditAddress(address)}
-                        className="ud-address-button ud-address-button-edit px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                        aria-label={`ویرایش آدرس ${address.first_name} ${address.last_name}`}
-                      >
-                        ویرایش
-                      </button>
-                      <button
-                        onClick={() => handleDeleteAddress(address.id)}
-                        className="ud-address-button ud-address-button-delete px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors text-sm"
-                        aria-label={`حذف آدرس ${address.first_name} ${address.last_name}`}
-                      >
-                        حذف
-                      </button>
+                لغو
+              </button>
+              <button
+                onClick={() => {
+                  if (editingAddressId && editingFormData) {
+                    // اگر در حالت ویرایش هستیم
+                    const updatedAddress = {
+                      ...editingFormData,
+                      id: editingAddressId
+                    };
+                    // فراخوانی تابع ویرایش با آدرس به‌روز شده
+                    handleEditAddress(updatedAddress);
+                    setEditingAddressId(null);
+                    setEditingFormData(null);
+                    setShowAddressForm(false);
+                  } else {
+                    // اگر در حالت افزودن هستیم
+                    handleAddAddress();
+                  }
+                }}
+                className="px-6 py-2.5 bg-[#14B8A6] text-white rounded-xl hover:bg-[#14b8a6] transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium"
+                aria-label={editingAddressId ? "ذخیره تغییرات" : "ذخیره آدرس"}
+              >
+                {editingAddressId ? "ذخیره تغییرات" : "ذخیره آدرس"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* لیست آدرس‌ها - کارت‌های مدرن */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {addresses.length === 0 ? (
+          <div className="col-span-full text-center py-16 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-300">
+            <PinDrop className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg font-medium">هیچ آدرسی ثبت نشده است!</p>
+            <p className="text-gray-400 text-sm mt-2">برای افزودن آدرس جدید، روی دکمه بالا کلیک کنید</p>
+          </div>
+        ) : (
+          addresses.map((address) => (
+            <div
+              key={address.id}
+              className={`bg-white rounded-2xl border-2 transition-all duration-300 hover:shadow-lg ${
+                expandedAccordion === address.id 
+                  ? 'border-blue-400 shadow-lg' 
+                  : 'border-gray-200 hover:border-blue-200'
+              }`}
+            >
+              {/* هدر کارت */}
+              <div 
+                className="p-5 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                onClick={() => handleAccordionChange(address.id)(null as any, expandedAccordion === address.id ? false : true)}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Person className="text-[#14B8A6] w-5 h-5 flex-shrink-0" />
+                      <span className="font-medium text-gray-800 text-sm sm:text-base truncate">
+                        {address.first_name} {address.last_name}
+                      </span>
+                      <span className="text-gray-400 hidden sm:inline">|</span>
+                      <LocationOn className="text-gray-400 w-4 h-4 flex-shrink-0 hidden sm:inline" />
+                      <span className="text-gray-600 text-sm truncate hidden sm:inline">
+                        {address.city}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="text-gray-500 text-xs flex items-center gap-1">
+                        <Phone className="w-3 h-3" />
+                        {address.phone_number}
+                      </span>
+                      <span className="text-gray-300 hidden sm:inline">|</span>
+                      <span className="text-gray-500 text-xs truncate hidden sm:inline">
+                        {address.street}
+                      </span>
                     </div>
                   </div>
-                </AccordionDetails>
-              </Accordion>
-            ))
-          )}
-        </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {address.is_default && (
+                      <span className="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 border border-green-200 whitespace-nowrap">
+                        <CheckCircle className="w-3 h-3" />
+                        پیش‌فرض
+                      </span>
+                    )}
+                    <ExpandMore className={`text-gray-400 transition-transform duration-300 ${expandedAccordion === address.id ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+              </div>
+
+              {/* محتوای کارت */}
+              {expandedAccordion === address.id && (
+                <div className="border-t border-gray-200 p-5 bg-gray-50 rounded-b-2xl animate-fadeIn">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium text-gray-600 min-w-[70px]">نام:</span>
+                      <span className="text-gray-800">{address.first_name} {address.last_name}</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium text-gray-600 min-w-[70px] flex items-center gap-1">
+                        <Phone className="w-3.5 h-3.5" />
+                        همراه:
+                      </span>
+                      <span className="text-gray-800" dir="ltr">{address.phone_number}</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium text-gray-600 min-w-[70px]">استان:</span>
+                      <span className="text-gray-800">{address.province}</span>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <span className="font-medium text-gray-600 min-w-[70px]">شهر:</span>
+                      <span className="text-gray-800">{address.city}</span>
+                    </div>
+                    <div className="flex items-start gap-2 col-span-full">
+                      <span className="font-medium text-gray-600 min-w-[70px]">خیابان:</span>
+                      <span className="text-gray-800">{address.street}</span>
+                    </div>
+                    {address.alley && (
+                      <div className="flex items-start gap-2">
+                        <span className="font-medium text-gray-600 min-w-[70px]">کوچه:</span>
+                        <span className="text-gray-800">{address.alley}</span>
+                      </div>
+                    )}
+                    {address.building_number && (
+                      <div className="flex items-start gap-2">
+                        <span className="font-medium text-gray-600 min-w-[70px]">پلاک:</span>
+                        <span className="text-gray-800">{address.building_number}</span>
+                      </div>
+                    )}
+                    {address.unit && (
+                      <div className="flex items-start gap-2">
+                        <span className="font-medium text-gray-600 min-w-[70px]">واحد:</span>
+                        <span className="text-gray-800">{address.unit}</span>
+                      </div>
+                    )}
+                    <div className="flex items-start gap-2 col-span-full">
+                      <span className="font-medium text-gray-600 min-w-[70px]">کدپستی:</span>
+                      <span className="text-gray-800" dir="ltr">{address.postal_code}</span>
+                    </div>
+                    {address.extra_details && (
+                      <div className="flex items-start gap-2 col-span-full">
+                        <span className="font-medium text-gray-600 min-w-[70px]">جزئیات:</span>
+                        <span className="text-gray-800">{address.extra_details}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* دکمه‌های عملیات */}
+                  <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startEditAddress(address);
+                      }}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-[#14B8A6] transition-all duration-200 text-sm flex items-center gap-2 shadow-sm hover:shadow-md"
+                      aria-label={`ویرایش آدرس ${address.first_name} ${address.last_name}`}
+                    >
+                      <Edit className="w-4 h-4" />
+                      ویرایش
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteAddress(address.id);
+                      }}
+                      className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-200 text-sm flex items-center gap-2 shadow-sm hover:shadow-md"
+                      aria-label={`حذف آدرس ${address.first_name} ${address.last_name}`}
+                    >
+                      <Delete className="w-4 h-4" />
+                      حذف
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
+
+      {/* استایل انیمیشن */}
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
