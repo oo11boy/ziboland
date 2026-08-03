@@ -12,6 +12,7 @@ import TabProductsSliderContainer from "@/Components/Sliders/TabProductsSlider/T
 import ArticlesListContainer from "@/Components/Articles/ArticlesList/ArticlesListContainer";
 import BrandsContainer from "@/Components/Brands/BrandsContainer";
 import Banners from "@/Components/Banners/Banners";
+import FloatingSocialButtons from "@/Components/FloatingSocialButtons";
 
 // 🟢 متادیتا با مدیریت صحیح کانکشن
 export async function generateMetadata(): Promise<Metadata> {
@@ -19,14 +20,16 @@ export async function generateMetadata(): Promise<Metadata> {
     const settings = await getSettings();
     return {
       title: settings?.site_name || "زیبولند | فروشگاه آنلاین",
-      description: settings?.site_description || "بهترین فروشگاه اینترنتی برای خرید محصولات باکیفیت",
-   icons: {
+      description:
+        settings?.site_description ||
+        "بهترین فروشگاه اینترنتی برای خرید محصولات باکیفیت",
+      icons: {
         icon: [
-          { url: '/icons/favicon.ico', sizes: 'any' },
-          { url: '/icons/favicon.ico', type: 'image/x-icon' },
+          { url: "/icons/favicon.ico", sizes: "any" },
+          { url: "/icons/favicon.ico", type: "image/x-icon" },
         ],
-        shortcut: '/icons/favicon.ico',
-        apple: '/icons/favicon.ico', // یا می‌تونید یه آیکون جدا برای اپل بذارید
+        shortcut: "/icons/favicon.ico",
+        apple: "/icons/favicon.ico", // یا می‌تونید یه آیکون جدا برای اپل بذارید
       },
     };
   } catch (error) {
@@ -50,25 +53,26 @@ export default async function Page() {
     <main className="flex flex-col gap-8 pb-10">
       {/* اسلایدر اصلی */}
       <WideSliderContainer slides={slides} />
-      
+
       {/* بخش‌های دسته‌بندی */}
       <CategoriesContainer categories={categories} />
-      
+
       {/* بخش‌های ثابت */}
       <BenefitsContainer />
       <Banners />
-      
+
       {/* اسلایدر محصولات */}
       <ProductSliderContainer vip={true} />
-      
+
       {/* اسلایدرهای تب‌دار (استفاده از Suspense برای لودینگ بهتر پیشنهاد می‌شود) */}
       <TabProductsSliderContainer title="محبوب‌ترین‌ها" sort="popular" />
       <TabProductsSliderContainer title="ارزان‌ترین‌ها" sort="cheapest" />
       <TabProductsSliderContainer title="جدیدترین‌ها" sort="newest" />
-      
+
       {/* سایر بخش‌ها */}
       <ArticlesListContainer ispage={false} />
       <BrandsContainer />
+       <FloatingSocialButtons />
     </main>
   );
 }
