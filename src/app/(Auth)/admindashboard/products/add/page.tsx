@@ -29,6 +29,7 @@ import { API } from "@/lib/MainRoutes";
 import { toast } from "react-hot-toast";
 import { SITE } from "@/lib/MainRoutes";
 import Image from "next/image";
+import { Editor } from "@tinymce/tinymce-react"; // اضافه کردن ادیتور
 
 interface VariantFormData {
   color_englishName: string;
@@ -224,17 +225,19 @@ const AddProductPage = () => {
     });
   };
 
-const removeVariant = (index: number) => {
-  const isConfirmed = window.confirm("آیا مطمئن هستید که می‌خواهید این واریانت را حذف کنید؟");
-  
-  if (isConfirmed) {
-    setFormData((prev) => ({
-      ...prev,
-      variants: prev.variants.filter((_, i) => i !== index),
-    }));
-    toast.success("واریانت با موفقیت حذف شد");
-  }
-};
+  const removeVariant = (index: number) => {
+    const isConfirmed = window.confirm(
+      "آیا مطمئن هستید که می‌خواهید این واریانت را حذف کنید؟"
+    );
+
+    if (isConfirmed) {
+      setFormData((prev) => ({
+        ...prev,
+        variants: prev.variants.filter((_, i) => i !== index),
+      }));
+      toast.success("واریانت با موفقیت حذف شد");
+    }
+  };
 
   const addVariantInfo = (variantIndex: number) => {
     setFormData((prev) => {
@@ -333,7 +336,6 @@ const removeVariant = (index: number) => {
     }
 
     setUploadedFiles(successful);
-    // مهم: بعد از آپلود موفق، فایل‌های انتخاب‌شده رو پاک کن تا تکراری نشه
     setFiles([]);
     setPreviews({});
     setUploading(false);
@@ -373,14 +375,13 @@ const removeVariant = (index: number) => {
         const newVariants = [...prev.variants];
         const existingImages = newVariants[uploadTarget.variantIndex!].images;
 
-        // تشخیص تکراری بودن همه عکس‌ها
         const uniqueNewUrls = urls.filter(
           (url) => !existingImages.includes(url),
         );
 
         if (uniqueNewUrls.length === 0) {
           allDuplicate = true;
-          return prev; // هیچ تغییری نده
+          return prev;
         }
 
         newVariants[uploadTarget.variantIndex!].images = [
@@ -393,7 +394,6 @@ const removeVariant = (index: number) => {
       hasApplied = true;
     }
 
-    // مهم: toastها رو خارج از updater function فراخوانی کن
     if (hasApplied) {
       if (allDuplicate) {
         toast.success("همه عکس‌ها قبلاً اضافه شده‌اند");
@@ -515,17 +515,55 @@ const removeVariant = (index: number) => {
                       </p>
                     )}
                   </div>
+                  
+                  {/* قسمت توضیحات محصول با ادیتور */}
                   <div>
                     <Label>توضیحات محصول</Label>
-                    <Textarea
-                      value={formData.content}
-                      onChange={(e) =>
-                        setFormData({ ...formData, content: e.target.value })
+                    <Editor
+                      apiKey={
+                        process.env.NEXT_PUBLIC_TINY_KEY ||
+                        "0nmwzbfoumioikgwvlx61cm3wkm7jzcko2c54ui40nc4850o"
                       }
-                      rows={6}
-                      placeholder="توضیحات کامل محصول..."
+                      value={formData.content}
+                      onEditorChange={(newValue) =>
+                        setFormData({ ...formData, content: newValue })
+                      }
+                      init={{
+                        height: 400,
+                        menubar: true,
+                        directionality: "rtl",
+                        language: "fa",
+                        plugins: [
+                          "advlist",
+                          "autolink",
+                          "lists",
+                          "link",
+                          "image",
+                          "charmap",
+                          "preview",
+                          "anchor",
+                          "searchreplace",
+                          "visualblocks",
+                          "code",
+                          "fullscreen",
+                          "insertdatetime",
+                          "media",
+                          "table",
+                          "code",
+                          "help",
+                          "wordcount",
+                        ],
+                        toolbar:
+                          "undo redo | blocks | " +
+                          "bold italic forecolor | alignleft aligncenter " +
+                          "alignright alignjustify | bullist numlist outdent indent | " +
+                          "removeformat | help",
+                        content_style:
+                          "body { font-family: yekannew!important; font-size: 16px; direction: rtl; }",
+                      }}
                     />
                   </div>
+                  
                   <div>
                     <Label>ویژگی‌ها (هر خط یک ویژگی)</Label>
                     <Textarea

@@ -28,6 +28,7 @@ import { Brand, Category, Subcategory, SubcategoryItem } from "@/types/types";
 import { toast } from "react-hot-toast";
 import { SITE } from "@/lib/MainRoutes";
 import Image from "next/image";
+import { Editor } from "@tinymce/tinymce-react"; // اضافه کردن ادیتور
 
 interface VariantFormData {
   id?: number;
@@ -36,7 +37,7 @@ interface VariantFormData {
   color_hexCode: string;
   price_single: string;
   price_wholesale: string;
-  discount_percent: string; // فقط تخفیف تکی (عمده حذف شده)
+  discount_percent: string;
   min_wholesale: string;
   in_stock: boolean;
   stock_quantity: string;
@@ -153,7 +154,6 @@ const EditProductPage = () => {
     fetch(`/api/products/${id}`)
       .then((res) => {
         if (!res.ok) throw new Error("خطا در دریافت محصول");
-        console.log("Product data response:", res);
         return res.json();
       })
       .then((data) => {
@@ -211,7 +211,7 @@ const EditProductPage = () => {
   useEffect(() => {
     if (formData.mothercatId) {
       fetch(`/api/subcategories?category_id=${formData.mothercatId}`)
-        .then((res) => (res.ok ? res.json() : [])) // اگر 404 یا خطا بود، آرایه خالی
+        .then((res) => (res.ok ? res.json() : []))
         .then((data) => setSubcategories(Array.isArray(data) ? data : []))
         .catch(() => setSubcategories([]));
     } else {
@@ -224,7 +224,7 @@ const EditProductPage = () => {
   useEffect(() => {
     if (formData.subcatId) {
       fetch(`/api/subcategory-items?subcategory_id=${formData.subcatId}`)
-        .then((res) => (res.ok ? res.json() : [])) // همینجا هم
+        .then((res) => (res.ok ? res.json() : []))
         .then((data) => setItems(Array.isArray(data) ? data : []))
         .catch(() => setItems([]));
     } else {
@@ -274,17 +274,19 @@ const EditProductPage = () => {
     });
   };
 
-const removeVariant = (index: number) => {
-  const isConfirmed = window.confirm("آیا مطمئن هستید که می‌خواهید این واریانت را حذف کنید؟");
-  
-  if (isConfirmed) {
-    setFormData((prev) => ({
-      ...prev,
-      variants: prev.variants.filter((_, i) => i !== index),
-    }));
-    toast.success("واریانت با موفقیت حذف شد");
-  }
-};
+  const removeVariant = (index: number) => {
+    const isConfirmed = window.confirm(
+      "آیا مطمئن هستید که می‌خواهید این واریانت را حذف کنید؟"
+    );
+
+    if (isConfirmed) {
+      setFormData((prev) => ({
+        ...prev,
+        variants: prev.variants.filter((_, i) => i !== index),
+      }));
+      toast.success("واریانت با موفقیت حذف شد");
+    }
+  };
 
   const addVariantInfo = (variantIndex: number) => {
     setFormData((prev) => {
@@ -352,6 +354,7 @@ const removeVariant = (index: number) => {
       return newP;
     });
   };
+
   const handleUpload = async () => {
     if (files.length === 0) {
       toast.error("فایلی برای آپلود انتخاب نشده است");
@@ -382,7 +385,6 @@ const removeVariant = (index: number) => {
     }
 
     setUploadedFiles(successful);
-    // مهم: بعد از آپلود موفق، فایل‌های انتخاب‌شده رو پاک کن تا تکراری نشه
     setFiles([]);
     setPreviews({});
     setUploading(false);
@@ -422,14 +424,13 @@ const removeVariant = (index: number) => {
         const newVariants = [...prev.variants];
         const existingImages = newVariants[uploadTarget.variantIndex!].images;
 
-        // تشخیص تکراری بودن همه عکس‌ها
         const uniqueNewUrls = urls.filter(
           (url) => !existingImages.includes(url),
         );
 
         if (uniqueNewUrls.length === 0) {
           allDuplicate = true;
-          return prev; // هیچ تغییری نده
+          return prev;
         }
 
         newVariants[uploadTarget.variantIndex!].images = [
@@ -442,7 +443,6 @@ const removeVariant = (index: number) => {
       hasApplied = true;
     }
 
-    // مهم: toastها رو خارج از updater function فراخوانی کن
     if (hasApplied) {
       if (allDuplicate) {
         toast.success("همه عکس‌ها قبلاً اضافه شده‌اند");
@@ -455,6 +455,7 @@ const removeVariant = (index: number) => {
 
     closeUploadModal();
   };
+
   const toggleSection = (section: keyof typeof expandedSections) => {
     setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }));
   };
@@ -571,17 +572,55 @@ const removeVariant = (index: number) => {
                       </p>
                     )}
                   </div>
+
+                  {/* قسمت توضیحات محصول با ادیتور */}
                   <div>
                     <Label>توضیحات محصول</Label>
-                    <Textarea
-                      value={formData.content}
-                      onChange={(e) =>
-                        setFormData({ ...formData, content: e.target.value })
+                    <Editor
+                      apiKey={
+                        process.env.NEXT_PUBLIC_TINY_KEY ||
+                        "0nmwzbfoumioikgwvlx61cm3wkm7jzcko2c54ui40nc4850o"
                       }
-                      rows={6}
-                      placeholder="توضیحات کامل محصول..."
+                      value={formData.content}
+                      onEditorChange={(newValue) =>
+                        setFormData({ ...formData, content: newValue })
+                      }
+                      init={{
+                        height: 400,
+                        menubar: true,
+                        directionality: "rtl",
+                        language: "fa",
+                        plugins: [
+                          "advlist",
+                          "autolink",
+                          "lists",
+                          "link",
+                          "image",
+                          "charmap",
+                          "preview",
+                          "anchor",
+                          "searchreplace",
+                          "visualblocks",
+                          "code",
+                          "fullscreen",
+                          "insertdatetime",
+                          "media",
+                          "table",
+                          "code",
+                          "help",
+                          "wordcount",
+                        ],
+                        toolbar:
+                          "undo redo | blocks | " +
+                          "bold italic forecolor | alignleft aligncenter " +
+                          "alignright alignjustify | bullist numlist outdent indent | " +
+                          "removeformat | help",
+                        content_style:
+                          "body { font-family: yekannew!important; font-size: 16px; direction: rtl; }",
+                      }}
                     />
                   </div>
+
                   <div>
                     <Label>ویژگی‌ها (هر خط یک ویژگی)</Label>
                     <Textarea
@@ -981,9 +1020,9 @@ const removeVariant = (index: number) => {
                           </Button>
                         </div>
                         {variant.image_main && (
-                            <Image
-                          width={160}
-                          height={160}
+                          <Image
+                            width={160}
+                            height={160}
                             src={variant.image_main}
                             alt="تصویر واریانت"
                             className="mt-4 h-48 rounded-lg border object-cover"
@@ -1010,9 +1049,9 @@ const removeVariant = (index: number) => {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                             {variant.images.map((img, i) => (
                               <div key={i} className="relative group">
-                                  <Image
-                          width={160}
-                          height={160}
+                                <Image
+                                  width={160}
+                                  height={160}
                                   src={img}
                                   alt={`گالری ${i + 1}`}
                                   className="h-32 rounded border object-cover"
@@ -1192,7 +1231,7 @@ const removeVariant = (index: number) => {
         </CardContent>
       </Card>
 
-      {/* مودال آپلود (همانند AddProductPage) */}
+      {/* مودال آپلود */}
       {showUploadModal && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
@@ -1228,7 +1267,7 @@ const removeVariant = (index: number) => {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     {files.map((file) => (
                       <div key={file.name} className="relative group">
-                          <Image
+                        <Image
                           width={160}
                           height={160}
                           src={previews[file.name]}
@@ -1268,9 +1307,9 @@ const removeVariant = (index: number) => {
                   </h3>
                   <div className="grid grid-cols-3 md:grid-cols-5 gap-6">
                     {uploadedFiles.map((file) => (
-                        <Image
-                          width={160}
-                          height={160}
+                      <Image
+                        width={160}
+                        height={160}
                         key={file.name}
                         src={file.url}
                         alt={file.name}

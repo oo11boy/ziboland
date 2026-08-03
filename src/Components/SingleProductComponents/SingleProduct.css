@@ -874,3 +874,486 @@
   .sp-comment-submit-button:hover {
     background-color: #1565c0;
   }
+  /* SingleProduct.css */
+
+/* ===== استایل‌های اصلی تَب‌ها ===== */
+.sp-tabs-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  font-family: yekannew, sans-serif;
+}
+
+.sp-tabs-header {
+  background: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+  padding: 0 16px;
+}
+
+.sp-tabs {
+  min-height: 64px;
+}
+
+/* ===== استایل‌های هر تب ===== */
+.sp-tab {
+  font-family: yekannew, sans-serif !important;
+  font-size: 16px !important;
+  font-weight: 500 !important;
+  color: #6c757d !important;
+  padding: 12px 20px !important;
+  min-height: 64px !important;
+  transition: all 0.3s ease !important;
+  text-transform: none !important;
+}
+
+.sp-tab:hover {
+  color: #805B99 !important;
+  background: rgba(128, 91, 153, 0.05);
+}
+
+.sp-tab.Mui-selected {
+  color: #805B99 !important;
+  font-weight: 600 !important;
+}
+
+.sp-tab-icon {
+  font-size: 20px !important;
+  margin-left: 8px !important;
+}
+
+/* ===== پنل‌های تَب ===== */
+.sp-tabs-panel {
+  padding: 0;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.sp-tabs-panel-content {
+  padding: 24px;
+}
+
+/* ===== انیمیشن محو شدن ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ===== استایل‌های محتوای توضیحات محصول (از ادیتور) ===== */
+.sp-tabs-content-text {
+  font-family: yekannew, sans-serif;
+  font-size: 16px;
+  line-height: 2;
+  color: #2d3436;
+  direction: rtl;
+  text-align: justify;
+}
+
+/* ===== استایل‌های تگ‌های HTML داخل محتوا ===== */
+.sp-tabs-content-text h1,
+.sp-tabs-content-text h2,
+.sp-tabs-content-text h3,
+.sp-tabs-content-text h4,
+.sp-tabs-content-text h5,
+.sp-tabs-content-text h6 {
+  font-family: yekannew, sans-serif;
+  font-weight: 700;
+  color: #2d3436;
+  margin: 24px 0 16px 0;
+  line-height: 1.5;
+}
+
+.sp-tabs-content-text h1 {
+  font-size: 32px;
+  border-bottom: 3px solid #805B99;
+  padding-bottom: 12px;
+}
+
+.sp-tabs-content-text h2 {
+  font-size: 28px;
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 10px;
+}
+
+.sp-tabs-content-text h3 {
+  font-size: 24px;
+  color: #805B99;
+}
+
+.sp-tabs-content-text h4 {
+  font-size: 20px;
+}
+
+.sp-tabs-content-text h5 {
+  font-size: 18px;
+}
+
+.sp-tabs-content-text h6 {
+  font-size: 16px;
+  color: #6c757d;
+}
+
+/* ===== پاراگراف‌ها ===== */
+.sp-tabs-content-text p {
+  margin: 16px 0;
+  line-height: 2;
+  text-align: justify;
+}
+
+/* ===== لیست‌ها ===== */
+.sp-tabs-content-text ul,
+.sp-tabs-content-text ol {
+  margin: 16px 0;
+  padding-right: 32px;
+  line-height: 2;
+}
+
+.sp-tabs-content-text ul {
+  list-style-type: disc;
+}
+
+.sp-tabs-content-text ol {
+  list-style-type: decimal;
+}
+
+.sp-tabs-content-text li {
+  margin: 8px 0;
+  padding-right: 8px;
+}
+
+.sp-tabs-content-text li::marker {
+  color: #805B99;
+}
+
+/* ===== لینک‌ها ===== */
+.sp-tabs-content-text a {
+  color: #805B99;
+  text-decoration: none;
+  border-bottom: 1px dashed #805B99;
+  transition: all 0.3s ease;
+}
+
+.sp-tabs-content-text a:hover {
+  color: #6b4e82;
+  border-bottom: 1px solid #6b4e82;
+}
+
+/* ===== تگ‌های استایل‌دهی متن ===== */
+.sp-tabs-content-text strong,
+.sp-tabs-content-text b {
+  font-weight: 700;
+  color: #2d3436;
+}
+
+.sp-tabs-content-text em,
+.sp-tabs-content-text i {
+  font-style: italic;
+}
+
+.sp-tabs-content-text u {
+  text-decoration: underline;
+}
+
+.sp-tabs-content-text strike,
+.sp-tabs-content-text del {
+  text-decoration: line-through;
+  color: #e74c3c;
+}
+
+/* ===== رنگ‌های متن ===== */
+.sp-tabs-content-text .text-red {
+  color: #e74c3c;
+}
+
+.sp-tabs-content-text .text-blue {
+  color: #3498db;
+}
+
+.sp-tabs-content-text .text-green {
+  color: #27ae60;
+}
+
+.sp-tabs-content-text .text-purple {
+  color: #805B99;
+}
+
+/* ===== بلوک‌های نقل قول ===== */
+.sp-tabs-content-text blockquote {
+  border-right: 4px solid #805B99;
+  padding: 16px 24px;
+  margin: 20px 0;
+  background: #f8f9fa;
+  border-radius: 8px;
+  font-style: italic;
+  color: #555;
+}
+
+.sp-tabs-content-text blockquote p {
+  margin: 8px 0;
+}
+
+/* ===== تصاویر داخل محتوا ===== */
+.sp-tabs-content-text img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  margin: 16px auto;
+  display: block;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.sp-tabs-content-text figure {
+  margin: 24px 0;
+  text-align: center;
+}
+
+.sp-tabs-content-text figcaption {
+  font-size: 14px;
+  color: #6c757d;
+  margin-top: 8px;
+  font-style: italic;
+}
+
+/* ===== جداول ===== */
+.sp-tabs-content-text table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+  font-size: 15px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.sp-tabs-content-text table thead {
+  background: #805B99;
+  color: #ffffff;
+}
+
+.sp-tabs-content-text table th,
+.sp-tabs-content-text table td {
+  padding: 12px 16px;
+  border: 1px solid #e9ecef;
+  text-align: right;
+}
+
+.sp-tabs-content-text table th {
+  font-weight: 600;
+}
+
+.sp-tabs-content-text table tbody tr:nth-child(even) {
+  background: #f8f9fa;
+}
+
+.sp-tabs-content-text table tbody tr:hover {
+  background: #f1f3f5;
+}
+
+/* ===== کدها ===== */
+.sp-tabs-content-text code {
+  font-family: 'Courier New', monospace;
+  background: #f1f3f5;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #e74c3c;
+}
+
+.sp-tabs-content-text pre {
+  background: #2d3436;
+  color: #f8f9fa;
+  padding: 16px 20px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 16px 0;
+  direction: ltr;
+  text-align: left;
+}
+
+.sp-tabs-content-text pre code {
+  background: transparent;
+  color: #f8f9fa;
+  padding: 0;
+}
+
+/* ===== دکمه‌ها ===== */
+.sp-tabs-content-text .btn {
+  display: inline-block;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  margin: 8px 4px;
+}
+
+.sp-tabs-content-text .btn-primary {
+  background: #805B99;
+  color: #ffffff !important;
+  border: none;
+}
+
+.sp-tabs-content-text .btn-primary:hover {
+  background: #6b4e82;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(128, 91, 153, 0.3);
+}
+
+.sp-tabs-content-text .btn-secondary {
+  background: #e9ecef;
+  color: #2d3436 !important;
+  border: none;
+}
+
+.sp-tabs-content-text .btn-secondary:hover {
+  background: #dee2e6;
+}
+
+/* ===== ویدئوها ===== */
+.sp-tabs-content-text iframe,
+.sp-tabs-content-text video {
+  max-width: 100%;
+  border-radius: 12px;
+  margin: 16px auto;
+  display: block;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* ===== ریسپانسیو ===== */
+@media (max-width: 768px) {
+  .sp-tabs-header {
+    padding: 0 8px;
+  }
+
+  .sp-tab {
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+    min-height: 48px !important;
+  }
+
+  .sp-tab-icon {
+    font-size: 16px !important;
+    margin-left: 4px !important;
+  }
+
+  .sp-tabs-panel-content {
+    padding: 16px;
+  }
+
+  .sp-tabs-content-text {
+    font-size: 14px;
+    line-height: 1.8;
+  }
+
+  .sp-tabs-content-text h1 {
+    font-size: 24px;
+  }
+
+  .sp-tabs-content-text h2 {
+    font-size: 20px;
+  }
+
+  .sp-tabs-content-text h3 {
+    font-size: 18px;
+  }
+
+  .sp-tabs-content-text h4 {
+    font-size: 16px;
+  }
+
+  .sp-tabs-content-text table {
+    font-size: 13px;
+  }
+
+  .sp-tabs-content-text table th,
+  .sp-tabs-content-text table td {
+    padding: 8px 12px;
+  }
+
+  .sp-tabs-content-text ul,
+  .sp-tabs-content-text ol {
+    padding-right: 20px;
+  }
+
+  .sp-tabs-content-text blockquote {
+    padding: 12px 16px;
+  }
+
+  .sp-tabs-content-text pre {
+    font-size: 13px;
+    padding: 12px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sp-tab {
+    font-size: 11px !important;
+    padding: 6px 8px !important;
+  }
+
+  .sp-tab-icon {
+    font-size: 14px !important;
+  }
+
+  .sp-tabs-content-text {
+    font-size: 13px;
+  }
+
+  .sp-tabs-content-text h1 {
+    font-size: 20px;
+  }
+
+  .sp-tabs-content-text h2 {
+    font-size: 18px;
+  }
+
+  .sp-tabs-content-text h3 {
+    font-size: 16px;
+  }
+
+  .sp-tabs-content-text table {
+    font-size: 11px;
+  }
+
+  .sp-tabs-content-text table th,
+  .sp-tabs-content-text table td {
+    padding: 6px 8px;
+  }
+}
+
+/* ===== استایل‌های سفارشی برای ادیتور ===== */
+/* این کلاس‌ها توسط ادیتور تولید می‌شوند */
+.sp-tabs-content-text .mce-content-body {
+  font-family: yekannew, sans-serif;
+}
+
+.sp-tabs-content-text .mce-content-body p {
+  margin: 16px 0;
+}
+
+/* استایل برای لیست‌های سفارشی */
+.sp-tabs-content-text .custom-list {
+  list-style: none;
+  padding-right: 0;
+}
+
+.sp-tabs-content-text .custom-list li {
+  padding-right: 28px;
+  position: relative;
+}
+
+.sp-tabs-content-text .custom-list li::before {
+  content: "✓";
+  color: #805B99;
+  font-weight: bold;
+  position: absolute;
+  right: 0;
+}
