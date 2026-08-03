@@ -236,10 +236,7 @@ const OrdersPage = () => {
 
       const data: Order[] = await response.json();
 
-      const sortedData = data.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
+const sortedData = data.sort((a, b) => b.id - a.id);
 
       setOrders(sortedData);
       setLoading(false);

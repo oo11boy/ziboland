@@ -1,4 +1,3 @@
-
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import { Swiper, SwiperSlide, SwiperRef } from "swiper/react";
@@ -16,7 +15,7 @@ import Image from "next/image";
 
 interface Slide {
   id: number;
-  link: string;
+  link: string | null; // تغییر: می‌تواند null باشد
   imagewide: string;
   imagemin: string;
   alt: string;
@@ -88,6 +87,28 @@ const WideSliderContainer = ({ slides }: Props) => {
     }
   };
 
+  // تابع کمکی برای رندر کردن اسلاید با یا بدون لینک
+  const renderSlideContent = (slide: Slide) => {
+    const imageElement = (
+      <Image
+        width={1500}
+        height={500}
+        src={windowWidth >= 993 ? slide.imagewide : slide.imagemin}
+        alt={slide.alt}
+        className="w-full h-full rounded-lg object-cover transition-all duration-300 
+                   swiper-slide-active:scale-110 swiper-slide-active:h-[550px]
+                   swiper-slide-prev:scale-90 swiper-slide-prev:h-[450px]
+                   swiper-slide-next:scale-90 swiper-slide-next:h-[450px]"
+      />
+    );
+
+    // اگر لینک وجود داشت، تصویر را در Link قرار بده، در غیر این صورت فقط تصویر
+    if (slide.link) {
+      return <Link href={slide.link}>{imageElement}</Link>;
+    }
+    return imageElement;
+  };
+
   return (
     <div className="w-full mx-auto py-5 relative">
       <Swiper
@@ -125,18 +146,7 @@ const WideSliderContainer = ({ slides }: Props) => {
             className="flex justify-center items-center transition-all duration-300"
           >
             <div className="w-full flex justify-center items-center">
-              <Link href={slide.link}>
-                <Image
-                width={1500}
-                height={500}
-                  src={windowWidth >= 993 ? slide.imagewide : slide.imagemin}
-                  alt={slide.alt}
-                  className="w-full h-full rounded-lg object-cover transition-all duration-300 
-                             swiper-slide-active:scale-110 swiper-slide-active:h-[550px]
-                             swiper-slide-prev:scale-90 swiper-slide-prev:h-[450px]
-                             swiper-slide-next:scale-90 swiper-slide-next:h-[450px]"
-                />
-              </Link>
+              {renderSlideContent(slide)}
             </div>
           </SwiperSlide>
         ))}
