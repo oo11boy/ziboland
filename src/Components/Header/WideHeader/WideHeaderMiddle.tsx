@@ -10,7 +10,7 @@ import {
   AccountCircle,
 } from "@mui/icons-material";
 import Link from "next/link";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence, Variants } from "framer-motion";
 import { toast } from "react-toastify";
 import { useCart } from "@/ContextApi/CartContext";
@@ -25,10 +25,37 @@ export default function WideHeaderMiddle() {
   const { isLoggedIn } = useAuth();
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   const pathname = usePathname();
+  
+  // ref برای تشخیص خروج ماوس از کل مودال
+  const modalRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const toggleCartModal = () => setIsCartModalOpen((prev) => !prev);
 
-  // حذف کامل یک آیتم (فقط بر اساس id + رنگ)
+  // بستن مودال با خروج ماوس از کل منطقه
+  const handleMouseLeave = (e: React.MouseEvent) => {
+    // بررسی می‌کنیم که آیا ماوس به دکمه یا داخل مودال رفته است
+    const relatedTarget = e.relatedTarget as Node;
+    if (
+      modalRef.current && 
+      !modalRef.current.contains(relatedTarget) &&
+      buttonRef.current &&
+      !buttonRef.current.contains(relatedTarget)
+    ) {
+      setIsCartModalOpen(false);
+    }
+  };
+
+  // بستن مودال با کلیک خارج از آن
+  const handleBackdropClick = () => {
+    setIsCartModalOpen(false);
+  };
+
+  // جلوگیری از بسته شدن مودال هنگام هاور روی خود مودال
+  const handleModalMouseEnter = () => {
+    // مودال باز می‌ماند
+  };
+
   const handleRemoveItem = (item: (typeof cartItems)[0]) => {
     dispatch({
       type: "REMOVE_ITEM_BY_TYPE",
@@ -150,8 +177,11 @@ export default function WideHeaderMiddle() {
               2
             </span>
           </button>
+          
+          {/* دکمه سبد خرید با ref */}
           <button
-            onMouseEnter={toggleCartModal}
+            ref={buttonRef}
+            onMouseEnter={() => setIsCartModalOpen(true)}
             className="relative flex items-center gap-2 p-2 hover:bg-[#EBEBEB] hover:text-black rounded-lg border border-[#d9d6d6] hover:border-[#C7C7C7]"
           >
             <ShoppingBagOutlined fontSize="medium" />
@@ -162,23 +192,29 @@ export default function WideHeaderMiddle() {
         </div>
       </div>
 
-      {/* مودال سبد خرید */}
+      {/* مودال سبد خرید با مدیریت هاور */}
       <AnimatePresence>
         {isCartModalOpen && (
           <>
+            {/* پس‌زمینه تیره - فقط برای کلیک خارج از مودال */}
             <motion.div
               variants={backdropVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
               className="fixed inset-0 bg-black z-[990]"
-              onClick={toggleCartModal}
+              onClick={handleBackdropClick}
             />
+            
+            {/* مودال با مدیریت هاور */}
             <motion.div
+              ref={modalRef}
               variants={modalVariants}
               initial="hidden"
               animate="visible"
               exit="exit"
+              onMouseEnter={handleModalMouseEnter}
+              onMouseLeave={handleMouseLeave}
               className="fixed top-0 left-0 w-full md:w-96 h-screen bg-white shadow-2xl z-[999] overflow-y-auto"
               dir="rtl"
             >
@@ -199,15 +235,11 @@ export default function WideHeaderMiddle() {
                   {cartItems.length > 0 ? (
                     <div className="space-y-4">
                       {cartItems.map((item) => {
-                        // ۱. استخراج قیمت واحد اصلی (بدون تخفیف) از دیتای ذخیره شده در آیتم
                         const originalUnitPrice = item.priceType === "wholesale" 
                           ? (item.baseWholesalePrice || 0) 
                           : (item.baseRetailPrice || 0);
 
-                        // ۲. استخراج قیمت واحد پرداختی (که تخفیف قبلاً روی آن اعمال شده)
                         const payableUnitPrice = parseInt(item.price.replace(/,/g, ""), 10);
-
-                        // ۳. محاسبه مجموع کل برای این ردیف (تعداد ضربدر قیمت با تخفیف)
                         const itemTotalPayable = payableUnitPrice * item.quantity;
 
                         return (
@@ -215,7 +247,6 @@ export default function WideHeaderMiddle() {
                             key={`${item.id}-${item.color?.englishName || "default"}`}
                             className="flex items-start gap-4 border-b border-[#e5e7eb] pb-4"
                           >
-                            {/* تصویر محصول */}
                             <img
                               src={item.image}
                               alt={item.title}
@@ -227,7 +258,6 @@ export default function WideHeaderMiddle() {
                                 {item.title}
                               </h3>
 
-                              {/* نمایش رنگ انتخاب شده */}
                               {item.color && (
                                 <div className="flex items-center gap-2 mt-2">
                                   <span className="text-xs text-[#6b7280] yekan">رنگ:</span>
@@ -243,7 +273,6 @@ export default function WideHeaderMiddle() {
                                 </div>
                               )}
 
-                              {/* بخش جزئیات قیمت */}
                               <div className="mt-2 space-y-1 text-sm yekan">
                                 <div className="flex justify-between items-center text-[#6b7280]">
                                   <span>نوع خرید:</span>
@@ -257,7 +286,6 @@ export default function WideHeaderMiddle() {
                                   <span>{originalUnitPrice.toLocaleString("fa-IR")} تومان</span>
                                 </div>
 
-                                {/* نمایش درصد تخفیف فقط اگر وجود داشته باشد */}
                                 {item.discount !== "0" && (
                                   <div className="flex justify-between items-center text-green-600 text-xs">
                                     <span>تخفیف:</span>
@@ -273,7 +301,6 @@ export default function WideHeaderMiddle() {
                                 </div>
                               </div>
 
-                              {/* دکمه‌های کنترل تعداد و حذف */}
                               <div className="flex items-center justify-between mt-3">
                                 <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-2 py-1">
                                   <button
