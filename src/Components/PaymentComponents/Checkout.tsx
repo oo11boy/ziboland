@@ -189,8 +189,11 @@ export default function Checkout() {
     const newErrors: { [key: string]: string } = {};
     if (!formData.first_name) newErrors.first_name = "نام الزامی است";
     if (!formData.last_name) newErrors.last_name = "نام خانوادگی الزامی است";
-    if (!/^\d{11}$/.test(formData.phone_number))
-      newErrors.phone_number = "شماره همراه باید 11 رقم باشد";
+  if (!formData.phone_number) {
+    newErrors.phone_number = "شماره همراه الزامی است";
+  } else if (!/^09\d{9}$/.test(formData.phone_number)) {
+    newErrors.phone_number = "شماره همراه باید با 09 شروع و 11 رقم باشد";
+  }
     if (!formData.province) newErrors.province = "استان الزامی است";
     if (!formData.city) newErrors.city = "شهر الزامی است";
     if (!formData.street) newErrors.street = "خیابان الزامی است";
@@ -312,7 +315,7 @@ export default function Checkout() {
   // محاسبه هزینه ارسال بر اساس روش انتخاب‌شده
   const getSelectedMethod = () => {
     return shippingMethods.find(
-      (m) => (m.key || m.id.toString()) === deliveryType
+      (m) => (m.key || m.id.toString()) === deliveryType,
     );
   };
 
@@ -350,7 +353,9 @@ export default function Checkout() {
                         type="radio"
                         name="delivery"
                         value={method.key || method.id.toString()}
-                        checked={deliveryType === (method.key || method.id.toString())}
+                        checked={
+                          deliveryType === (method.key || method.id.toString())
+                        }
                         onChange={handleDeliveryChange}
                         className="form-radio text-gray-900 mt-1"
                       />
@@ -359,7 +364,9 @@ export default function Checkout() {
                           {method.name}
                         </div>
                         <div className="text-xs sm:text-sm text-gray-600">
-                          {method.cost === 0 ? "رایگان" : `${method.cost.toLocaleString("fa-IR")} تومان`}
+                          {method.cost === 0
+                            ? "رایگان"
+                            : `${method.cost.toLocaleString("fa-IR")} تومان`}
                           {method.delivery_time && ` • ${method.delivery_time}`}
                         </div>
                         {method.description && (
@@ -447,157 +454,190 @@ export default function Checkout() {
 
               {/* فرم آدرس فقط در صورت افزودن آدرس جدید */}
               {showAddressForm && (
-                <form className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                  <input
-                    type="text"
-                    name="first_name"
-                    value={formData.first_name}
-                    onChange={handleInputChange}
-                    placeholder="نام *"
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-                  />
-                  {errors.first_name && (
-                    <p className="text-red-500 text-xs">{errors.first_name}</p>
-                  )}
+       <form className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+  <div className="sm:col-span-2">
+    <input
+      type="text"
+      name="first_name"
+      value={formData.first_name}
+      onChange={handleInputChange}
+      placeholder="نام *"
+       required
+      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+    />
+    {errors.first_name && (
+      <p className="text-red-500 text-xs mt-1">{errors.first_name}</p>
+    )}
+  </div>
 
-                  <input
-                    type="text"
-                    name="last_name"
-                    value={formData.last_name}
-                    onChange={handleInputChange}
-                    placeholder="نام خانوادگی *"
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-                  />
-                  {errors.last_name && (
-                    <p className="text-red-500 text-xs">{errors.last_name}</p>
-                  )}
+  <div className="sm:col-span-2">
+    <input
+      type="text"
+      name="last_name"
+      value={formData.last_name}
+      onChange={handleInputChange}
+      placeholder="نام خانوادگی *"
+       required
+      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+    />
+    {errors.last_name && (
+      <p className="text-red-500 text-xs mt-1">{errors.last_name}</p>
+    )}
+  </div>
 
-                  <input
-                    type="text"
-                    name="phone_number"
-                    value={formData.phone_number}
-                    onChange={handleInputChange}
-                    placeholder="شماره همراه *"
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-                  />
-                  {errors.phone_number && (
-                    <p className="text-red-500 text-xs">
-                      {errors.phone_number}
-                    </p>
-                  )}
+  <div className="sm:col-span-2">
+    <input
+      type="tel"
+      name="phone_number"
+      maxLength={11}
+      value={formData.phone_number}
+      onChange={(e) => {
+        const value = e.target.value.replace(/\D/g, "");
+        if (value.length <= 11) {
+          setFormData((prev) => ({
+            ...prev,
+            phone_number: value,
+          }));
+        }
+      }}
+       required
+      placeholder="شماره همراه *"
+      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+      inputMode="numeric"
+      pattern="[0-9]*"
+    />
+    {errors.phone_number && (
+      <p className="text-red-500 text-xs mt-1">{errors.phone_number}</p>
+    )}
+  </div>
 
-                  <select
-                    name="province"
-                    value={formData.province}
-                    onChange={handleInputChange}
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-                  >
-                    <option value="">انتخاب استان *</option>
-                    {provinces.map((p) => (
-                      <option key={p} value={p}>
-                        {p}
-                      </option>
-                    ))}
-                  </select>
-                  {errors.province && (
-                    <p className="text-red-500 text-xs">{errors.province}</p>
-                  )}
+  <div className="sm:col-span-1">
+    <select
+      name="province"
+      value={formData.province}
+      onChange={handleInputChange}
+      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+    >
+      <option  value="">انتخاب استان *</option>
+      {provinces.map((p) => (
+        <option  key={p} value={p}>
+          {p}
+        </option>
+      ))}
+    </select>
+    {errors.province && (
+      <p className="text-red-500 text-xs mt-1">{errors.province}</p>
+    )}
+  </div>
 
-                  <select
-                    name="city"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    disabled={!formData.province}
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-                  >
-                    <option value="">انتخاب شهر *</option>
-                    {formData.province &&
-                      cities[formData.province]?.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                  </select>
-                  {errors.city && (
-                    <p className="text-red-500 text-xs">{errors.city}</p>
-                  )}
+  <div className="sm:col-span-1">
+    <select
+    
+      name="city"
+      value={formData.city}
+      onChange={handleInputChange}
+      disabled={!formData.province}
+      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base disabled:bg-gray-100"
+    >
+      <option value="">انتخاب شهر *</option>
+      {formData.province &&
+        cities[formData.province]?.map((c) => (
+          <option key={c} value={c}>
+            {c}
+          </option>
+        ))}
+    </select>
+    {errors.city && (
+      <p className="text-red-500 text-xs mt-1">{errors.city}</p>
+    )}
+  </div>
 
-                  <input
-                    type="text"
-                    name="street"
-                    value={formData.street}
-                    onChange={handleInputChange}
-                    placeholder="خیابان *"
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-                  />
-                  {errors.street && (
-                    <p className="text-red-500 text-xs">{errors.street}</p>
-                  )}
+  <div className="sm:col-span-2">
+    <input
+      type="text"
+      name="street"
+      value={formData.street}
+      onChange={handleInputChange}
+      placeholder="خیابان *"
+       required
+      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+    />
+    {errors.street && (
+      <p className="text-red-500 text-xs mt-1">{errors.street}</p>
+    )}
+  </div>
 
-                  <input
-                    type="text"
-                    name="alley"
-                    value={formData.alley}
-                    onChange={handleInputChange}
-                    placeholder="کوچه"
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-                  />
-                  {errors.alley && (
-                    <p className="text-red-500 text-xs">{errors.alley}</p>
-                  )}
+  <div className="sm:col-span-1">
+    <input
+      type="text"
+      name="alley"
+      value={formData.alley}
+      onChange={handleInputChange}
+      placeholder="کوچه"
+      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+    />
+    {errors.alley && (
+      <p className="text-red-500 text-xs mt-1">{errors.alley}</p>
+    )}
+  </div>
 
-                  <input
-                    type="text"
-                    name="building_number"
-                    value={formData.building_number}
-                    onChange={handleInputChange}
-                    placeholder="پلاک *"
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-                  />
-                  {errors.building_number && (
-                    <p className="text-red-500 text-xs">
-                      {errors.building_number}
-                    </p>
-                  )}
+  <div className="sm:col-span-1">
+    <input
+      type="text"
+      name="building_number"
+      value={formData.building_number}
+      onChange={handleInputChange}
+      placeholder="پلاک *"
+       required
+      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+    />
+    {errors.building_number && (
+      <p className="text-red-500 text-xs mt-1">{errors.building_number}</p>
+    )}
+  </div>
 
-                  <input
-                    type="text"
-                    name="postal_code"
-                    value={formData.postal_code}
-                    onChange={handleInputChange}
-                    placeholder="کدپستی (اختیاری)"
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-                  />
-                  {errors.postal_code && (
-                    <p className="text-red-500 text-xs">{errors.postal_code}</p>
-                  )}
+  <div className="sm:col-span-1">
+    <input
+      type="text"
+      name="postal_code"
+      value={formData.postal_code}
+      onChange={handleInputChange}
+      placeholder="کدپستی (اختیاری)"
+      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+    />
+    {errors.postal_code && (
+      <p className="text-red-500 text-xs mt-1">{errors.postal_code}</p>
+    )}
+  </div>
 
-                  <input
-                    type="text"
-                    name="unit"
-                    value={formData.unit}
-                    onChange={handleInputChange}
-                    placeholder="واحد (اختیاری)"
-                    className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-                  />
+  <div className="sm:col-span-1">
+    <input
+      type="text"
+      name="unit"
+      value={formData.unit}
+      onChange={handleInputChange}
+      placeholder="واحد (اختیاری)"
+      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+    />
+  </div>
 
-                  <div className="sm:col-span-2 flex justify-end gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setShowAddressForm(false)}
-                      className="px-4 sm:px-5 py-2 sm:py-3 bg-gray-200 rounded hover:bg-gray-300 text-sm sm:text-base"
-                    >
-                      لغو
-                    </button>
-                    <button
-                      type="button"
-                      onClick={saveAddress}
-                      className="px-4 sm:px-5 py-2 sm:py-3 bg-purple-700 text-white rounded hover:bg-purple-800 text-sm sm:text-base"
-                    >
-                      ذخیره آدرس
-                    </button>
-                  </div>
-                </form>
+  <div className="sm:col-span-2 flex justify-end gap-3 mt-2">
+    <button
+      type="button"
+      onClick={() => setShowAddressForm(false)}
+      className="px-4 sm:px-5 py-2 sm:py-3 bg-gray-200 rounded hover:bg-gray-300 text-sm sm:text-base transition-colors"
+    >
+      لغو
+    </button>
+    <button
+      type="button"
+      onClick={saveAddress}
+      className="px-4 sm:px-5 py-2 sm:py-3 bg-purple-700 text-white rounded hover:bg-purple-800 text-sm sm:text-base transition-colors"
+    >
+      ذخیره آدرس
+    </button>
+  </div>
+</form>
               )}
             </section>
 
@@ -669,7 +709,13 @@ export default function Checkout() {
                     </div>
                     <div className="flex justify-between text-sm sm:text-base">
                       <span className="text-gray-600">هزینه ارسال</span>
-                      <span className={deliveryCost === 0 ? "text-green-600" : "text-gray-900"}>
+                      <span
+                        className={
+                          deliveryCost === 0
+                            ? "text-green-600"
+                            : "text-gray-900"
+                        }
+                      >
                         {deliveryCost === 0
                           ? "رایگان"
                           : `${deliveryCost.toLocaleString("fa-IR")} تومان`}

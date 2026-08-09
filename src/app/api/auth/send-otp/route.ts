@@ -1,6 +1,6 @@
-// api/auth/send-otp/route.ts
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
+import { checkSmsRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
@@ -13,7 +13,17 @@ export async function POST(req: Request) {
       );
     }
 
-    // بایپس ادمین - بدون ارسال پیامک
+    const rateLimit = await checkSmsRateLimit(phone);
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { 
+          error: `لطفاً ${rateLimit.remainingSeconds} ثانیه صبر کنید`,
+          remainingSeconds: rateLimit.remainingSeconds 
+        },
+        { status: 429 },
+      );
+    }
+
     if (phone === "09123456789") {
       const fixedCode = "123456";
 
@@ -23,12 +33,11 @@ export async function POST(req: Request) {
         [phone, fixedCode],
       );
 
-      console.log(`[ADMIN BYPASS] No SMS sent for ${phone} - fixed code: 1234`);
+      console.log(`[ADMIN BYPASS] No SMS sent for ${phone} - fixed code: 123456`);
 
       return NextResponse.json({ success: true });
     }
 
-    // کاربران معمولی → کد تصادفی + ارسال پیامک واقعی
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
     await pool.query(

@@ -33,11 +33,13 @@ export default function MobileBottomNavigation() {
           <div className="relative">
             <ShoppingBagOutlined/>
             {/* Badge تعداد سبد خرید */}
-            {totalItemsCount > 0 && (
+            {totalItemsCount > 0 ? (
               <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
                 {totalItemsCount}
               </span>
-            )}
+            ) :        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                0
+              </span>}
           </div>
           <p>سبد خرید</p>
         </Link>

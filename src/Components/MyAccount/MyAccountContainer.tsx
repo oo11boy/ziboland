@@ -34,7 +34,6 @@ export default function MyAccountContainer() {
 
   const normalizePhone = (p: any) => p.replace(/\D/g, "");
 
-  // تابع برای ریدایرکت با رفرش کامل
   const redirectWithRefresh = (path: string) => {
     window.location.href = path;
   };
@@ -63,13 +62,21 @@ export default function MyAccountContainer() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "خطا در ارسال کد تأیید");
+        if (res.status === 429 && data.remainingSeconds) {
+          setError(`لطفاً ${data.remainingSeconds} ثانیه صبر کنید`);
+          setResendTimer(data.remainingSeconds);
+          if (step === "code") {
+            setStep("phone");
+          }
+        } else {
+          setError(data.error || "خطا در ارسال کد تأیید");
+        }
         return;
       }
 
       setSuccess("کد تأیید برای شما ارسال شد");
       setStep("code");
-      setResendTimer(120);
+      setResendTimer(60); // تغییر به 60 ثانیه
     } catch (err) {
       setError("خطا در ارتباط با سرور");
     } finally {
@@ -205,11 +212,18 @@ export default function MyAccountContainer() {
         body: JSON.stringify({ phone: cleanPhone }),
       });
 
+      const data = await res.json();
+
+      if (res.status === 429 && data.remainingSeconds) {
+        setError(`لطفاً ${data.remainingSeconds} ثانیه صبر کنید`);
+        setResendTimer(data.remainingSeconds);
+        return;
+      }
+
       if (res.ok) {
         setSuccess("کد جدید ارسال شد");
-        setResendTimer(120);
+        setResendTimer(60); // تغییر به 60 ثانیه
       } else {
-        const data = await res.json();
         setError(data.error || "خطا در ارسال مجدد");
       }
     } catch {
@@ -217,7 +231,6 @@ export default function MyAccountContainer() {
     }
   };
 
-  // تابع برای بازگشت به مرحله شماره و اصلاح شماره
   const handleEditPhone = () => {
     setIsEditingPhone(true);
     setStep("phone");
@@ -229,7 +242,6 @@ export default function MyAccountContainer() {
   return (
     <div className="flex justify-center items-center min-h-[70vh] px-4 py-12">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-        {/* هدر */}
         <div className="bg-gradient-to-r from-[#805B99] to-[#9f79c0] p-8 text-center">
           <h1 className="text-3xl font-bold text-white mb-2">زیبولند</h1>
           <p className="text-purple-100 text-sm">
@@ -252,7 +264,6 @@ export default function MyAccountContainer() {
             </div>
           )}
 
-          {/* مرحله ۱ - شماره موبایل */}
           {step === "phone" && (
             <form onSubmit={handleSendCode} className="space-y-6">
               <div>
@@ -271,7 +282,6 @@ export default function MyAccountContainer() {
                     required
                     autoFocus
                   />
-            
                 </div>
                 {isEditingPhone && (
                   <p className="text-xs text-blue-600 mt-2 flex items-center gap-1">
@@ -298,8 +308,6 @@ export default function MyAccountContainer() {
                   type="button"
                   onClick={() => {
                     setIsEditingPhone(false);
-                    // اگر شماره قبلی وجود داشت، آن را بازیابی کن
-                    // (در اینجا می‌توانید شماره قبلی را از state ذخیره کنید)
                   }}
                   className="w-full py-2 text-sm text-gray-500 hover:text-gray-700 transition-colors"
                 >
@@ -309,7 +317,6 @@ export default function MyAccountContainer() {
             </form>
           )}
 
-          {/* مرحله ۲ - وارد کردن کد */}
           {step === "code" && (
             <form onSubmit={handleVerifyCode} className="space-y-6">
               <div className="text-center">
@@ -380,7 +387,6 @@ export default function MyAccountContainer() {
             </form>
           )}
 
-          {/* مرحله ۳ - تکمیل پروفایل (کاربران جدید) */}
           {step === "profile" && (
             <form onSubmit={handleCompleteProfile} className="space-y-6">
               <div className="text-center mb-4">
