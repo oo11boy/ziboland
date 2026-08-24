@@ -6,7 +6,7 @@ export async function checkSmsRateLimit(phone: string): Promise<{
 }> {
   try {
     const [rows]: any = await pool.query(
-      `SELECT created_at FROM verification_codes 
+      `SELECT UNIX_TIMESTAMP(created_at) as ts FROM verification_codes 
        WHERE email = ? 
        ORDER BY created_at DESC 
        LIMIT 1`,
@@ -17,7 +17,8 @@ export async function checkSmsRateLimit(phone: string): Promise<{
       return { allowed: true };
     }
 
-    const lastSent = new Date(rows[0].created_at);
+    // UNIX_TIMESTAMP زمان را به عنوان timestamp (UTC) برمی‌گرداند
+    const lastSent = new Date(rows[0].ts * 1000); // تبدیل به میلی‌ثانیه
     const now = new Date();
     const diffSeconds = (now.getTime() - lastSent.getTime()) / 1000;
     const minInterval = 60;
