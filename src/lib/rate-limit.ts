@@ -4,6 +4,7 @@ export async function checkSmsRateLimit(phone: string): Promise<{
   allowed: boolean;
   remainingSeconds?: number;
 }> {
+  
   try {
     const [rows]: any = await pool.query(
       `SELECT UNIX_TIMESTAMP(created_at) as ts FROM verification_codes 
