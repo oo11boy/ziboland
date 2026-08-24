@@ -1,5 +1,11 @@
 "use client";
-import React, { useState, useEffect, ChangeEvent } from "react";
+import React, {
+  useState,
+  useEffect,
+  ChangeEvent,
+  useCallback,
+  useRef,
+} from "react";
 import BenefitsContainer from "../Benefits/BenefitsContainer";
 import Cookies from "js-cookie";
 import { Modal, Box, Typography, Button } from "@mui/material";
@@ -61,21 +67,14 @@ export default function Checkout() {
   const [submissionError, setSubmissionError] = useState<string>("");
   const token = Cookies.get("authToken");
 
-  // State برای روش‌های ارسال داینامیک
   const [shippingMethods, setShippingMethods] = useState<ShippingMethod[]>([]);
   const [loadingMethods, setLoadingMethods] = useState<boolean>(true);
 
-  useEffect(() => {
-    if (token) {
-      fetchAddresses();
-      fetchUser();
-      fetchShippingMethods();
-    } else {
-      setSubmissionError("لطفاً ابتدا وارد حساب کاربری خود شوید.");
-    }
-  }, [token]);
+  const initialLoadDone = useRef(false);
 
-  const fetchAddresses = async (): Promise<void> => {
+  // تابع دریافت آدرس‌ها (فقط یک بار در useEffect صدا زده می‌شه)
+  const loadAddresses = useCallback(async () => {
+    if (!token) return;
     try {
       const res = await fetch("/api/addresses", {
         headers: { Authorization: `Bearer ${token}` },
@@ -83,8 +82,12 @@ export default function Checkout() {
       if (res.ok) {
         const data: Address[] = await res.json();
         setAddresses(data);
-        const defaultAddr = data.find((addr) => addr.is_default);
-        if (defaultAddr) selectAddress(defaultAddr);
+        // اگر آدرسی انتخاب نشده، آدرس پیش‌فرض رو انتخاب کن
+        setSelectedAddress((prev) => {
+          if (prev) return prev;
+          const defaultAddr = data.find((addr) => addr.is_default);
+          return defaultAddr || null;
+        });
       } else {
         setSubmissionError("خطا در دریافت آدرس‌ها");
       }
@@ -92,7 +95,7 @@ export default function Checkout() {
       console.error("Error fetching addresses:", err);
       setSubmissionError("خطا در دریافت آدرس‌ها");
     }
-  };
+  }, [token]);
 
   const fetchUser = async () => {
     try {
@@ -117,7 +120,6 @@ export default function Checkout() {
       if (res.ok) {
         const data: ShippingMethod[] = await res.json();
         setShippingMethods(data);
-        // اگر روشی انتخاب نشده و روشی وجود دارد، اولین روش فعال را انتخاب کن
         if (data.length > 0 && !deliveryType) {
           const firstMethod = data[0];
           setDeliveryType(firstMethod.key || firstMethod.id.toString());
@@ -170,6 +172,15 @@ export default function Checkout() {
     setIsAddressModalOpen(false);
   };
 
+  useEffect(() => {
+    if (token && !initialLoadDone.current) {
+      initialLoadDone.current = true;
+      loadAddresses();
+      fetchUser();
+      fetchShippingMethods();
+    }
+  }, [token, loadAddresses]);
+
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
   ) => {
@@ -189,11 +200,11 @@ export default function Checkout() {
     const newErrors: { [key: string]: string } = {};
     if (!formData.first_name) newErrors.first_name = "نام الزامی است";
     if (!formData.last_name) newErrors.last_name = "نام خانوادگی الزامی است";
-  if (!formData.phone_number) {
-    newErrors.phone_number = "شماره همراه الزامی است";
-  } else if (!/^09\d{9}$/.test(formData.phone_number)) {
-    newErrors.phone_number = "شماره همراه باید با 09 شروع و 11 رقم باشد";
-  }
+    if (!formData.phone_number) {
+      newErrors.phone_number = "شماره همراه الزامی است";
+    } else if (!/^09\d{9}$/.test(formData.phone_number)) {
+      newErrors.phone_number = "شماره همراه باید با 09 شروع و 11 رقم باشد";
+    }
     if (!formData.province) newErrors.province = "استان الزامی است";
     if (!formData.city) newErrors.city = "شهر الزامی است";
     if (!formData.street) newErrors.street = "خیابان الزامی است";
@@ -224,11 +235,49 @@ export default function Checkout() {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        fetchAddresses();
+        const newAddress: Address = await res.json();
+        // ترکیب داده‌های فرم با پاسخ سرور برای اطمینان از کامل بودن
+        const fullAddress: Address = {
+          ...newAddress,
+          first_name: newAddress.first_name || formData.first_name,
+          last_name: newAddress.last_name || formData.last_name,
+          phone_number: newAddress.phone_number || formData.phone_number,
+          province: newAddress.province || formData.province,
+          city: newAddress.city || formData.city,
+          street: newAddress.street || formData.street,
+          alley: newAddress.alley || formData.alley || "",
+          building_number:
+            newAddress.building_number || formData.building_number,
+          unit: newAddress.unit || formData.unit || "",
+          postal_code: newAddress.postal_code || formData.postal_code,
+          is_default:
+            newAddress.is_default !== undefined
+              ? newAddress.is_default
+              : formData.is_default,
+        };
+        // به‌روزرسانی لیست آدرس‌ها
+        setAddresses((prev) => [...prev, fullAddress]);
+        // تنظیم آدرس انتخاب‌شده و فرم
+        setSelectedAddress(fullAddress);
+        setFormData({
+          first_name: fullAddress.first_name,
+          last_name: fullAddress.last_name,
+          phone_number: fullAddress.phone_number,
+          province: fullAddress.province,
+          city: fullAddress.city,
+          street: fullAddress.street,
+          alley: newAddress.alley || formData.alley || "",
+          building_number:
+            newAddress.building_number || formData.building_number || "",
+          unit: newAddress.unit || formData.unit || "",
+          postal_code: fullAddress.postal_code,
+          is_default: fullAddress.is_default,
+        });
         setShowAddressForm(false);
-        alert("آدرس ذخیره شد");
+        setSubmissionError("");
       } else {
-        setSubmissionError("خطا در ذخیره آدرس");
+        const errorData = await res.json();
+        setSubmissionError(errorData.error || "خطا در ذخیره آدرس");
       }
     } catch (err) {
       console.error("Error saving address:", err);
@@ -312,7 +361,6 @@ export default function Checkout() {
     return total + price * item.quantity;
   }, 0);
 
-  // محاسبه هزینه ارسال بر اساس روش انتخاب‌شده
   const getSelectedMethod = () => {
     return shippingMethods.find(
       (m) => (m.key || m.id.toString()) === deliveryType,
@@ -329,7 +377,7 @@ export default function Checkout() {
       <main className="w-[90%] mx-auto py-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
-            {/* روش ارسال - داینامیک */}
+            {/* روش ارسال */}
             <section className="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
               <h2 className="text-lg sm:text-xl font-semibold mb-4">
                 روش ارسال
@@ -386,21 +434,25 @@ export default function Checkout() {
               )}
             </section>
 
-            {/* کارت آدرس انتخاب شده یا پیام */}
+            {/* آدرس ارسال */}
             <section className="bg-white p-6 rounded-lg shadow-sm space-y-6">
               <h2 className="text-xl font-semibold">آدرس ارسال</h2>
 
               {selectedAddress ? (
-                <div className="p-4 border rounded-lg bg-purple-50 shadow-sm space-y-1">
-                  <p className="font-semibold">
+                <div className="p-4 border rounded-lg bg-purple-50 shadow-sm space-y-2">
+                  <p className="font-semibold text-base">
                     {selectedAddress.first_name} {selectedAddress.last_name}
                   </p>
                   <p className="text-gray-700 text-sm">
-                    {selectedAddress.street}, {selectedAddress.alley || ""},
-                    پلاک {selectedAddress.building_number}
+                    استان: {selectedAddress.province}، شهر:{" "}
+                    {selectedAddress.city}
                   </p>
                   <p className="text-gray-700 text-sm">
-                    {selectedAddress.city}, {selectedAddress.province}
+                    {selectedAddress.street}
+                    {selectedAddress.alley && `، کوچه ${selectedAddress.alley}`}
+                    {selectedAddress.building_number &&
+                      `، پلاک ${selectedAddress.building_number}`}
+                    {selectedAddress.unit && `، واحد ${selectedAddress.unit}`}
                   </p>
                   {selectedAddress.postal_code && (
                     <p className="text-gray-700 text-sm">
@@ -411,9 +463,11 @@ export default function Checkout() {
                     شماره همراه: {selectedAddress.phone_number}
                   </p>
                   {selectedAddress.is_default && (
-                    <span className="text-green-600 text-xs">پیش‌فرض</span>
+                    <span className="inline-block text-green-600 text-xs bg-green-50 px-2 py-1 rounded">
+                      پیش‌فرض
+                    </span>
                   )}
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex gap-2 mt-3 flex-wrap">
                     {addresses.length > 0 && (
                       <button
                         onClick={() => setIsAddressModalOpen(true)}
@@ -433,7 +487,7 @@ export default function Checkout() {
               ) : (
                 <div className="p-4 border rounded-lg text-center text-gray-600">
                   هیچ آدرسی انتخاب نشده است.
-                  <div className="mt-2 flex justify-center gap-2">
+                  <div className="mt-2 flex justify-center gap-2 flex-wrap">
                     {addresses.length > 0 && (
                       <button
                         onClick={() => setIsAddressModalOpen(true)}
@@ -452,196 +506,210 @@ export default function Checkout() {
                 </div>
               )}
 
-              {/* فرم آدرس فقط در صورت افزودن آدرس جدید */}
               {showAddressForm && (
-       <form className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-  <div className="sm:col-span-2">
-    <input
-      type="text"
-      name="first_name"
-      value={formData.first_name}
-      onChange={handleInputChange}
-      placeholder="نام *"
-       required
-      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-    />
-    {errors.first_name && (
-      <p className="text-red-500 text-xs mt-1">{errors.first_name}</p>
-    )}
-  </div>
+                <form className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                  <div className="sm:col-span-2">
+                    <input
+                      type="text"
+                      name="first_name"
+                      value={formData.first_name}
+                      onChange={handleInputChange}
+                      placeholder="نام *"
+                      required
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+                    />
+                    {errors.first_name && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.first_name}
+                      </p>
+                    )}
+                  </div>
 
-  <div className="sm:col-span-2">
-    <input
-      type="text"
-      name="last_name"
-      value={formData.last_name}
-      onChange={handleInputChange}
-      placeholder="نام خانوادگی *"
-       required
-      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-    />
-    {errors.last_name && (
-      <p className="text-red-500 text-xs mt-1">{errors.last_name}</p>
-    )}
-  </div>
+                  <div className="sm:col-span-2">
+                    <input
+                      type="text"
+                      name="last_name"
+                      value={formData.last_name}
+                      onChange={handleInputChange}
+                      placeholder="نام خانوادگی *"
+                      required
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+                    />
+                    {errors.last_name && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.last_name}
+                      </p>
+                    )}
+                  </div>
 
-  <div className="sm:col-span-2">
-    <input
-      type="tel"
-      name="phone_number"
-      maxLength={11}
-      value={formData.phone_number}
-      onChange={(e) => {
-        const value = e.target.value.replace(/\D/g, "");
-        if (value.length <= 11) {
-          setFormData((prev) => ({
-            ...prev,
-            phone_number: value,
-          }));
-        }
-      }}
-       required
-      placeholder="شماره همراه *"
-      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-      inputMode="numeric"
-      pattern="[0-9]*"
-    />
-    {errors.phone_number && (
-      <p className="text-red-500 text-xs mt-1">{errors.phone_number}</p>
-    )}
-  </div>
+                  <div className="sm:col-span-2">
+                    <input
+                      type="tel"
+                      name="phone_number"
+                      maxLength={11}
+                      value={formData.phone_number}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, "");
+                        if (value.length <= 11) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            phone_number: value,
+                          }));
+                        }
+                      }}
+                      required
+                      placeholder="شماره همراه *"
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                    />
+                    {errors.phone_number && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.phone_number}
+                      </p>
+                    )}
+                  </div>
 
-  <div className="sm:col-span-1">
-    <select
-      name="province"
-      value={formData.province}
-      onChange={handleInputChange}
-      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-    >
-      <option  value="">انتخاب استان *</option>
-      {provinces.map((p) => (
-        <option  key={p} value={p}>
-          {p}
-        </option>
-      ))}
-    </select>
-    {errors.province && (
-      <p className="text-red-500 text-xs mt-1">{errors.province}</p>
-    )}
-  </div>
+                  <div className="sm:col-span-1">
+                    <select
+                      name="province"
+                      value={formData.province}
+                      onChange={handleInputChange}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+                    >
+                      <option value="">انتخاب استان *</option>
+                      {provinces.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.province && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.province}
+                      </p>
+                    )}
+                  </div>
 
-  <div className="sm:col-span-1">
-    <select
-    
-      name="city"
-      value={formData.city}
-      onChange={handleInputChange}
-      disabled={!formData.province}
-      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base disabled:bg-gray-100"
-    >
-      <option value="">انتخاب شهر *</option>
-      {formData.province &&
-        cities[formData.province]?.map((c) => (
-          <option key={c} value={c}>
-            {c}
-          </option>
-        ))}
-    </select>
-    {errors.city && (
-      <p className="text-red-500 text-xs mt-1">{errors.city}</p>
-    )}
-  </div>
+                  <div className="sm:col-span-1">
+                    <select
+                      name="city"
+                      value={formData.city}
+                      onChange={handleInputChange}
+                      disabled={!formData.province}
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base disabled:bg-gray-100"
+                    >
+                      <option value="">انتخاب شهر *</option>
+                      {formData.province &&
+                        cities[formData.province]?.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                    </select>
+                    {errors.city && (
+                      <p className="text-red-500 text-xs mt-1">{errors.city}</p>
+                    )}
+                  </div>
 
-  <div className="sm:col-span-2">
-    <input
-      type="text"
-      name="street"
-      value={formData.street}
-      onChange={handleInputChange}
-      placeholder="خیابان *"
-       required
-      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-    />
-    {errors.street && (
-      <p className="text-red-500 text-xs mt-1">{errors.street}</p>
-    )}
-  </div>
+                  <div className="sm:col-span-2">
+                    <input
+                      type="text"
+                      name="street"
+                      value={formData.street}
+                      onChange={handleInputChange}
+                      placeholder="خیابان *"
+                      required
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+                    />
+                    {errors.street && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.street}
+                      </p>
+                    )}
+                  </div>
 
-  <div className="sm:col-span-1">
-    <input
-      type="text"
-      name="alley"
-      value={formData.alley}
-      onChange={handleInputChange}
-      placeholder="کوچه"
-      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-    />
-    {errors.alley && (
-      <p className="text-red-500 text-xs mt-1">{errors.alley}</p>
-    )}
-  </div>
+                  <div className="sm:col-span-1">
+                    <input
+                      type="text"
+                      name="alley"
+                      value={formData.alley}
+                      onChange={handleInputChange}
+                      placeholder="کوچه"
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+                    />
+                    {errors.alley && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.alley}
+                      </p>
+                    )}
+                  </div>
 
-  <div className="sm:col-span-1">
-    <input
-      type="text"
-      name="building_number"
-      value={formData.building_number}
-      onChange={handleInputChange}
-      placeholder="پلاک *"
-       required
-      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-    />
-    {errors.building_number && (
-      <p className="text-red-500 text-xs mt-1">{errors.building_number}</p>
-    )}
-  </div>
+                  <div className="sm:col-span-1">
+                    <input
+                      type="text"
+                      name="building_number"
+                      value={formData.building_number}
+                      onChange={handleInputChange}
+                      placeholder="پلاک *"
+                      required
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+                    />
+                    {errors.building_number && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.building_number}
+                      </p>
+                    )}
+                  </div>
 
-  <div className="sm:col-span-1">
-    <input
-      type="text"
-      name="postal_code"
-      value={formData.postal_code}
-      onChange={handleInputChange}
-      placeholder="کدپستی (اختیاری)"
-      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-    />
-    {errors.postal_code && (
-      <p className="text-red-500 text-xs mt-1">{errors.postal_code}</p>
-    )}
-  </div>
+                  <div className="sm:col-span-1">
+                    <input
+                      type="text"
+                      name="postal_code"
+                      value={formData.postal_code}
+                      onChange={handleInputChange}
+                      placeholder="کدپستی (اختیاری)"
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+                    />
+                    {errors.postal_code && (
+                      <p className="text-red-500 text-xs mt-1">
+                        {errors.postal_code}
+                      </p>
+                    )}
+                  </div>
 
-  <div className="sm:col-span-1">
-    <input
-      type="text"
-      name="unit"
-      value={formData.unit}
-      onChange={handleInputChange}
-      placeholder="واحد (اختیاری)"
-      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
-    />
-  </div>
+                  <div className="sm:col-span-1">
+                    <input
+                      type="text"
+                      name="unit"
+                      value={formData.unit}
+                      onChange={handleInputChange}
+                      placeholder="واحد (اختیاری)"
+                      className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
+                    />
+                  </div>
 
-  <div className="sm:col-span-2 flex justify-end gap-3 mt-2">
-    <button
-      type="button"
-      onClick={() => setShowAddressForm(false)}
-      className="px-4 sm:px-5 py-2 sm:py-3 bg-gray-200 rounded hover:bg-gray-300 text-sm sm:text-base transition-colors"
-    >
-      لغو
-    </button>
-    <button
-      type="button"
-      onClick={saveAddress}
-      className="px-4 sm:px-5 py-2 sm:py-3 bg-purple-700 text-white rounded hover:bg-purple-800 text-sm sm:text-base transition-colors"
-    >
-      ذخیره آدرس
-    </button>
-  </div>
-</form>
+                  <div className="sm:col-span-2 flex justify-end gap-3 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddressForm(false)}
+                      className="px-4 sm:px-5 py-2 sm:py-3 bg-gray-200 rounded hover:bg-gray-300 text-sm sm:text-base transition-colors"
+                    >
+                      لغو
+                    </button>
+                    <button
+                      type="button"
+                      onClick={saveAddress}
+                      className="px-4 sm:px-5 py-2 sm:py-3 bg-purple-700 text-white rounded hover:bg-purple-800 text-sm sm:text-base transition-colors"
+                    >
+                      انتخاب و ذخیره آدرس
+                    </button>
+                  </div>
+                </form>
               )}
             </section>
 
-            {/* بخش توضیحات اضافی - خارج از باکس آدرس */}
+            {/* توضیحات اضافی */}
             <section className="bg-white p-4 sm:p-6 rounded-lg shadow-sm">
               <h2 className="text-lg sm:text-xl font-semibold mb-4">
                 توضیحات اضافی (اختیاری)
@@ -757,7 +825,7 @@ export default function Checkout() {
         </div>
       </main>
 
-      {/* Modal انتخاب آدرس */}
+      {/* مودال انتخاب آدرس */}
       <Modal
         open={isAddressModalOpen}
         onClose={() => setIsAddressModalOpen(false)}
@@ -783,23 +851,47 @@ export default function Checkout() {
             </div>
           ) : (
             <div className="space-y-4 max-h-[60vh] overflow-y-auto">
-              {addresses.map((addr) => (
-                <div
-                  key={addr.id}
-                  className="p-4 border rounded-lg cursor-pointer hover:shadow-md transition"
-                  onClick={() => selectAddress(addr)}
-                >
-                  <p>
-                    {addr.first_name} {addr.last_name} - {addr.city},{" "}
-                    {addr.province}
-                  </p>
-                  <p className="text-gray-600">
-                    {addr.street}, {addr.alley || ""}, پلاک{" "}
-                    {addr.building_number}, کدپستی {addr.postal_code}
-                  </p>
-                  {addr.is_default && <p className="text-green-600">پیش‌فرض</p>}
-                </div>
-              ))}
+              {addresses.map((addr) => {
+                const isSelected = selectedAddress?.id === addr.id;
+                return (
+                  <div
+                    key={addr.id}
+                    className={`p-4 border rounded-lg cursor-pointer hover:shadow-md transition ${
+                      isSelected ? "border-purple-600 bg-purple-50" : ""
+                    }`}
+                    onClick={() => selectAddress(addr)}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <p className="font-medium">
+                          {addr.first_name} {addr.last_name}
+                        </p>
+                        <p className="text-gray-700 text-sm">
+                          {addr.city}، {addr.province}
+                        </p>
+                        <p className="text-gray-600 text-sm">
+                          {addr.street}
+                          {addr.alley && `، کوچه ${addr.alley}`}
+                          {addr.building_number &&
+                            `، پلاک ${addr.building_number}`}
+                          {addr.unit && `، واحد ${addr.unit}`}
+                        </p>
+                        <p className="text-gray-600 text-sm">
+                          کدپستی: {addr.postal_code}
+                        </p>
+                        {addr.is_default && (
+                          <p className="text-green-600 text-sm">پیش‌فرض</p>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <span className="bg-purple-700 text-white text-xs px-3 py-1 rounded-full whitespace-nowrap">
+                          ✓ انتخاب شده
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
           <div className="mt-4 flex justify-end gap-3">
