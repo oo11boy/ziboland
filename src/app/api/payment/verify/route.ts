@@ -58,19 +58,20 @@ export async function GET(request: Request) {
 
     await conn.beginTransaction();
 
-    // دوباره چک موجودی قبل از کاهش (امنیت بیشتر)
+    // 🔥 دریافت آیتم‌های سفارش با variant_id
     const [orderItems]: any = await conn.query(
-      "SELECT product_id, quantity, color_json FROM order_items WHERE order_id = ?",
+      `SELECT product_id, quantity, color_json, variant_id 
+       FROM order_items 
+       WHERE order_id = ?`,
       [order.id],
     );
 
+    // چک موجودی برای هر آیتم
     for (const item of orderItems) {
-      if (item.color_json) {
-        const color = JSON.parse(item.color_json);
+      if (item.variant_id) {
         const [variant]: any = await conn.query(
-          `SELECT stock_quantity FROM product_variants 
-           WHERE product_id = ? AND color_hexCode = ?`,
-          [item.product_id, color.hexCode],
+          `SELECT stock_quantity FROM product_variants WHERE id = ?`,
+          [item.variant_id],
         );
 
         if (variant.length === 0 || variant[0].stock_quantity < item.quantity) {
@@ -82,16 +83,22 @@ export async function GET(request: Request) {
       }
     }
 
-    // کاهش موجودی
+    // 🔥 کاهش موجودی با استفاده از variant_id
     for (const item of orderItems) {
-      if (item.color_json) {
-        const color = JSON.parse(item.color_json);
-        await conn.query(
+      if (item.variant_id) {
+        const [updateResult]: any = await conn.query(
           `UPDATE product_variants 
            SET stock_quantity = stock_quantity - ? 
-           WHERE product_id = ? AND color_hexCode = ?`,
-          [item.quantity, item.product_id, color.hexCode],
+           WHERE id = ? AND stock_quantity >= ?`,
+          [item.quantity, item.variant_id, item.quantity],
         );
+
+        if (updateResult.affectedRows === 0) {
+          await conn.rollback();
+          return NextResponse.redirect(
+            `${BASE_URL}/paymentfailed?orderId=${order.order_code}&error=${encodeURIComponent("موجودی کافی نیست")}`,
+          );
+        }
       }
     }
 

@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const conn = await pool.getConnection();
 
   try {
-    // 1. دریافت روش‌های ارسال از دیتابیس - استفاده از backtick برای کلمه key
+    // 1. دریافت روش‌های ارسال از دیتابیس
     const [shippingMethods]: any = await conn.query(
       `SELECT id, name, cost, \`key\` FROM shipping_methods WHERE is_active = 1`
     );
@@ -60,30 +60,41 @@ export async function POST(req: Request) {
 
     await conn.beginTransaction();
 
-    // چک موجودی هر آیتم (واریانت رنگ)
+    // 🔥 چک موجودی و دریافت variant_id برای هر آیتم
     for (const item of items) {
-      if (item.color?.hexCode) {
+      if (item.color?.hexCode && item.color?.englishName) {
         const [variantRows]: any = await conn.query(
-          `SELECT stock_quantity FROM product_variants 
-           WHERE product_id = ? AND color_hexCode = ?`,
-          [item.product_id, item.color.hexCode],
+          `SELECT id, stock_quantity, price_single, price_wholesale, 
+                  discount_percent, discount_wholesale_percent, min_wholesale
+           FROM product_variants 
+           WHERE product_id = ? AND color_englishName = ? AND color_hexCode = ?`,
+          [item.product_id, item.color.englishName, item.color.hexCode],
         );
 
-        if (
-          variantRows.length === 0 ||
-          variantRows[0].stock_quantity < item.quantity
-        ) {
+        if (variantRows.length === 0) {
           await conn.rollback();
           await conn.release();
           return NextResponse.json(
             {
-              error: `موجودی کافی برای محصول ${item.product_id} با رنگ ${
-                item.color.persianName || item.color.hexCode
-              } وجود ندارد`,
+              error: `رنگ مورد نظر برای محصول یافت نشد`,
             },
             { status: 400 },
           );
         }
+
+        if (variantRows[0].stock_quantity < item.quantity) {
+          await conn.rollback();
+          await conn.release();
+          return NextResponse.json(
+            {
+              error: `موجودی کافی برای محصول با رنگ ${item.color.persianName || item.color.englishName} وجود ندارد. موجودی: ${variantRows[0].stock_quantity} عدد`,
+            },
+            { status: 400 },
+          );
+        }
+
+        // 🔥 ذخیره variant_id برای استفاده در پرداخت
+        item.variant_id = variantRows[0].id;
       }
     }
 
@@ -103,6 +114,7 @@ export async function POST(req: Request) {
     }
     if (!isUnique) throw new Error("ناتوانی در تولید کد سفارش");
 
+    // ثبت سفارش
     const [orderResult]: any = await conn.execute(
       `INSERT INTO orders 
        (user_id, address_id, total_amount, shipping_method, status, payment_status, order_code, extra_details)
@@ -111,19 +123,27 @@ export async function POST(req: Request) {
     );
     const orderId = orderResult.insertId;
 
-    // درج آیتم‌ها
+    // 🔥 درج آیتم‌ها با variant_id
     for (const item of items) {
+      // اطمینان از وجود englishName در color_json
+      const colorData = item.color ? {
+        englishName: item.color.englishName,
+        persianName: item.color.persianName || null,
+        hexCode: item.color.hexCode,
+      } : null;
+
       await conn.execute(
         `INSERT INTO order_items 
-         (order_id, product_id, quantity, unit_price, price_type, color_json)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+         (order_id, product_id, variant_id, quantity, unit_price, price_type, color_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           orderId,
           item.product_id,
+          item.variant_id || null, // 🔥 اینجا variant_id ذخیره میشه
           item.quantity,
           item.price,
           item.price_type || "single",
-          item.color ? JSON.stringify(item.color) : null,
+          colorData ? JSON.stringify(colorData) : null,
         ],
       );
     }
@@ -225,14 +245,14 @@ export async function GET(request: Request) {
   const conn = await pool.getConnection();
 
   try {
-// در بخش GET، فیلد tracking_info را به کوئری اضافه کنید
-const [orders]: any = await conn.query(
-  `SELECT o.*, a.province, a.city, a.street, a.building_number, a.alley, a.unit, a.postal_code, o.tracking_info
-   FROM orders o 
-   JOIN addresses a ON o.address_id = a.id 
-   WHERE o.user_id = ?`,
-  [userId],
-);
+    const [orders]: any = await conn.query(
+      `SELECT o.*, a.province, a.city, a.street, a.building_number, a.alley, a.unit, a.postal_code, o.tracking_info
+       FROM orders o 
+       JOIN addresses a ON o.address_id = a.id 
+       WHERE o.user_id = ?
+       ORDER BY o.created_at DESC`,
+      [userId],
+    );
     
     for (let order of orders) {
       const [items]: any = await conn.query(
