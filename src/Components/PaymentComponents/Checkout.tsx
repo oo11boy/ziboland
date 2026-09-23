@@ -198,8 +198,26 @@ export default function Checkout() {
 
   const validate = (): boolean => {
     const newErrors: { [key: string]: string } = {};
-    if (!formData.first_name) newErrors.first_name = "نام الزامی است";
-    if (!formData.last_name) newErrors.last_name = "نام خانوادگی الزامی است";
+
+    // ✅ فقط حروف فارسی، فاصله، و کاراکترهای عربی/فارسی مجاز
+    const persianNameRegex = /^[\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF\s]+$/;
+
+    if (!formData.first_name) {
+      newErrors.first_name = "نام الزامی است";
+    } else if (!persianNameRegex.test(formData.first_name.trim())) {
+      newErrors.first_name = "نام باید فقط با حروف فارسی نوشته شود";
+    } else if (formData.first_name.trim().length < 2) {
+      newErrors.first_name = "نام باید حداقل ۲ حرف باشد";
+    }
+
+    if (!formData.last_name) {
+      newErrors.last_name = "نام خانوادگی الزامی است";
+    } else if (!persianNameRegex.test(formData.last_name.trim())) {
+      newErrors.last_name = "نام خانوادگی باید فقط با حروف فارسی نوشته شود";
+    } else if (formData.last_name.trim().length < 2) {
+      newErrors.last_name = "نام خانوادگی باید حداقل ۲ حرف باشد";
+    }
+
     if (!formData.phone_number) {
       newErrors.phone_number = "شماره همراه الزامی است";
     } else if (!/^09\d{9}$/.test(formData.phone_number)) {
@@ -508,14 +526,25 @@ export default function Checkout() {
 
               {showAddressForm && (
                 <form className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                  <div className="sm:col-span-2">
+                               <div className="sm:col-span-2">
                     <input
                       type="text"
                       name="first_name"
                       value={formData.first_name}
-                      onChange={handleInputChange}
-                      placeholder="نام *"
+                      onChange={(e) => {
+                        // ✅ فقط حروف فارسی + فاصله
+                        const value = e.target.value.replace(
+                          /[^\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF\s]/g,
+                          "",
+                        );
+                        setFormData((prev) => ({
+                          ...prev,
+                          first_name: value,
+                        }));
+                      }}
+                      placeholder="نام * (فقط فارسی)"
                       required
+                      dir="rtl"
                       className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
                     />
                     {errors.first_name && (
@@ -525,14 +554,25 @@ export default function Checkout() {
                     )}
                   </div>
 
-                  <div className="sm:col-span-2">
+                            <div className="sm:col-span-2">
                     <input
                       type="text"
                       name="last_name"
                       value={formData.last_name}
-                      onChange={handleInputChange}
-                      placeholder="نام خانوادگی *"
+                      onChange={(e) => {
+                        // ✅ فقط حروف فارسی + فاصله
+                        const value = e.target.value.replace(
+                          /[^\u0600-\u06FF\uFB50-\uFDFF\uFE70-\uFEFF\s]/g,
+                          "",
+                        );
+                        setFormData((prev) => ({
+                          ...prev,
+                          last_name: value,
+                        }));
+                      }}
+                      placeholder="نام خانوادگی * (فقط فارسی)"
                       required
+                      dir="rtl"
                       className="w-full p-2 border rounded focus:ring-2 focus:ring-purple-300 text-sm sm:text-base"
                     />
                     {errors.last_name && (

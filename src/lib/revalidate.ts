@@ -1,14 +1,17 @@
 import { revalidateTag, revalidatePath } from "next/cache";
 
-// cast به any برای سازگاری با همه نسخه‌ها
-const invalidateTag = revalidateTag as (tag: string) => void;
 
 export function revalidateSliders() {
-  invalidateTag("sliders");
+  revalidateTag("sliders", "max");
   revalidatePath("/");
 }
 
 export function revalidateCategories() {
-  invalidateTag("categories");
+  revalidateTag("categories", "max");
+  revalidatePath("/");
+}
+
+export function revalidateProducts() {
+  revalidateTag("products", "max");
   revalidatePath("/");
 }
