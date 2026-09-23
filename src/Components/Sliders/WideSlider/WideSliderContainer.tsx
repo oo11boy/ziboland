@@ -15,7 +15,7 @@ import Image from "next/image";
 
 interface Slide {
   id: number;
-  link: string | null; // تغییر: می‌تواند null باشد
+  link: string | null;
   imagewide: string;
   imagemin: string;
   alt: string;
@@ -25,69 +25,65 @@ interface Props {
   slides: Slide[];
 }
 
+const AUTOPLAY_DELAY = 6000;
+
 const WideSliderContainer = ({ slides }: Props) => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [progress, setProgress] = useState(0);
-  const [startTime, setStartTime] = useState(Date.now());
   const [windowWidth, setWindowWidth] = useState(0);
   const swiperRef = useRef<SwiperRef>(null);
+  const progressRef = useRef(0);
+  const isPlayingRef = useRef(true);
+
+  // sync refs
+  useEffect(() => {
+    isPlayingRef.current = isPlaying;
+  }, [isPlaying]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const handleResize = () => {
-      setWindowWidth(window.innerWidth);
-    };
-
+    const handleResize = () => setWindowWidth(window.innerWidth);
     handleResize();
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
+  // ✅ استفاده از یک interval ثابت بدون وابستگی به startTime
   useEffect(() => {
-    setStartTime(Date.now());
-    setProgress(0);
+    const interval = setInterval(() => {
+      if (!isPlayingRef.current) return;
+
+      progressRef.current += 100 / (AUTOPLAY_DELAY / 100);
+
+      if (progressRef.current >= 100) {
+        progressRef.current = 0;
+      }
+      setProgress(progressRef.current);
+    }, 100);
+
+    return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (isPlaying) {
-      const interval = setInterval(() => {
-        const now = Date.now();
-        const elapsed = now - startTime;
-        const total = 6000;
-        const newProgress = Math.min(100, (elapsed / total) * 100);
-        setProgress(newProgress);
-
-        if (newProgress >= 100) {
-          setStartTime(Date.now());
-          setProgress(0);
-        }
-      }, 100);
-
-      return () => clearInterval(interval);
-    }
-  }, [isPlaying, startTime]);
-
   const handleSlideChange = () => {
-    setStartTime(Date.now());
+    progressRef.current = 0;
     setProgress(0);
   };
 
   const toggleAutoplay = () => {
-    if (swiperRef.current && swiperRef.current.swiper) {
-      if (isPlaying) {
-        swiperRef.current.swiper.autoplay.stop();
-        setIsPlaying(false);
-      } else {
-        setStartTime(Date.now());
-        setProgress(0);
-        swiperRef.current.swiper.autoplay.start();
-        setIsPlaying(true);
-      }
+    if (!swiperRef.current?.swiper) return;
+
+    if (isPlaying) {
+      swiperRef.current.swiper.autoplay.stop();
+      setIsPlaying(false);
+    } else {
+      progressRef.current = 0;
+      setProgress(0);
+      swiperRef.current.swiper.autoplay.start();
+      setIsPlaying(true);
     }
   };
 
-  // تابع کمکی برای رندر کردن اسلاید با یا بدون لینک
   const renderSlideContent = (slide: Slide) => {
     const imageElement = (
       <Image
@@ -102,12 +98,13 @@ const WideSliderContainer = ({ slides }: Props) => {
       />
     );
 
-    // اگر لینک وجود داشت، تصویر را در Link قرار بده، در غیر این صورت فقط تصویر
     if (slide.link) {
       return <Link href={slide.link}>{imageElement}</Link>;
     }
     return imageElement;
   };
+
+  if (!slides || slides.length === 0) return null;
 
   return (
     <div className="w-full mx-auto py-5 relative">
@@ -122,7 +119,7 @@ const WideSliderContainer = ({ slides }: Props) => {
         loop={slides.length > 2}
         autoplay={
           slides.length > 2
-            ? { delay: 6000, disableOnInteraction: false }
+            ? { delay: AUTOPLAY_DELAY, disableOnInteraction: false }
             : false
         }
         coverflowEffect={{
@@ -151,6 +148,7 @@ const WideSliderContainer = ({ slides }: Props) => {
           </SwiperSlide>
         ))}
       </Swiper>
+
       <div
         style={{ display: windowWidth <= 993 ? "flex" : "none" }}
         className="absolute z-[20] w-10 h-10 bg-white rounded-full top-8 right-[10%]"
@@ -160,7 +158,7 @@ const WideSliderContainer = ({ slides }: Props) => {
             value={progress}
             text={isPlaying ? "| |" : "▶"}
             styles={buildStyles({
-              pathColor: progress === 0 ? "#000000" : "#000000",
+              pathColor: "#000000",
               trailColor: "#d6d6d6",
               backgroundColor: "#ffffff",
               textColor: "#000000",
@@ -168,6 +166,7 @@ const WideSliderContainer = ({ slides }: Props) => {
           />
         </div>
       </div>
+
       <div
         className="sliderbtns absolute bottom-8 z-50 right-60 flex items-center"
         style={{ display: windowWidth >= 993 ? "flex" : "none" }}
@@ -178,7 +177,7 @@ const WideSliderContainer = ({ slides }: Props) => {
             value={progress}
             text={isPlaying ? "| |" : "▶"}
             styles={buildStyles({
-              pathColor: progress === 0 ? "#000000" : "#000000",
+              pathColor: "#000000",
               trailColor: "#d6d6d6",
               backgroundColor: "#ffffff",
               textColor: "#000000",
