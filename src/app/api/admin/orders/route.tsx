@@ -1,10 +1,8 @@
-// src\app\api\admin\orders\route.tsx
 import { NextResponse } from "next/server";
 import { pool } from "@/lib/db";
 import * as jose from "jose";
 
 export async function GET(request: Request) {
-  // Extract and verify JWT token
   const token = request.headers.get("Authorization")?.replace("Bearer ", "");
   if (!token) {
     return NextResponse.json(
@@ -41,33 +39,30 @@ export async function GET(request: Request) {
   const conn = await pool.getConnection();
 
   try {
-    // Fetch all orders with user and address details, including first_name, last_name, and phone_number
-// در بخش SELECT، tracking_info را اضافه کنید
-const [orders]: any = await conn.query(
-  `SELECT 
-    o.*,
-    u.username, 
-    u.email,
-    a.first_name,
-    a.last_name,
-    a.phone_number,
-    a.province, 
-    a.city, 
-    a.street, 
-    a.alley,
-    a.building_number,
-    a.unit,
-    a.postal_code,
-    o.extra_details,
-    o.tracking_info
-  FROM orders o 
-  JOIN users u ON o.user_id = u.id 
-  JOIN addresses a ON o.address_id = a.id`,
-);
+    const [orders]: any = await conn.query(
+      `SELECT 
+        o.*,
+        u.username, 
+        u.email,
+        COALESCE(o.ship_first_name, a.first_name, u.first_name) AS first_name,
+        COALESCE(o.ship_last_name,  a.last_name,  u.last_name)  AS last_name,
+        COALESCE(o.ship_phone_number, a.phone_number, u.phone_number) AS phone_number,
+        COALESCE(o.ship_province, a.province) AS province,
+        COALESCE(o.ship_city, a.city) AS city,
+        COALESCE(o.ship_street, a.street) AS street,
+        COALESCE(o.ship_alley, a.alley) AS alley,
+        COALESCE(o.ship_building_number, a.building_number) AS building_number,
+        COALESCE(o.ship_unit, a.unit) AS unit,
+        COALESCE(o.ship_postal_code, a.postal_code) AS postal_code,
+        o.extra_details,
+        o.tracking_info
+      FROM orders o 
+      LEFT JOIN users u ON o.user_id = u.id 
+      LEFT JOIN addresses a ON o.address_id = a.id
+      ORDER BY o.created_at DESC`,
+    );
 
-    // Fetch items for each order
-    // eslint-disable-next-line prefer-const
-    for (let order of orders) {
+    for (const order of orders) {
       const [items]: any = await conn.query(
         `SELECT oi.*, p.title, p.image, oi.color_json, oi.price_type
          FROM order_items oi 
@@ -75,7 +70,6 @@ const [orders]: any = await conn.query(
          WHERE oi.order_id = ?`,
         [order.id],
       );
-      // Parse color JSON
       order.items = items.map((item: any) => ({
         ...item,
         color: item.color_json ? JSON.parse(item.color_json) : null,

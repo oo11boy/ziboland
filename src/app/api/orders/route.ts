@@ -19,53 +19,68 @@ export async function POST(req: Request) {
   const conn = await pool.getConnection();
 
   try {
-    // 1. دریافت روش‌های ارسال از دیتابیس
+    // 1. دریافت روش‌های ارسال
     const [shippingMethods]: any = await conn.query(
-      `SELECT id, name, cost, \`key\` FROM shipping_methods WHERE is_active = 1`
+      `SELECT id, name, cost, \`key\` FROM shipping_methods WHERE is_active = 1`,
     );
-    
-    // 2. پیدا کردن روش ارسال انتخاب شده
+
     const selectedMethod = shippingMethods.find(
-      (m: any) => m.key === deliveryType || m.id.toString() === deliveryType || m.name === deliveryType
+      (m: any) =>
+        m.key === deliveryType ||
+        m.id.toString() === deliveryType ||
+        m.name === deliveryType,
     );
 
     if (!selectedMethod) {
-      await conn.release();
       return NextResponse.json(
         { error: "روش ارسال نامعتبر است" },
         { status: 400 },
       );
     }
 
-    // 3. محاسبه هزینه ارسال
-    const deliveryCost = selectedMethod.cost || 0;
+    const deliveryCost = Number(selectedMethod.cost) || 0;
     const shippingMethodName = selectedMethod.name;
 
-    // 4. محاسبه مبلغ کل
+    // 2. محاسبه مبلغ کل
     const itemsTotal = items.reduce(
       (sum: number, item: { price: number; quantity: number }) =>
-        sum + item.price * item.quantity,
+        sum + Number(item.price) * Number(item.quantity),
       0,
     );
-    
+
     const expectedAmount = (itemsTotal + deliveryCost) * 10;
-    
-    if (amount !== expectedAmount) {
-      await conn.release();
+
+    if (Number(amount) !== expectedAmount) {
       return NextResponse.json(
         { error: "مبلغ سفارش با آیتم‌ها مطابقت ندارد" },
         { status: 400 },
       );
     }
 
+    // 3. خواندن آدرس برای snapshot
+    const [addressRows]: any = await conn.query(
+      `SELECT first_name, last_name, phone_number, province, city,
+              street, alley, building_number, unit, postal_code
+       FROM addresses WHERE id = ? AND user_id = ? AND is_deleted = 0`,
+      [address.id, userId],
+    );
+
+    if (addressRows.length === 0) {
+      return NextResponse.json(
+        { error: "آدرس انتخاب شده یافت نشد" },
+        { status: 400 },
+      );
+    }
+
+    const addr = addressRows[0];
+
     await conn.beginTransaction();
 
-    // 🔥 چک موجودی و دریافت variant_id برای هر آیتم
+    // 4. چک موجودی و دریافت variant_id
     for (const item of items) {
       if (item.color?.hexCode && item.color?.englishName) {
         const [variantRows]: any = await conn.query(
-          `SELECT id, stock_quantity, price_single, price_wholesale, 
-                  discount_percent, discount_wholesale_percent, min_wholesale
+          `SELECT id, stock_quantity
            FROM product_variants 
            WHERE product_id = ? AND color_englishName = ? AND color_hexCode = ?`,
           [item.product_id, item.color.englishName, item.color.hexCode],
@@ -73,32 +88,39 @@ export async function POST(req: Request) {
 
         if (variantRows.length === 0) {
           await conn.rollback();
-          await conn.release();
           return NextResponse.json(
-            {
-              error: `رنگ مورد نظر برای محصول یافت نشد`,
-            },
+            { error: `رنگ مورد نظر برای محصول یافت نشد` },
             { status: 400 },
           );
         }
 
         if (variantRows[0].stock_quantity < item.quantity) {
           await conn.rollback();
-          await conn.release();
           return NextResponse.json(
             {
-              error: `موجودی کافی برای محصول با رنگ ${item.color.persianName || item.color.englishName} وجود ندارد. موجودی: ${variantRows[0].stock_quantity} عدد`,
+              error: `موجودی کافی برای محصول با رنگ ${
+                item.color.persianName || item.color.englishName
+              } وجود ندارد. موجودی: ${variantRows[0].stock_quantity} عدد`,
             },
             { status: 400 },
           );
         }
 
-        // 🔥 ذخیره variant_id برای استفاده در پرداخت
         item.variant_id = variantRows[0].id;
+      } else {
+        const [fallback]: any = await conn.query(
+          `SELECT id, stock_quantity FROM product_variants 
+           WHERE product_id = ? AND in_stock = 1 
+           ORDER BY id ASC LIMIT 1`,
+          [item.product_id],
+        );
+        if (fallback.length > 0) {
+          item.variant_id = fallback[0].id;
+        }
       }
     }
 
-    // تولید کد سفارش منحصر به فرد
+    // 5. تولید کد سفارش
     let orderCode = Math.floor(100000 + Math.random() * 900000).toString();
     let isUnique = false;
     let attempts = 0;
@@ -114,23 +136,44 @@ export async function POST(req: Request) {
     }
     if (!isUnique) throw new Error("ناتوانی در تولید کد سفارش");
 
-    // ثبت سفارش
+    // 6. ثبت سفارش با snapshot
     const [orderResult]: any = await conn.execute(
       `INSERT INTO orders 
-       (user_id, address_id, total_amount, shipping_method, status, payment_status, order_code, extra_details)
-       VALUES (?, ?, ?, ?, 'pending', 'pending', ?, ?)`,
-      [userId, address.id, amount, shippingMethodName, orderCode, extraDetails || null],
+       (user_id, address_id, total_amount, shipping_method, status, payment_status, order_code, extra_details,
+        ship_first_name, ship_last_name, ship_phone_number,
+        ship_province, ship_city, ship_street, ship_alley,
+        ship_building_number, ship_unit, ship_postal_code)
+       VALUES (?, ?, ?, ?, 'pending', 'pending', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        userId,
+        address.id,
+        amount,
+        shippingMethodName,
+        orderCode,
+        extraDetails || null,
+        addr.first_name,
+        addr.last_name,
+        addr.phone_number,
+        addr.province,
+        addr.city,
+        addr.street,
+        addr.alley,
+        addr.building_number,
+        addr.unit,
+        addr.postal_code,
+      ],
     );
     const orderId = orderResult.insertId;
 
-    // 🔥 درج آیتم‌ها با variant_id
+    // 7. درج آیتم‌ها
     for (const item of items) {
-      // اطمینان از وجود englishName در color_json
-      const colorData = item.color ? {
-        englishName: item.color.englishName,
-        persianName: item.color.persianName || null,
-        hexCode: item.color.hexCode,
-      } : null;
+      const colorData = item.color
+        ? {
+            englishName: item.color.englishName,
+            persianName: item.color.persianName || null,
+            hexCode: item.color.hexCode,
+          }
+        : null;
 
       await conn.execute(
         `INSERT INTO order_items 
@@ -139,7 +182,7 @@ export async function POST(req: Request) {
         [
           orderId,
           item.product_id,
-          item.variant_id || null, // 🔥 اینجا variant_id ذخیره میشه
+          item.variant_id || null,
           item.quantity,
           item.price,
           item.price_type || "single",
@@ -148,13 +191,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // نوتیفیکیشن ادمین
+    // 8. نوتیفیکیشن
     await conn.query(
       "INSERT INTO notifications (type, message, related_id) VALUES ('order', ?, ?)",
       [`سفارش جدید با کد ${orderCode} ثبت شد`, orderId],
     );
 
-    // درخواست پرداخت زیبال
+    // 9. درخواست پرداخت زیبال
     const callbackUrl = `${BASE_URL}/api/payment/verify?orderId=${orderCode}`;
 
     const res = await fetch("https://gateway.zibal.ir/v1/request", {
@@ -173,7 +216,6 @@ export async function POST(req: Request) {
 
     if (data.result !== 100 || !data.trackId) {
       await conn.rollback();
-      await conn.release();
       return NextResponse.json(
         { error: data.message || "خطا در اتصال به درگاه", result: data.result },
         { status: 502 },
@@ -193,7 +235,6 @@ export async function POST(req: Request) {
     );
 
     await conn.commit();
-    await conn.release();
 
     return NextResponse.json({
       paymentUrl: `https://gateway.zibal.ir/start/${trackId}`,
@@ -201,13 +242,16 @@ export async function POST(req: Request) {
       orderId,
     });
   } catch (error: any) {
-    await conn.rollback();
-    await conn.release();
+    try {
+      await conn.rollback();
+    } catch {}
     console.error("Error creating order:", error);
     return NextResponse.json(
       { error: "خطا در ثبت سفارش", details: error.message },
       { status: 500 },
     );
+  } finally {
+    conn.release();
   }
 }
 
@@ -246,15 +290,27 @@ export async function GET(request: Request) {
 
   try {
     const [orders]: any = await conn.query(
-      `SELECT o.*, a.province, a.city, a.street, a.building_number, a.alley, a.unit, a.postal_code, o.tracking_info
+      `SELECT 
+         o.*,
+         COALESCE(o.ship_first_name, a.first_name)       AS first_name,
+         COALESCE(o.ship_last_name,  a.last_name)        AS last_name,
+         COALESCE(o.ship_phone_number, a.phone_number)   AS phone_number,
+         COALESCE(o.ship_province, a.province)           AS province,
+         COALESCE(o.ship_city, a.city)                   AS city,
+         COALESCE(o.ship_street, a.street)               AS street,
+         COALESCE(o.ship_alley, a.alley)                 AS alley,
+         COALESCE(o.ship_building_number, a.building_number) AS building_number,
+         COALESCE(o.ship_unit, a.unit)                   AS unit,
+         COALESCE(o.ship_postal_code, a.postal_code)     AS postal_code,
+         o.tracking_info
        FROM orders o 
-       JOIN addresses a ON o.address_id = a.id 
+       LEFT JOIN addresses a ON o.address_id = a.id 
        WHERE o.user_id = ?
        ORDER BY o.created_at DESC`,
       [userId],
     );
-    
-    for (let order of orders) {
+
+    for (const order of orders) {
       const [items]: any = await conn.query(
         `SELECT oi.*, p.title, p.image, oi.color_json, oi.price_type
          FROM order_items oi 
@@ -268,14 +324,14 @@ export async function GET(request: Request) {
       }));
     }
 
-    await conn.release();
     return NextResponse.json(orders);
   } catch (error: any) {
-    await conn.release();
     console.error("Error fetching orders:", error);
     return NextResponse.json(
       { error: "خطا در دریافت اطلاعات سفارشات", details: error.message },
       { status: 500 },
     );
+  } finally {
+    conn.release();
   }
 }

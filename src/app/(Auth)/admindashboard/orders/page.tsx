@@ -25,11 +25,33 @@ import {
   Package,
   ShoppingBag,
   Edit,
+  AlertCircle,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import Image from "next/image";
 import Cookies from "js-cookie";
 import { Order } from "@/types/types";
+
+const safeText = (value: any, fallback = "-") => {
+  if (value === null || value === undefined) return fallback;
+  const str = String(value).trim();
+  return str === "" ? fallback : str;
+};
+
+const formatAddress = (o: Partial<Order>) => {
+  const parts: string[] = [];
+  if (o.province) parts.push(o.province);
+  if (o.city) parts.push(o.city);
+  if (o.street) parts.push(o.street);
+  if (o.alley) parts.push(`کوچه ${o.alley}`);
+  if (o.building_number) parts.push(`پلاک ${o.building_number}`);
+  if (o.unit) parts.push(`واحد ${o.unit}`);
+  if (o.postal_code) parts.push(`کد پستی: ${o.postal_code}`);
+  return parts.length > 0 ? parts.join("، ") : null;
+};
+
+const isAddressMissing = (o: Partial<Order>) =>
+  !o.province && !o.city && !o.street;
 
 const InfoItem = ({
   label,
@@ -43,7 +65,7 @@ const InfoItem = ({
       {label}:
     </span>{" "}
     <span className="text-gray-800 dark:text-gray-100">
-      {value != null ? value : "-"}
+      {value != null && value !== "" ? value : "-"}
     </span>
   </p>
 );
@@ -63,8 +85,8 @@ const Section = ({
   </div>
 );
 
-// تابع ترجمه روش ارسال
-const translateShippingMethod = (method: string) => {
+const translateShippingMethod = (method?: string | null) => {
+  if (!method) return "-";
   const map: Record<string, string> = {
     normal_free: "عادی (رایگان)",
     normal_express: "پیشتاز",
@@ -80,18 +102,20 @@ const translateShippingMethod = (method: string) => {
   return map[method] || method;
 };
 
-// تابع تشخیص روش ارسال سریع
-const isExpressShipping = (method: string) => {
-  const expressMethods = ["fast_tehran", "fast_other", "express", "پیشتاز", "normal_express"];
+const isExpressShipping = (method?: string | null) => {
+  if (!method) return false;
+  const expressMethods = [
+    "fast_tehran",
+    "fast_other",
+    "express",
+    "پیشتاز",
+    "normal_express",
+  ];
   return expressMethods.includes(method);
 };
 
-// کامپوننت Badge وضعیت پرداخت
-const PaymentStatusBadge = ({ status }: { status: string }) => {
-  const configs: Record<
-    string,
-    { label: string; icon: any; className: string }
-  > = {
+const PaymentStatusBadge = ({ status }: { status?: string | null }) => {
+  const configs: Record<string, { label: string; icon: any; className: string }> = {
     paid: {
       label: "پرداخت شده",
       icon: CheckCircle,
@@ -114,7 +138,7 @@ const PaymentStatusBadge = ({ status }: { status: string }) => {
     },
   };
 
-  const config = configs[status] || configs.pending;
+  const config = (status && configs[status]) || configs.pending;
   const Icon = config.icon;
 
   return (
@@ -127,12 +151,8 @@ const PaymentStatusBadge = ({ status }: { status: string }) => {
   );
 };
 
-// کامپوننت Badge وضعیت سفارش
-const OrderStatusBadge = ({ status }: { status: string }) => {
-  const configs: Record<
-    string,
-    { label: string; icon: any; className: string }
-  > = {
+const OrderStatusBadge = ({ status }: { status?: string | null }) => {
+  const configs: Record<string, { label: string; icon: any; className: string }> = {
     pending: {
       label: "در انتظار",
       icon: Clock,
@@ -160,7 +180,7 @@ const OrderStatusBadge = ({ status }: { status: string }) => {
     },
   };
 
-  const config = configs[status] || configs.pending;
+  const config = (status && configs[status]) || configs.pending;
   const Icon = config.icon;
 
   return (
@@ -224,9 +244,7 @@ const OrdersPage = () => {
       }
 
       const response = await fetch(`/api/admin/orders`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
 
@@ -236,7 +254,11 @@ const OrdersPage = () => {
 
       const data: Order[] = await response.json();
 
-const sortedData = data.sort((a, b) => b.id - a.id);
+      const sortedData = [...data].sort((a, b) => {
+        const idA = Number(a.id) || 0;
+        const idB = Number(b.id) || 0;
+        return idB - idA;
+      });
 
       setOrders(sortedData);
       setLoading(false);
@@ -249,15 +271,16 @@ const sortedData = data.sort((a, b) => b.id - a.id);
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
-      const searchLower = searchTerm.toLowerCase();
+      const searchLower = searchTerm.toLowerCase().trim();
 
       const matchesSearch =
-        order.order_code.toLowerCase().includes(searchLower) ||
-        `${order.first_name} ${order.last_name}`
+        !searchLower ||
+        (order.order_code ?? "").toLowerCase().includes(searchLower) ||
+        `${order.first_name ?? ""} ${order.last_name ?? ""}`
           .toLowerCase()
           .includes(searchLower) ||
-        order.username?.toLowerCase().includes(searchLower) ||
-        order.email?.toLowerCase().includes(searchLower);
+        (order.username ?? "").toLowerCase().includes(searchLower) ||
+        (order.email ?? "").toLowerCase().includes(searchLower);
 
       const matchesPaymentStatus =
         paymentStatusFilter === "all" ||
@@ -270,12 +293,10 @@ const sortedData = data.sort((a, b) => b.id - a.id);
     });
   }, [orders, searchTerm, paymentStatusFilter, orderStatusFilter]);
 
-  // تابع ویرایش اطلاعات رهگیری
   const handleEditTrackingInfo = async (orderId: number) => {
     const order = orders.find((o) => o.id === orderId);
     if (!order) return;
 
-    // فقط اگر وضعیت ارسال شده باشد
     if (order.status !== "shipped") {
       toast.error("فقط سفارش‌های ارسال شده قابل ویرایش هستند");
       return;
@@ -284,13 +305,14 @@ const sortedData = data.sort((a, b) => b.id - a.id);
     const isExpress = isExpressShipping(order.shipping_method);
     const label = isExpress ? "شماره پیک" : "کد رهگیری";
     const currentValue = order.tracking_info || "";
-    
-    const newTrackingInfo = prompt(`ویرایش ${label} برای سفارش #${order.order_code}:`, currentValue);
-    
-    if (newTrackingInfo === null) {
-      return; // کاربر انصراف داد
-    }
-    
+
+    const newTrackingInfo = prompt(
+      `ویرایش ${label} برای سفارش #${order.order_code}:`,
+      currentValue,
+    );
+
+    if (newTrackingInfo === null) return;
+
     if (!newTrackingInfo.trim()) {
       toast.error(`لطفاً ${label} را وارد کنید`);
       return;
@@ -306,9 +328,9 @@ const sortedData = data.sort((a, b) => b.id - a.id);
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: order.status,
-          tracking_info: newTrackingInfo.trim()
+          tracking_info: newTrackingInfo.trim(),
         }),
       });
 
@@ -318,17 +340,17 @@ const sortedData = data.sort((a, b) => b.id - a.id);
       }
 
       setOrders((prev) =>
-        prev.map((o) => 
-          o.id === orderId 
-            ? { ...o, tracking_info: newTrackingInfo.trim() } 
-            : o
+        prev.map((o) =>
+          o.id === orderId
+            ? { ...o, tracking_info: newTrackingInfo.trim() }
+            : o,
         ),
       );
 
       if (selectedOrder?.id === orderId) {
-        setSelectedOrder({ 
-          ...selectedOrder, 
-          tracking_info: newTrackingInfo.trim()
+        setSelectedOrder({
+          ...selectedOrder,
+          tracking_info: newTrackingInfo.trim(),
         });
       }
 
@@ -364,17 +386,14 @@ const sortedData = data.sort((a, b) => b.id - a.id);
       }
     }
 
-    // اگر وضعیت "ارسال شده" است، از کاربر اطلاعات رهگیری را بگیر
-    let trackingInfo = null;
+    let trackingInfo: string | null = null;
     if (newStatus === "shipped") {
       const isExpress = isExpressShipping(order.shipping_method);
       const label = isExpress ? "شماره پیک" : "کد رهگیری";
       trackingInfo = prompt(`لطفاً ${label} را وارد کنید:`);
-      
-      if (trackingInfo === null) {
-        return; // کاربر انصراف داد
-      }
-      
+
+      if (trackingInfo === null) return;
+
       if (!trackingInfo.trim()) {
         toast.error(`لطفاً ${label} را وارد کنید`);
         return;
@@ -401,9 +420,9 @@ const sortedData = data.sort((a, b) => b.id - a.id);
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: newStatus,
-          tracking_info: trackingInfo 
+          tracking_info: trackingInfo,
         }),
       });
 
@@ -413,18 +432,22 @@ const sortedData = data.sort((a, b) => b.id - a.id);
       }
 
       setOrders((prev) =>
-        prev.map((o) => 
-          o.id === orderId 
-            ? { ...o, status: newStatus, tracking_info: trackingInfo || o.tracking_info } 
-            : o
+        prev.map((o) =>
+          o.id === orderId
+            ? {
+                ...o,
+                status: newStatus,
+                tracking_info: trackingInfo || o.tracking_info,
+              }
+            : o,
         ),
       );
 
       if (selectedOrder?.id === orderId) {
-        setSelectedOrder({ 
-          ...selectedOrder, 
+        setSelectedOrder({
+          ...selectedOrder,
           status: newStatus,
-          tracking_info: trackingInfo || selectedOrder.tracking_info 
+          tracking_info: trackingInfo || selectedOrder.tracking_info,
         });
       }
 
@@ -436,7 +459,8 @@ const sortedData = data.sort((a, b) => b.id - a.id);
     }
   };
 
-  const translateStatus = (status: string) => {
+  const translateStatus = (status?: string | null) => {
+    if (!status) return "-";
     const map: Record<string, string> = {
       pending: "در انتظار",
       processing: "در حال پردازش",
@@ -447,7 +471,8 @@ const sortedData = data.sort((a, b) => b.id - a.id);
     return map[status] || status;
   };
 
-  const translatePaymentStatus = (status: string) => {
+  const translatePaymentStatus = (status?: string | null) => {
+    if (!status) return "-";
     const map: Record<string, string> = {
       paid: "پرداخت شده",
       pending: "در انتظار پرداخت",
@@ -463,11 +488,25 @@ const sortedData = data.sort((a, b) => b.id - a.id);
   };
 
   const copyToClipboard = (text: any) => {
-    navigator.clipboard.writeText(text);
+    if (!text) {
+      toast.warning("شماره‌ای برای کپی وجود ندارد");
+      return;
+    }
+    navigator.clipboard.writeText(String(text));
     toast.success("شماره کاربر کپی شد", { autoClose: 2000 });
   };
 
-  // آمار سفارشات
+  const formatDate = (value?: string | null) => {
+    if (!value) return "-";
+    try {
+      const d = new Date(value);
+      if (isNaN(d.getTime())) return "-";
+      return d.toLocaleDateString("fa-IR");
+    } catch {
+      return "-";
+    }
+  };
+
   const stats = useMemo(() => {
     const total = orders.length;
     const paid = orders.filter((o) => o.payment_status === "paid").length;
@@ -492,7 +531,6 @@ const sortedData = data.sort((a, b) => b.id - a.id);
 
   return (
     <div className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-7xl yekan">
-      {/* عنوان و آمار */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 sm:mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 flex items-center gap-2">
@@ -506,9 +544,7 @@ const sortedData = data.sort((a, b) => b.id - a.id);
         </div>
       </div>
 
-      {/* فیلترها و جستجو - ریسپانسیو */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
-        {/* جستجو */}
         <div className="relative">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
           <Input
@@ -519,7 +555,6 @@ const sortedData = data.sort((a, b) => b.id - a.id);
           />
         </div>
 
-        {/* فیلتر وضعیت پرداخت */}
         <div>
           <Select
             value={paymentStatusFilter}
@@ -539,7 +574,6 @@ const sortedData = data.sort((a, b) => b.id - a.id);
           </Select>
         </div>
 
-        {/* فیلتر وضعیت سفارش */}
         <div>
           <Select
             value={orderStatusFilter}
@@ -560,13 +594,11 @@ const sortedData = data.sort((a, b) => b.id - a.id);
           </Select>
         </div>
 
-        {/* تعداد سفارشات */}
         <div className="hidden lg:flex items-center justify-center text-sm text-gray-600 bg-gray-100 dark:bg-gray-800 rounded-xl px-4">
           نمایش {filteredOrders.length} از {orders.length} سفارش
         </div>
       </div>
 
-      {/* نمایش موبایل: کارت‌های زیبا */}
       <div className="block lg:hidden space-y-4">
         {filteredOrders.length === 0 ? (
           <Card className="text-center py-12 bg-gray-50 dark:bg-gray-900 rounded-2xl">
@@ -575,136 +607,157 @@ const sortedData = data.sort((a, b) => b.id - a.id);
             <p className="text-sm text-gray-400 mt-1">فیلترها را تغییر دهید</p>
           </Card>
         ) : (
-          filteredOrders.map((order) => (
-            <Card
-              key={order.id}
-              className="shadow-lg hover:shadow-xl transition-shadow rounded-2xl border-0"
-            >
-              <CardContent className="p-4 sm:p-6">
-                {/* هدر کارت */}
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <p className="text-lg font-bold text-purple-600">
-                      #{order.order_code}
-                    </p>
-                    <p className="text-sm font-medium text-gray-700">
-                      {order.first_name} {order.last_name}
-                    </p>
-                    <p className="text-xs text-gray-400">@{order.username}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <PaymentStatusBadge status={order.payment_status} />
-                    <OrderStatusBadge status={order.status} />
-                  </div>
-                </div>
-
-                {/* اطلاعات اصلی */}
-                <div className="grid grid-cols-2 gap-2 text-sm bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3">
-                  <div>
-                    <p className="text-gray-500 text-xs">مبلغ</p>
-                    <p className="font-bold">
-                      {(order.total_amount / 10).toLocaleString()} تومان
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-xs">روش ارسال</p>
-                    <p className="text-sm">
-                      {translateShippingMethod(order.shipping_method)}
-                    </p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="text-gray-500 text-xs">تاریخ</p>
-                    <p className="text-sm">
-                      {new Date(order.created_at).toLocaleDateString("fa-IR")}
-                    </p>
-                  </div>
-                  {order.tracking_info && order.status === "shipped" && (
-                    <div className="col-span-2">
-                      <div className="flex items-center gap-1">
-                        <p className="text-gray-500 text-xs">اطلاعات رهگیری</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <p className="text-sm text-blue-600 font-semibold">
-                          {isExpressShipping(order.shipping_method) 
-                            ? `شماره پیک: ${order.tracking_info}`
-                            : `کد رهگیری: ${order.tracking_info}`}
+          filteredOrders.map((order) => {
+            const addrMissing = isAddressMissing(order);
+            return (
+              <Card
+                key={order.id}
+                className="shadow-lg hover:shadow-xl transition-shadow rounded-2xl border-0"
+              >
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <p className="text-lg font-bold text-purple-600">
+                        #{safeText(order.order_code)}
+                      </p>
+                      <p className="text-sm font-medium text-gray-700">
+                        {safeText(order.first_name, "")}{" "}
+                        {safeText(order.last_name, "")}
+                        {!order.first_name && !order.last_name && (
+                          <span className="text-gray-400 italic">
+                            نامشخص
+                          </span>
+                        )}
+                      </p>
+                      {order.username && (
+                        <p className="text-xs text-gray-400">
+                          @{order.username}
                         </p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditTrackingInfo(order.id);
-                          }}
-                          title="ویرایش اطلاعات رهگیری"
-                        >
-                          <Edit size={14} />
-                        </Button>
-                      </div>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-2">
+                      <PaymentStatusBadge status={order.payment_status} />
+                      <OrderStatusBadge status={order.status} />
+                    </div>
+                  </div>
+
+                  {addrMissing && (
+                    <div className="flex items-center gap-2 mb-3 p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 rounded-lg text-amber-700 text-xs">
+                      <AlertCircle size={14} />
+                      اطلاعات آدرس این سفارش در سیستم موجود نیست
                     </div>
                   )}
-                </div>
 
-                {/* اکشن‌ها */}
-                <div className="flex flex-wrap gap-2 mt-4">
-                  <Select
-                    value={order.status}
-                    onValueChange={(newValue) => {
-                      if (newValue !== order.status) {
-                        handleStatusChange(
-                          order.id,
-                          newValue as Order["status"],
-                        );
-                      }
-                    }}
-                    disabled={statusUpdating[order.id]}
-                  >
-                    <SelectTrigger className="flex-1 min-w-[120px] text-xs h-10 rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">⏳ در انتظار</SelectItem>
-                      <SelectItem value="processing">
-                        🔄 در حال پردازش
-                      </SelectItem>
-                      <SelectItem value="shipped">🚚 ارسال شده</SelectItem>
-                      <SelectItem value="delivered">
-                        ✅ تحویل داده شده
-                      </SelectItem>
-                      <SelectItem value="cancelled">❌ لغو شده</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 rounded-xl"
-                      onClick={() => handleViewDetails(order)}
-                      title="مشاهده جزئیات"
-                    >
-                      <View className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="hover:bg-red-100 dark:hover:bg-red-900/20 rounded-xl"
-                      onClick={() =>
-                        handleDeleteOrder(order.id, order.order_code)
-                      }
-                      title="حذف سفارش"
-                    >
-                      <Trash2 className="w-4 h-4 text-red-600" />
-                    </Button>
+                  <div className="grid grid-cols-2 gap-2 text-sm bg-gray-50 dark:bg-gray-800/50 rounded-xl p-3">
+                    <div>
+                      <p className="text-gray-500 text-xs">مبلغ</p>
+                      <p className="font-bold">
+                        {(
+                          (Number(order.total_amount) || 0) / 10
+                        ).toLocaleString()}{" "}
+                        تومان
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">روش ارسال</p>
+                      <p className="text-sm">
+                        {translateShippingMethod(order.shipping_method)}
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-gray-500 text-xs">تاریخ</p>
+                      <p className="text-sm">
+                        {formatDate(order.created_at)}
+                      </p>
+                    </div>
+                    {order.tracking_info && order.status === "shipped" && (
+                      <div className="col-span-2">
+                        <p className="text-gray-500 text-xs">
+                          اطلاعات رهگیری
+                        </p>
+                        <div className="flex items-center gap-1">
+                          <p className="text-sm text-blue-600 font-semibold">
+                            {isExpressShipping(order.shipping_method)
+                              ? `شماره پیک: ${order.tracking_info}`
+                              : `کد رهگیری: ${order.tracking_info}`}
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditTrackingInfo(order.id);
+                            }}
+                            title="ویرایش اطلاعات رهگیری"
+                          >
+                            <Edit size={14} />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
+
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <Select
+                      value={order.status}
+                      onValueChange={(newValue) => {
+                        if (newValue !== order.status) {
+                          handleStatusChange(
+                            order.id,
+                            newValue as Order["status"],
+                          );
+                        }
+                      }}
+                      disabled={statusUpdating[order.id]}
+                    >
+                      <SelectTrigger className="flex-1 min-w-[120px] text-xs h-10 rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="pending">⏳ در انتظار</SelectItem>
+                        <SelectItem value="processing">
+                          🔄 در حال پردازش
+                        </SelectItem>
+                        <SelectItem value="shipped">🚚 ارسال شده</SelectItem>
+                        <SelectItem value="delivered">
+                          ✅ تحویل داده شده
+                        </SelectItem>
+                        <SelectItem value="cancelled">
+                          ❌ لغو شده
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 rounded-xl"
+                        onClick={() => handleViewDetails(order)}
+                        title="مشاهده جزئیات"
+                      >
+                        <View className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="hover:bg-red-100 dark:hover:bg-red-900/20 rounded-xl"
+                        onClick={() =>
+                          handleDeleteOrder(order.id, order.order_code)
+                        }
+                        title="حذف سفارش"
+                      >
+                        <Trash2 className="w-4 h-4 text-red-600" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })
         )}
       </div>
 
-      {/* نمایش دسکتاپ: جدول */}
       <div className="hidden lg:block">
         <Card className="shadow-xl rounded-2xl border-0 overflow-hidden">
           <CardHeader className="bg-gray-50 dark:bg-gray-800/50 border-b">
@@ -751,130 +804,155 @@ const sortedData = data.sort((a, b) => b.id - a.id);
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
-                    {filteredOrders.map((order) => (
-                      <tr
-                        key={order.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
-                      >
-                        <td className="px-6 py-4 font-mono text-purple-600 font-bold">
-                          #{order.order_code}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div>
-                            <p className="font-medium">
-                              {order.first_name} {order.last_name}
-                            </p>
-                            <button
-                              onClick={() =>
-                                copyToClipboard(order.phone_number)
-                              }
-                              className="text-sm text-gray-500 hover:text-purple-600 flex items-center gap-1 transition"
-                              title="کپی شماره تلفن"
-                            >
-                              <Copy className="h-3 w-3" />
-                              {order.phone_number}
-                            </button>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 font-bold text-lg">
-                          {(order.total_amount / 10).toLocaleString()} تومان
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <OrderStatusBadge status={order.status} />
-                            <Select
-                              value={order.status}
-                              onValueChange={(newValue) => {
-                                if (newValue !== order.status) {
-                                  handleStatusChange(
-                                    order.id,
-                                    newValue as Order["status"],
-                                  );
-                                }
-                              }}
-                              disabled={statusUpdating[order.id]}
-                            >
-                              <SelectTrigger className="w-32 h-8 text-xs">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="pending">
-                                  ⏳ در انتظار
-                                </SelectItem>
-                                <SelectItem value="processing">
-                                  🔄 در حال پردازش
-                                </SelectItem>
-                                <SelectItem value="shipped">
-                                  🚚 ارسال شده
-                                </SelectItem>
-                                <SelectItem value="delivered">
-                                  ✅ تحویل داده شده
-                                </SelectItem>
-                                <SelectItem value="cancelled">
-                                  ❌ لغو شده
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          {order.tracking_info && order.status === "shipped" && (
-                            <div className="mt-1 flex items-center gap-1">
-                              <span className="text-xs text-blue-600 font-semibold">
-                                {isExpressShipping(order.shipping_method) 
-                                  ? `شماره پیک: ${order.tracking_info}`
-                                  : `کد رهگیری: ${order.tracking_info}`}
-                              </span>
+                    {filteredOrders.map((order) => {
+                      const addrMissing = isAddressMissing(order);
+                      return (
+                        <tr
+                          key={order.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                        >
+                          <td className="px-6 py-4 font-mono text-purple-600 font-bold">
+                            #{safeText(order.order_code)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div>
+                              <p className="font-medium">
+                                {order.first_name || order.last_name
+                                  ? `${order.first_name ?? ""} ${
+                                      order.last_name ?? ""
+                                    }`.trim()
+                                  : "نامشخص"}
+                              </p>
+                              {order.phone_number ? (
+                                <button
+                                  onClick={() =>
+                                    copyToClipboard(order.phone_number)
+                                  }
+                                  className="text-sm text-gray-500 hover:text-purple-600 flex items-center gap-1 transition"
+                                  title="کپی شماره تلفن"
+                                >
+                                  <Copy className="h-3 w-3" />
+                                  {order.phone_number}
+                                </button>
+                              ) : (
+                                <span className="text-xs text-gray-400">
+                                  بدون شماره
+                                </span>
+                              )}
+                              {addrMissing && (
+                                <p className="text-xs text-amber-600 flex items-center gap-1 mt-1">
+                                  <AlertCircle size={12} /> آدرس حذف شده
+                                </p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 font-bold text-lg">
+                            {(
+                              (Number(order.total_amount) || 0) / 10
+                            ).toLocaleString()}{" "}
+                            تومان
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              <OrderStatusBadge status={order.status} />
+                              <Select
+                                value={order.status}
+                                onValueChange={(newValue) => {
+                                  if (newValue !== order.status) {
+                                    handleStatusChange(
+                                      order.id,
+                                      newValue as Order["status"],
+                                    );
+                                  }
+                                }}
+                                disabled={statusUpdating[order.id]}
+                              >
+                                <SelectTrigger className="w-32 h-8 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">
+                                    ⏳ در انتظار
+                                  </SelectItem>
+                                  <SelectItem value="processing">
+                                    🔄 در حال پردازش
+                                  </SelectItem>
+                                  <SelectItem value="shipped">
+                                    🚚 ارسال شده
+                                  </SelectItem>
+                                  <SelectItem value="delivered">
+                                    ✅ تحویل داده شده
+                                  </SelectItem>
+                                  <SelectItem value="cancelled">
+                                    ❌ لغو شده
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            {order.tracking_info &&
+                              order.status === "shipped" && (
+                                <div className="mt-1 flex items-center gap-1">
+                                  <span className="text-xs text-blue-600 font-semibold">
+                                    {isExpressShipping(order.shipping_method)
+                                      ? `شماره پیک: ${order.tracking_info}`
+                                      : `کد رهگیری: ${order.tracking_info}`}
+                                  </span>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleEditTrackingInfo(order.id);
+                                    }}
+                                    title="ویرایش اطلاعات رهگیری"
+                                  >
+                                    <Edit size={14} />
+                                  </Button>
+                                </div>
+                              )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <PaymentStatusBadge
+                              status={order.payment_status}
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-700">
+                            {translateShippingMethod(order.shipping_method)}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {formatDate(order.created_at)}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex justify-center gap-1">
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="h-6 w-6 p-0 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-full"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleEditTrackingInfo(order.id);
-                                }}
-                                title="ویرایش اطلاعات رهگیری"
+                                className="hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-xl"
+                                onClick={() => handleViewDetails(order)}
+                                title="مشاهده جزئیات"
                               >
-                                <Edit size={14} />
+                                <View className="w-5 h-5 text-blue-600" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="hover:bg-red-100 dark:hover:bg-red-900/20 rounded-xl"
+                                onClick={() =>
+                                  handleDeleteOrder(
+                                    order.id,
+                                    order.order_code,
+                                  )
+                                }
+                                title="حذف سفارش"
+                              >
+                                <Trash2 className="w-5 h-5 text-red-600" />
                               </Button>
                             </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <PaymentStatusBadge status={order.payment_status} />
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700">
-                          {translateShippingMethod(order.shipping_method)}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {new Date(order.created_at).toLocaleDateString(
-                            "fa-IR",
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex justify-center gap-1">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded-xl"
-                              onClick={() => handleViewDetails(order)}
-                              title="مشاهده جزئیات"
-                            >
-                              <View className="w-5 h-5 text-blue-600" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="hover:bg-red-100 dark:hover:bg-red-900/20 rounded-xl"
-                              onClick={() =>
-                                handleDeleteOrder(order.id, order.order_code)
-                              }
-                              title="حذف سفارش"
-                            >
-                              <Trash2 className="w-5 h-5 text-red-600" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -883,7 +961,6 @@ const sortedData = data.sort((a, b) => b.id - a.id);
         </Card>
       </div>
 
-      {/* مودال جزئیات سفارش */}
       <Modal
         open={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -918,13 +995,19 @@ const sortedData = data.sort((a, b) => b.id - a.id);
                 variant="h4"
                 className="text-center font-bold yekan text-xl sm:text-2xl text-purple-700 pb-6"
               >
-                جزئیات سفارش #{selectedOrder.order_code}
+                جزئیات سفارش #{safeText(selectedOrder.order_code)}
               </Typography>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6 bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4">
                 <InfoItem
                   label="نام و نام خانوادگی"
-                  value={`${selectedOrder.first_name} ${selectedOrder.last_name}`}
+                  value={
+                    selectedOrder.first_name || selectedOrder.last_name
+                      ? `${selectedOrder.first_name ?? ""} ${
+                          selectedOrder.last_name ?? ""
+                        }`.trim()
+                      : "نامشخص"
+                  }
                 />
                 <InfoItem label="ایمیل" value={selectedOrder.email} />
                 <InfoItem
@@ -933,82 +1016,97 @@ const sortedData = data.sort((a, b) => b.id - a.id);
                 />
                 <InfoItem
                   label="تاریخ سفارش"
-                  value={new Date(selectedOrder.created_at).toLocaleDateString(
-                    "fa-IR",
-                  )}
+                  value={formatDate(selectedOrder.created_at)}
                 />
                 <InfoItem
                   label="مبلغ کل"
-                  value={`${(selectedOrder.total_amount / 10).toLocaleString()} تومان`}
+                  value={`${(
+                    (Number(selectedOrder.total_amount) || 0) / 10
+                  ).toLocaleString()} تومان`}
                 />
                 <InfoItem
                   label="وضعیت سفارش"
-                  value={<OrderStatusBadge status={selectedOrder.status} />}
+                  value={
+                    <OrderStatusBadge status={selectedOrder.status} />
+                  }
                 />
                 <InfoItem
                   label="وضعیت پرداخت"
                   value={
-                    <PaymentStatusBadge status={selectedOrder.payment_status} />
+                    <PaymentStatusBadge
+                      status={selectedOrder.payment_status}
+                    />
                   }
                 />
                 <InfoItem
                   label="روش ارسال"
-                  value={translateShippingMethod(selectedOrder.shipping_method)}
+                  value={translateShippingMethod(
+                    selectedOrder.shipping_method,
+                  )}
                 />
               </div>
 
-              {/* نمایش اطلاعات رهگیری با دکمه ویرایش */}
-              {selectedOrder.tracking_info && selectedOrder.status === "shipped" && (
-                <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-                      {isExpressShipping(selectedOrder.shipping_method) 
-                        ? "🚚 شماره پیک:"
-                        : "📦 کد رهگیری:"}
-                      <span className="font-bold mr-2 text-blue-800 dark:text-blue-200">
-                        {selectedOrder.tracking_info}
-                      </span>
-                    </p>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-full"
-                      onClick={() => {
-                        setIsModalOpen(false);
-                        handleEditTrackingInfo(selectedOrder.id);
-                      }}
-                      title="ویرایش اطلاعات رهگیری"
-                    >
-                      <Edit size={16} className="ml-1" />
-                      ویرایش
-                    </Button>
+              {selectedOrder.tracking_info &&
+                selectedOrder.status === "shipped" && (
+                  <div className="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                        {isExpressShipping(selectedOrder.shipping_method)
+                          ? "🚚 شماره پیک:"
+                          : "📦 کد رهگیری:"}
+                        <span className="font-bold mr-2 text-blue-800 dark:text-blue-200">
+                          {selectedOrder.tracking_info}
+                        </span>
+                      </p>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-blue-500 hover:text-blue-700 hover:bg-blue-100 rounded-full"
+                        onClick={() => {
+                          setIsModalOpen(false);
+                          handleEditTrackingInfo(selectedOrder.id);
+                        }}
+                        title="ویرایش اطلاعات رهگیری"
+                      >
+                        <Edit size={16} className="ml-1" />
+                        ویرایش
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               <Section title="آدرس تحویل">
-                <div className="bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4">
-                  {`${selectedOrder.province}، ${selectedOrder.city}، ${selectedOrder.street}`}
-                  {selectedOrder.alley && `، کوچه ${selectedOrder.alley}`}
-                  {selectedOrder.building_number &&
-                    `، پلاک ${selectedOrder.building_number}`}
-                  {selectedOrder.unit && `، واحد ${selectedOrder.unit}`}
-                  {selectedOrder.postal_code &&
-                    `، کد پستی: ${selectedOrder.postal_code}`}
-                </div>
+                {isAddressMissing(selectedOrder) ? (
+                  <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-4 text-amber-700 flex items-start gap-2">
+                    <AlertCircle size={18} className="mt-0.5 shrink-0" />
+                    <div>
+                      <p className="font-semibold">
+                        اطلاعات آدرس این سفارش در سیستم موجود نیست
+                      </p>
+                      <p className="text-xs mt-1">
+                        احتمالاً آدرس مربوطه پس از ثبت سفارش حذف شده
+                        است. برای پیگیری، با مشتری تماس بگیرید.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-gray-50 dark:bg-gray-800/30 rounded-xl p-4">
+                    {formatAddress(selectedOrder)}
+                  </div>
+                )}
               </Section>
 
               <Section title="محصولات سفارش داده شده">
                 <div className="space-y-3">
-                  {selectedOrder.items.map((item) => (
+                  {(selectedOrder.items || []).map((item, index) => (
                     <div
-                      key={item.id}
+                      key={item.id ?? index}
                       className="flex gap-4 items-start p-4 bg-gray-50 dark:bg-gray-800/30 rounded-xl"
                     >
-                      {item.image ? (
+                      {item.image && item.image.trim() !== "" ? (
                         <Image
                           src={item.image}
-                          alt={item.title}
+                          alt={item.title || "محصول"}
                           width={80}
                           height={80}
                           className="rounded-lg object-cover w-20 h-20"
@@ -1019,24 +1117,34 @@ const sortedData = data.sort((a, b) => b.id - a.id);
                         </div>
                       )}
                       <div className="flex-1 space-y-1">
-                        <p className="font-semibold">{item.title}</p>
+                        <p className="font-semibold">
+                          {safeText(item.title)}
+                        </p>
                         {item.color && (
                           <p className="text-sm text-gray-600">
-                            رنگ: {item.color.persianName} (
-                            {item.color.englishName})
+                            رنگ: {item.color.persianName ?? "-"} (
+                            {item.color.englishName ?? "-"})
                           </p>
                         )}
                         <div className="flex flex-wrap items-center gap-3">
                           <span className="text-sm">
                             تعداد:{" "}
                             <span
-                              className={`font-bold ${item.quantity > 1 ? "text-orange-500 text-xl" : ""}`}
+                              className={`font-bold ${
+                                item.quantity > 1
+                                  ? "text-orange-500 text-xl"
+                                  : ""
+                              }`}
                             >
                               {item.quantity}
                             </span>
                           </span>
                           <span className="text-sm font-medium">
-                            قیمت واحد: {item.unit_price.toLocaleString()} تومان
+                            قیمت واحد:{" "}
+                            {(
+                              Number(item.unit_price) || 0
+                            ).toLocaleString()}{" "}
+                            تومان
                           </span>
                           <span className="text-xs text-gray-500 bg-gray-200 dark:bg-gray-700 px-2 py-0.5 rounded-full">
                             {item.price_type === "single" ? "تکی" : "عمده"}
@@ -1045,6 +1153,12 @@ const sortedData = data.sort((a, b) => b.id - a.id);
                       </div>
                     </div>
                   ))}
+                  {(!selectedOrder.items ||
+                    selectedOrder.items.length === 0) && (
+                    <p className="text-sm text-gray-500 text-center py-4">
+                      محصولی ثبت نشده است
+                    </p>
+                  )}
                 </div>
               </Section>
 
